@@ -17,11 +17,11 @@ unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let ptr = ct as *const core::ffi::c_void;
     let u16ptr = ptr as *const u16;
     let tableLog = MEM_read16(ptr) as u32;
-    (*statePtr).value = (1) << tableLog;
+    (*statePtr).value = 1 << tableLog;
     (*statePtr).stateTable = u16ptr.add(2) as *const core::ffi::c_void;
     (*statePtr).symbolTT = ct.add(1).offset(
         (if tableLog != 0 {
-            (1) << tableLog.wrapping_sub(1)
+            1 << tableLog.wrapping_sub(1)
         } else {
             1
         }) as isize,
@@ -35,7 +35,7 @@ unsafe fn FSE_initCState2(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable, sy
     let symbolTT =
         *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
     let stateTable = (*statePtr).stateTable as *const u16;
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(((1) << 15) as u32) >> 16;
+    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add((1 << 15) as u32) >> 16;
     (*statePtr).value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
     (*statePtr).value = *stateTable
         .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
@@ -63,7 +63,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     workSpace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
     let ptr = ct as *mut core::ffi::c_void;
     let tableU16 = (ptr as *mut u16).add(2);
@@ -85,7 +85,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulong as core::ffi::c_ulonglong)
         .wrapping_mul(
             (maxSymbolValue.wrapping_add(2) as core::ffi::c_ulonglong)
-                .wrapping_add((1) << tableLog)
+                .wrapping_add(1 << tableLog)
                 .wrapping_div(2)
                 .wrapping_add(
                     (size_of::<u64>() as core::ffi::c_ulong)
@@ -108,7 +108,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     // symbol start positions
     *cumul = 0;
     for u in 1..maxSV1 + 1 {
-        if *normalizedCounter.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int == -(1) {
+        if *normalizedCounter.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int == -1 {
             // Low proba symbol
             *cumul.offset(u as isize) =
                 (*cumul.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int + 1) as u16;
@@ -204,11 +204,11 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
                 (*symbolTT.offset(s_2 as isize)).deltaNbBits = (tableLog.wrapping_add(1) << 16)
-                    .wrapping_sub(((1) << tableLog) as core::ffi::c_uint);
+                    .wrapping_sub((1 << tableLog) as core::ffi::c_uint);
             }
             -1 | 1 => {
                 (*symbolTT.offset(s_2 as isize)).deltaNbBits =
-                    (tableLog << 16).wrapping_sub(((1) << tableLog) as core::ffi::c_uint);
+                    (tableLog << 16).wrapping_sub((1 << tableLog) as core::ffi::c_uint);
                 (*symbolTT.offset(s_2 as isize)).deltaFindState =
                     total.wrapping_sub(1) as core::ffi::c_int;
                 total = total.wrapping_add(1);
@@ -261,7 +261,7 @@ unsafe fn FSE_writeNCount_generic(
     let mut out = ostart;
     let oend = ostart.add(headerBufferSize);
     let mut nbBits: core::ffi::c_int = 0;
-    let tableSize = (1) << tableLog;
+    let tableSize = 1 << tableLog;
     let mut remaining: core::ffi::c_int = 0;
     let mut threshold: core::ffi::c_int = 0;
     let mut bitStream = 0;
@@ -304,7 +304,7 @@ unsafe fn FSE_writeNCount_generic(
             }
             while symbol >= start.wrapping_add(3) {
                 start = start.wrapping_add(3);
-                bitStream = (bitStream as core::ffi::c_uint).wrapping_add((3) << bitCount);
+                bitStream = (bitStream as core::ffi::c_uint).wrapping_add(3 << bitCount);
                 bitCount += 2;
             }
             bitStream = (bitStream as core::ffi::c_uint)
@@ -457,7 +457,7 @@ unsafe fn FSE_normalizeM2(
     maxSymbolValue: u32,
     lowProbCount: core::ffi::c_short,
 ) -> size_t {
-    let NOT_YET_ASSIGNED = -(2) as core::ffi::c_short;
+    let NOT_YET_ASSIGNED = -2 as core::ffi::c_short;
     let mut s: u32 = 0;
     let mut distributed = 0u32;
     let mut ToDistribute: u32 = 0;
@@ -578,11 +578,11 @@ pub(crate) unsafe fn FSE_normalizeCount(
     }
 
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
-    let lowProbCount = (if useLowProbCount { -(1) } else { 1 }) as core::ffi::c_short;
+    let lowProbCount = (if useLowProbCount { -1 } else { 1 }) as core::ffi::c_short;
     let scale = (62 as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
     let step = (1 << 62) / total as u32 as u64;
     let vStep = 1u64.wrapping_shl(scale.wrapping_sub(20) as u32);
-    let mut stillToDistribute = (1) << tableLog;
+    let mut stillToDistribute = 1 << tableLog;
     let mut largest = 0;
     let mut largestP = 0;
     let lowThreshold = (total >> tableLog) as u32;

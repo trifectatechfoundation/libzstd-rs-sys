@@ -332,7 +332,7 @@ pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
     curr: u32,
     windowLog: core::ffi::c_uint,
 ) -> u32 {
-    let maxDistance = (1) << windowLog;
+    let maxDistance = 1 << windowLog;
     let lowestValid = (*ms).window.lowLimit;
     let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
@@ -354,7 +354,7 @@ pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
     curr: u32,
     windowLog: core::ffi::c_uint,
 ) -> u32 {
-    let maxDistance = (1) << windowLog;
+    let maxDistance = 1 << windowLog;
     let lowestValid = (*ms).window.dictLimit;
     let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)

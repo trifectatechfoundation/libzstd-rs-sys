@@ -1976,7 +1976,7 @@ unsafe fn HUF_compress_internal(
         }
 
         /* Use the new huffman table */
-        if hSize + (12) >= srcSize {
+        if hSize + 12 >= srcSize {
             return 0;
         }
         op = op.add(hSize);

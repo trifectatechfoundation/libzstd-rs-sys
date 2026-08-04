@@ -775,7 +775,7 @@ pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compre
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as size_t) << params.hashLog;
     let ldmBucketSizeLog = (params.bucketSizeLog.min(params.hashLog)) as size_t;
-    let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
+    let ldmBucketSize = 1 << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
     ));
@@ -983,7 +983,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     // LDM parameters
     let extDict = ZSTD_window_hasExtDict((*ldmState).window);
     let minMatchLength = (*params).minMatchLength;
-    let entsPerBucket = (1) << (*params).bucketSizeLog;
+    let entsPerBucket = 1 << (*params).bucketSizeLog;
     let hBits = ((*params).hashLog).wrapping_sub((*params).bucketSizeLog);
 
     // Prefix and extDict parameters
@@ -1258,10 +1258,10 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let maxDist = (1) << params.windowLog;
+    let maxDist = 1 << params.windowLog;
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
-    let kMaxChunkSize = ((1) << 20) as size_t;
+    let kMaxChunkSize = (1 << 20) as size_t;
     let nbChunks = (srcSize / kMaxChunkSize)
         .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
     let mut chunk: size_t = 0;
@@ -1289,7 +1289,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart as *const core::ffi::c_void,
             chunkEnd as *const core::ffi::c_void,
         ) {
-            let ldmHSize = (1) << params.hashLog;
+            let ldmHSize = 1 << params.hashLog;
             let correction = ZSTD_window_correctOverflow(
                 &mut ldmState.window,
                 0,

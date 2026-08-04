@@ -15,7 +15,7 @@ pub const THRESHOLD_PENALTY: c_int = 3;
 
 pub const HASHLENGTH: c_int = 2;
 pub const HASHLOG_MAX: c_uint = 10;
-pub const HASHTABLESIZE: c_int = (1) << HASHLOG_MAX;
+pub const HASHTABLESIZE: c_int = 1 << HASHLOG_MAX;
 pub const KNUTH: c_uint = 0x9e3779b9;
 
 /// for `hashLog` > 8, hash 2 bytes.
@@ -88,7 +88,7 @@ unsafe fn fpDistance(fp1: &Fingerprint, fp2: *const Fingerprint, hashLog: c_uint
 
     debug_assert!(hashLog <= HASHLOG_MAX);
 
-    for n in 0..((1) << hashLog) {
+    for n in 0..(1 << hashLog) {
         distance = distance.wrapping_add(abs64(
             fp1.events[n as usize] as i64 * (*fp2).nbEvents as i64
                 - ((*fp2).events)[n as usize] as i64 * fp1.nbEvents as i64,
@@ -122,7 +122,7 @@ fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
     acc.nbEvents += newfp.nbEvents;
 }
 
-pub const CHUNKSIZE: c_int = (8) << 10;
+pub const CHUNKSIZE: c_int = 8 << 10;
 
 unsafe fn ZSTD_splitBlock_byChunks(
     blockStart: *const c_void,
@@ -244,12 +244,12 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     let distFromEnd = fpDistance(&(*fpstats).newEvents, middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
-        return (64 * ((1) << 10)) as size_t;
+        return (64 * (1 << 10)) as size_t;
     }
     (if distFromBegin > distFromEnd {
-        32 * ((1) << 10)
+        32 * (1 << 10)
     } else {
-        96 * ((1) << 10)
+        96 * (1 << 10)
     }) as size_t
 }
 

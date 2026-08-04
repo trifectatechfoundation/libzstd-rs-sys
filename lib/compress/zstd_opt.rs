@@ -132,11 +132,11 @@ pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
     .wrapping_add(1);
 
 pub const ZSTD_LITFREQ_ADD: core::ffi::c_int = 2;
-pub const ZSTD_MAX_PRICE: core::ffi::c_int = (1) << 30;
+pub const ZSTD_MAX_PRICE: core::ffi::c_int = 1 << 30;
 // if srcSize < ZSTD_PREDEF_THRESHOLD, symbols' cost is assumed static, directly determined by pre-defined distributions
 pub const ZSTD_PREDEF_THRESHOLD: core::ffi::c_int = 8;
 pub const BITCOST_ACCURACY: core::ffi::c_int = 8;
-pub const BITCOST_MULTIPLIER: core::ffi::c_int = (1) << BITCOST_ACCURACY;
+pub const BITCOST_MULTIPLIER: core::ffi::c_int = 1 << BITCOST_ACCURACY;
 
 // provide estimated "cost" of a stat in full bits only
 #[inline]
@@ -275,7 +275,7 @@ unsafe fn ZSTD_rescaleFreqs(
                         lit,
                     );
                     *((*optPtr).litFreq).offset(lit as isize) = (if bitCost != 0 {
-                        (1) << scaleLog.wrapping_sub(bitCost)
+                        1 << scaleLog.wrapping_sub(bitCost)
                     } else {
                         1 // minimum to calculate cost
                     })
@@ -300,7 +300,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 let scaleLog_0 = 10u32; // scale to 1K
                 let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll);
                 *((*optPtr).litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
-                    (1) << scaleLog_0.wrapping_sub(bitCost_0)
+                    1 << scaleLog_0.wrapping_sub(bitCost_0)
                 } else {
                     1 // minimum to calculate cost
                 })
@@ -324,7 +324,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 let scaleLog_1 = 10u32;
                 let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml);
                 *((*optPtr).matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
-                    (1) << scaleLog_1.wrapping_sub(bitCost_1)
+                    1 << scaleLog_1.wrapping_sub(bitCost_1)
                 } else {
                     1 // minimum to calculate cost
                 })
@@ -348,7 +348,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 let scaleLog_2 = 10u32;
                 let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of);
                 *((*optPtr).offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
-                    (1) << scaleLog_2.wrapping_sub(bitCost_2)
+                    1 << scaleLog_2.wrapping_sub(bitCost_2)
                 } else {
                     1 // minimum to calculate cost
                 })
@@ -643,7 +643,7 @@ unsafe fn ZSTD_insertBt1(
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let bt = (*ms).chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
-    let btMask = (((1) << btLog) - 1) as u32;
+    let btMask = ((1 << btLog) - 1) as u32;
     let mut matchIndex = *hashTable.add(h);
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
@@ -797,7 +797,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let sufficient_len = (*cParams)
         .targetLength
-        .min((((1) << 12) - 1) as core::ffi::c_uint);
+        .min(((1 << 12) - 1) as core::ffi::c_uint);
     let base = ms.window.base;
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
     let hashLog = (*cParams).hashLog;
@@ -1009,7 +1009,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         let matchIndex3 = ZSTD_insertAndFindFirstIndexHash3(ms, nextToUpdate3, ip);
         // heuristic: longer distance likely too expensive
         if (matchIndex3 >= matchLow) as core::ffi::c_int
-            & (curr.wrapping_sub(matchIndex3) < ((1) << 18) as u32) as core::ffi::c_int
+            & (curr.wrapping_sub(matchIndex3) < (1 << 18) as u32) as core::ffi::c_int
             != 0
         {
             let mut mlen: size_t = 0;
@@ -1875,7 +1875,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
 
     let sufficient_len = (*cParams)
         .targetLength
-        .min((((1) << 12) - 1) as core::ffi::c_uint);
+        .min(((1 << 12) - 1) as core::ffi::c_uint);
     let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 

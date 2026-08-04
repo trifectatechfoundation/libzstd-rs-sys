@@ -329,7 +329,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     // between pairs of positions, from ip0 to ip2 or ip1 to ip3.
     let mut step: size_t = 0;
     let mut nextStep = core::ptr::null::<u8>();
-    let kStepIncr = ((1) << (kSearchStrength - 1)) as size_t;
+    let kStepIncr = (1 << (kSearchStrength - 1)) as size_t;
     let matchFound: ZSTD_match4Found = if useCmov {
         Some(ZSTD_match4Found_cmov as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
     } else {
@@ -738,7 +738,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
 
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
-    let maxDistance = (1) << (*cParams).windowLog;
+    let maxDistance = 1 << (*cParams).windowLog;
     let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
     assert!(endIndex - prefixStartIndex <= maxDistance);
 
@@ -778,7 +778,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
         let mut matchIndex = *hashTable.add(hash0);
         let mut curr = ip0.offset_from(base) as core::ffi::c_long as u32;
         let mut step = stepSize as size_t;
-        let kStepIncr = ((1) << kSearchStrength) as size_t;
+        let kStepIncr = (1 << kSearchStrength) as size_t;
         let mut nextStep = ip0.add(kStepIncr);
 
         // Inner search loop
@@ -1099,7 +1099,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
 
     let mut step: size_t = 0;
     let mut nextStep = core::ptr::null::<u8>();
-    let kStepIncr = ((1) << (kSearchStrength - 1)) as size_t;
+    let kStepIncr = (1 << (kSearchStrength - 1)) as size_t;
 
     let _ = hasStep; // not currently specialized on whether it's accelerated
 
