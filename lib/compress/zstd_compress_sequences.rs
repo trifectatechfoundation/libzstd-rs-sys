@@ -181,7 +181,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
 }
 
 pub unsafe fn ZSTD_selectEncodingType(
-    repeatMode: *mut FSE_repeat,
+    repeatMode: &mut FSE_repeat,
     count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
     mostFrequent: size_t,
