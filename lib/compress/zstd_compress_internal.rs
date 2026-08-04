@@ -328,18 +328,18 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
 
 #[inline]
 pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     curr: u32,
     windowLog: core::ffi::c_uint,
 ) -> u32 {
     let maxDistance = 1 << windowLog;
-    let lowestValid = (*ms).window.lowLimit;
+    let lowestValid = ms.window.lowLimit;
     let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
     } else {
         lowestValid
     };
-    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
+    let isDictionary = (ms.loadedDictEnd != 0) as core::ffi::c_int as u32;
 
     if isDictionary != 0 {
         lowestValid
