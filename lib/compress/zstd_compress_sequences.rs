@@ -195,7 +195,7 @@ pub unsafe fn ZSTD_selectEncodingType(
 ) -> SymbolEncodingType_e {
     if mostFrequent == nbSeq {
         *repeatMode = FSE_repeat_none;
-        if isDefaultAllowed as core::ffi::c_uint != 0 && nbSeq <= 2 {
+        if isDefaultAllowed != 0 && nbSeq <= 2 {
             // Prefer set_basic over set_rle when there are 2 or fewer symbols,
             // since RLE uses 1 byte, but set_basic uses 5-6 bits per symbol.
             // If basic encoding isn't possible, always choose RLE.
@@ -203,17 +203,14 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
         return set_rle;
     }
-    if (strategy as core::ffi::c_uint) < ZSTD_lazy as core::ffi::c_int as core::ffi::c_uint {
+    if (strategy as core::ffi::c_uint) < ZSTD_lazy {
         if isDefaultAllowed as u64 != 0 {
             let staticFse_nbSeq_max = 1000;
             let mult =
                 (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
-            if *repeatMode as core::ffi::c_uint
-                == FSE_repeat_valid as core::ffi::c_int as core::ffi::c_uint
-                && nbSeq < staticFse_nbSeq_max
-            {
+            if *repeatMode == FSE_repeat_valid && nbSeq < staticFse_nbSeq_max {
                 return set_repeat;
             }
             if nbSeq < dynamicFse_nbSeq_min
@@ -229,14 +226,12 @@ pub unsafe fn ZSTD_selectEncodingType(
             }
         }
     } else {
-        let basicCost = if isDefaultAllowed as core::ffi::c_uint != 0 {
+        let basicCost = if isDefaultAllowed != 0 {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };
-        let repeatCost = if *repeatMode as core::ffi::c_uint
-            != FSE_repeat_none as core::ffi::c_int as core::ffi::c_uint
-        {
+        let repeatCost = if *repeatMode != FSE_repeat_none {
             ZSTD_fseBitCost(prevCTable, count, max)
         } else {
             Error::GENERIC.to_error_code()

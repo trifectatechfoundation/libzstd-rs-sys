@@ -37,12 +37,11 @@ pub type huf_compress_f = Option<
 
 #[inline]
 fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
-    let minlog =
-        if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
-            strat.wrapping_sub(1)
-        } else {
-            6
-        };
+    let minlog = if strat >= ZSTD_btultra {
+        strat.wrapping_sub(1)
+    } else {
+        6
+    };
     (srcSize >> minlog).wrapping_add(2)
 }
 
@@ -159,8 +158,7 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
     // max threshold 64 bytes
     let shift = (9 - strategy as core::ffi::c_int).min(3);
 
-    if huf_repeat as core::ffi::c_uint == HUF_repeat_valid as core::ffi::c_int as core::ffi::c_uint
-    {
+    if huf_repeat == HUF_repeat_valid {
         6
     } else {
         8 << shift
@@ -210,31 +208,25 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     let mut repeat = (*prevHuf).repeatMode;
-    let flags =
-        (if bmi2 != 0 {
-            HUF_flags_bmi2 as core::ffi::c_int
-        } else {
-            0
-        }) | (if (strategy as core::ffi::c_uint)
-            < ZSTD_lazy as core::ffi::c_int as core::ffi::c_uint
-            && srcSize <= 1024
-        {
-            HUF_flags_preferRepeat as core::ffi::c_int
-        } else {
-            0
-        }) | (if strategy as core::ffi::c_uint >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint {
-            HUF_flags_optimalDepth as core::ffi::c_int
-        } else {
-            0
-        }) | (if suspectUncompressible != 0 {
-            HUF_flags_suspectUncompressible as core::ffi::c_int
-        } else {
-            0
-        });
+    let flags = (if bmi2 != 0 {
+        HUF_flags_bmi2 as core::ffi::c_int
+    } else {
+        0
+    }) | (if (strategy as core::ffi::c_uint) < ZSTD_lazy && srcSize <= 1024 {
+        HUF_flags_preferRepeat as core::ffi::c_int
+    } else {
+        0
+    }) | (if strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint {
+        HUF_flags_optimalDepth as core::ffi::c_int
+    } else {
+        0
+    }) | (if suspectUncompressible != 0 {
+        HUF_flags_suspectUncompressible as core::ffi::c_int
+    } else {
+        0
+    });
     let mut huf_compress: huf_compress_f = None;
-    if repeat as core::ffi::c_uint == HUF_repeat_valid as core::ffi::c_int as core::ffi::c_uint
-        && lhSize == 3
-    {
+    if repeat == HUF_repeat_valid && lhSize == 3 {
         singleStream = 1;
     }
     huf_compress = if singleStream != 0 {
@@ -285,7 +277,7 @@ pub unsafe fn ZSTD_compressLiterals(
         &mut repeat,
         flags,
     );
-    if repeat as core::ffi::c_uint != HUF_repeat_none as core::ffi::c_int as core::ffi::c_uint {
+    if repeat != HUF_repeat_none {
         // reused the existing table
         hType = set_repeat;
     }
@@ -314,7 +306,7 @@ pub unsafe fn ZSTD_compressLiterals(
         return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
     }
 
-    if hType as core::ffi::c_uint == set_compressed as core::ffi::c_int as core::ffi::c_uint {
+    if hType == set_compressed {
         // using a newly constructed table
         (*nextHuf).repeatMode = HUF_repeat_check;
     }

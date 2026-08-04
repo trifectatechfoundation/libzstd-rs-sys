@@ -1642,7 +1642,7 @@ fn decompression_margin(mut src: &[u8]) -> Result<size_t, Error> {
         let frameSizeInfo = frameSizeInfo.map_err(|_| Error::corruption_detected)?;
         let compressedSize = frameSizeInfo.compressedSize;
 
-        if zfh.frameType as core::ffi::c_uint == ZSTD_frame as core::ffi::c_uint {
+        if zfh.frameType == ZSTD_frame as core::ffi::c_uint {
             // add the frame header to our margin
             margin += zfh.headerSize as size_t;
             margin += if zfh.checksumFlag != 0 { 4 } else { 0 };

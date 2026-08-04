@@ -760,9 +760,7 @@ pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compre
     }
     if params.minMatchLength == 0 {
         params.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
-        if cParams.strategy as core::ffi::c_uint
-            >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint
-        {
+        if cParams.strategy >= ZSTD_btultra {
             params.minMatchLength /= 2;
         }
     }
@@ -1459,9 +1457,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     let mut ip = istart;
 
     // If using opt parser, use LDMs only as candidates rather than always accepting them
-    if (*cParams).strategy as core::ffi::c_uint
-        >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*cParams).strategy >= ZSTD_btopt {
         let mut lastLLSize: size_t = 0;
         ms.ldmSeqStore = rawSeqStore;
         lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);

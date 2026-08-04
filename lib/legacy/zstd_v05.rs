@@ -2819,8 +2819,7 @@ unsafe fn ZSTDv05_decompressContinue(
             };
             let blockSize =
                 ZSTDv05_getcBlockSize(src.subslice(..ZSTDv05_blockHeaderSize).as_slice(), &mut bp)?;
-            if bp.blockType as core::ffi::c_uint == bt_end as core::ffi::c_int as core::ffi::c_uint
-            {
+            if bp.blockType == bt_end {
                 dctx.expected = 0;
                 dctx.stage = ZSTDv05ds_getFrameHeaderSize;
             } else {
