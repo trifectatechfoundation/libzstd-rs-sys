@@ -4274,7 +4274,7 @@ fn ZSTD_dictTooBig(loadedDictSize: size_t) -> bool {
 /// Note: `params` are assumed fully validated at this stage.
 unsafe fn ZSTD_resetCCtx_internal(
     zc: *mut ZSTD_CCtx,
-    mut params: *const ZSTD_CCtx_params,
+    mut params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     loadedDictSize: size_t,
     crp: ZSTD_compResetPolicy_e,
@@ -4289,23 +4289,23 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).appliedParams = *params;
     params = &mut (*zc).appliedParams;
 
-    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         // Adjust long distance matching parameters
-        ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &(*params).cParams);
+        ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &params.cParams);
     }
 
-    let windowSize = ((1 as size_t) << (*params).cParams.windowLog)
+    let windowSize = ((1 as size_t) << params.cParams.windowLog)
         .min(pledgedSrcSize as size_t) // pledgedSrcSize can be 0, so .clamp() would panic
         .max(1);
-    let blockSize = (*params).maxBlockSize.min(windowSize);
+    let blockSize = params.maxBlockSize.min(windowSize);
     let maxNbSeq = ZSTD_maxNbSeq(
         blockSize,
-        (*params).cParams.minMatch,
+        params.cParams.minMatch,
         ZSTD_hasExtSeqProd(params),
     );
     let buffOutSize = if zbuff as core::ffi::c_uint
         == ZSTDb_buffered as core::ffi::c_int as core::ffi::c_uint
-        && (*params).outBufferMode as core::ffi::c_uint
+        && params.outBufferMode as core::ffi::c_uint
             == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint
     {
         (ZSTD_compressBound(blockSize)).wrapping_add(1)
@@ -4314,14 +4314,14 @@ unsafe fn ZSTD_resetCCtx_internal(
     };
     let buffInSize = if zbuff as core::ffi::c_uint
         == ZSTDb_buffered as core::ffi::c_int as core::ffi::c_uint
-        && (*params).inBufferMode as core::ffi::c_uint
+        && params.inBufferMode as core::ffi::c_uint
             == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint
     {
         windowSize.wrapping_add(blockSize)
     } else {
         0
     };
-    let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq((*params).ldmParams, blockSize);
+    let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(params.ldmParams, blockSize);
 
     let indexTooClose = ZSTD_indexTooCloseToMax((*zc).blockState.matchState.window);
     let dictTooBig = ZSTD_dictTooBig(loadedDictSize);
@@ -4332,15 +4332,15 @@ unsafe fn ZSTD_resetCCtx_internal(
     }) as ZSTD_indexResetPolicy_e;
 
     let neededSpace = ZSTD_estimateCCtxSize_usingCCtxParams_internal(
-        &(*params).cParams,
-        &(*params).ldmParams,
+        &params.cParams,
+        &params.ldmParams,
         ((*zc).staticSize != 0) as core::ffi::c_int,
-        (*params).useRowMatchFinder,
+        params.useRowMatchFinder,
         buffInSize,
         buffOutSize,
         pledgedSrcSize,
         ZSTD_hasExtSeqProd(params),
-        (*params).maxBlockSize,
+        params.maxBlockSize,
     );
 
     let err_code = neededSpace;
@@ -4400,9 +4400,9 @@ unsafe fn ZSTD_resetCCtx_internal(
     ZSTD_cwksp_clear(ws);
 
     // init params
-    (*zc).blockState.matchState.cParams = (*params).cParams;
+    (*zc).blockState.matchState.cParams = params.cParams;
     (*zc).blockState.matchState.prefetchCDictTables =
-        ((*params).prefetchCDictTables == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+        (params.prefetchCDictTables == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
     (*zc).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1) as core::ffi::c_ulonglong;
     (*zc).consumedSrcSize = 0;
     (*zc).producedCSize = 0;
@@ -4421,8 +4421,8 @@ unsafe fn ZSTD_resetCCtx_internal(
     let err_code_1 = ZSTD_reset_matchState(
         &mut (*zc).blockState.matchState,
         ws,
-        &(*params).cParams,
-        (*params).useRowMatchFinder,
+        &params.cParams,
+        params.useRowMatchFinder,
         crp,
         needsIndexReset,
         ZSTD_resetTarget_CCtx,
@@ -4436,9 +4436,9 @@ unsafe fn ZSTD_resetCCtx_internal(
         ZSTD_cwksp_reserve_aligned64(ws, maxNbSeq.wrapping_mul(size_of::<SeqDef>())) as *mut SeqDef;
 
     // ldm hash table
-    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         // TODO: avoid memset?
-        let ldmHSize = (1 as size_t) << (*params).ldmParams.hashLog;
+        let ldmHSize = (1 as size_t) << params.ldmParams.hashLog;
         (*zc).ldmState.hashTable =
             ZSTD_cwksp_reserve_aligned64(ws, ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()))
                 as *mut ldmEntry_t;
@@ -4480,10 +4480,10 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).outBuff = ZSTD_cwksp_reserve_buffer(ws, buffOutSize);
 
     // ldm bucketOffsets table
-    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         // TODO: avoid memset?
         let numBuckets =
-            (1) << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
+            (1) << (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
         (*zc).ldmState.bucketOffsets = ZSTD_cwksp_reserve_buffer(ws, numBuckets);
         ptr::write_bytes((*zc).ldmState.bucketOffsets, 0, numBuckets);
     }
@@ -8350,7 +8350,7 @@ unsafe fn ZSTD_compressBegin_internal(
     dictContentType: ZSTD_dictContentType_e,
     dtlm: ZSTD_dictTableLoadMethod_e,
     cdict: *const ZSTD_CDict,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
@@ -8369,7 +8369,7 @@ unsafe fn ZSTD_compressBegin_internal(
                     .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
             || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
             || (*cdict).compressionLevel == 0)
-        && (*params).attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceLoad
+        && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceLoad
     {
         return ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff);
     }
