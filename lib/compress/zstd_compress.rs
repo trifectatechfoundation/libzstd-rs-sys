@@ -6343,7 +6343,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeEntropy: core::ffi::c_int,
+    writeEntropy: bool,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
@@ -6370,7 +6370,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
         }
         let mut cLitSizeEstimate =
             HUF_estimateCompressedSize((huf.CTable).as_ptr(), countWksp, maxSymbolValue);
-        if writeEntropy != 0 {
+        if writeEntropy {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
         }
         if !singleStream {
@@ -6451,7 +6451,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeEntropy: core::ffi::c_int,
+    writeEntropy: bool,
 ) -> size_t {
     let sequencesSectionHeaderSize =
         (1 + 1
@@ -6499,7 +6499,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         wkspSize,
     ));
 
-    if writeEntropy != 0 {
+    if writeEntropy {
         cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(fseMetadata.fseTablesSize);
     }
 
@@ -6518,8 +6518,8 @@ unsafe fn ZSTD_estimateBlockSize(
     entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeLitEntropy: core::ffi::c_int,
-    writeSeqEntropy: core::ffi::c_int,
+    writeLitEntropy: bool,
+    writeSeqEntropy: bool,
 ) -> size_t {
     let literalsSize = ZSTD_estimateBlockSize_literal(
         literals,
@@ -6581,8 +6581,8 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-        ((*entropyMetadata).hufMetadata.hType == set_compressed) as core::ffi::c_int,
-        1,
+        (*entropyMetadata).hufMetadata.hType == set_compressed,
+        true,
     )
 }
 
