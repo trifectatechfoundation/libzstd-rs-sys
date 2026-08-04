@@ -192,7 +192,7 @@ unsafe fn HIST_count_parallel_wksp(
     while *Counting1.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }
-    if check as core::ffi::c_uint != 0 && maxSymbolValue > *maxSymbolValuePtr {
+    if check != 0 && maxSymbolValue > *maxSymbolValuePtr {
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;

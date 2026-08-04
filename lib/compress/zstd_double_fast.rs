@@ -128,8 +128,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
                 ZSTD_writeTaggedIndex(hashLarge, lgHashAndTag, curr.wrapping_add(i));
             }
             // Only load extra positions for ZSTD_dtlm_full
-            if dtlm as core::ffi::c_uint == ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint
-            {
+            if dtlm == ZSTD_dtlm_fast {
                 break;
             }
         }
@@ -172,8 +171,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
                 *hashLarge.add(lgHash) = curr.wrapping_add(i);
             }
             // Only load extra positions for ZSTD_dtlm_full
-            if dtlm as core::ffi::c_uint == ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint
-            {
+            if dtlm == ZSTD_dtlm_fast {
                 break;
             }
         }
@@ -187,7 +185,7 @@ pub unsafe fn ZSTD_fillDoubleHashTable(
     dtlm: ZSTD_dictTableLoadMethod_e,
     tfp: ZSTD_tableFillPurpose_e,
 ) {
-    if tfp as core::ffi::c_uint == ZSTD_tfp_forCDict as core::ffi::c_int as core::ffi::c_uint {
+    if tfp == ZSTD_tfp_forCDict {
         ZSTD_fillDoubleHashTableForCDict(ms, end, dtlm);
     } else {
         ZSTD_fillDoubleHashTableForCCtx(ms, end, dtlm);

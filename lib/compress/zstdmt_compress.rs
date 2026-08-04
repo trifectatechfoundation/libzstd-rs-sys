@@ -675,10 +675,7 @@ unsafe fn ZSTDMT_serialState_reset(
 
         // Update window state and fill hash table with dict
         serialState.ldmState.loadedDictEnd = 0;
-        if dictSize > 0
-            && dictContentType as core::ffi::c_uint
-                == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
-        {
+        if dictSize > 0 && dictContentType == ZSTD_dct_rawContent {
             let dictEnd = (dict as *const u8).add(dictSize);
             ZSTD_window_update(&mut serialState.ldmState.window, dict, dictSize, false);
             ZSTD_ldm_fillHashTable(
@@ -1759,9 +1756,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     (*mtctx).cdictLocal = core::ptr::null_mut();
     (*mtctx).cdict = core::ptr::null();
     if !dict.is_null() {
-        if dictContentType as core::ffi::c_uint
-            == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
-        {
+        if dictContentType == ZSTD_dct_rawContent {
             (*mtctx).inBuff.prefix.start = dict as *const u8 as *const core::ffi::c_void;
             (*mtctx).inBuff.prefix.size = dictSize;
         } else {
@@ -1818,8 +1813,7 @@ unsafe fn ZSTDMT_createCompressionJob(
     endOp: ZSTD_EndDirective,
 ) -> size_t {
     let jobID = (*mtctx).nextJobID & (*mtctx).jobIDMask;
-    let endFrame =
-        endOp as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint;
+    let endFrame = endOp == ZSTD_e_end;
 
     if (*mtctx).nextJobID > ((*mtctx).doneJobID).wrapping_add((*mtctx).jobIDMask) {
         // will not create new job: table is full
@@ -2022,7 +2016,7 @@ unsafe fn ZSTDMT_flushProduced(
         return 1; // input is not empty, and still needs to be converted into a job
     }
     (*mtctx).allJobsCompleted = (*mtctx).frameEnded; // all jobs are entirely flushed => if this one is last one, frame is completed
-    if end as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint {
+    if end == ZSTD_e_end {
         return ((*mtctx).frameEnded == 0) as core::ffi::c_int as size_t; // for ZSTD_e_end, question becomes: is frame completed ?
     }
 
@@ -2292,9 +2286,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
 ) -> size_t {
     let mut forwardInputProgress = 0;
 
-    if (*mtctx).frameEnded != 0
-        && endOp as core::ffi::c_uint == ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*mtctx).frameEnded != 0 && endOp == ZSTD_e_continue {
         // current frame being ended. Only flush/end are allowed
         return Error::stage_wrong.to_error_code();
     }
@@ -2311,10 +2303,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
         }
         if !((*mtctx).inBuff.buffer.start).is_null() {
             let syncPoint = findSynchronizationPoint(mtctx, *input);
-            if syncPoint.flush != 0
-                && endOp as core::ffi::c_uint
-                    == ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
-            {
+            if syncPoint.flush != 0 && endOp == ZSTD_e_continue {
                 endOp = ZSTD_e_flush;
             }
             libc::memcpy(
@@ -2329,9 +2318,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
             forwardInputProgress = (syncPoint.toLoad > 0) as core::ffi::c_int as core::ffi::c_uint;
         }
     }
-    if (*input).pos < (*input).size
-        && endOp as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*input).pos < (*input).size && endOp == ZSTD_e_end {
         // Can't end yet because the input is not fully consumed.
         // We are in one of these cases:
         // - mtctx->inBuff is NULL & empty: we couldn't get an input buffer so don't create a new job.
@@ -2342,9 +2329,9 @@ pub unsafe fn ZSTDMT_compressStream_generic(
 
     if (*mtctx).jobReady != 0
         || (*mtctx).inBuff.filled >= (*mtctx).targetSectionSize  // filled enough: let's compress
-        || endOp as core::ffi::c_uint != ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
+        || endOp != ZSTD_e_continue
             && (*mtctx).inBuff.filled > 0  // something to flush: let's go
-        || endOp as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint // must finish the frame with a zero-size block
+        || endOp == ZSTD_e_end // must finish the frame with a zero-size block
             && (*mtctx).frameEnded == 0
     {
         let jobSize = (*mtctx).inBuff.filled;

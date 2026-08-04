@@ -354,24 +354,19 @@ unsafe fn ZSTD_compressSubBlock_literal(
     let hType = (if writeEntropy {
         hufMetadata.hType as core::ffi::c_uint
     } else {
-        set_repeat as core::ffi::c_int as core::ffi::c_uint
+        set_repeat
     }) as SymbolEncodingType_e;
     let mut cLitSize = 0usize;
 
     *entropyWritten = false;
-    if litSize == 0
-        || hufMetadata.hType as core::ffi::c_uint
-            == set_basic as core::ffi::c_int as core::ffi::c_uint
-    {
+    if litSize == 0 || hufMetadata.hType == set_basic {
         return ZSTD_noCompressLiterals(
             dst,
             dstSize,
             literals as *const core::ffi::c_void,
             litSize,
         );
-    } else if hufMetadata.hType as core::ffi::c_uint
-        == set_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if hufMetadata.hType == set_rle {
         return ZSTD_compressRleLiteralsBlock(
             dst,
             dstSize,
@@ -380,10 +375,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
 
-    if writeEntropy
-        && hufMetadata.hType as core::ffi::c_uint
-            == set_compressed as core::ffi::c_int as core::ffi::c_uint
-    {
+    if writeEntropy && hufMetadata.hType == set_compressed {
         libc::memcpy(
             op as *mut core::ffi::c_void,
             (hufMetadata.hufDesBuffer).as_ptr() as *const core::ffi::c_void,
@@ -733,18 +725,11 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     let mut maxSymbolValue = 255;
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
-    if hufMetadata.hType as core::ffi::c_uint == set_basic as core::ffi::c_int as core::ffi::c_uint
-    {
+    if hufMetadata.hType == set_basic {
         return litSize;
-    } else if hufMetadata.hType as core::ffi::c_uint
-        == set_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if hufMetadata.hType == set_rle {
         return 1;
-    } else if hufMetadata.hType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || hufMetadata.hType as core::ffi::c_uint
-            == set_repeat as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if hufMetadata.hType == set_compressed || hufMetadata.hType == set_repeat {
         let largest = HIST_count_wksp(
             countWksp,
             &mut maxSymbolValue,
@@ -794,18 +779,16 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         workspace,
         wkspSize,
     );
-    if type_0 as core::ffi::c_uint == set_basic as core::ffi::c_int as core::ffi::c_uint {
+    if type_0 == set_basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
         } else {
             Error::GENERIC.to_error_code()
         };
-    } else if type_0 as core::ffi::c_uint == set_rle as core::ffi::c_int as core::ffi::c_uint {
+    } else if type_0 == set_rle {
         cSymbolTypeSizeEstimateInBits = 0;
-    } else if type_0 as core::ffi::c_uint == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || type_0 as core::ffi::c_uint == set_repeat as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if type_0 == set_compressed || type_0 == set_repeat {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
@@ -930,25 +913,13 @@ unsafe fn ZSTD_estimateSubBlockSize(
 }
 
 fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bool {
-    if fseMetadata.llType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || fseMetadata.llType as core::ffi::c_uint
-            == set_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    if fseMetadata.llType == set_compressed || fseMetadata.llType == set_rle {
         return true;
     }
-    if fseMetadata.mlType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || fseMetadata.mlType as core::ffi::c_uint
-            == set_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    if fseMetadata.mlType == set_compressed || fseMetadata.mlType == set_rle {
         return true;
     }
-    if fseMetadata.ofType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || fseMetadata.ofType as core::ffi::c_uint
-            == set_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    if fseMetadata.ofType == set_compressed || fseMetadata.ofType == set_rle {
         return true;
     }
     false
@@ -1055,8 +1026,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut ofCodePtr: *const u8 = seqStorePtr.ofCode;
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
     let targetCBlockSize = minTarget.max(cctxParams.targetCBlockSize);
-    let mut writeLitEntropy = entropyMetadata.hufMetadata.hType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint;
+    let mut writeLitEntropy = entropyMetadata.hufMetadata.hType == set_compressed;
     let mut writeSeqEntropy = true;
 
     // let's start by a general estimation for the full block

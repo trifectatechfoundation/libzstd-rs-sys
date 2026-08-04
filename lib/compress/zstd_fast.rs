@@ -114,7 +114,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
         let hashAndTag = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         ZSTD_writeTaggedIndex(hashTable, hashAndTag, curr);
-        if dtlm as core::ffi::c_uint != ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint {
+        if dtlm != ZSTD_dtlm_fast {
             // Only load extra positions for ZSTD_dtlm_full
             for p in 1..fastHashFillStep {
                 let hashAndTag_0 = ZSTD_hashPtr(
@@ -152,7 +152,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
         let hash0 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         *hashTable.add(hash0) = curr;
-        if dtlm as core::ffi::c_uint != ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint {
+        if dtlm != ZSTD_dtlm_fast {
             // Only load extra positions for ZSTD_dtlm_full
             for p in 1..fastHashFillStep {
                 let hash = ZSTD_hashPtr(
@@ -176,7 +176,7 @@ pub unsafe fn ZSTD_fillHashTable(
     dtlm: ZSTD_dictTableLoadMethod_e,
     tfp: ZSTD_tableFillPurpose_e,
 ) {
-    if tfp as core::ffi::c_uint == ZSTD_tfp_forCDict as core::ffi::c_int as core::ffi::c_uint {
+    if tfp == ZSTD_tfp_forCDict {
         ZSTD_fillHashTableForCDict(ms, end, dtlm);
     } else {
         ZSTD_fillHashTableForCCtx(ms, end, dtlm);

@@ -667,10 +667,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
     }
     FSEv06_initDState(&mut state1, &mut bitD, dt);
     FSEv06_initDState(&mut state2, &mut bitD, dt);
-    while BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
-        == BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && op < olimit
-    {
+    while BITv06_reloadDStream(&mut bitD) == BITv06_DStream_unfinished && op < olimit {
         *op = (if fast != 0 {
             FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
@@ -685,8 +682,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
         if FSEv06_MAX_TABLELOG * 4 + 7 > size_t::BITS as core::ffi::c_int
-            && BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
-                > BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
+            && BITv06_reloadDStream(&mut bitD) > BITv06_DStream_unfinished
         {
             op = op.add(2);
             break;
@@ -717,9 +713,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         } else {
             FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
-            == BITv06_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
-        {
+        if BITv06_reloadDStream(&mut bitD) == BITv06_DStream_overflow {
             let fresh6 = op;
             op = op.add(1);
             *fresh6 = (if fast != 0 {
@@ -739,9 +733,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             } else {
                 FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
             }) as u8;
-            if BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
-                != BITv06_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
-            {
+            if BITv06_reloadDStream(&mut bitD) != BITv06_DStream_overflow {
                 continue;
             }
             let fresh8 = op;
@@ -995,10 +987,7 @@ unsafe fn HUFv06_decodeStreamX2(
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    while BITv06_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p <= pEnd.sub(4)
-    {
+    while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p <= pEnd.sub(4) {
         if MEM_64bits() {
             let fresh12 = p;
             p = p.add(1);
@@ -1018,10 +1007,7 @@ unsafe fn HUFv06_decodeStreamX2(
         p = p.add(1);
         *fresh15 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
-    while BITv06_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p < pEnd
-    {
+    while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p < pEnd {
         let fresh16 = p;
         p = p.add(1);
         *fresh16 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
@@ -1577,10 +1563,7 @@ unsafe fn HUFv06_decodeStreamX4(
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    while BITv06_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p < pEnd.sub(7)
-    {
+    while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p < pEnd.sub(7) {
         if MEM_64bits() {
             p = p.offset(
                 HUFv06_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
@@ -1600,10 +1583,7 @@ unsafe fn HUFv06_decodeStreamX4(
             HUFv06_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
     }
-    while BITv06_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p <= pEnd.sub(2)
-    {
+    while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p <= pEnd.sub(2) {
         p = p.offset(
             HUFv06_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
@@ -2399,17 +2379,15 @@ unsafe fn ZSTDv06_getcBlockSize(
     cSize = (*in_0.add(2) as core::ffi::c_int
         + ((*in_0.add(1) as core::ffi::c_int) << 8)
         + ((*in_0 as core::ffi::c_int & 7) << 16)) as u32;
-    (*bpPtr).origSize = if (*bpPtr).blockType as core::ffi::c_uint
-        == bt_rle as core::ffi::c_int as core::ffi::c_uint
-    {
+    (*bpPtr).origSize = if (*bpPtr).blockType == bt_rle {
         cSize
     } else {
         0
     };
-    if (*bpPtr).blockType as core::ffi::c_uint == bt_end as core::ffi::c_int as core::ffi::c_uint {
+    if (*bpPtr).blockType == bt_end {
         return 0;
     }
-    if (*bpPtr).blockType as core::ffi::c_uint == bt_rle as core::ffi::c_int as core::ffi::c_uint {
+    if (*bpPtr).blockType == bt_rle {
         return 1;
     }
     cSize as size_t
@@ -3167,9 +3145,7 @@ unsafe fn ZSTDv06_decompressSequences(
         FSEv06_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
         FSEv06_initDState(&mut seqState.stateOffb, &mut seqState.DStream, DTableOffb);
         FSEv06_initDState(&mut seqState.stateML, &mut seqState.DStream, DTableML);
-        while BITv06_reloadDStream(&mut seqState.DStream) as core::ffi::c_uint
-            <= BITv06_DStream_completed as core::ffi::c_int as core::ffi::c_uint
-            && nbSeq != 0
+        while BITv06_reloadDStream(&mut seqState.DStream) <= BITv06_DStream_completed && nbSeq != 0
         {
             nbSeq -= 1;
             ZSTDv06_decodeSequence(&mut sequence, &mut seqState);
@@ -3457,8 +3433,7 @@ unsafe fn ZSTDv06_decompressContinue(
             if ERR_isError(cBlockSize) {
                 return cBlockSize;
             }
-            if bp.blockType as core::ffi::c_uint == bt_end as core::ffi::c_int as core::ffi::c_uint
-            {
+            if bp.blockType == bt_end {
                 (*dctx).expected = 0;
                 (*dctx).stage = ZSTDds_getFrameHeaderSize;
             } else {
