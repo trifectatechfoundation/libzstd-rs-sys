@@ -82,14 +82,6 @@ use crate::lib::compress::zstd_compress_internal::{
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
-const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
-    seq: core::ptr::null_mut(),
-    pos: 0,
-    posInSequence: 0,
-    size: 0,
-    capacity: 0,
-};
-
 #[inline]
 fn ZSTD_LLcode(litLength: u32) -> u32 {
     static LL_Code: [u8; 64] = [
@@ -1918,7 +1910,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     optLdm.seqStore = if !(ms.ldmSeqStore).is_null() {
         *ms.ldmSeqStore
     } else {
-        kNullRawSeqStore
+        RawSeqStore_t::new()
     };
     optLdm.offset = 0;
     optLdm.startPosInBlock = optLdm.offset;

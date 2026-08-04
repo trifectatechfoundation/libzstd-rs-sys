@@ -193,14 +193,6 @@ const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 
-const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
-    seq: core::ptr::null_mut(),
-    pos: 0,
-    posInSequence: 0,
-    size: 0,
-    capacity: 0,
-};
-
 const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 
@@ -454,7 +446,7 @@ unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
 }
 
 fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
-    let mut seq = kNullRawSeqStore;
+    let mut seq = RawSeqStore_t::new();
     seq.seq = buffer.start as *mut rawSeq;
     seq.capacity = (buffer.capacity).wrapping_div(size_of::<rawSeq>());
     seq
@@ -472,7 +464,7 @@ fn seqToBuffer(seq: RawSeqStore_t) -> Buffer {
 
 unsafe fn ZSTDMT_getSeq(seqPool: *mut ZSTDMT_seqPool) -> RawSeqStore_t {
     if (*seqPool).bufferSize == 0 {
-        return kNullRawSeqStore;
+        return RawSeqStore_t::new();
     }
     bufferToSeq(ZSTDMT_getBuffer(seqPool))
 }
