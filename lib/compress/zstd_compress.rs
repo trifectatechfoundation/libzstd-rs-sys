@@ -6657,12 +6657,12 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 
 /// Returns the raw offset represented by the combination of offBase, ll0, and repcode history.
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
-unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: *const u32, offBase: u32, ll0: u32) -> u32 {
+unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: &[u32; 3], offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
-        return (*rep).wrapping_sub(1);
+        return rep[0].wrapping_sub(1);
     }
-    *rep.offset(adjustedRepCode as isize)
+    rep[adjustedRepCode as usize]
 }
 
 /// ZSTD_seqStore_resolveOffCodes() reconciles any possible divergences in offset history that
@@ -6675,8 +6675,8 @@ unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: *const u32, offBase: u32, ll0: u32
 /// Note: this function assumes seq->offBase respects the following numbering scheme:
 /// 0: invalid, 1-3: repcode 1-3, 4+: real_offset+3
 unsafe fn ZSTD_seqStore_resolveOffCodes(
-    dRepcodes: *mut Repcodes_t,
-    cRepcodes: *mut Repcodes_t,
+    dRepcodes: &mut Repcodes_t,
+    cRepcodes: &mut Repcodes_t,
     seqStore: *const SeqStore_t,
     nbSeq: u32,
 ) {
@@ -6691,16 +6691,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
             as core::ffi::c_int as u32;
         let offBase = (*seq).offBase;
         if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
-            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(
-                ((*dRepcodes).rep).as_mut_ptr() as *const u32,
-                offBase,
-                ll0,
-            );
-            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(
-                ((*cRepcodes).rep).as_mut_ptr() as *const u32,
-                offBase,
-                ll0,
-            );
+            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(&mut dRepcodes.rep, offBase, ll0);
+            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(&mut cRepcodes.rep, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
@@ -6710,8 +6702,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
         // Decompression repcode history may use modified seq->offset value taken from compression repcode history.
-        ZSTD_updateRep(((*dRepcodes).rep).as_mut_ptr(), (*seq).offBase, ll0);
-        ZSTD_updateRep(((*cRepcodes).rep).as_mut_ptr(), offBase, ll0);
+        ZSTD_updateRep((dRepcodes.rep).as_mut_ptr(), (*seq).offBase, ll0);
+        ZSTD_updateRep((cRepcodes.rep).as_mut_ptr(), offBase, ll0);
     }
 }
 
@@ -6724,8 +6716,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
 unsafe fn ZSTD_compressSeqStore_singleBlock(
     zc: *mut ZSTD_CCtx,
     seqStore: *const SeqStore_t,
-    dRep: *mut Repcodes_t,
-    cRep: *mut Repcodes_t,
+    dRep: &mut Repcodes_t,
+    cRep: &mut Repcodes_t,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
