@@ -4858,8 +4858,8 @@ fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
 unsafe fn ZSTD_buildSequencesStatistics(
     seqStorePtr: *const SeqStore_t,
     nbSeq: size_t,
-    prevEntropy: *const ZSTD_fseCTables_t,
-    nextEntropy: *mut ZSTD_fseCTables_t,
+    prevEntropy: &ZSTD_fseCTables_t,
+    nextEntropy: &mut ZSTD_fseCTables_t,
     dst: *mut u8,
     dstEnd: *const u8,
     strategy: ZSTD_strategy,
@@ -4870,9 +4870,9 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
-    let CTable_LitLength = ((*nextEntropy).litlengthCTable).as_mut_ptr();
-    let CTable_OffsetBits = ((*nextEntropy).offcodeCTable).as_mut_ptr();
-    let CTable_MatchLength = ((*nextEntropy).matchlengthCTable).as_mut_ptr();
+    let CTable_LitLength = (nextEntropy.litlengthCTable).as_mut_ptr();
+    let CTable_OffsetBits = (nextEntropy.offcodeCTable).as_mut_ptr();
+    let CTable_MatchLength = (nextEntropy.matchlengthCTable).as_mut_ptr();
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
     let llCodeTable: *const u8 = (*seqStorePtr).llCode;
     let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
@@ -4899,15 +4899,15 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    (*nextEntropy).litlength_repeatMode = (*prevEntropy).litlength_repeatMode;
+    nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
-        &mut (*nextEntropy).litlength_repeatMode,
+        &mut nextEntropy.litlength_repeatMode,
         countWorkspace,
         max,
         mostFrequent,
         nbSeq,
         LLFSELog,
-        ((*prevEntropy).litlengthCTable).as_ptr(),
+        (prevEntropy.litlengthCTable).as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
         ZSTD_defaultAllowed,
@@ -4926,7 +4926,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
         MaxLL,
-        ((*prevEntropy).litlengthCTable).as_ptr(),
+        (prevEntropy.litlengthCTable).as_ptr(),
         size_of::<[FSE_CTable; 329]>(),
         entropyWorkspace,
         entropyWkspSize,
@@ -4956,15 +4956,15 @@ unsafe fn ZSTD_buildSequencesStatistics(
     } else {
         ZSTD_defaultDisallowed as core::ffi::c_int
     }) as ZSTD_DefaultPolicy_e;
-    (*nextEntropy).offcode_repeatMode = (*prevEntropy).offcode_repeatMode;
+    nextEntropy.offcode_repeatMode = prevEntropy.offcode_repeatMode;
     stats.Offtype = ZSTD_selectEncodingType(
-        &mut (*nextEntropy).offcode_repeatMode,
+        &mut nextEntropy.offcode_repeatMode,
         countWorkspace,
         max_0,
         mostFrequent_0,
         nbSeq,
         OffFSELog,
-        ((*prevEntropy).offcodeCTable).as_ptr(),
+        (prevEntropy.offcodeCTable).as_ptr(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
         defaultPolicy,
@@ -4983,7 +4983,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
         DefaultMaxOff,
-        ((*prevEntropy).offcodeCTable).as_ptr(),
+        (prevEntropy.offcodeCTable).as_ptr(),
         size_of::<[FSE_CTable; 193]>(),
         entropyWorkspace,
         entropyWkspSize,
@@ -5007,15 +5007,15 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    (*nextEntropy).matchlength_repeatMode = (*prevEntropy).matchlength_repeatMode;
+    nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
-        &mut (*nextEntropy).matchlength_repeatMode,
+        &mut nextEntropy.matchlength_repeatMode,
         countWorkspace,
         max_1,
         mostFrequent_1,
         nbSeq,
         MLFSELog,
-        ((*prevEntropy).matchlengthCTable).as_ptr(),
+        (prevEntropy.matchlengthCTable).as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
         ZSTD_defaultAllowed,
@@ -5034,7 +5034,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
         MaxML,
-        ((*prevEntropy).matchlengthCTable).as_ptr(),
+        (prevEntropy.matchlengthCTable).as_ptr(),
         size_of::<[FSE_CTable; 363]>(),
         entropyWorkspace,
         entropyWkspSize,
