@@ -97,7 +97,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     end: *const core::ffi::c_void,
     dtlm: ZSTD_dictTableLoadMethod_e,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
     let hBitsL = ((*cParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let mls = (*cParams).minMatch;
@@ -141,7 +141,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     end: *const core::ffi::c_void,
     dtlm: ZSTD_dictTableLoadMethod_e,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
     let mls = (*cParams).minMatch;
@@ -201,7 +201,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     srcSize: size_t,
     mls: u32,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
     let hashSmall = ms.chainTable;
@@ -567,7 +567,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     mls: u32,
 ) -> size_t {
     let mut current_block: u64;
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
     let hashSmall = ms.chainTable;
@@ -1129,7 +1129,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     srcSize: size_t,
     mls: u32,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
     let hashSmall = ms.chainTable;

@@ -87,7 +87,7 @@ pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const kLazySkippingStep: core::ffi::c_int = 8;
 
 unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hashLog = (*cParams).hashLog;
 
@@ -354,7 +354,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hashLog = (*cParams).hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
@@ -849,7 +849,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
 }
 
 pub unsafe fn ZSTD_insertAndFindFirstIndex(ms: &mut ZSTD_MatchState_t, ip: *const u8) -> u32 {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, ms.cParams.minMatch, 0)
 }
 
@@ -863,7 +863,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let chainTable = ms.chainTable;
     let chainSize = (1 << (*cParams).chainLog) as u32;
     let chainMask = chainSize.wrapping_sub(1);
@@ -1383,7 +1383,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     let tagTable = ms.tagTable;
     let hashCache = (ms.hashCache).as_mut_ptr();
     let hashLog = ms.rowHashLog;
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
     let dictLimit = ms.window.dictLimit;

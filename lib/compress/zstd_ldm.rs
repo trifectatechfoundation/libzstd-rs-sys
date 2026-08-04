@@ -1378,7 +1378,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let minMatch = (*cParams).minMatch;
     let blockCompressor = ZSTD_selectBlockCompressor(
         (*cParams).strategy,

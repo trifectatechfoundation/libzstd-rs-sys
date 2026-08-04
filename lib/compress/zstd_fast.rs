@@ -99,7 +99,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     end: *const core::ffi::c_void,
     dtlm: ZSTD_dictTableLoadMethod_e,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hBits = ((*cParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let mls = (*cParams).minMatch;
@@ -137,7 +137,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
     end: *const core::ffi::c_void,
     dtlm: ZSTD_dictTableLoadMethod_e,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hBits = (*cParams).hashLog;
     let mls = (*cParams).minMatch;
@@ -289,7 +289,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     useCmov: bool,
 ) -> size_t {
     let mut current_block: u64;
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hlog = (*cParams).hashLog;
     let stepSize = ((*cParams).targetLength)
@@ -701,7 +701,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
     mls: u32,
     hasStep: u32,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hlog = (*cParams).hashLog;
     // support stepSize of 0
@@ -1053,7 +1053,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
     hasStep: u32,
 ) -> size_t {
     let mut current_block: u64;
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hlog = (*cParams).hashLog;
     // support stepSize of 0
