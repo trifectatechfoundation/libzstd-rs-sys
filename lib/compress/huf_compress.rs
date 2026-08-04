@@ -1114,9 +1114,9 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
 }
 
 #[inline(always)]
-unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
-    (*bitC).bitContainer[1] = 0;
-    (*bitC).bitPos[1] = 0;
+unsafe fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
+    bitC.bitContainer[1] = 0;
+    bitC.bitPos[1] = 0;
 }
 
 /// Merges the bit container @ index 1 into the bit container @ index 0
