@@ -6691,8 +6691,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
             as core::ffi::c_int as u32;
         let offBase = (*seq).offBase;
         if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
-            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(&mut dRepcodes.rep, offBase, ll0);
-            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(&mut cRepcodes.rep, offBase, ll0);
+            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(&dRepcodes.rep, offBase, ll0);
+            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(&cRepcodes.rep, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
