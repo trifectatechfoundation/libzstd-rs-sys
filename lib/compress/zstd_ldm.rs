@@ -910,28 +910,28 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
 }
 
 unsafe fn ZSTD_ldm_generateSequences_internal(
-    ldmState: *mut ldmState_t,
+    ldmState: &mut ldmState_t,
     rawSeqStore: *mut RawSeqStore_t,
-    params: *const ldmParams_t,
+    params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
     // LDM parameters
-    let extDict = ZSTD_window_hasExtDict((*ldmState).window);
-    let minMatchLength = (*params).minMatchLength;
-    let entsPerBucket = 1 << (*params).bucketSizeLog;
-    let hBits = ((*params).hashLog).wrapping_sub((*params).bucketSizeLog);
+    let extDict = ZSTD_window_hasExtDict(ldmState.window);
+    let minMatchLength = params.minMatchLength;
+    let entsPerBucket = 1 << params.bucketSizeLog;
+    let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
 
     // Prefix and extDict parameters
-    let dictLimit = (*ldmState).window.dictLimit;
+    let dictLimit = ldmState.window.dictLimit;
     let lowestIndex = if extDict {
-        (*ldmState).window.lowLimit
+        ldmState.window.lowLimit
     } else {
         dictLimit
     };
-    let base = (*ldmState).window.base;
+    let base = ldmState.window.base;
     let dictBase = if extDict {
-        (*ldmState).window.dictBase
+        ldmState.window.dictBase
     } else {
         core::ptr::null()
     };
@@ -963,8 +963,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
 
     // Arrays for staged-processing
-    let splits = ((*ldmState).splitIndices).as_mut_ptr();
-    let candidates = ((*ldmState).matchCandidates).as_mut_ptr();
+    let splits = (ldmState.splitIndices).as_mut_ptr();
+    let candidates = (ldmState.matchCandidates).as_mut_ptr();
     let mut numSplits: core::ffi::c_uint = 0;
 
     if srcSize < minMatchLength as size_t {
@@ -1002,7 +1002,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             (*candidates.offset(n as isize)).hash = hash;
             (*candidates.offset(n as isize)).checksum = (xxhash >> 32) as u32;
             (*candidates.offset(n as isize)).bucket =
-                ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
+                ZSTD_ldm_getBucket(ldmState, hash as size_t, params.bucketSizeLog);
         }
 
         for n in 0..numSplits {
@@ -1029,12 +1029,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // the previous one, we merely register it in the hash table and
             // move on
             if split_0 < anchor {
-                ZSTD_ldm_insertEntry(
-                    ldmState,
-                    hash_0 as size_t,
-                    newEntry,
-                    (*params).bucketSizeLog,
-                );
+                ZSTD_ldm_insertEntry(ldmState, hash_0 as size_t, newEntry, params.bucketSizeLog);
             } else {
                 let mut current_block_30: u64;
                 cur = bucket;
@@ -1114,7 +1109,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         ldmState,
                         hash_0 as size_t,
                         newEntry,
-                        (*params).bucketSizeLog,
+                        params.bucketSizeLog,
                     );
                 } else {
                     // Match found
@@ -1140,7 +1135,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         ldmState,
                         hash_0 as size_t,
                         newEntry,
-                        (*params).bucketSizeLog,
+                        params.bucketSizeLog,
                     );
 
                     anchor = split_0.add(forwardMatchLength);
