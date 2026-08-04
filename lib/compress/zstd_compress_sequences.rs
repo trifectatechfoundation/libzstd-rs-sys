@@ -166,7 +166,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
     let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
     let mut cost = 0 as size_t;
     for s in 0..max + 1 {
-        let normAcc = if *norm.offset(s as isize) as core::ffi::c_int != -(1) {
+        let normAcc = if *norm.offset(s as isize) as core::ffi::c_int != -1 {
             *norm.offset(s as isize) as core::ffi::c_uint
         } else {
             1
@@ -209,7 +209,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             let mult =
                 (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
             let baseLog = 3;
-            let dynamicFse_nbSeq_min = (((1) << defaultNormLog) * mult) >> baseLog;
+            let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
             if *repeatMode as core::ffi::c_uint
                 == FSE_repeat_valid as core::ffi::c_int as core::ffi::c_uint
                 && nbSeq < staticFse_nbSeq_max

@@ -344,8 +344,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> size_t {
     let header = (if writeEntropy { 200 } else { 0 }) as size_t;
     let lhSize = (3
-        + (litSize >= (((1) << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
-        + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
+        + (litSize >= ((1 << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
+        + (litSize >= ((16 * (1 << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
         as size_t;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
@@ -433,8 +433,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
     if lhSize
-        < (3 + (cLitSize >= ((1) << 10) as size_t) as core::ffi::c_int
-            + (cLitSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t
+        < (3 + (cLitSize >= (1 << 10) as size_t) as core::ffi::c_int
+            + (cLitSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t
     {
         return ZSTD_noCompressLiterals(
             dst,
@@ -457,7 +457,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         4 => {
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
-                .wrapping_add(((2) << 2) as core::ffi::c_uint)
+                .wrapping_add((2 << 2) as core::ffi::c_uint)
                 .wrapping_add((litSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
@@ -465,7 +465,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         5 => {
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
-                .wrapping_add(((3) << 2) as core::ffi::c_uint)
+                .wrapping_add((3 << 2) as core::ffi::c_uint)
                 .wrapping_add((litSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);

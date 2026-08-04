@@ -70,7 +70,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                ((set_basic as core::ffi::c_int as u32).wrapping_add(((1) << 2) as u32) as size_t)
+                ((set_basic as core::ffi::c_int as u32).wrapping_add((1 << 2) as u32) as size_t)
                     .wrapping_add(srcSize << 4) as u16,
             );
         }
@@ -78,7 +78,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                ((set_basic as core::ffi::c_int as u32).wrapping_add(((3) << 2) as u32) as size_t)
+                ((set_basic as core::ffi::c_int as u32).wrapping_add((3 << 2) as u32) as size_t)
                     .wrapping_add(srcSize << 4) as u32,
             );
         }
@@ -130,7 +130,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                ((set_rle as core::ffi::c_int as u32).wrapping_add(((1) << 2) as u32) as size_t)
+                ((set_rle as core::ffi::c_int as u32).wrapping_add((1 << 2) as u32) as size_t)
                     .wrapping_add(srcSize << 4) as u16,
             );
         }
@@ -138,7 +138,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                ((set_rle as core::ffi::c_int as u32).wrapping_add(((3) << 2) as u32) as size_t)
+                ((set_rle as core::ffi::c_int as u32).wrapping_add((3 << 2) as u32) as size_t)
                     .wrapping_add(srcSize << 4) as u32,
             );
         }
@@ -163,7 +163,7 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
     {
         6
     } else {
-        (8) << shift
+        8 << shift
     }
 }
 
@@ -182,8 +182,8 @@ pub unsafe fn ZSTD_compressLiterals(
     bmi2: core::ffi::c_int,
 ) -> size_t {
     let lhSize = (3
-        + (srcSize >= ((1) << 10) as size_t) as core::ffi::c_int
-        + (srcSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
+        + (srcSize >= (1 << 10) as size_t) as core::ffi::c_int
+        + (srcSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
     let ostart = dst as *mut u8;
     let mut singleStream = (srcSize < 256) as core::ffi::c_int as u32;
     let mut hType = set_compressed;
@@ -336,7 +336,7 @@ pub unsafe fn ZSTD_compressLiterals(
         4 => {
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
-                .wrapping_add(((2) << 2) as core::ffi::c_uint)
+                .wrapping_add((2 << 2) as core::ffi::c_uint)
                 .wrapping_add((srcSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
@@ -344,7 +344,7 @@ pub unsafe fn ZSTD_compressLiterals(
         5 => {
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
-                .wrapping_add(((3) << 2) as core::ffi::c_uint)
+                .wrapping_add((3 << 2) as core::ffi::c_uint)
                 .wrapping_add((srcSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);

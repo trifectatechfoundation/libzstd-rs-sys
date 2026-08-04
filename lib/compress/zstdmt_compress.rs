@@ -271,7 +271,7 @@ fn ZSTD_window_init(window: &mut ZSTD_window_t) {
     window.nbOverflowCorrections = 0;
 }
 
-const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
+const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
 const g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
@@ -326,7 +326,7 @@ unsafe fn ZSTDMT_createBufferPool(
         ZSTDMT_freeBufferPool(bufPool);
         return core::ptr::null_mut();
     }
-    (*bufPool).bufferSize = (64 * ((1) << 10)) as size_t;
+    (*bufPool).bufferSize = (64 * (1 << 10)) as size_t;
     (*bufPool).totalBuffers = maxNbBuffers;
     (*bufPool).nbBuffers = 0;
     (*bufPool).cMem = cMem;
@@ -640,7 +640,7 @@ unsafe fn ZSTDMT_serialState_reset(
         let bucketLog = (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
         let prevBucketLog = (serialState.params.ldmParams.hashLog)
             .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
-        let numBuckets = (1) << bucketLog;
+        let numBuckets = 1 << bucketLog;
         // Size the seq pool tables
         ZSTDMT_setNbSeq(seqPool, ZSTD_ldm_getMaxNbSeq(params.ldmParams, jobSize));
         // Reset the window
@@ -1162,7 +1162,7 @@ const RSYNC_LENGTH: core::ffi::c_int = 32;
 /// If this is shrunk < ZSTD_BLOCKSIZELOG_MIN then
 /// ZSTD_COMPRESSBOUND() will need to be updated.
 const RSYNC_MIN_BLOCK_LOG: core::ffi::c_int = ZSTD_BLOCKSIZELOG_MAX;
-const RSYNC_MIN_BLOCK_SIZE: core::ffi::c_int = (1) << RSYNC_MIN_BLOCK_LOG;
+const RSYNC_MIN_BLOCK_SIZE: core::ffi::c_int = 1 << RSYNC_MIN_BLOCK_LOG;
 
 unsafe fn ZSTDMT_freeJobsTable(
     jobTable: *mut ZSTDMT_jobDescription,
@@ -1199,7 +1199,7 @@ unsafe fn ZSTDMT_createJobsTable(
     cMem: ZSTD_customMem,
 ) -> *mut ZSTDMT_jobDescription {
     let nbJobsLog2 = (ZSTD_highbit32(*nbJobsPtr)).wrapping_add(1);
-    let nbJobs = ((1) << nbJobsLog2) as u32;
+    let nbJobs = (1 << nbJobsLog2) as u32;
     let mut jobNb: u32 = 0;
 
     let jobTable = ZSTD_customCalloc(
@@ -1620,7 +1620,7 @@ unsafe fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
     if ovLog == 0 {
         0
     } else {
-        (1) << ovLog
+        1 << ovLog
     }
 }
 
@@ -1652,9 +1652,9 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         }) as size_t
     {
         params.jobSize = (if MEM_32bits() {
-            512 * ((1) << 20)
+            512 * (1 << 20)
         } else {
-            1024 * ((1) << 20)
+            1024 * (1 << 20)
         }) as size_t;
     }
 
@@ -1689,7 +1689,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     (*mtctx).targetPrefixSize = ZSTDMT_computeOverlapSize(&params);
     (*mtctx).targetSectionSize = params.jobSize;
     if (*mtctx).targetSectionSize == 0 {
-        (*mtctx).targetSectionSize = ((1) << ZSTDMT_computeTargetJobLog(&params)) as size_t;
+        (*mtctx).targetSectionSize = (1 << ZSTDMT_computeTargetJobLog(&params)) as size_t;
     }
 
     if params.rsyncable != 0 {
@@ -1712,7 +1712,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
 
     // If ldm is enabled we need windowSize space.
     let windowSize = (if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-        (1) << (*mtctx).params.cParams.windowLog
+        1 << (*mtctx).params.cParams.windowLog
     } else {
         0
     }) as size_t;

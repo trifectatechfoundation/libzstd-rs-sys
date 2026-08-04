@@ -93,7 +93,7 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
 
     let bt = ms.chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
-    let btMask = (((1) << btLog) - 1) as u32;
+    let btMask = ((1 << btLog) - 1) as u32;
 
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
@@ -134,7 +134,7 @@ unsafe fn ZSTD_insertDUBT1(
     let cParams: *const ZSTD_compressionParameters = &(*ms).cParams;
     let bt = (*ms).chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
-    let btMask = (((1) << btLog) - 1) as u32;
+    let btMask = ((1 << btLog) - 1) as u32;
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
     let base = (*ms).window.base;
@@ -158,7 +158,7 @@ unsafe fn ZSTD_insertDUBT1(
     let mut matchIndex = *smallerPtr; // this candidate is unsorted: next sorted candidate is reached through *smallerPtr, while *largerPtr contains previous unsorted candidate (which is already saved and can be overwritten)
     let mut dummy32: u32 = 0; // to be nullified at the end
     let windowValid = (*ms).window.lowLimit;
-    let maxDistance = (1) << (*cParams).windowLog;
+    let maxDistance = 1 << (*cParams).windowLog;
     let windowLow = if curr.wrapping_sub(windowValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
     } else {
@@ -276,7 +276,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
 
     let dictBt = (*dms).chainTable;
     let btLog = ((*dmsCParams).chainLog).wrapping_sub(1);
-    let btMask = (((1) << btLog) - 1) as u32;
+    let btMask = ((1 << btLog) - 1) as u32;
     let btLow = if btMask >= dictHighLimit.wrapping_sub(dictLowLimit) {
         dictLowLimit
     } else {
@@ -367,7 +367,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     let bt = ms.chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
-    let btMask = (((1) << btLog) - 1) as u32;
+    let btMask = ((1 << btLog) - 1) as u32;
     let btLow = if btMask >= curr {
         0
     } else {
@@ -553,16 +553,16 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
     let hashTable = ms.hashTable;
     let chainTable = ms.chainTable;
-    let chainSize = ((1) << ms.cParams.chainLog) as u32;
+    let chainSize = (1 << ms.cParams.chainLog) as u32;
     let idx = ms.nextToUpdate;
     let minChain = if chainSize < target.wrapping_sub(idx) {
         target.wrapping_sub(chainSize)
     } else {
         idx
     };
-    let bucketSize = ((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
     let cacheSize = bucketSize.wrapping_sub(1);
-    let chainAttempts = (((1) << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
+    let chainAttempts = ((1 << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
     let chainLimit = chainAttempts.min(255);
 
     // We know the hashtable is oversized by a factor of `bucketSize`.
@@ -571,8 +571,8 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // chaintable.
     let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
     let tmpHashTable = hashTable;
-    let tmpChainTable = hashTable.offset(((1) << hashLog) as isize);
-    let tmpChainSize = ((((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) as u32) << hashLog;
+    let tmpChainTable = hashTable.offset((1 << hashLog) as isize);
+    let tmpChainSize = (((1 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) as u32) << hashLog;
     let tmpMinChain = if tmpChainSize < target {
         target.wrapping_sub(tmpChainSize)
     } else {
@@ -597,7 +597,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // sort chains into DDSS chain table
     let mut chainPos = 0u32;
     hashIdx = 0;
-    while hashIdx < (1) << hashLog {
+    while hashIdx < 1 << hashLog {
         let mut count: u32 = 0;
         let mut countBeyondMinChain = 0u32;
         let mut i = *tmpHashTable.offset(hashIdx as isize);
@@ -652,7 +652,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     }
 
     // move chain pointers into the last entry of each hash bucket
-    hashIdx = ((1) << hashLog) as u32;
+    hashIdx = (1 << hashLog) as u32;
     while hashIdx != 0 {
         hashIdx = hashIdx.wrapping_sub(1);
         let bucketIdx = hashIdx << ZSTD_LAZY_DDSS_BUCKET_LOG;
@@ -709,7 +709,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsEnd = (*dms).window.nextSrc;
     let ddsSize = ddsEnd.offset_from(ddsBase) as core::ffi::c_long as u32;
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
-    let bucketSize = ((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
     let mut ddsAttempt: u32 = 0;
     let mut matchIndex: u32 = 0;
@@ -832,7 +832,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     let hashTable = ms.hashTable;
     let hashLog = (*cParams).hashLog;
     let chainTable = ms.chainTable;
-    let chainMask = (((1) << (*cParams).chainLog) - 1) as u32;
+    let chainMask = ((1 << (*cParams).chainLog) - 1) as u32;
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
 
@@ -871,7 +871,7 @@ unsafe fn ZSTD_HcFindBestMatch(
 ) -> size_t {
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let chainTable = ms.chainTable;
-    let chainSize = ((1) << (*cParams).chainLog) as u32;
+    let chainSize = (1 << (*cParams).chainLog) as u32;
     let chainMask = chainSize.wrapping_sub(1);
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
@@ -879,7 +879,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     let prefixStart = base.offset(dictLimit as isize);
     let dictEnd = dictBase.offset(dictLimit as isize);
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let maxDistance = (1) << (*cParams).windowLog;
+    let maxDistance = 1 << (*cParams).windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
@@ -991,7 +991,7 @@ unsafe fn ZSTD_HcFindBestMatch(
         == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint
     {
         let dmsChainTable: *const u32 = (*dms).chainTable;
-        let dmsChainSize = ((1) << (*dms).cParams.chainLog) as u32;
+        let dmsChainSize = (1 << (*dms).cParams.chainLog) as u32;
         let dmsChainMask = dmsChainSize.wrapping_sub(1);
         let dmsLowestIndex = (*dms).window.dictLimit;
         let dmsBase = (*dms).window.base;
@@ -1413,7 +1413,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     let prefixStart = base.offset(dictLimit as isize);
     let dictEnd = dictBase.offset(dictLimit as isize);
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let maxDistance = (1) << (*cParams).windowLog;
+    let maxDistance = 1 << (*cParams).windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
@@ -1457,7 +1457,7 @@ unsafe fn ZSTD_RowFindBestMatch(
             prefetch_read_data(((*dms).hashTable).add(ddsIdx), Locality::L1);
         }
         ddsExtraAttempts = if (*cParams).searchLog > rowLog {
-            (1) << ((*cParams).searchLog).wrapping_sub(rowLog)
+            1 << ((*cParams).searchLog).wrapping_sub(rowLog)
         } else {
             0
         };

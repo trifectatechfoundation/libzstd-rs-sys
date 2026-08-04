@@ -227,7 +227,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     let mut curr: u32 = 0;
 
     // how many positions to search before increasing step size
-    let kStepIncr = ((1) << kSearchStrength) as size_t;
+    let kStepIncr = (1 << kSearchStrength) as size_t;
     // the position at which to increment the step size if no match is found
     let mut nextStep = core::ptr::null::<u8>();
     let mut step: size_t = 0; // the current step size
