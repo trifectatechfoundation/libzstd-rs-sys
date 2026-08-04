@@ -797,57 +797,6 @@ unsafe fn ZSTD_window_correctOverflow(
     correction
 }
 
-/// Updates lowLimit so that:
-/// (srcEnd - base) - lowLimit == maxDist + loadedDictEnd
-///
-/// It ensures index is valid as long as index >= lowLimit.
-/// This must be called before a block compression call.
-///
-/// loadedDictEnd is only defined if a dictionary is in use for current compression.
-/// As the name implies, loadedDictEnd represents the index at end of dictionary.
-/// The value lies within context's referential, it can be directly compared to blockEndIdx.
-///
-/// If loadedDictEndPtr is NULL, no dictionary is in use, and we use loadedDictEnd == 0.
-/// If loadedDictEndPtr is not NULL, we set it to zero after updating lowLimit.
-/// This is because dictionaries are allowed to be referenced fully as long as the last byte
-/// of the dictionary is in the window. Once input has progressed beyond window size,
-/// dictionary cannot be referenced anymore.
-///
-/// In normal dict mode, the dictionary lies between lowLimit and dictLimit.
-/// In dictMatchState mode, lowLimit and dictLimit are the same, and the dictionary is below them.
-/// forceWindow and dictMatchState are therefore incompatible.
-#[inline]
-unsafe fn ZSTD_window_enforceMaxDist(
-    window: *mut ZSTD_window_t,
-    blockEnd: *const core::ffi::c_void,
-    maxDist: u32,
-    loadedDictEndPtr: *mut u32,
-    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
-) {
-    let blockEndIdx =
-        (blockEnd as *const u8).wrapping_offset_from((*window).base) as core::ffi::c_long as u32;
-    let loadedDictEnd = if !loadedDictEndPtr.is_null() {
-        *loadedDictEndPtr
-    } else {
-        0
-    };
-    if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
-        let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
-        if (*window).lowLimit < newLowLimit {
-            (*window).lowLimit = newLowLimit;
-        }
-        if (*window).dictLimit < (*window).lowLimit {
-            (*window).dictLimit = (*window).lowLimit;
-        }
-        if !loadedDictEndPtr.is_null() {
-            *loadedDictEndPtr = 0;
-        }
-        if !dictMatchStatePtr.is_null() {
-            *dictMatchStatePtr = core::ptr::null();
-        }
-    }
-}
-
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
 /// progresses beyond window size.
 /// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
@@ -933,7 +882,7 @@ use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength,
     ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
     ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
