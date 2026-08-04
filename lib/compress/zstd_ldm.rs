@@ -1186,7 +1186,7 @@ unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: 
 
 pub unsafe fn ZSTD_ldm_generateSequences(
     ldmState: &mut ldmState_t,
-    sequences: *mut RawSeqStore_t,
+    sequences: &mut RawSeqStore_t,
     params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1201,7 +1201,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let mut leftoverSize = 0;
 
     chunk = 0;
-    while chunk < nbChunks && (*sequences).size < (*sequences).capacity {
+    while chunk < nbChunks && sequences.size < sequences.capacity {
         let chunkStart = istart.add(chunk * kMaxChunkSize);
         let remaining = iend.offset_from_unsigned(chunkStart);
         let chunkEnd = if remaining < kMaxChunkSize {
@@ -1211,7 +1211,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         };
         let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
         let mut newLeftoverSize: size_t = 0;
-        let prevSize = (*sequences).size;
+        let prevSize = sequences.size;
 
         // 1. Perform overflow correction if necessary.
         if ZSTD_window_needOverflowCorrection(
@@ -1271,8 +1271,8 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         //    newly generated sequence, or add the `newLeftoverSize` if none are
         //    generated.
         // Prepend the leftover literals from the last call
-        if prevSize < (*sequences).size {
-            let fresh5 = &mut (*((*sequences).seq).add(prevSize)).litLength;
+        if prevSize < sequences.size {
+            let fresh5 = &mut (*(sequences.seq).add(prevSize)).litLength;
             *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
             leftoverSize = newLeftoverSize;
         } else {
