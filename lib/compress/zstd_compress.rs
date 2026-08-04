@@ -8020,8 +8020,8 @@ pub unsafe fn ZSTD_loadCEntropy(
 unsafe fn ZSTD_loadZstdDictionary(
     bs: *mut ZSTD_compressedBlockState_t,
     ms: &mut ZSTD_MatchState_t,
-    ws: *mut ZSTD_cwksp,
-    params: *const ZSTD_CCtx_params,
+    ws: &mut ZSTD_cwksp,
+    params: &ZSTD_CCtx_params,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
     dtlm: ZSTD_dictTableLoadMethod_e,
@@ -8033,7 +8033,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     let mut dictID: size_t = 0;
     let mut eSize: size_t = 0;
 
-    dictID = (if (*params).fParams.noDictIDFlag != 0 {
+    dictID = (if params.fParams.noDictIDFlag != 0 {
         0
     } else {
         MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void)
