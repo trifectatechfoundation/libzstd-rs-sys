@@ -291,14 +291,13 @@ pub unsafe fn HUF_writeCTable_wksp(
     }
 
     /* convert to weight */
-    *((*wksp).bitsToWeight).as_mut_ptr() = 0;
+    (*wksp).bitsToWeight[0] = 0;
     for n in 1..huffLog + 1 {
-        *((*wksp).bitsToWeight).as_mut_ptr().offset(n as isize) = (huffLog + 1 - n) as u8;
+        (*wksp).bitsToWeight[n as usize] = (huffLog + 1 - n) as u8;
     }
     for n in 0..maxSymbolValue {
-        *((*wksp).huffWeight).as_mut_ptr().offset(n as isize) = *((*wksp).bitsToWeight)
-            .as_mut_ptr()
-            .add(HUF_getNbBits(*ct.offset(n as isize)));
+        (*wksp).huffWeight[n as usize] =
+            (*wksp).bitsToWeight[HUF_getNbBits(*ct.offset(n as isize))];
     }
 
     /* attempt weights compression by FSE */
@@ -332,15 +331,12 @@ pub unsafe fn HUF_writeCTable_wksp(
         return Error::dstSize_tooSmall.to_error_code(); /* not enough space within dst buffer */
     }
     *op = ((128 as c_uint/*special case*/) + (maxSymbolValue - 1)) as u8;
-    *((*wksp).huffWeight)
-        .as_mut_ptr()
-        .offset(maxSymbolValue as isize) = 0;
+    (*wksp).huffWeight[maxSymbolValue as usize] = 0;
     let mut n = 0;
     while n < maxSymbolValue {
-        *op.offset(((n / 2) + 1) as isize) =
-            (((*((*wksp).huffWeight).as_mut_ptr().offset(n as isize) as c_int) << 4)
-                + *((*wksp).huffWeight).as_mut_ptr().offset((n + 1) as isize) as c_int)
-                as u8;
+        *op.offset(((n / 2) + 1) as isize) = ((((*wksp).huffWeight[n as usize] as c_int) << 4)
+            + (*wksp).huffWeight[(n + 1) as usize] as c_int)
+            as u8;
         n += 2;
     }
     (maxSymbolValue.div_ceil(2) + 1) as size_t
@@ -374,7 +370,7 @@ pub unsafe fn HUF_readCTable(
     if ERR_isError(readSize) {
         return readSize;
     }
-    *hasZeroWeights = (*rankVal.as_mut_ptr() > 0) as c_int as c_uint;
+    *hasZeroWeights = (rankVal[0] > 0) as c_int as c_uint;
 
     /* check result */
     if tableLog > HUF_TABLELOG_MAX as u32 {
@@ -393,8 +389,8 @@ pub unsafe fn HUF_readCTable(
         let mut nextRankStart = 0u32;
         for n in 1..tableLog + 1 {
             let curr = nextRankStart;
-            nextRankStart += *rankVal.as_mut_ptr().offset(n as isize) << (n - 1);
-            *rankVal.as_mut_ptr().offset(n as isize) = curr;
+            nextRankStart += rankVal[n as usize] << (n - 1);
+            rankVal[n as usize] = curr;
         }
     }
 
@@ -403,7 +399,7 @@ pub unsafe fn HUF_readCTable(
         let mut n_0: u32 = 0;
         n_0 = 0;
         while n_0 < nbSymbols {
-            let w = *huffWeight.as_mut_ptr().offset(n_0 as isize) as u32;
+            let w = huffWeight[n_0 as usize] as u32;
             HUF_setNbBits(
                 ct.offset(n_0 as isize),
                 ((tableLog + 1 - w) as u8 as c_int & -((w != 0) as c_int) as c_int) as size_t,
@@ -420,15 +416,13 @@ pub unsafe fn HUF_readCTable(
         {
             n_1 = 0;
             while n_1 < nbSymbols {
-                let fresh0 = &mut (*nbPerRank
-                    .as_mut_ptr()
-                    .add(HUF_getNbBits(*ct.offset(n_1 as isize))));
+                let fresh0 = &mut nbPerRank[HUF_getNbBits(*ct.offset(n_1 as isize))];
                 *fresh0 += 1;
                 n_1 += 1;
             }
         }
         /* determine stating value per rank */
-        *valPerRank.as_mut_ptr().offset((tableLog + 1) as isize) = 0; /* for w==0 */
+        valPerRank[(tableLog + 1) as usize] = 0; /* for w==0 */
 
         {
             let mut min = 0;
@@ -436,8 +430,8 @@ pub unsafe fn HUF_readCTable(
             n_2 = tableLog;
             while n_2 > 0 {
                 /* start at n=tablelog <-> w=1 */
-                *valPerRank.as_mut_ptr().offset(n_2 as isize) = min; /* get starting value within each rank */
-                min = (min as c_int + *nbPerRank.as_mut_ptr().offset(n_2 as isize) as c_int) as u16;
+                valPerRank[n_2 as usize] = min; /* get starting value within each rank */
+                min = (min as c_int + nbPerRank[n_2 as usize] as c_int) as u16;
                 min = (min as c_int >> 1) as u16;
                 n_2 -= 1;
             }
@@ -448,9 +442,7 @@ pub unsafe fn HUF_readCTable(
             let mut n_3: u32 = 0;
             n_3 = 0;
             while n_3 < nbSymbols {
-                let fresh1 = &mut (*valPerRank
-                    .as_mut_ptr()
-                    .add(HUF_getNbBits(*ct.offset(n_3 as isize))));
+                let fresh1 = &mut valPerRank[HUF_getNbBits(*ct.offset(n_3 as isize))];
                 let fresh2 = *fresh1;
                 *fresh1 += 1;
                 HUF_setValue(ct.offset(n_3 as isize), fresh2 as size_t);
@@ -550,9 +542,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                 for pos in (0..n + 1).rev() {
                     if ((*huffNode.offset(pos as isize)).nbBits as u32) < currentNbBits {
                         currentNbBits = (*huffNode.offset(pos as isize)).nbBits as u32; /* < targetNbBits */
-                        *rankLast
-                            .as_mut_ptr()
-                            .offset((targetNbBits - (currentNbBits)) as isize) = pos as u32;
+                        rankLast[(targetNbBits - (currentNbBits)) as usize] = pos as u32;
                     }
                 }
             }
@@ -564,8 +554,8 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                 let mut nBitsToDecrease = (ZSTD_highbit32(totalCost as u32)) + 1;
                 debug_assert!(nBitsToDecrease as usize <= (HUF_TABLELOG_MAX + 1));
                 while nBitsToDecrease > 1 {
-                    let highPos = *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize);
-                    let lowPos = *rankLast.as_mut_ptr().offset((nBitsToDecrease - 1) as isize);
+                    let highPos = rankLast[nBitsToDecrease as usize];
+                    let lowPos = rankLast[(nBitsToDecrease - 1) as usize];
                     /* Decrease highPos if no symbols of lowPos or if it is
                      * not cheaper to remove 2 lowPos than highPos.
                      */
@@ -588,7 +578,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
 
                 /* HUF_MAX_TABLELOG test just to please gcc 5+; but it should not be necessary */
                 while nBitsToDecrease <= HUF_TABLELOG_MAX as u32
-                    && *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) == noSymbol
+                    && rankLast[nBitsToDecrease as usize] == noSymbol
                 {
                     nBitsToDecrease += 1;
                 }
@@ -596,18 +586,16 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
 
                 /* Increase the number of bits to gain back half the rank cost. */
                 totalCost -= 1 << (nBitsToDecrease - 1);
-                let fresh3 = &mut (*huffNode
-                    .offset(*rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) as isize))
-                .nbBits;
+                let fresh3 =
+                    &mut (*huffNode.offset(rankLast[nBitsToDecrease as usize] as isize)).nbBits;
                 *fresh3 += 1;
 
                 /* Fix up the new rank.
                  * If the new rank was empty, this symbol is now its smallest.
                  * Otherwise, this symbol will be the largest in the new rank so no adjustment.
                  */
-                if *rankLast.as_mut_ptr().offset((nBitsToDecrease - 1) as isize) == noSymbol {
-                    *rankLast.as_mut_ptr().offset((nBitsToDecrease - 1) as isize) =
-                        *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize);
+                if rankLast[(nBitsToDecrease - 1) as usize] == noSymbol {
+                    rankLast[(nBitsToDecrease - 1) as usize] = rankLast[nBitsToDecrease as usize];
                 }
 
                 /* Fix up the old rank.
@@ -617,18 +605,16 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                  * the smallest node in the rank. If the previous position belongs to a different rank,
                  * then the rank is now empty.
                  */
-                if *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) == 0 {
+                if rankLast[nBitsToDecrease as usize] == 0 {
                     /* special case, reached largest symbol */
-                    *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) = noSymbol;
+                    rankLast[nBitsToDecrease as usize] = noSymbol;
                 } else {
-                    let fresh4 = &mut (*rankLast.as_mut_ptr().offset(nBitsToDecrease as isize));
+                    let fresh4 = &mut rankLast[nBitsToDecrease as usize];
                     *fresh4 -= 1;
-                    if (*huffNode
-                        .offset(*rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) as isize))
-                    .nbBits as u32
+                    if (*huffNode.offset(rankLast[nBitsToDecrease as usize] as isize)).nbBits as u32
                         != targetNbBits - (nBitsToDecrease)
                     {
-                        *rankLast.as_mut_ptr().offset(nBitsToDecrease as isize) = noSymbol;
+                        rankLast[nBitsToDecrease as usize] = noSymbol;
                         /* this rank is now empty */
                     }
                 }
@@ -645,21 +631,19 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                 /* special case : no rank 1 symbol (using targetNbBits-1);
                  * let's create one from largest rank 0 (using targetNbBits).
                  */
-                if *rankLast.as_mut_ptr().add(1) == noSymbol {
+                if rankLast[1] == noSymbol {
                     while (*huffNode.offset(n as isize)).nbBits as u32 == targetNbBits {
                         n -= 1;
                     }
                     let fresh5 = &mut (*huffNode.offset((n + 1) as isize)).nbBits;
                     *fresh5 -= 1;
                     debug_assert!(n >= 0);
-                    *rankLast.as_mut_ptr().add(1) = (n + 1) as u32;
+                    rankLast[1] = (n + 1) as u32;
                     totalCost += 1;
                 } else {
-                    let fresh6 = &mut (*huffNode
-                        .offset(((*rankLast.as_mut_ptr().add(1)) + 1) as isize))
-                    .nbBits;
+                    let fresh6 = &mut (*huffNode.offset((rankLast[1] + 1) as isize)).nbBits;
                     *fresh6 -= 1;
-                    let fresh7 = &mut (*rankLast.as_mut_ptr().add(1));
+                    let fresh7 = &mut rankLast[1];
                     *fresh7 += 1;
                     totalCost += 1;
                 }
@@ -957,17 +941,15 @@ unsafe fn HUF_buildCTableFromTree(
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
     for n in 0..nonNullRank + 1 {
-        let fresh18 = &mut (*nbPerRank
-            .as_mut_ptr()
-            .offset((*huffNode.offset(n as isize)).nbBits as isize));
+        let fresh18 = &mut nbPerRank[(*huffNode.offset(n as isize)).nbBits as usize];
         *fresh18 += 1;
     }
 
     /* determine starting value per rank */
     let mut min = 0;
     for n in (1..maxNbBits as c_int + 1).rev() {
-        *valPerRank.as_mut_ptr().offset(n as isize) = min; /* get starting value within each rank */
-        min = (min as c_int + *nbPerRank.as_mut_ptr().offset(n as isize) as c_int) as u16;
+        valPerRank[n as usize] = min; /* get starting value within each rank */
+        min = (min as c_int + nbPerRank[n as usize] as c_int) as u16;
         min = (min as c_int >> 1) as u16;
     }
     for n in 0..alphabetSize {
@@ -978,9 +960,7 @@ unsafe fn HUF_buildCTableFromTree(
     }
 
     for n in 0..alphabetSize {
-        let fresh19 = &mut (*valPerRank
-            .as_mut_ptr()
-            .add(HUF_getNbBits(*ct.offset(n as isize))));
+        let fresh19 = &mut valPerRank[HUF_getNbBits(*ct.offset(n as isize))];
         let fresh20 = *fresh19;
         *fresh19 += 1;
         HUF_setValue(ct.offset(n as isize), fresh20 as size_t); /* assign value within rank, symbol order */
@@ -1148,8 +1128,8 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
      * knows this and elides the mask. When fast is set,
      * every operation can use the same value loaded from elt.
      */
-    *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) >>= HUF_getNbBits(elt);
-    *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) |= if kFast != 0 {
+    (*bitC).bitContainer[idx as usize] >>= HUF_getNbBits(elt);
+    (*bitC).bitContainer[idx as usize] |= if kFast != 0 {
         HUF_getValueFast(elt)
     } else {
         HUF_getValue(elt)
@@ -1157,7 +1137,7 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
     /* We only read the low 8 bits of bitC->bitPos[idx] so it
      * doesn't matter that the high bits have noise from the value.
      */
-    let fresh21 = &mut (*((*bitC).bitPos).as_mut_ptr().offset(idx as isize));
+    let fresh21 = &mut (*bitC).bitPos[idx as usize];
     *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
     debug_assert!(((*bitC).bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     /* The last 4-bits of elt are dirty if fast is set,
@@ -1168,8 +1148,8 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
 
 #[inline(always)]
 unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
-    *((*bitC).bitContainer).as_mut_ptr().add(1) = 0;
-    *((*bitC).bitPos).as_mut_ptr().add(1) = 0;
+    (*bitC).bitContainer[1] = 0;
+    (*bitC).bitPos[1] = 0;
 }
 
 /// Merges the bit container @ index 1 into the bit container @ index 0
@@ -1177,11 +1157,10 @@ unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
 #[inline(always)]
 unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
     debug_assert!(((*bitC).bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
-    *((*bitC).bitContainer).as_mut_ptr() >>=
-        *((*bitC).bitPos).as_mut_ptr().add(1) & 0xff as c_int as size_t;
-    *((*bitC).bitContainer).as_mut_ptr() |= *((*bitC).bitContainer).as_mut_ptr().add(1);
-    *((*bitC).bitPos).as_mut_ptr() += *((*bitC).bitPos).as_mut_ptr().add(1);
-    debug_assert!((*((*bitC).bitPos).as_ptr() & 0xFF) <= HUF_BITS_IN_CONTAINER);
+    (*bitC).bitContainer[0] >>= (*bitC).bitPos[1] & 0xff as c_int as size_t;
+    (*bitC).bitContainer[0] |= (*bitC).bitContainer[1];
+    (*bitC).bitPos[0] += (*bitC).bitPos[1];
+    debug_assert!(((*bitC).bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
 }
 
 /// Flushes the bits in the bit container @ index 0.
@@ -1197,12 +1176,12 @@ unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
 #[inline(always)]
 unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: c_int) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
-    let nbBits = *((*bitC).bitPos).as_mut_ptr() & 0xff as c_int as size_t;
+    let nbBits = (*bitC).bitPos[0] & 0xff as c_int as size_t;
     let nbBytes = nbBits >> 3;
     /* The top nbBits bits of bitContainer are the ones we need. */
-    let bitContainer = *((*bitC).bitContainer).as_mut_ptr() >> (HUF_BITS_IN_CONTAINER - (nbBits));
+    let bitContainer = (*bitC).bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
     /* Mask bitPos to account for the bytes we consumed. */
-    *((*bitC).bitPos).as_mut_ptr() &= 7;
+    (*bitC).bitPos[0] &= 7;
     debug_assert!(nbBits > 0);
     debug_assert!(nbBits <= size_t::BITS as usize);
     debug_assert!((*bitC).ptr <= (*bitC).endPtr);
@@ -1234,7 +1213,7 @@ unsafe fn HUF_endMark() -> HUF_CElt {
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), 0, 0);
     HUF_flushBits(bitC, 0);
-    let nbBits = *(bitC.bitPos).as_mut_ptr() & 0xff as c_int as size_t;
+    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
