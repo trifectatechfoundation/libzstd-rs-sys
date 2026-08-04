@@ -5778,7 +5778,7 @@ unsafe fn ZSTD_buildSeqStore(
 unsafe fn ZSTD_copyBlockSequences(
     seqCollector: &mut SeqCollector,
     seqStore: *const SeqStore_t,
-    prevRepcodes: *const u32,
+    prevRepcodes: &[u32; ZSTD_REP_NUM as usize],
 ) -> size_t {
     let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
     let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
@@ -5797,11 +5797,7 @@ unsafe fn ZSTD_copyBlockSequences(
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    core::ptr::copy_nonoverlapping(
-        prevRepcodes,
-        repcodes.rep.as_mut_ptr(),
-        ZSTD_REP_NUM as usize,
-    );
+    repcodes.rep = *prevRepcodes;
     for i in 0..nbInSequences {
         let mut rawOffset: u32 = 0;
         (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
@@ -6758,11 +6754,8 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     // Sequence collection not supported when block splitting */
     if (*zc).seqCollector.collectSequences != 0 {
-        let err_code_0 = ZSTD_copyBlockSequences(
-            &mut (*zc).seqCollector,
-            seqStore,
-            (dRepOriginal.rep).as_ptr(),
-        );
+        let err_code_0 =
+            ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal.rep);
         if ERR_isError(err_code_0) {
             return err_code_0;
         }
@@ -7088,7 +7081,7 @@ unsafe fn ZSTD_compressBlock_internal(
             let err_code_0 = ZSTD_copyBlockSequences(
                 &mut (*zc).seqCollector,
                 ZSTD_getSeqStore(zc),
-                ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *const u32,
+                &(*(*zc).blockState.prevCBlock).rep,
             );
             if ERR_isError(err_code_0) {
                 return err_code_0;
