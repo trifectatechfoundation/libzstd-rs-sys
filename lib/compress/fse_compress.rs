@@ -266,7 +266,7 @@ unsafe fn FSE_writeNCount_generic(
     let mut bitCount = 0;
     let mut symbol = 0;
     let alphabetSize = maxSymbolValue.wrapping_add(1);
-    let mut previousIs0 = 0;
+    let mut previousIs0 = false;
 
     // Table Size
     bitStream = (bitStream as core::ffi::c_uint)
@@ -280,7 +280,7 @@ unsafe fn FSE_writeNCount_generic(
 
     // stops at 1
     while symbol < alphabetSize && remaining > 1 {
-        if previousIs0 != 0 {
+        if previousIs0 {
             let mut start = symbol;
             while symbol < alphabetSize && *normalizedCounter.offset(symbol as isize) == 0 {
                 symbol = symbol.wrapping_add(1);
@@ -332,7 +332,7 @@ unsafe fn FSE_writeNCount_generic(
         bitStream = bitStream.wrapping_add((count as u32) << bitCount);
         bitCount += nbBits;
         bitCount -= (count < max) as core::ffi::c_int;
-        previousIs0 = (count == 1) as core::ffi::c_int;
+        previousIs0 = count == 1;
         if remaining < 1 {
             return Error::GENERIC.to_error_code();
         }
