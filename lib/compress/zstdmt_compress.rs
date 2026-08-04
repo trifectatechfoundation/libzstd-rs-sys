@@ -1181,7 +1181,7 @@ unsafe fn ZSTDMT_freeJobsTable(
 /// Allocate and init a job table.
 /// Updates *nbJobsPtr to the next power of 2 value, as size of table.
 unsafe fn ZSTDMT_createJobsTable(
-    nbJobsPtr: *mut u32,
+    nbJobsPtr: &mut u32,
     cMem: ZSTD_customMem,
 ) -> *mut ZSTDMT_jobDescription {
     let nbJobsLog2 = (ZSTD_highbit32(*nbJobsPtr)).wrapping_add(1);
