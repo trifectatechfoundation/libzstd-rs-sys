@@ -573,7 +573,7 @@ unsafe fn ZSTD_ldm_gear_reset(
     minMatchLength: size_t,
 ) {
     let mut hash = state.rolling;
-    let mut n = 0 as size_t;
+    let mut n = 0usize;
 
     while n.wrapping_add(3) < minMatchLength {
         hash = (hash << 1).wrapping_add(
@@ -827,7 +827,7 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     mut pMatch: *const u8,
     pMatchBase: *const u8,
 ) -> size_t {
-    let mut matchLength = 0 as size_t;
+    let mut matchLength = 0usize;
     while pIn > pAnchor
         && pMatch > pMatchBase
         && *pIn.sub(1) as core::ffi::c_int == *pMatch.sub(1) as core::ffi::c_int

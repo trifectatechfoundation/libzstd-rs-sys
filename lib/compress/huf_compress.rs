@@ -1046,7 +1046,7 @@ pub unsafe fn HUF_estimateCompressedSize(
     maxSymbolValue: c_uint,
 ) -> size_t {
     let ct = CTable.add(1);
-    let mut nbBits = 0 as size_t;
+    let mut nbBits = 0usize;
     for s in 0..maxSymbolValue as c_int + 1 {
         nbBits += HUF_getNbBits(*ct.offset(s as isize)) * *count.offset(s as isize) as size_t;
     }
@@ -1835,7 +1835,7 @@ unsafe fn HUF_compress_internal(
         && srcSize
             >= (SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO) as size_t
     {
-        let mut largestTotal = 0 as size_t;
+        let mut largestTotal = 0usize;
         let mut maxSymbolValueBegin = maxSymbolValue;
         let largestBegin = HIST_count_simple(
             ((*table).count).as_mut_ptr(),

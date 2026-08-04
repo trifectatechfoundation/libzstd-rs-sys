@@ -283,8 +283,8 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
         dictHighLimit.wrapping_sub(btMask)
     };
 
-    let mut commonLengthSmaller = 0 as size_t;
-    let mut commonLengthLarger = 0 as size_t;
+    let mut commonLengthSmaller = 0usize;
+    let mut commonLengthLarger = 0usize;
 
     assert_eq!(dictMode, ZSTD_dictMatchState);
 
@@ -1506,7 +1506,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     let tagRow = tagTable.offset(relRow as isize);
     let headGrouped = (*tagRow as u32 & rowMask) * groupWidth;
     let mut matchBuffer: [u32; 64] = [0; 64];
-    let mut numMatches = 0 as size_t;
+    let mut numMatches = 0usize;
     let mut currMatch = 0;
     let mut matches = ZSTD_row_getMatchMask(tagRow, tag as u8, headGrouped, rowEntries);
 
@@ -1609,7 +1609,7 @@ unsafe fn ZSTD_RowFindBestMatch(
 
         let headGrouped_0 = (*dmsTagRow as u32 & rowMask) * groupWidth;
         let mut matchBuffer_0: [u32; 64] = [0; 64];
-        let mut numMatches_0 = 0 as size_t;
+        let mut numMatches_0 = 0usize;
         let mut currMatch_0 = 0;
         let mut matches_0 =
             ZSTD_row_getMatchMask(dmsTagRow, dmsTag as u8, headGrouped_0, rowEntries);

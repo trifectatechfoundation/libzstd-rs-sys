@@ -130,7 +130,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         // to reduce branch misses since we are operating on a small block
         let spread = tableSymbol.offset(tableSize as isize);
         let add = 0x101010101010101u64;
-        let mut pos = 0 as size_t;
+        let mut pos = 0usize;
         let mut sv = 0u64;
         for s in 0..maxSV1 {
             let mut i: core::ffi::c_int = 0;
@@ -151,7 +151,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         // Spread symbols across the table. Lack of lowprob symbols means that
         // we don't need variable sized inner loop, so we can unroll the loop and
         // reduce branch misses.
-        let mut position = 0 as size_t;
+        let mut position = 0usize;
         let mut s_0: size_t = 0;
         let unroll = 2; // Experimentally determined optimal unroll
         s_0 = 0;
@@ -196,7 +196,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
 
     // Build Symbol Transformation Table
-    let mut total = 0 as core::ffi::c_uint;
+    let mut total = 0u32;
     let mut s_2: core::ffi::c_uint = 0;
     s_2 = 0;
     while s_2 <= maxSymbolValue {

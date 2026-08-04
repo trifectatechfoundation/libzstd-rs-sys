@@ -106,7 +106,7 @@ unsafe fn ZSTD_entropyCost(
     max: core::ffi::c_uint,
     total: size_t,
 ) -> size_t {
-    let mut cost = 0 as core::ffi::c_uint;
+    let mut cost = 0u32;
     for s in 0..max + 1 {
         let mut norm = ((256 as core::ffi::c_uint).wrapping_mul(*count.offset(s as isize))
             as size_t
@@ -129,7 +129,7 @@ pub unsafe fn ZSTD_fseBitCost(
     max: core::ffi::c_uint,
 ) -> size_t {
     let kAccuracyLog = 8;
-    let mut cost = 0 as size_t;
+    let mut cost = 0usize;
     let mut cstate = FSE_CState_t {
         value: 0,
         stateTable: core::ptr::null::<core::ffi::c_void>(),
@@ -164,7 +164,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
     max: core::ffi::c_uint,
 ) -> size_t {
     let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
-    let mut cost = 0 as size_t;
+    let mut cost = 0usize;
     for s in 0..max + 1 {
         let normAcc = if *norm.offset(s as isize) as core::ffi::c_int != -1 {
             *norm.offset(s as isize) as core::ffi::c_uint

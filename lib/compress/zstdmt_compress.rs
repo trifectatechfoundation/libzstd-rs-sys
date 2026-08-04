@@ -337,7 +337,7 @@ unsafe fn ZSTDMT_createBufferPool(
 unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> size_t {
     let poolSize = size_of::<ZSTDMT_bufferPool>();
     let arraySize = ((*bufPool).totalBuffers as size_t).wrapping_mul(size_of::<Buffer>());
-    let mut totalBufferSize = 0 as size_t;
+    let mut totalBufferSize = 0usize;
     let _guard = (*bufPool).poolMutex.lock().unwrap();
     for u in 0..(*bufPool).totalBuffers {
         totalBufferSize =
@@ -575,7 +575,7 @@ unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> size_t {
     let nbWorkers = (*cctxPool).totalCCtx as core::ffi::c_uint;
     let poolSize = size_of::<ZSTDMT_CCtxPool>();
     let arraySize = ((*cctxPool).totalCCtx as usize).wrapping_mul(size_of::<*mut ZSTD_CCtx>());
-    let mut totalCCtxSize = 0 as size_t;
+    let mut totalCCtxSize = 0usize;
     for u in 0..nbWorkers {
         totalCCtxSize =
             totalCCtxSize.wrapping_add(ZSTD_sizeof_CCtx(*((*cctxPool).cctxs).offset(u as isize)));
