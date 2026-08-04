@@ -1169,7 +1169,7 @@ unsafe fn ZSTD_row_update_internalImpl(
     mls: u32,
     rowLog: u32,
     rowMask: u32,
-    useCache: u32,
+    useCache: bool,
 ) {
     let hashTable = ms.hashTable;
     let tagTable = ms.tagTable;
@@ -1177,7 +1177,7 @@ unsafe fn ZSTD_row_update_internalImpl(
     let base = ms.window.base;
 
     while updateStartIdx < updateEndIdx {
-        let hash = if useCache != 0 {
+        let hash = if useCache {
             ZSTD_row_nextCachedHash(
                 (ms.hashCache).as_mut_ptr(),
                 hashTable,
@@ -1217,7 +1217,7 @@ unsafe fn ZSTD_row_update_internal(
     mls: u32,
     rowLog: u32,
     rowMask: u32,
-    useCache: u32,
+    useCache: bool,
 ) {
     let mut idx = ms.nextToUpdate;
     let base = ms.window.base;
@@ -1226,7 +1226,7 @@ unsafe fn ZSTD_row_update_internal(
     let kMaxMatchStartPositionsToUpdate = 96;
     let kMaxMatchEndPositionsToUpdate = 32;
 
-    if useCache != 0 && target.wrapping_sub(idx) > kSkipThreshold {
+    if useCache && target.wrapping_sub(idx) > kSkipThreshold {
         // Only skip positions when using hash cache, i.e.
         // if we are loading a dict, don't skip anything.
         // If we decide to skip, then we only update a set number
@@ -1248,7 +1248,7 @@ pub unsafe fn ZSTD_row_update(ms: &mut ZSTD_MatchState_t, ip: *const u8) {
     let rowMask = ((1 as core::ffi::c_uint) << rowLog).wrapping_sub(1);
     let mls = ms.cParams.minMatch.min(6);
 
-    ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, 0);
+    ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, false);
 }
 
 /// Returns the mask width of bits group of which will be set to 1. Given not all
@@ -1482,7 +1482,7 @@ unsafe fn ZSTD_RowFindBestMatch(
 
     // Update the hashTable and tagTable up to (but not including) ip
     if ms.lazySkipping == 0 {
-        ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, 1);
+        ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, true);
         hash = ZSTD_row_nextCachedHash(
             hashCache, hashTable, tagTable, base, curr, hashLog, rowLog, mls, hashSalt,
         );
@@ -2659,35 +2659,29 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
 
-    let isDMS = (dictMode as core::ffi::c_uint
-        == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let isDDS = (dictMode as core::ffi::c_uint
-        == ZSTD_dedicatedDictSearch as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let isDxS = (isDMS != 0 || isDDS != 0) as core::ffi::c_int;
+    let isDMS = dictMode as core::ffi::c_uint
+        == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint;
+    let isDDS = dictMode as core::ffi::c_uint
+        == ZSTD_dedicatedDictSearch as core::ffi::c_int as core::ffi::c_uint;
+    let isDxS = isDMS || isDDS;
     let dms = ms.dictMatchState;
-    let dictLowestIndex = if isDxS != 0 {
-        (*dms).window.dictLimit
-    } else {
-        0
-    };
-    let dictBase = if isDxS != 0 {
+    let dictLowestIndex = if isDxS { (*dms).window.dictLimit } else { 0 };
+    let dictBase = if isDxS {
         (*dms).window.base
     } else {
         core::ptr::null()
     };
-    let dictLowest = if isDxS != 0 {
+    let dictLowest = if isDxS {
         dictBase.offset(dictLowestIndex as isize)
     } else {
         core::ptr::null()
     };
-    let dictEnd = if isDxS != 0 {
+    let dictEnd = if isDxS {
         (*dms).window.nextSrc
     } else {
         core::ptr::null()
     };
-    let dictIndexDelta = if isDxS != 0 {
+    let dictIndexDelta = if isDxS {
         prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32)
     } else {
         0
@@ -2711,7 +2705,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
         }
     }
 
-    if isDxS != 0 {
+    if isDxS {
         // dictMatchState repCode checks don't currently handle repCode == 0 disabling.
         assert!(offset_1 <= dictAndPrefixLength);
         assert!(offset_2 <= dictAndPrefixLength);
@@ -2734,7 +2728,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
         let mut start = ip.add(1);
 
         // check repCode
-        if isDxS != 0 {
+        if isDxS {
             let repIndex = (ip.offset_from(base) as core::ffi::c_long as u32)
                 .wrapping_add(1)
                 .wrapping_sub(offset_1);
@@ -2865,7 +2859,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                     }
                                 }
 
-                                if isDxS != 0 {
+                                if isDxS {
                                     let repIndex_0 = (ip.offset_from(base) as core::ffi::c_long
                                         as u32)
                                         .wrapping_sub(offset_1);
@@ -2963,7 +2957,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                         }
                                     }
 
-                                    if isDxS != 0 {
+                                    if isDxS {
                                         let repIndex_1 = (ip.offset_from(base) as core::ffi::c_long
                                             as u32)
                                             .wrapping_sub(offset_1);
@@ -3063,7 +3057,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                 }
                             }
 
-                            if isDxS != 0 {
+                            if isDxS {
                                 let matchIndex = (start.offset_from(base) as core::ffi::c_long
                                     as size_t)
                                     .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
@@ -3123,7 +3117,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
         }
 
         // check immediate repcode
-        if isDxS != 0 {
+        if isDxS {
             while ip <= ilimit {
                 let current2 = ip.offset_from(base) as core::ffi::c_long as u32;
                 let repIndex_2 = current2.wrapping_sub(offset_2);
