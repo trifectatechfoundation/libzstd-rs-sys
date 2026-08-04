@@ -1671,7 +1671,7 @@ unsafe fn ZSTD_optLdm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBy
 /// Calculates the beginning and end of the next match in the current block.
 /// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
 unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
-    optLdm: *mut ZSTD_optLdm_t,
+    optLdm: &mut ZSTD_optLdm_t,
     currPosInBlock: u32,
     blockBytesRemaining: u32,
 ) {
@@ -1685,52 +1685,52 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
     let mut matchBytesRemaining: u32 = 0;
 
     // Setting match end position to MAX to ensure we never use an LDM during this block
-    if (*optLdm).seqStore.size == 0 || (*optLdm).seqStore.pos >= (*optLdm).seqStore.size {
-        (*optLdm).startPosInBlock = UINT_MAX;
-        (*optLdm).endPosInBlock = UINT_MAX;
+    if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
+        optLdm.startPosInBlock = UINT_MAX;
+        optLdm.endPosInBlock = UINT_MAX;
         return;
     }
     // Calculate appropriate bytes left in matchLength and litLength
     // after adjusting based on ldmSeqStore->posInSequence
-    currSeq = *((*optLdm).seqStore.seq).add((*optLdm).seqStore.pos);
+    currSeq = *(optLdm.seqStore.seq).add(optLdm.seqStore.pos);
     currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
-    literalsBytesRemaining = if (*optLdm).seqStore.posInSequence < currSeq.litLength as size_t {
-        (currSeq.litLength).wrapping_sub((*optLdm).seqStore.posInSequence as u32)
+    literalsBytesRemaining = if optLdm.seqStore.posInSequence < currSeq.litLength as size_t {
+        (currSeq.litLength).wrapping_sub(optLdm.seqStore.posInSequence as u32)
     } else {
         0
     };
     matchBytesRemaining = if literalsBytesRemaining == 0 {
         (currSeq.matchLength)
-            .wrapping_sub(((*optLdm).seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
+            .wrapping_sub((optLdm.seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
     } else {
         currSeq.matchLength
     };
 
     // If there are more literal bytes than bytes remaining in block, no ldm is possible
     if literalsBytesRemaining >= blockBytesRemaining {
-        (*optLdm).startPosInBlock = UINT_MAX;
-        (*optLdm).endPosInBlock = UINT_MAX;
-        ZSTD_optLdm_skipRawSeqStoreBytes(&mut (*optLdm).seqStore, blockBytesRemaining as size_t);
+        optLdm.startPosInBlock = UINT_MAX;
+        optLdm.endPosInBlock = UINT_MAX;
+        ZSTD_optLdm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as size_t);
         return;
     }
 
     // Matches may be < minMatch by this process. In that case, we will reject them
     // when we are deciding whether or not to add the ldm
-    (*optLdm).startPosInBlock = currPosInBlock.wrapping_add(literalsBytesRemaining);
-    (*optLdm).endPosInBlock = ((*optLdm).startPosInBlock).wrapping_add(matchBytesRemaining);
-    (*optLdm).offset = currSeq.offset;
+    optLdm.startPosInBlock = currPosInBlock.wrapping_add(literalsBytesRemaining);
+    optLdm.endPosInBlock = (optLdm.startPosInBlock).wrapping_add(matchBytesRemaining);
+    optLdm.offset = currSeq.offset;
 
-    if (*optLdm).endPosInBlock > currBlockEndPos {
+    if optLdm.endPosInBlock > currBlockEndPos {
         // Match ends after the block ends, we can't use the whole match
-        (*optLdm).endPosInBlock = currBlockEndPos;
+        optLdm.endPosInBlock = currBlockEndPos;
         ZSTD_optLdm_skipRawSeqStoreBytes(
-            &mut (*optLdm).seqStore,
+            &mut optLdm.seqStore,
             currBlockEndPos.wrapping_sub(currPosInBlock) as size_t,
         );
     } else {
         // Consume number of bytes equal to size of sequence left
         ZSTD_optLdm_skipRawSeqStoreBytes(
-            &mut (*optLdm).seqStore,
+            &mut optLdm.seqStore,
             literalsBytesRemaining.wrapping_add(matchBytesRemaining) as size_t,
         );
     }
