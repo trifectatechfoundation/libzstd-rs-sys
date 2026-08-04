@@ -389,7 +389,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             oend.offset_from_unsigned(op),
             literals as *const core::ffi::c_void,
             litSize,
-            hufTable.as_ptr(),
+            hufTable,
             flags,
         )
     } else {
@@ -398,7 +398,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             oend.offset_from_unsigned(op),
             literals as *const core::ffi::c_void,
             litSize,
-            hufTable.as_ptr(),
+            hufTable,
             flags,
         )
     };

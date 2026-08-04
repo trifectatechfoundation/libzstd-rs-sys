@@ -1408,10 +1408,10 @@ pub unsafe fn HUF_compress1X_usingCTable(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     flags: c_int,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
+    HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable.as_ptr(), flags)
 }
 
 unsafe fn HUF_compress4X_usingCTable_internal(
@@ -1531,10 +1531,10 @@ pub unsafe fn HUF_compress4X_usingCTable(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     flags: c_int,
 ) -> size_t {
-    HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
+    HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable.as_ptr(), flags)
 }
 
 pub type HUF_nbStreams_e = c_uint;
