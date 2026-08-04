@@ -6146,12 +6146,12 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     seqStorePtr: *const SeqStore_t,
     prevEntropy: &ZSTD_fseCTables_t,
     nextEntropy: &mut ZSTD_fseCTables_t,
-    cctxParams: *const ZSTD_CCtx_params,
+    cctxParams: &ZSTD_CCtx_params,
     fseMetadata: &mut ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
-    let strategy = (*cctxParams).cParams.strategy;
+    let strategy = cctxParams.cParams.strategy;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
     let ostart = (fseMetadata.fseTablesBuffer).as_mut_ptr();
     let oend = ostart.add(size_of::<[u8; 133]>());
