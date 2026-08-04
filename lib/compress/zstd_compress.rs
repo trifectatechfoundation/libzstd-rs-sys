@@ -6115,7 +6115,7 @@ pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
 /// Returns a ZSTD_symbolEncodingTypeStats_t with all encoding types as set_basic,
 /// and updates nextEntropy to the appropriate repeatMode.
 unsafe fn ZSTD_buildDummySequencesStatistics(
-    nextEntropy: *mut ZSTD_fseCTables_t,
+    nextEntropy: &mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
     let stats = {
         ZSTD_symbolEncodingTypeStats_t {
@@ -6128,9 +6128,9 @@ unsafe fn ZSTD_buildDummySequencesStatistics(
         }
     };
 
-    (*nextEntropy).litlength_repeatMode = FSE_repeat_none;
-    (*nextEntropy).offcode_repeatMode = FSE_repeat_none;
-    (*nextEntropy).matchlength_repeatMode = FSE_repeat_none;
+    nextEntropy.litlength_repeatMode = FSE_repeat_none;
+    nextEntropy.offcode_repeatMode = FSE_repeat_none;
+    nextEntropy.matchlength_repeatMode = FSE_repeat_none;
 
     stats
 }
