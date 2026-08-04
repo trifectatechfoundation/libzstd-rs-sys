@@ -4775,19 +4775,19 @@ unsafe fn ZSTD_reduceTable_btlazy2(table: *mut u32, size: u32, reducerValue: u32
 /// Rescale all indexes to avoid future overflow (indexes are U32).
 unsafe fn ZSTD_reduceIndex(
     ms: &mut ZSTD_MatchState_t,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     reducerValue: u32,
 ) {
-    let hSize = 1 << (*params).cParams.hashLog;
+    let hSize = 1 << params.cParams.hashLog;
     ZSTD_reduceTable(ms.hashTable, hSize, reducerValue);
 
     if ZSTD_allocateChainTable(
-        (*params).cParams.strategy,
-        (*params).useRowMatchFinder,
+        params.cParams.strategy,
+        params.useRowMatchFinder,
         ms.dedicatedDictSearch != 0,
     ) {
-        let chainSize = 1 << (*params).cParams.chainLog;
-        if (*params).cParams.strategy == ZSTD_btlazy2 {
+        let chainSize = 1 << params.cParams.chainLog;
+        if params.cParams.strategy == ZSTD_btlazy2 {
             ZSTD_reduceTable_btlazy2(ms.chainTable, chainSize, reducerValue);
         } else {
             ZSTD_reduceTable(ms.chainTable, chainSize, reducerValue);
