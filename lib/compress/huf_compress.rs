@@ -1958,10 +1958,10 @@ unsafe fn HUF_compress_internal(
             *repeat = HUF_repeat_none;
         }
         if !oldHufTable.is_null() {
-            libc::memcpy(
-                oldHufTable as *mut c_void,
-                ((*table).CTable).as_mut_ptr() as *const c_void,
-                size_of::<[HUF_CElt; 257]>(),
+            core::ptr::copy_nonoverlapping(
+                (*table).CTable.as_ptr(),
+                oldHufTable,
+                (*table).CTable.len(),
             );
         }
     }
