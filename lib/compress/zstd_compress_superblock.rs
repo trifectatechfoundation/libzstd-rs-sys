@@ -343,7 +343,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
-    let singleStream = (lhSize == 3) as core::ffi::c_int as u32;
+    let singleStream = lhSize == 3;
     let hType = (if writeEntropy {
         hufMetadata.hType as core::ffi::c_uint
     } else {
@@ -383,7 +383,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     } else {
         0
     };
-    let cSize = if singleStream != 0 {
+    let cSize = if singleStream {
         HUF_compress1X_usingCTable(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
@@ -434,7 +434,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         3 => {
             // 2 - 2 - 10 - 10
             let lhc = (hType as core::ffi::c_uint)
-                .wrapping_add(((singleStream == 0) as core::ffi::c_int as u32) << 2)
+                .wrapping_add(((!singleStream) as core::ffi::c_int as u32) << 2)
                 .wrapping_add((litSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);
@@ -939,7 +939,7 @@ unsafe fn sizeBlockSequences(
     targetBudget: size_t,
     avgLitCost: size_t,
     avgSeqCost: size_t,
-    firstSubBlock: core::ffi::c_int,
+    firstSubBlock: bool,
 ) -> size_t {
     let mut n: size_t = 0;
     let mut budget = 0usize;
@@ -1067,7 +1067,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 avgBlockBudget.wrapping_add(blockBudgetSupp),
                 avgLitCost,
                 avgSeqCost,
-                (n == 0) as core::ffi::c_int,
+                n == 0,
             );
             // if reached last sequence : break to last sub-block (simplification)
             if sp.add(seqCount) == send {
