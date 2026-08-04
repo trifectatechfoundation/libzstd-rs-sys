@@ -188,11 +188,7 @@ pub unsafe fn ZSTD_compressLiterals(
     let mut cLitSize: size_t = 0;
 
     // Prepare nextEntropy assuming reusing the existing table
-    libc::memcpy(
-        nextHuf as *mut core::ffi::c_void,
-        prevHuf as *const core::ffi::c_void,
-        size_of::<ZSTD_hufCTables_t>(),
-    );
+    core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
 
     if disableLiteralCompression {
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
@@ -284,11 +280,7 @@ pub unsafe fn ZSTD_compressLiterals(
 
     let minGain = ZSTD_minGain(srcSize, strategy);
     if cLitSize == 0 || cLitSize >= srcSize.wrapping_sub(minGain) || ERR_isError(cLitSize) {
-        libc::memcpy(
-            nextHuf as *mut core::ffi::c_void,
-            prevHuf as *const core::ffi::c_void,
-            size_of::<ZSTD_hufCTables_t>(),
-        );
+        core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
 
@@ -298,11 +290,7 @@ pub unsafe fn ZSTD_compressLiterals(
     // (it's also necessary to not generate statistics).
     // Therefore, in such a case, actively check that all bytes are identical.
     if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src, srcSize)) {
-        libc::memcpy(
-            nextHuf as *mut core::ffi::c_void,
-            prevHuf as *const core::ffi::c_void,
-            size_of::<ZSTD_hufCTables_t>(),
-        );
+        core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
     }
 

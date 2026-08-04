@@ -1177,10 +1177,10 @@ unsafe fn ZSTD_compressSubBlock_multi(
     }
 
     if writeLitEntropy {
-        libc::memcpy(
-            &mut (*nextCBlock).entropy.huf as *mut ZSTD_hufCTables_t as *mut core::ffi::c_void,
-            &(*prevCBlock).entropy.huf as *const ZSTD_hufCTables_t as *const core::ffi::c_void,
-            size_of::<ZSTD_hufCTables_t>(),
+        core::ptr::copy_nonoverlapping(
+            &raw const (*prevCBlock).entropy.huf,
+            &raw mut (*nextCBlock).entropy.huf,
+            1,
         );
     }
     if writeSeqEntropy && ZSTD_needSequenceEntropyTables(&entropyMetadata.fseMetadata) {

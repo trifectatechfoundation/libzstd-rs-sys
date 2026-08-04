@@ -4523,10 +4523,10 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     (*cctx).dictContentSize = (*cdict).dictContentSize;
 
     // copy block state
-    libc::memcpy(
-        (*cctx).blockState.prevCBlock as *mut core::ffi::c_void,
-        &(*cdict).cBlockState as *const ZSTD_compressedBlockState_t as *const core::ffi::c_void,
-        size_of::<ZSTD_compressedBlockState_t>(),
+    core::ptr::copy_nonoverlapping(
+        &raw const (*cdict).cBlockState,
+        (*cctx).blockState.prevCBlock,
+        1,
     );
 
     0
@@ -4639,10 +4639,10 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     (*cctx).dictContentSize = (*cdict).dictContentSize;
 
     // copy block state
-    libc::memcpy(
-        (*cctx).blockState.prevCBlock as *mut core::ffi::c_void,
-        &(*cdict).cBlockState as *const ZSTD_compressedBlockState_t as *const core::ffi::c_void,
-        size_of::<ZSTD_compressedBlockState_t>(),
+    core::ptr::copy_nonoverlapping(
+        &raw const (*cdict).cBlockState,
+        (*cctx).blockState.prevCBlock,
+        1,
     );
 
     0
@@ -4686,11 +4686,7 @@ unsafe fn ZSTD_copyCCtx_internal(
     if (*srcCCtx).stage != ZSTDcs_init {
         return Error::stage_wrong.to_error_code();
     }
-    libc::memcpy(
-        &mut (*dstCCtx).customMem as *mut ZSTD_customMem as *mut core::ffi::c_void,
-        &(*srcCCtx).customMem as *const ZSTD_customMem as *const core::ffi::c_void,
-        size_of::<ZSTD_customMem>(),
-    );
+    (*dstCCtx).customMem = (*srcCCtx).customMem;
 
     let mut params = (*dstCCtx).requestedParams;
     // Copy only compression parameters related to tables.
@@ -4757,10 +4753,10 @@ unsafe fn ZSTD_copyCCtx_internal(
     (*dstCCtx).dictContentSize = (*srcCCtx).dictContentSize;
 
     // copy block state
-    libc::memcpy(
-        (*dstCCtx).blockState.prevCBlock as *mut core::ffi::c_void,
-        (*srcCCtx).blockState.prevCBlock as *const core::ffi::c_void,
-        size_of::<ZSTD_compressedBlockState_t>() as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        (*srcCCtx).blockState.prevCBlock,
+        (*dstCCtx).blockState.prevCBlock,
+        1,
     );
 
     0
@@ -5207,10 +5203,10 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     }
     if nbSeq == 0 {
         // Copy the old tables over as if we repeated them
-        libc::memcpy(
-            &mut (*nextEntropy).fse as *mut ZSTD_fseCTables_t as *mut core::ffi::c_void,
-            &(*prevEntropy).fse as *const ZSTD_fseCTables_t as *const core::ffi::c_void,
-            size_of::<ZSTD_fseCTables_t>(),
+        core::ptr::copy_nonoverlapping(
+            &raw const (*prevEntropy).fse,
+            &raw mut (*nextEntropy).fse,
+            1,
         );
         return op.offset_from_unsigned(ostart);
     }
