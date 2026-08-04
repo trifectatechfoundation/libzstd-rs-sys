@@ -6956,16 +6956,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
 
     let mut dRep = repcodes_s { rep: [0; 3] };
     let mut cRep = repcodes_s { rep: [0; 3] };
-    libc::memcpy(
-        (dRep.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
-    libc::memcpy(
-        (cRep.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    dRep.rep = (*(*zc).blockState.prevCBlock).rep;
+    cRep.rep = (*(*zc).blockState.prevCBlock).rep;
     ptr::write_bytes(
         nextSeqStore as *mut SeqStore_t as *mut u8,
         0,
@@ -7039,11 +7031,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
 
     // cRep and dRep may have diverged during the compression.
     // If so, we use the dRep repcodes for the next block.
-    libc::memcpy(
-        ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
-        (dRep.rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    (*(*zc).blockState.prevCBlock).rep = dRep.rep;
     cSize
 }
 
@@ -11075,11 +11063,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         dictSize = 0;
     }
 
-    libc::memcpy(
-        (updatedRepcodes.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        ((*(*cctx).blockState.prevCBlock).rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
     while (idx as size_t) < inSeqsSize
         && ((*inSeqs.offset(idx as isize)).matchLength != 0
             || (*inSeqs.offset(idx as isize)).offset != 0)
@@ -11156,11 +11140,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         }
     }
 
-    libc::memcpy(
-        ((*(*cctx).blockState.nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
-        (updatedRepcodes.rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
 
     if (*inSeqs.offset(idx as isize)).litLength != 0 {
         ZSTD_storeLastLiterals(
@@ -11222,11 +11202,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     } else {
         dictSize = 0;
     }
-    libc::memcpy(
-        (updatedRepcodes.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        ((*(*cctx).blockState.prevCBlock).rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
     while endPosInSequence != 0 && (idx as size_t) < inSeqsSize && !finalMatchSplit {
         let currSeq = *inSeqs.offset(idx as isize);
         let mut litLength = currSeq.litLength;
@@ -11342,11 +11318,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
 
     (*seqPos).idx = idx;
     (*seqPos).posInSequence = endPosInSequence;
-    libc::memcpy(
-        ((*(*cctx).blockState.nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
-        (updatedRepcodes.rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
 
     iend = iend.sub(bytesAdjustment as usize);
     if ip != iend {
@@ -11779,11 +11751,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         return Error::externalSequences_invalid.to_error_code();
     }
 
-    libc::memcpy(
-        (updatedRepcodes.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        ((*(*cctx).blockState.prevCBlock).rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
 
     // Convert Sequences from public format to internal format
     if !repcodeResolution {
@@ -11846,11 +11814,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         }
     }
 
-    libc::memcpy(
-        ((*(*cctx).blockState.nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
-        (updatedRepcodes.rep).as_mut_ptr() as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
 
     0
 }
