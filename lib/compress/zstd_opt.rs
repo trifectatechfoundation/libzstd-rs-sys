@@ -777,7 +777,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     lengthToBeat: u32,
     mls: u32,
 ) -> u32 {
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams = &ms.cParams;
     let sufficient_len = (*cParams)
         .targetLength
         .min(((1 << 12) - 1) as core::ffi::c_uint);
@@ -1816,7 +1816,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     let ilimit = iend.sub(8);
     let base = ms.window.base;
     let prefixStart = base.offset(ms.window.dictLimit as isize);
-    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
+    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
 
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
 
