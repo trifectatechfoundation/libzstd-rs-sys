@@ -6208,7 +6208,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
 /// - 0 on success
 /// - Or an error code
 pub unsafe fn ZSTD_buildBlockEntropyStats(
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
     nextEntropy: &mut ZSTD_entropyCTables_t,
     cctxParams: &ZSTD_CCtx_params,
@@ -6216,7 +6216,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
-    let litSize = ((*seqStorePtr).lit).offset_from((*seqStorePtr).litStart) as size_t;
+    let litSize = (seqStorePtr.lit).offset_from(seqStorePtr.litStart) as size_t;
     let huf_useOptDepth = (cctxParams.cParams.strategy
         >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint)
         as core::ffi::c_int;
@@ -6227,7 +6227,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     };
 
     (*entropyMetadata).hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
-        (*seqStorePtr).litStart as *mut core::ffi::c_void,
+        seqStorePtr.litStart as *mut core::ffi::c_void,
         litSize,
         &prevEntropy.huf,
         &mut nextEntropy.huf,
