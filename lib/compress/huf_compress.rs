@@ -84,7 +84,7 @@ pub struct HUF_CompressWeightsWksp {
 unsafe fn HUF_compressWeights(
     dst: *mut c_void,
     dstSize: size_t,
-    weightTable: *const c_void,
+    weightTable: &[u8; HUF_SYMBOLVALUE_MAX as usize],
     wtSize: size_t,
     workspace: *mut c_void,
     mut workspaceSize: size_t,
@@ -112,7 +112,7 @@ unsafe fn HUF_compressWeights(
         let maxCount = HIST_count_simple(
             ((*wksp).count).as_mut_ptr(),
             &mut maxSymbolValue,
-            weightTable,
+            weightTable.as_ptr().cast::<c_void>(),
             wtSize,
         ); /* never fails */
 
@@ -170,7 +170,7 @@ unsafe fn HUF_compressWeights(
         let cSize = FSE_compress_usingCTable(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            weightTable,
+            weightTable.as_ptr().cast::<c_void>(),
             wtSize,
             ((*wksp).CTable).as_mut_ptr(),
         );
@@ -296,7 +296,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         let hSize = HUF_compressWeights(
             op.add(1) as *mut c_void,
             maxDstSize - 1,
-            ((*wksp).huffWeight).as_mut_ptr() as *const c_void,
+            &(*wksp).huffWeight,
             maxSymbolValue as size_t,
             &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
             size_of::<HUF_CompressWeightsWksp>(),
