@@ -852,13 +852,13 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     pExtDictEnd: *const u8,
 ) -> size_t {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(pIn, pAnchor, pMatch, pMatchBase);
-    if pMatch.offset(-(matchLength as isize)) != pMatchBase || pMatchBase == pExtDictStart {
+    if pMatch.sub(matchLength as usize) != pMatchBase || pMatchBase == pExtDictStart {
         // If backwards match is entirely in the extDict or prefix, immediately return
         return matchLength;
     }
 
     matchLength = matchLength.wrapping_add(ZSTD_ldm_countBackwardsMatch(
-        pIn.offset(-(matchLength as isize)),
+        pIn.sub(matchLength as usize),
         pAnchor,
         pExtDictEnd,
         pExtDictStart,
@@ -935,7 +935,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             if ip.add(*splits.offset(n as isize)) >= istart.offset(minMatchLength as isize) {
                 let split = ip
                     .add(*splits.offset(n as isize))
-                    .offset(-(minMatchLength as isize));
+                    .sub(minMatchLength as usize);
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
                     minMatchLength as usize,
@@ -1014,7 +1014,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     // Input bounds
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
 
     // Input positions
     let mut anchor = istart;
@@ -1055,7 +1055,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         for n in 0..numSplits {
             let split = ip
                 .add(*splits.offset(n as isize))
-                .offset(-(minMatchLength as isize));
+                .sub(minMatchLength as usize);
             let xxhash = ZSTD_XXH64(
                 split as *const core::ffi::c_void,
                 minMatchLength as usize,
@@ -1193,9 +1193,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if (*rawSeqStore).size == (*rawSeqStore).capacity {
                         return Error::dstSize_tooSmall.to_error_code();
                     }
-                    (*seq).litLength = split_0
-                        .offset(-(backwardMatchLength as isize))
-                        .offset_from(anchor)
+                    (*seq).litLength = split_0.sub(backwardMatchLength).offset_from(anchor)
                         as core::ffi::c_long as u32;
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
@@ -1222,11 +1220,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if anchor > ip.add(hashed) {
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
-                            anchor.offset(-(minMatchLength as isize)),
+                            anchor.sub(minMatchLength as usize),
                             minMatchLength as size_t,
                         );
                         // Continue the outer loop at anchor (ip + hashed == anchor).
-                        ip = anchor.offset(-(hashed as isize));
+                        ip = anchor.sub(hashed as usize);
                         break;
                     }
                 }
@@ -1507,7 +1505,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         ZSTD_storeSeq(
             seqStore,
             newLitLength,
-            ip.offset(-(newLitLength as isize)),
+            ip.sub(newLitLength as usize),
             iend,
             (sequence.offset).wrapping_add(ZSTD_REP_NUM as u32),
             sequence.matchLength as size_t,

@@ -2220,7 +2220,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         } else {
             prev = ((*mtctx).inBuff.buffer.start as *const u8)
                 .add((*mtctx).inBuff.filled)
-                .offset(-(RSYNC_LENGTH as isize));
+                .sub(RSYNC_LENGTH as usize);
             hash = ZSTD_rollingHash_compute(
                 prev.add(pos) as *const core::ffi::c_void,
                 (RSYNC_LENGTH as size_t).wrapping_sub(pos),
@@ -2234,7 +2234,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         pos = 0;
         prev = ((*mtctx).inBuff.buffer.start as *const u8)
             .add((*mtctx).inBuff.filled)
-            .offset(-(RSYNC_LENGTH as isize));
+            .sub(RSYNC_LENGTH as usize);
         hash = ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
         if hash & hitMask == hitMask {
             // We're already at a sync point so don't load any more until

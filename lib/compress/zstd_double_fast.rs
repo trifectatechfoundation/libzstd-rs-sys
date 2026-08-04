@@ -105,7 +105,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     let hBitsS = ((*cParams).chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).offset(-(HASH_READ_SIZE as isize));
+    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
@@ -150,7 +150,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     let hBitsS = (*cParams).chainLog;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).offset(-(HASH_READ_SIZE as isize));
+    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
@@ -216,7 +216,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixLowest = base.offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
     let mut offsetSaved1 = 0;
@@ -496,9 +496,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                             while ip <= ilimit
                                 && (offset_2 > 0) as core::ffi::c_int
                                     & (MEM_read32(ip as *const core::ffi::c_void)
-                                        == MEM_read32(ip.offset(-(offset_2 as isize))
-                                            as *const core::ffi::c_void))
-                                        as core::ffi::c_int
+                                        == MEM_read32(
+                                            ip.sub(offset_2 as usize) as *const core::ffi::c_void
+                                        )) as core::ffi::c_int
                                     != 0
                             {
                                 // store sequence
@@ -583,7 +583,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
 
@@ -962,7 +962,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 let repMatch2 = if repIndex2 < prefixLowestIndex {
                     dictBase
                         .offset(repIndex2 as isize)
-                        .offset(-(dictIndexDelta as isize))
+                        .sub(dictIndexDelta as usize)
                 } else {
                     base.wrapping_offset(repIndex2 as isize)
                 };
