@@ -928,14 +928,14 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             if (repIndex >= windowLow) as core::ffi::c_int
                 & (ZSTD_readMINMATCH(ip as *const core::ffi::c_void, minMatch)
                     == ZSTD_readMINMATCH(
-                        ip.offset(-(repOffset as isize)) as *const core::ffi::c_void,
+                        ip.sub(repOffset as usize) as *const core::ffi::c_void,
                         minMatch,
                     )) as core::ffi::c_int
                 != 0
             {
                 repLen = (ZSTD_count(
                     ip.offset(minMatch as isize),
-                    ip.offset(minMatch as isize).offset(-(repOffset as isize)),
+                    ip.offset(minMatch as isize).sub(repOffset as usize),
                     iLimit,
                 ) as u32)
                     .wrapping_add(minMatch);
@@ -946,7 +946,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             {
                 dmsBase
                     .offset(repIndex as isize)
-                    .offset(-(dmsIndexDelta as isize))
+                    .sub(dmsIndexDelta as usize)
             } else {
                 dictBase.offset(repIndex as isize)
             };
@@ -2399,7 +2399,7 @@ unsafe fn ZSTD_initStats_ultra(
 
     // invalidate first scan from history, only keep entropy stats
     ZSTD_resetSeqStore(seqStore);
-    ms.window.base = (ms.window.base).offset(-(srcSize as isize));
+    ms.window.base = (ms.window.base).sub(srcSize);
     ms.window.dictLimit = (ms.window.dictLimit).wrapping_add(srcSize as u32);
     ms.window.lowLimit = ms.window.dictLimit;
     ms.nextToUpdate = ms.window.dictLimit;

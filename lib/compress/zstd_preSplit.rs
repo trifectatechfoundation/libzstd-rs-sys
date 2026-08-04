@@ -224,7 +224,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         ((*fpstats).newEvents.events).as_mut_ptr(),
         (blockStart as *const c_char)
             .add(blockSize)
-            .offset(-(SEGMENT_SIZE as isize)) as *const c_void,
+            .sub(SEGMENT_SIZE as usize) as *const c_void,
         SEGMENT_SIZE as size_t,
     );
     (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
@@ -236,7 +236,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         ((*middleEvents).events).as_mut_ptr(),
         (blockStart as *const c_char)
             .add(blockSize / 2)
-            .offset(-((SEGMENT_SIZE / 2) as isize)) as *const c_void,
+            .sub((SEGMENT_SIZE / 2) as usize) as *const c_void,
         SEGMENT_SIZE as size_t,
     );
     (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;

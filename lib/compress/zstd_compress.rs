@@ -1081,7 +1081,7 @@ fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: size_t
 #[inline]
 unsafe fn ZSTD_cwksp_initialAllocStart(ws: *mut ZSTD_cwksp) -> *mut core::ffi::c_void {
     let mut endPtr = (*ws).workspaceEnd as *mut core::ffi::c_char;
-    endPtr = endPtr.offset(-((endPtr as size_t % ZSTD_CWKSP_ALIGNMENT_BYTES as size_t) as isize));
+    endPtr = endPtr.sub(endPtr as size_t % ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
     endPtr as *mut core::ffi::c_void
 }
 
@@ -1097,7 +1097,7 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
     ws: *mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
-    let alloc = ((*ws).allocStart as *mut u8).offset(-(bytes as isize)) as *mut core::ffi::c_void;
+    let alloc = ((*ws).allocStart as *mut u8).sub(bytes) as *mut core::ffi::c_void;
     let bottom = (*ws).tableEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if alloc < bottom {
@@ -5872,9 +5872,7 @@ unsafe fn ZSTD_buildSeqStore(
         );
     }
 
-    let lastLiterals = (src as *const u8)
-        .add(srcSize)
-        .offset(-(lastLLSize as isize));
+    let lastLiterals = (src as *const u8).add(srcSize).sub(lastLLSize as usize);
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
 
     ZSTD_validateSeqStore(&(*zc).seqStore, &(*zc).appliedParams.cParams);
@@ -7951,7 +7949,7 @@ unsafe fn ZSTD_loadDictionaryContent(
 
     // If the dictionary is too large, only load the suffix of the dictionary.
     if srcSize > maxDictSize as size_t {
-        ip = iend.offset(-(maxDictSize as isize));
+        ip = iend.sub(maxDictSize as usize);
         src = ip as *const core::ffi::c_void;
         srcSize = maxDictSize as size_t;
     }
@@ -7999,7 +7997,7 @@ unsafe fn ZSTD_loadDictionaryContent(
             31
         });
     if srcSize > maxDictSize_0 as size_t {
-        ip = iend.offset(-(maxDictSize_0 as isize));
+        ip = iend.sub(maxDictSize_0 as usize);
         src = ip as *const core::ffi::c_void;
         srcSize = maxDictSize_0 as size_t;
     }
@@ -8033,20 +8031,17 @@ unsafe fn ZSTD_loadDictionaryContent(
         }
         3..=5 => {
             if ms.dedicatedDictSearch != 0 {
-                ZSTD_dedicatedDictSearch_lazy_loadDictionary(
-                    ms,
-                    iend.offset(-(HASH_READ_SIZE as isize)),
-                );
+                ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms, iend.sub(HASH_READ_SIZE as usize));
             } else if (*params).useRowMatchFinder == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
                 let tagTableSize = 1 << (*params).cParams.hashLog;
                 ptr::write_bytes(ms.tagTable, 0, tagTableSize as usize);
-                ZSTD_row_update(ms, iend.offset(-(HASH_READ_SIZE as isize)));
+                ZSTD_row_update(ms, iend.sub(HASH_READ_SIZE as usize));
             } else {
-                ZSTD_insertAndFindFirstIndex(ms, iend.offset(-(HASH_READ_SIZE as isize)));
+                ZSTD_insertAndFindFirstIndex(ms, iend.sub(HASH_READ_SIZE as usize));
             }
         }
         6..=9 => {
-            ZSTD_updateTree(ms, iend.offset(-(HASH_READ_SIZE as isize)), iend);
+            ZSTD_updateTree(ms, iend.sub(HASH_READ_SIZE as usize), iend);
         }
         _ => {}
     }
@@ -10446,7 +10441,7 @@ unsafe fn ZSTD_compressStream_generic(
     {
         (*input).pos = ((*input).pos).wrapping_sub((*zcs).stableIn_notConsumed);
         if !ip.is_null() {
-            ip = ip.offset(-((*zcs).stableIn_notConsumed as isize));
+            ip = ip.sub((*zcs).stableIn_notConsumed);
         }
         (*zcs).stableIn_notConsumed = 0;
     }
@@ -11509,7 +11504,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
         size_of::<Repcodes_t>(),
     );
 
-    iend = iend.offset(-(bytesAdjustment as isize));
+    iend = iend.sub(bytesAdjustment as usize);
     if ip != iend {
         // Store any last literals
         let lastLLSize = iend.offset_from(ip) as core::ffi::c_long as u32;

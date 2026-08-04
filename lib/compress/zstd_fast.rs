@@ -105,7 +105,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     let mls = (*cParams).minMatch;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).offset(-(HASH_READ_SIZE as isize));
+    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash table.
@@ -143,7 +143,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
     let mls = (*cParams).minMatch;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).offset(-(HASH_READ_SIZE as isize));
+    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash table.
@@ -301,7 +301,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     let prefixStartIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixStart = base.offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
 
     let mut anchor = istart;
     let mut ip0 = istart;
@@ -370,7 +370,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
 
         loop {
             // load repcode match for ip[2]
-            let rval = MEM_read32(ip2.offset(-(rep_offset1 as isize)) as *const core::ffi::c_void);
+            let rval = MEM_read32(ip2.sub(rep_offset1 as usize) as *const core::ffi::c_void);
 
             // write back hash table entry
             current0 = ip0.offset_from(base) as core::ffi::c_long as u32;
@@ -382,11 +382,11 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                 != 0
             {
                 ip0 = ip2;
-                match0 = ip0.offset(-(rep_offset1 as isize));
+                match0 = ip0.sub(rep_offset1 as usize);
                 mLength = (*ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int)
                     as core::ffi::c_int as size_t;
-                ip0 = ip0.offset(-(mLength as isize));
-                match0 = match0.offset(-(mLength as isize));
+                ip0 = ip0.sub(mLength as usize);
+                match0 = match0.sub(mLength as usize);
                 offcode = REPCODE1_TO_OFFBASE as u32;
                 mLength = mLength.wrapping_add(4);
 
@@ -521,9 +521,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                 // rep_offset2==0 means rep_offset2 is invalidated
                 while ip0 <= ilimit
                     && MEM_read32(ip0 as *const core::ffi::c_void)
-                        == MEM_read32(
-                            ip0.offset(-(rep_offset2 as isize)) as *const core::ffi::c_void
-                        )
+                        == MEM_read32(ip0.sub(rep_offset2 as usize) as *const core::ffi::c_void)
                 {
                     // store sequence
                     let rLength =
@@ -717,7 +715,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
     let prefixStartIndex = ms.window.dictLimit;
     let prefixStart = base.offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
 
@@ -938,7 +936,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                 let repIndex2 = current2.wrapping_sub(offset_2);
                 let repMatch2 = if repIndex2 < prefixStartIndex {
                     dictBase
-                        .offset(-(dictIndexDelta as isize))
+                        .sub(dictIndexDelta as usize)
                         .offset(repIndex2 as isize)
                 } else {
                     base.offset(repIndex2 as isize)
@@ -1177,8 +1175,8 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
                 };
                 mLength = (*ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int)
                     as core::ffi::c_int as size_t;
-                ip0 = ip0.offset(-(mLength as isize));
-                match0 = match0.offset(-(mLength as isize));
+                ip0 = ip0.sub(mLength as usize);
+                match0 = match0.sub(mLength as usize);
                 offcode = REPCODE1_TO_OFFBASE as u32;
                 mLength = mLength.wrapping_add(4);
                 current_block = 1352918242886884122;

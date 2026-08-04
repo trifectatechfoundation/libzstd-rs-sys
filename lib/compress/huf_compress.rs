@@ -1122,7 +1122,7 @@ unsafe fn HUF_initCStream(
     bitC.ptr = bitC.startPtr;
     bitC.endPtr = (bitC.startPtr)
         .add(dstCapacity)
-        .offset(-(size_of::<size_t>() as c_ulong as isize));
+        .sub(size_of::<size_t>() as c_ulong as usize);
     if dstCapacity <= size_of::<size_t>() {
         return Error::dstSize_tooSmall.to_error_code();
     }

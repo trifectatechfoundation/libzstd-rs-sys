@@ -2644,7 +2644,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let ilimit = if searchMethod as core::ffi::c_uint
         == search_rowHash as core::ffi::c_int as core::ffi::c_uint
     {
-        iend.sub(8).offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
+        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
     } else {
         iend.sub(8)
     };
@@ -2835,7 +2835,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                     && offBase != 0
                                     && (offset_1 > 0) as core::ffi::c_int
                                         & (MEM_read32(ip as *const core::ffi::c_void)
-                                            == MEM_read32(ip.offset(-(offset_1 as isize))
+                                            == MEM_read32(ip.sub(offset_1 as usize)
                                                 as *const core::ffi::c_void))
                                             as core::ffi::c_int
                                         != 0
@@ -2933,7 +2933,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                         && offBase != 0
                                         && (offset_1 > 0) as core::ffi::c_int
                                             & (MEM_read32(ip as *const core::ffi::c_void)
-                                                == MEM_read32(ip.offset(-(offset_1 as isize))
+                                                == MEM_read32(ip.sub(offset_1 as usize)
                                                     as *const core::ffi::c_void))
                                                 as core::ffi::c_int
                                             != 0
@@ -3064,7 +3064,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                 let mut match_0 = if matchIndex < prefixLowestIndex {
                                     dictBase
                                         .offset(matchIndex as isize)
-                                        .offset(-(dictIndexDelta as isize))
+                                        .sub(dictIndexDelta as usize)
                                 } else {
                                     base.offset(matchIndex as isize)
                                 };
@@ -3122,7 +3122,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                 let repIndex_2 = current2.wrapping_sub(offset_2);
                 let repMatch_2 = if repIndex_2 < prefixLowestIndex {
                     dictBase
-                        .offset(-(dictIndexDelta as isize))
+                        .sub(dictIndexDelta as usize)
                         .offset(repIndex_2 as isize)
                 } else {
                     base.offset(repIndex_2 as isize)
@@ -3165,7 +3165,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
         if dictMode as core::ffi::c_uint == ZSTD_noDict as core::ffi::c_int as core::ffi::c_uint {
             while (ip <= ilimit) as core::ffi::c_int & (offset_2 > 0) as core::ffi::c_int != 0
                 && MEM_read32(ip as *const core::ffi::c_void)
-                    == MEM_read32(ip.offset(-(offset_2 as isize)) as *const core::ffi::c_void)
+                    == MEM_read32(ip.sub(offset_2 as usize) as *const core::ffi::c_void)
             {
                 // store sequence
                 matchLength =
@@ -3608,7 +3608,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     let ilimit = if searchMethod as core::ffi::c_uint
         == search_rowHash as core::ffi::c_int as core::ffi::c_uint
     {
-        iend.sub(8).offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
+        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
     } else {
         iend.sub(8)
     };
