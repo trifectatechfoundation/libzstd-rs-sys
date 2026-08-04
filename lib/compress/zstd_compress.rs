@@ -857,8 +857,8 @@ unsafe fn ZSTD_checkDictValidity(
     window: &ZSTD_window_t,
     blockEnd: *const core::ffi::c_void,
     maxDist: u32,
-    loadedDictEndPtr: *mut u32,
-    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
+    loadedDictEndPtr: &mut u32,
+    dictMatchStatePtr: &mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
         (blockEnd as *const u8).wrapping_offset_from(window.base) as core::ffi::c_long as u32;
