@@ -1827,7 +1827,7 @@ unsafe fn HUF_compress_internal(
         let largestEnd = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueEnd,
-            (src as *const u8).add(srcSize).sub(4096) as *const c_void,
+            src.byte_add(srcSize).byte_sub(4096),
             4096,
         ) as size_t;
         if ERR_isError(largestEnd) {

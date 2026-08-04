@@ -1097,7 +1097,7 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
     ws: *mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
-    let alloc = ((*ws).allocStart as *mut u8).sub(bytes) as *mut core::ffi::c_void;
+    let alloc = (*ws).allocStart.byte_sub(bytes);
     let bottom = (*ws).tableEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if alloc < bottom {
