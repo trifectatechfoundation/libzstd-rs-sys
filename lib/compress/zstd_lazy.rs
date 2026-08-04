@@ -687,7 +687,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
 /// If none are longer than the argument ml, then ml will be returned.
 #[inline(always)]
 unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
     mut ml: size_t,
     nbAttempts: u32,
     dms: *const ZSTD_MatchState_t,
