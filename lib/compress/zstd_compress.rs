@@ -467,13 +467,6 @@ pub type S16 = i16;
 pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
 pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
 pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
-pub type Repcodes_t = repcodes_s;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct repcodes_s {
-    pub rep: [u32; 3],
-}
 
 pub const ZSTDbss_noCompress: C2RustUnnamed_2 = 1;
 pub const ZSTDbss_compress: C2RustUnnamed_2 = 0;
@@ -936,10 +929,11 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
-    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength,
+    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
