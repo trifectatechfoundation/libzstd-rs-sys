@@ -6107,7 +6107,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         maxSymbolValue,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-        (nextHuf.CTable).as_mut_ptr(),
+        &mut nextHuf.CTable,
         countWksp,
         hufFlags,
     );
