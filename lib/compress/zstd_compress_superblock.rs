@@ -463,7 +463,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
 }
 
 unsafe fn ZSTD_seqDecompressedSize(
-    seqStore: *const SeqStore_t,
+    seqStore: &SeqStore_t,
     sequences: *const SeqDef,
     nbSeqs: size_t,
     litSize: size_t,
