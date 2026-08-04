@@ -5814,10 +5814,10 @@ unsafe fn ZSTD_copyBlockSequences(
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    libc::memcpy(
-        &mut repcodes as *mut Repcodes_t as *mut core::ffi::c_void,
-        prevRepcodes as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
+    core::ptr::copy_nonoverlapping(
+        prevRepcodes,
+        repcodes.rep.as_mut_ptr(),
+        ZSTD_REP_NUM as usize,
     );
     for i in 0..nbInSequences {
         let mut rawOffset: u32 = 0;

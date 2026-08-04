@@ -113,11 +113,7 @@ fn ZSTD_MLcode(mlBase: u32) -> u32 {
 #[inline]
 unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     let mut newReps = repcodes_s { rep: [0; 3] };
-    libc::memcpy(
-        &mut newReps as *mut Repcodes_t as *mut core::ffi::c_void,
-        rep as *const core::ffi::c_void,
-        size_of::<Repcodes_t>(),
-    );
+    core::ptr::copy_nonoverlapping(rep, newReps.rep.as_mut_ptr(), ZSTD_REP_NUM as usize);
     ZSTD_updateRep((newReps.rep).as_mut_ptr(), offBase, ll0);
     newReps
 }
@@ -1929,11 +1925,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             // in every subsequent price. But, we include the literal length because
             // the cost variation of litlen depends on the value of litlen.
             (*opt).price = ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
-            libc::memcpy(
-                &mut (*opt).rep as *mut [u32; 3] as *mut core::ffi::c_void,
-                rep as *const core::ffi::c_void,
-                size_of::<[u32; 3]>(),
-            );
+            core::ptr::copy_nonoverlapping(rep, (*opt).rep.as_mut_ptr(), ZSTD_REP_NUM as usize);
 
             // large match -> immediate encoding
             let maxML = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
@@ -2209,16 +2201,12 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                         lastStretch.off,
                         ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
                     );
-                    libc::memcpy(
-                        rep as *mut core::ffi::c_void,
-                        &reps as *const Repcodes_t as *const core::ffi::c_void,
-                        size_of::<Repcodes_t>(),
-                    );
+                    core::ptr::copy_nonoverlapping(reps.rep.as_ptr(), rep, ZSTD_REP_NUM as usize);
                 } else {
-                    libc::memcpy(
-                        rep as *mut core::ffi::c_void,
-                        (lastStretch.rep).as_mut_ptr() as *const core::ffi::c_void,
-                        size_of::<Repcodes_t>(),
+                    core::ptr::copy_nonoverlapping(
+                        lastStretch.rep.as_ptr(),
+                        rep,
+                        ZSTD_REP_NUM as usize,
                     );
                     cur = cur.wrapping_sub(lastStretch.litlen);
                 }
@@ -2338,11 +2326,7 @@ unsafe fn ZSTD_initStats_ultra(
     srcSize: size_t,
 ) {
     let mut tmpRep: [u32; 3] = [0; 3]; // updated rep codes will sink here
-    libc::memcpy(
-        tmpRep.as_mut_ptr() as *mut core::ffi::c_void,
-        rep as *const core::ffi::c_void,
-        size_of::<[u32; 3]>(),
-    );
+    core::ptr::copy_nonoverlapping(rep, tmpRep.as_mut_ptr(), ZSTD_REP_NUM as usize);
 
     // generate stats into ms->opt
     ZSTD_compressBlock_opt2(ms, seqStore, tmpRep.as_mut_ptr(), src, srcSize, ZSTD_noDict);
