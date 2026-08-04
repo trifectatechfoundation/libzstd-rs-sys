@@ -1633,7 +1633,7 @@ pub unsafe fn HUF_optimalTableLog(
     maxSymbolValue: c_uint,
     workSpace: *mut c_void,
     wkspSize: size_t,
-    table: *mut HUF_CElt,
+    table: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     count: *const c_uint,
     flags: c_int,
 ) -> c_uint {
@@ -1658,7 +1658,7 @@ pub unsafe fn HUF_optimalTableLog(
     optLogGuess = minTableLog;
     while optLogGuess <= maxTableLog {
         let maxBits = HUF_buildCTable_wksp(
-            table,
+            table.as_mut_ptr(),
             count,
             maxSymbolValue,
             optLogGuess,
@@ -1672,14 +1672,15 @@ pub unsafe fn HUF_optimalTableLog(
             hSize = HUF_writeCTable_wksp(
                 dst,
                 dstSize,
-                table,
+                table.as_ptr(),
                 maxSymbolValue,
                 maxBits as u32,
                 workSpace,
                 wkspSize,
             );
             if !ERR_isError(hSize) {
-                newSize = (HUF_estimateCompressedSize(table, count, maxSymbolValue)) + (hSize);
+                newSize =
+                    (HUF_estimateCompressedSize(table.as_ptr(), count, maxSymbolValue)) + (hSize);
                 if newSize > optSize + 1 {
                     break;
                 }
@@ -1858,7 +1859,7 @@ unsafe fn HUF_compress_internal(
         maxSymbolValue,
         &mut (*table).wksps as *mut workspace_union as *mut c_void,
         size_of::<workspace_union>(),
-        ((*table).CTable).as_mut_ptr(),
+        &mut (*table).CTable,
         ((*table).count).as_mut_ptr(),
         flags,
     );
