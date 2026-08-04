@@ -228,11 +228,6 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     const {
         assert!(size_of::<HUF_CElt>() == size_of::<HUF_CTableHeader>());
     }
-    ptr::write_bytes(
-        &mut header as *mut HUF_CTableHeader as *mut u8,
-        0,
-        size_of::<HUF_CTableHeader>(),
-    );
     debug_assert!(tableLog < 256);
     header.tableLog = tableLog as u8;
     debug_assert!(maxSymbolValue < 256);
