@@ -99,10 +99,10 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
 ) {
     let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
-    let hBitsL = ((*cParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
-    let mls = (*cParams).minMatch;
+    let hBitsL = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let mls = cParams.minMatch;
     let hashSmall = ms.chainTable;
-    let hBitsS = ((*cParams).chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
@@ -143,10 +143,10 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
 ) {
     let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
-    let hBitsL = (*cParams).hashLog;
-    let mls = (*cParams).minMatch;
+    let hBitsL = cParams.hashLog;
+    let mls = cParams.minMatch;
     let hashSmall = ms.chainTable;
-    let hBitsS = (*cParams).chainLog;
+    let hBitsS = cParams.chainLog;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
@@ -203,15 +203,15 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
-    let hBitsL = (*cParams).hashLog;
+    let hBitsL = cParams.hashLog;
     let hashSmall = ms.chainTable;
-    let hBitsS = (*cParams).chainLog;
+    let hBitsS = cParams.chainLog;
     let base = ms.window.base;
     let istart = src as *const u8;
     let mut anchor = istart;
     let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
     // presumes that, if there is a dictionary, it must be using Attach mode
-    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
+    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
     let prefixLowest = base.offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(HASH_READ_SIZE as usize);
@@ -265,7 +265,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
         (ip.offset_from(prefixLowest) as core::ffi::c_long == 0) as core::ffi::c_int as isize,
     );
     let current = ip.offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestPrefixIndex(ms, current, (*cParams).windowLog);
+    let windowLow = ZSTD_getLowestPrefixIndex(ms, current, cParams.windowLog);
     let maxRep = current.wrapping_sub(windowLow);
     if offset_2 > maxRep {
         offsetSaved2 = offset_2;
@@ -569,16 +569,16 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
-    let hBitsL = (*cParams).hashLog;
+    let hBitsL = cParams.hashLog;
     let hashSmall = ms.chainTable;
-    let hBitsS = (*cParams).chainLog;
+    let hBitsS = cParams.chainLog;
     let base = ms.window.base;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
     let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     // presumes that, if there is a dictionary, it must be using Attach mode
-    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
+    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(HASH_READ_SIZE as usize);
@@ -1131,9 +1131,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
-    let hBitsL = (*cParams).hashLog;
+    let hBitsL = cParams.hashLog;
     let hashSmall = ms.chainTable;
-    let hBitsS = (*cParams).chainLog;
+    let hBitsS = cParams.chainLog;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
@@ -1141,7 +1141,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     let ilimit = iend.sub(8);
     let base = ms.window.base;
     let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
-    let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
+    let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, cParams.windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
     let prefixStartIndex = dictLimit.max(lowLimit);
