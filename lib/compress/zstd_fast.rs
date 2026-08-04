@@ -527,7 +527,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                 {
                     // store sequence
                     let rLength =
-                        (ZSTD_count(ip0.add(4), ip0.add(4).offset(-(rep_offset2 as isize)), iend))
+                        (ZSTD_count(ip0.add(4), ip0.add(4).sub(rep_offset2 as usize), iend))
                             .wrapping_add(4);
                     core::mem::swap(&mut rep_offset2, &mut rep_offset1); // swap rep_offset2 <=> rep_offset1
                     *hashTable.add(ZSTD_hashPtr(ip0 as *const core::ffi::c_void, hlog, mls)) =

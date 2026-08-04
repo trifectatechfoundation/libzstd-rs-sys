@@ -304,15 +304,14 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
 
                     // check noDict repcode
                     if (offset_1 > 0) as core::ffi::c_int
-                        & (MEM_read32(
-                            ip.add(1).offset(-(offset_1 as isize)) as *const core::ffi::c_void
-                        ) == MEM_read32(ip.add(1) as *const core::ffi::c_void))
+                        & (MEM_read32(ip.add(1).sub(offset_1 as usize) as *const core::ffi::c_void)
+                            == MEM_read32(ip.add(1) as *const core::ffi::c_void))
                             as core::ffi::c_int
                         != 0
                     {
                         mLength = (ZSTD_count(
                             ip.add(1).add(4),
-                            ip.add(1).add(4).offset(-(offset_1 as isize)),
+                            ip.add(1).add(4).sub(offset_1 as usize),
                             iend,
                         ))
                         .wrapping_add(4);
@@ -503,12 +502,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                                     != 0
                             {
                                 // store sequence
-                                let rLength = (ZSTD_count(
-                                    ip.add(4),
-                                    ip.add(4).offset(-(offset_2 as isize)),
-                                    iend,
-                                ))
-                                .wrapping_add(4);
+                                let rLength =
+                                    (ZSTD_count(ip.add(4), ip.add(4).sub(offset_2 as usize), iend))
+                                        .wrapping_add(4);
                                 core::mem::swap(&mut offset_2, &mut offset_1);
                                 *hashSmall.add(ZSTD_hashPtr(
                                     ip as *const core::ffi::c_void,

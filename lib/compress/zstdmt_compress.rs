@@ -1869,7 +1869,7 @@ unsafe fn ZSTDMT_createCompressionJob(
         if !endFrame {
             let newPrefixSize = srcSize.min((*mtctx).targetPrefixSize);
             (*mtctx).inBuff.prefix.start =
-                src.add(srcSize).offset(-(newPrefixSize as isize)) as *const core::ffi::c_void;
+                src.add(srcSize).sub(newPrefixSize) as *const core::ffi::c_void;
             (*mtctx).inBuff.prefix.size = newPrefixSize;
         } else {
             // endFrame==1 => no need for another input buffer
@@ -2214,7 +2214,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         // part way through the input buffer.
         pos = (RSYNC_MIN_BLOCK_SIZE as size_t).wrapping_sub((*mtctx).inBuff.filled);
         if pos >= RSYNC_LENGTH as size_t {
-            prev = istart.add(pos).offset(-(RSYNC_LENGTH as isize));
+            prev = istart.add(pos).sub(RSYNC_LENGTH as usize);
             hash =
                 ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
         } else {
