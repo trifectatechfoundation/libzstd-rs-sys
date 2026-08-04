@@ -3692,28 +3692,28 @@ pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
     )
 }
 
-unsafe fn ZSTD_sizeof_matchState(
-    cParams: *const ZSTD_compressionParameters,
+fn ZSTD_sizeof_matchState(
+    cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     enableDedicatedDictSearch: core::ffi::c_int,
     forCCtx: u32,
 ) -> size_t {
     // chain table size should be 0 for fast or row-hash strategies
     let chainSize = if ZSTD_allocateChainTable(
-        (*cParams).strategy,
+        cParams.strategy,
         useRowMatchFinder,
         enableDedicatedDictSearch != 0 && forCCtx == 0,
     ) {
-        (1 as size_t) << (*cParams).chainLog
+        (1 as size_t) << cParams.chainLog
     } else {
         0 as size_t
     };
-    let hSize = (1 as size_t) << (*cParams).hashLog;
-    let hashLog3 = if forCCtx != 0 && (*cParams).minMatch == 3 {
-        if (17) < (*cParams).windowLog {
+    let hSize = (1 as size_t) << cParams.hashLog;
+    let hashLog3 = if forCCtx != 0 && cParams.minMatch == 3 {
+        if (17) < cParams.windowLog {
             17
         } else {
-            (*cParams).windowLog
+            cParams.windowLog
         }
     } else {
         0
@@ -3746,13 +3746,13 @@ unsafe fn ZSTD_sizeof_matchState(
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
                 (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
             ));
-    let lazyAdditionalSpace = if ZSTD_rowMatchFinderUsed((*cParams).strategy, useRowMatchFinder) {
+    let lazyAdditionalSpace = if ZSTD_rowMatchFinderUsed(cParams.strategy, useRowMatchFinder) {
         ZSTD_cwksp_aligned64_alloc_size(hSize)
     } else {
         0
     };
     let optSpace = if forCCtx != 0
-        && (*cParams).strategy as core::ffi::c_uint
+        && cParams.strategy as core::ffi::c_uint
             >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
     {
         optPotentialSpace
