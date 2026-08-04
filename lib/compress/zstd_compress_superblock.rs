@@ -20,8 +20,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, Repcodes_t, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
-    ZSTD_updateRep,
+    repcodes_s, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
