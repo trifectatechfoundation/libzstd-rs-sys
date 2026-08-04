@@ -1122,12 +1122,12 @@ unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
 /// Merges the bit container @ index 1 into the bit container @ index 0
 /// and zeros the bit container @ index 1.
 #[inline(always)]
-unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
-    debug_assert!(((*bitC).bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
-    (*bitC).bitContainer[0] >>= (*bitC).bitPos[1] & 0xff as c_int as size_t;
-    (*bitC).bitContainer[0] |= (*bitC).bitContainer[1];
-    (*bitC).bitPos[0] += (*bitC).bitPos[1];
-    debug_assert!(((*bitC).bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+unsafe fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
+    debug_assert!((bitC.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
+    bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xff as c_int as size_t;
+    bitC.bitContainer[0] |= bitC.bitContainer[1];
+    bitC.bitPos[0] += bitC.bitPos[1];
+    debug_assert!((bitC.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
 }
 
 /// Flushes the bits in the bit container @ index 0.
