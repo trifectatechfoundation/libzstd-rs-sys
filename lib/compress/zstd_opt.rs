@@ -614,26 +614,26 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
 ///
 /// The number of positions added
 unsafe fn ZSTD_insertBt1(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
     target: u32,
     mls: u32,
     extDict: bool,
 ) -> u32 {
-    let cParams: *const ZSTD_compressionParameters = &(*ms).cParams;
-    let hashTable = (*ms).hashTable;
+    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
+    let hashTable = ms.hashTable;
     let hashLog = (*cParams).hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
-    let bt = (*ms).chainTable;
+    let bt = ms.chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let mut matchIndex = *hashTable.add(h);
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
-    let base = (*ms).window.base;
-    let dictBase = (*ms).window.dictBase;
-    let dictLimit = (*ms).window.dictLimit;
+    let base = ms.window.base;
+    let dictBase = ms.window.dictBase;
+    let dictLimit = ms.window.dictLimit;
     let dictEnd = dictBase.offset(dictLimit as isize);
     let prefixStart = base.offset(dictLimit as isize);
     let mut match_0 = core::ptr::null::<u8>();
