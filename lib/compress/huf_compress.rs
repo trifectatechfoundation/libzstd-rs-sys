@@ -41,7 +41,7 @@ pub const HUF_WORKSPACE_MAX_ALIGNMENT: usize = 8;
 
 unsafe fn HUF_alignUpWorkspace(
     workspace: *mut c_void,
-    workspaceSizePtr: *mut size_t,
+    workspaceSizePtr: &mut size_t,
     align: size_t,
 ) -> *mut c_void {
     let mask = align - 1;
@@ -260,7 +260,7 @@ pub unsafe fn HUF_writeCTable_wksp(
 ) -> size_t {
     let ct = CTable.add(1);
     let op = dst as *mut u8;
-    let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>() as size_t)
+    let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
         as *mut HUF_WriteCTableWksp;
 
     const {
@@ -955,7 +955,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     workSpace: *mut c_void,
     mut wkspSize: size_t,
 ) -> size_t {
-    let wksp_tables = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<u32>() as size_t)
+    let wksp_tables = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<u32>())
         as *mut HUF_buildCTable_wksp_tables;
     let huffNode0 = ((*wksp_tables).huffNodeTbl).as_mut_ptr();
     let huffNode = huffNode0.add(1);
@@ -1719,7 +1719,7 @@ unsafe fn HUF_compress_internal(
     repeat: *mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
-    let table = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<size_t>() as size_t)
+    let table = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<size_t>())
         as *mut HUF_compress_tables_t;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
