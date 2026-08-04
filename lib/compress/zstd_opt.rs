@@ -114,7 +114,7 @@ fn ZSTD_MLcode(mlBase: u32) -> u32 {
 unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     let mut newReps = repcodes_s { rep: [0; 3] };
     core::ptr::copy_nonoverlapping(rep, newReps.rep.as_mut_ptr(), ZSTD_REP_NUM as usize);
-    ZSTD_updateRep((newReps.rep).as_mut_ptr(), offBase, ll0);
+    ZSTD_updateRep(&mut newReps.rep, offBase, ll0);
     newReps
 }
 
