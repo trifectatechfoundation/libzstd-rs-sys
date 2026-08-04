@@ -881,8 +881,8 @@ unsafe fn ZSTD_HcFindBestMatch(
     } else {
         lowestValid
     };
-    let isDictionary = (ms.loadedDictEnd != 0) as core::ffi::c_int as u32;
-    let lowLimit = if isDictionary != 0 {
+    let isDictionary = ms.loadedDictEnd != 0;
+    let lowLimit = if isDictionary {
         lowestValid
     } else {
         withinMaxDistance
@@ -918,7 +918,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     matchIndex =
         ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, mls, ms.lazySkipping as u32);
 
-    while (matchIndex >= lowLimit) as core::ffi::c_int & (nbAttempts > 0) as core::ffi::c_int != 0 {
+    while (matchIndex >= lowLimit) && (nbAttempts > 0) {
         let mut currentMl = 0;
         if dictMode != ZSTD_extDict || matchIndex >= dictLimit {
             let match_0 = base.offset(matchIndex as isize);
@@ -993,10 +993,7 @@ unsafe fn ZSTD_HcFindBestMatch(
             mls,
         ));
 
-        while (matchIndex >= dmsLowestIndex) as core::ffi::c_int
-            & (nbAttempts > 0) as core::ffi::c_int
-            != 0
-        {
+        while (matchIndex >= dmsLowestIndex) && (nbAttempts > 0) {
             let mut currentMl_0 = 0;
             let match_2 = dmsBase.offset(matchIndex as isize);
 
@@ -1403,8 +1400,8 @@ unsafe fn ZSTD_RowFindBestMatch(
     } else {
         lowestValid
     };
-    let isDictionary = (ms.loadedDictEnd != 0) as core::ffi::c_int as u32;
-    let lowLimit = if isDictionary != 0 {
+    let isDictionary = ms.loadedDictEnd != 0;
+    let lowLimit = if isDictionary {
         lowestValid
     } else {
         withinMaxDistance
