@@ -624,7 +624,7 @@ unsafe fn ZSTD_insertBt1(
     iend: *const u8,
     target: u32,
     mls: u32,
-    extDict: core::ffi::c_int,
+    extDict: bool,
 ) -> u32 {
     let cParams: *const ZSTD_compressionParameters = &(*ms).cParams;
     let hashTable = (*ms).hashTable;
@@ -665,7 +665,7 @@ unsafe fn ZSTD_insertBt1(
         // guaranteed minimum nb of common bytes
         let mut matchLength = commonLengthSmaller.min(commonLengthLarger);
 
-        if extDict == 0 || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
+        if !extDict || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
             match_0 = base.offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count(
                 ip.add(matchLength),
@@ -757,7 +757,7 @@ unsafe fn ZSTD_updateTree_internal(
             iend,
             target,
             mls,
-            (dictMode == ZSTD_extDict) as core::ffi::c_int,
+            dictMode == ZSTD_extDict,
         );
         idx = idx.wrapping_add(forward);
     }
