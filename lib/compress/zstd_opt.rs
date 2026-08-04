@@ -28,12 +28,6 @@ pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
 pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
 pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
 
-#[repr(C)]
-pub struct repcodes_s {
-    pub rep: [u32; 3],
-}
-
-pub type Repcodes_t = repcodes_s;
 pub type ZSTD_getAllMatchesFn = Option<
     unsafe fn(
         *mut ZSTD_match_t,
@@ -77,8 +71,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    zop_dynamic, zop_predef, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
-    ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
+    repcodes_s, zop_dynamic, zop_predef, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
+    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_updateRep,
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 

@@ -10,6 +10,14 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub(crate) struct repcodes_s {
+    pub rep: [u32; 3],
+}
+
+pub(crate) type Repcodes_t = repcodes_s;
+
 pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub(crate) const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;

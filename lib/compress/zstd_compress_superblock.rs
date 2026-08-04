@@ -20,7 +20,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
+    repcodes_s, Repcodes_t, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
+    ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -232,13 +233,6 @@ pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
 pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
 pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
 pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
-pub type Repcodes_t = repcodes_s;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct repcodes_s {
-    pub rep: [u32; 3],
-}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
