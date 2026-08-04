@@ -6100,11 +6100,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // Build Huffman Tree
-    ptr::write_bytes(
-        (nextHuf.CTable).as_mut_ptr() as *mut u8,
-        0,
-        size_of_val(&nextHuf.CTable),
-    );
+    nextHuf.CTable.fill(0);
     huffLog = HUF_optimalTableLog(
         huffLog,
         srcSize,
