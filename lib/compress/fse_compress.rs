@@ -666,7 +666,7 @@ unsafe fn FSE_compress_usingCTable_generic(
     src: *const core::ffi::c_void,
     mut srcSize: size_t,
     ct: *const FSE_CTable,
-    fast: core::ffi::c_uint,
+    fast: bool,
 ) -> size_t {
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
@@ -708,7 +708,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_initCState2(&mut CState2, ct, *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast != 0 {
+        if fast {
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
@@ -730,7 +730,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast != 0 {
+        if fast {
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
@@ -746,7 +746,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
         {
             // this test must be static
-            if fast != 0 {
+            if fast {
                 BIT_flushBitsFast(&mut bitC);
             } else {
                 BIT_flushBits(&mut bitC);
@@ -766,7 +766,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         }
 
-        if fast != 0 {
+        if fast {
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
@@ -785,16 +785,11 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
     srcSize: size_t,
     ct: *const FSE_CTable,
 ) -> size_t {
-    let fast = (dstSize
+    let fast = dstSize
         >= srcSize
             .wrapping_add(srcSize >> 7)
             .wrapping_add(4)
-            .wrapping_add(size_of::<size_t>())) as core::ffi::c_int
-        as core::ffi::c_uint;
+            .wrapping_add(size_of::<size_t>());
 
-    if fast != 0 {
-        FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 1)
-    } else {
-        FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 0)
-    }
+    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, fast)
 }
