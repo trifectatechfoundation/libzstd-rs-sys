@@ -339,10 +339,10 @@ unsafe fn ZSTD_compressSubBlock_literal(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     bmi2: core::ffi::c_int,
-    writeEntropy: core::ffi::c_int,
-    entropyWritten: *mut core::ffi::c_int,
+    writeEntropy: bool,
+    entropyWritten: &mut bool,
 ) -> size_t {
-    let header = (if writeEntropy != 0 { 200 } else { 0 }) as size_t;
+    let header = (if writeEntropy { 200 } else { 0 }) as size_t;
     let lhSize = (3
         + (litSize >= (((1) << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
         + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
@@ -351,14 +351,14 @@ unsafe fn ZSTD_compressSubBlock_literal(
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
     let singleStream = (lhSize == 3) as core::ffi::c_int as u32;
-    let hType = (if writeEntropy != 0 {
+    let hType = (if writeEntropy {
         hufMetadata.hType as core::ffi::c_uint
     } else {
         set_repeat as core::ffi::c_int as core::ffi::c_uint
     }) as SymbolEncodingType_e;
     let mut cLitSize = 0 as size_t;
 
-    *entropyWritten = 0;
+    *entropyWritten = false;
     if litSize == 0
         || hufMetadata.hType as core::ffi::c_uint
             == set_basic as core::ffi::c_int as core::ffi::c_uint
@@ -380,7 +380,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
 
-    if writeEntropy != 0
+    if writeEntropy
         && hufMetadata.hType as core::ffi::c_uint
             == set_compressed as core::ffi::c_int as core::ffi::c_uint
     {
@@ -423,7 +423,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         return 0;
     }
     // If we expand and we aren't writing a header then emit uncompressed.
-    if writeEntropy == 0 && cLitSize >= litSize {
+    if !writeEntropy && cLitSize >= litSize {
         return ZSTD_noCompressLiterals(
             dst,
             dstSize,
@@ -473,7 +473,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         }
         _ => {} // not possible : lhSize is {3,4,5}
     }
-    *entropyWritten = 1;
+    *entropyWritten = true;
     op.offset_from_unsigned(ostart)
 }
 
@@ -525,8 +525,8 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     bmi2: core::ffi::c_int,
-    writeEntropy: core::ffi::c_int,
-    entropyWritten: *mut core::ffi::c_int,
+    writeEntropy: bool,
+    entropyWritten: &mut bool,
 ) -> size_t {
     let longOffsets = (*cctxParams).cParams.windowLog
         > (if MEM_32bits() {
@@ -539,7 +539,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     let mut op = ostart;
     let mut seqHead = core::ptr::null_mut::<u8>();
 
-    *entropyWritten = 0;
+    *entropyWritten = false;
     // Sequences Header
     if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
         return Error::dstSize_tooSmall.to_error_code();
@@ -569,7 +569,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     op = op.add(1);
     seqHead = fresh1;
 
-    if writeEntropy != 0 {
+    if writeEntropy {
         let LLtype = fseMetadata.llType;
         let Offtype = fseMetadata.ofType;
         let MLtype = fseMetadata.mlType;
@@ -615,7 +615,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // bytes and the bitstream is only one byte.
     // In this exceedingly rare case, we will simply emit an uncompressed
     // block, since it isn't worth optimizing.
-    if writeEntropy != 0
+    if writeEntropy
         && fseMetadata.lastCountSize != 0
         && (fseMetadata.lastCountSize).wrapping_add(bitstreamSize) < 4
     {
@@ -632,7 +632,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         return 0;
     }
 
-    *entropyWritten = 1;
+    *entropyWritten = true;
     op.offset_from_unsigned(ostart)
 }
 
@@ -656,10 +656,10 @@ unsafe fn ZSTD_compressSubBlock(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     bmi2: core::ffi::c_int,
-    writeLitEntropy: core::ffi::c_int,
-    writeSeqEntropy: core::ffi::c_int,
-    litEntropyWritten: &mut core::ffi::c_int,
-    seqEntropyWritten: &mut core::ffi::c_int,
+    writeLitEntropy: bool,
+    writeSeqEntropy: bool,
+    litEntropyWritten: &mut bool,
+    seqEntropyWritten: &mut bool,
     lastBlock: u32,
 ) -> size_t {
     let ostart = dst as *mut u8;
@@ -727,7 +727,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeEntropy: core::ffi::c_int,
+    writeEntropy: bool,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = 255;
@@ -758,7 +758,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
         }
         let mut cLitSizeEstimate =
             HUF_estimateCompressedSize((huf.CTable).as_ptr(), countWksp, maxSymbolValue);
-        if writeEntropy != 0 {
+        if writeEntropy {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
         }
         return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
@@ -834,7 +834,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeEntropy: core::ffi::c_int,
+    writeEntropy: bool,
 ) -> size_t {
     let sequencesSectionHeaderSize = 3; // Use hard coded size of 3 bytes
     let mut cSeqSizeEstimate = 0 as size_t;
@@ -880,7 +880,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         workspace,
         wkspSize,
     ));
-    if writeEntropy != 0 {
+    if writeEntropy {
         cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(fseMetadata.fseTablesSize);
     }
     cSeqSizeEstimate.wrapping_add(sequencesSectionHeaderSize)
@@ -897,8 +897,8 @@ unsafe fn ZSTD_estimateSubBlockSize(
     entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-    writeLitEntropy: core::ffi::c_int,
-    writeSeqEntropy: core::ffi::c_int,
+    writeLitEntropy: bool,
+    writeSeqEntropy: bool,
 ) -> EstimatedBlockSize {
     let mut ebs = EstimatedBlockSize {
         estLitSize: 0,
@@ -1055,10 +1055,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut ofCodePtr: *const u8 = seqStorePtr.ofCode;
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
     let targetCBlockSize = minTarget.max(cctxParams.targetCBlockSize);
-    let mut writeLitEntropy = (entropyMetadata.hufMetadata.hType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let mut writeSeqEntropy = 1;
+    let mut writeLitEntropy = entropyMetadata.hufMetadata.hType as core::ffi::c_uint
+        == set_compressed as core::ffi::c_int as core::ffi::c_uint;
+    let mut writeSeqEntropy = true;
 
     // let's start by a general estimation for the full block
     if nbSeqs > 0 {
@@ -1113,8 +1112,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
             }
 
             // compress sub-block
-            let mut litEntropyWritten = 0;
-            let mut seqEntropyWritten = 0;
+            let mut litEntropyWritten = false;
+            let mut seqEntropyWritten = false;
             let litSize = countLiterals(seqStorePtr, sp, seqCount);
             let decompressedSize = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, 0);
             let cSize = ZSTD_compressSubBlock(
@@ -1151,11 +1150,11 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 mlCodePtr = mlCodePtr.add(seqCount);
                 ofCodePtr = ofCodePtr.add(seqCount);
                 // Entropy only needs to be written once
-                if litEntropyWritten != 0 {
-                    writeLitEntropy = 0;
+                if litEntropyWritten {
+                    writeLitEntropy = false;
                 }
-                if seqEntropyWritten != 0 {
-                    writeSeqEntropy = 0;
+                if seqEntropyWritten {
+                    writeSeqEntropy = false;
                 }
                 sp = sp.add(seqCount);
                 blockBudgetSupp = 0;
@@ -1165,8 +1164,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
     }
 
     // write last block
-    let mut litEntropyWritten_0 = 0;
-    let mut seqEntropyWritten_0 = 0;
+    let mut litEntropyWritten = false;
+    let mut seqEntropyWritten = false;
     let litSize_0 = lend.offset_from_unsigned(lp);
     let seqCount_0 = send.offset_from_unsigned(sp);
     let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, 1);
@@ -1186,8 +1185,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
         bmi2,
         writeLitEntropy,
         writeSeqEntropy,
-        &mut litEntropyWritten_0,
-        &mut seqEntropyWritten_0,
+        &mut litEntropyWritten,
+        &mut seqEntropyWritten,
         lastBlock,
     );
     let err_code_0 = cSize_0;
@@ -1204,23 +1203,23 @@ unsafe fn ZSTD_compressSubBlock_multi(
         mlCodePtr = mlCodePtr.add(seqCount_0);
         ofCodePtr = ofCodePtr.add(seqCount_0);
         // Entropy only needs to be written once
-        if litEntropyWritten_0 != 0 {
-            writeLitEntropy = 0;
+        if litEntropyWritten {
+            writeLitEntropy = false;
         }
-        if seqEntropyWritten_0 != 0 {
-            writeSeqEntropy = 0;
+        if seqEntropyWritten {
+            writeSeqEntropy = false;
         }
         sp = sp.add(seqCount_0);
     }
 
-    if writeLitEntropy != 0 {
+    if writeLitEntropy {
         libc::memcpy(
             &mut (*nextCBlock).entropy.huf as *mut ZSTD_hufCTables_t as *mut core::ffi::c_void,
             &(*prevCBlock).entropy.huf as *const ZSTD_hufCTables_t as *const core::ffi::c_void,
             size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
         );
     }
-    if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&entropyMetadata.fseMetadata) {
+    if writeSeqEntropy && ZSTD_needSequenceEntropyTables(&entropyMetadata.fseMetadata) {
         // If we haven't written our entropy tables, then we've violated our contract and
         // must emit an uncompressed block.
         return 0;
