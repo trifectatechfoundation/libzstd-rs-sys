@@ -220,7 +220,7 @@ pub struct ZSTD_fseCTables_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; 257],
+    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
     pub repeatMode: HUF_repeat,
 }
 
@@ -901,7 +901,8 @@ use crate::lib::common::fse::{
 };
 use crate::lib::common::huf::{
     HUF_CElt, HUF_flags_optimalDepth, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
+    HUF_repeat_valid, HUF_CTABLE_SIZE_ST, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+    HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
@@ -6102,7 +6103,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     ptr::write_bytes(
         (nextHuf.CTable).as_mut_ptr() as *mut u8,
         0,
-        size_of::<[HUF_CElt; 257]>(),
+        size_of_val(&nextHuf.CTable),
     );
     huffLog = HUF_optimalTableLog(
         huffLog,

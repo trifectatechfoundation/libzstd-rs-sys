@@ -2,7 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
-use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2};
+use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
@@ -325,7 +325,7 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 /// - Or 0 if unable to compress
 /// - Or an error code
 unsafe fn ZSTD_compressSubBlock_literal(
-    hufTable: &[HUF_CElt; 257],
+    hufTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     literals: *const u8,
     litSize: size_t,

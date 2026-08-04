@@ -39,7 +39,7 @@ pub struct ZSTD_fseCTables_t {
 
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; 257],
+    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
     pub repeatMode: HUF_repeat,
 }
 
@@ -64,7 +64,7 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
-use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
+use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
