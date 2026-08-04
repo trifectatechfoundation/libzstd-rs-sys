@@ -2054,12 +2054,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                         as u32,
                                 );
                                 *opt.offset(cur.wrapping_add(1) as isize) = prevMatch;
-                                libc::memcpy(
-                                    ((*opt.offset(cur.wrapping_add(1) as isize)).rep).as_mut_ptr()
-                                        as *mut core::ffi::c_void,
-                                    &newReps as *const Repcodes_t as *const core::ffi::c_void,
-                                    size_of::<Repcodes_t>(),
-                                );
+                                (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps.rep;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
                                 if last_pos < cur.wrapping_add(1) {
@@ -2079,12 +2074,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                             (*opt.offset(cur as isize)).off,
                             ((*opt.offset(prev_0 as isize)).litlen == 0) as core::ffi::c_int as u32,
                         );
-                        libc::memcpy(
-                            ((*opt.offset(cur as isize)).rep).as_mut_ptr()
-                                as *mut core::ffi::c_void,
-                            &newReps_0 as *const Repcodes_t as *const core::ffi::c_void,
-                            size_of::<Repcodes_t>(),
-                        );
+                        (*opt.offset(cur as isize)).rep = newReps_0.rep;
                     }
 
                     // last match must start at a minimum distance of 8 from oend

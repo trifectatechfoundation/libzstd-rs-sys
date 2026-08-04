@@ -1209,11 +1209,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         if sp < send {
             let mut seq = core::ptr::null::<SeqDef>();
             let mut rep = repcodes_s { rep: [0; 3] };
-            libc::memcpy(
-                &mut rep as *mut Repcodes_t as *mut core::ffi::c_void,
-                ((*prevCBlock).rep).as_ptr() as *const core::ffi::c_void,
-                size_of::<Repcodes_t>(),
-            );
+            rep.rep = (*prevCBlock).rep;
             seq = sstart;
             while seq < sp {
                 ZSTD_updateRep(
@@ -1224,11 +1220,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 );
                 seq = seq.add(1);
             }
-            libc::memcpy(
-                ((*nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
-                &mut rep as *mut Repcodes_t as *const core::ffi::c_void,
-                size_of::<Repcodes_t>(),
-            );
+            (*nextCBlock).rep = rep.rep;
         }
     }
 
