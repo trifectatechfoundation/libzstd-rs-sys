@@ -853,7 +853,7 @@ unsafe fn ZSTD_window_enforceMaxDist(
 /// loadedDictEnd uses same referential as window->base,
 /// maxDist is the window size
 #[inline]
-unsafe fn ZSTD_checkDictValidity(
+fn ZSTD_checkDictValidity(
     window: &ZSTD_window_t,
     blockEnd: *const core::ffi::c_void,
     maxDist: u32,
@@ -5343,7 +5343,7 @@ unsafe fn ZSTD_entropyCompressSeqStore(
 /// Not static, but internal use only (used by long distance matcher).
 ///
 /// Assumption: strat is a valid strategy
-pub unsafe fn ZSTD_selectBlockCompressor(
+pub fn ZSTD_selectBlockCompressor(
     strat: ZSTD_strategy,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     dictMode: ZSTD_dictMode_e,
