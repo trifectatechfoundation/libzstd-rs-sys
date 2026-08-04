@@ -1991,7 +1991,7 @@ unsafe fn ZSTD_BtFindBestMatch_noDict_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_noDict)
 }
@@ -2001,7 +2001,7 @@ unsafe fn ZSTD_BtFindBestMatch_dictMatchState_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_dictMatchState)
 }
@@ -2011,7 +2011,7 @@ unsafe fn ZSTD_BtFindBestMatch_noDict_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_noDict)
 }
@@ -2021,7 +2021,7 @@ unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_dedicatedDictSearch)
 }
@@ -2031,7 +2031,7 @@ unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_dedicatedDictSearch)
 }
@@ -2041,7 +2041,7 @@ unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_dedicatedDictSearch)
 }
@@ -2051,7 +2051,7 @@ unsafe fn ZSTD_BtFindBestMatch_extDict_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_extDict)
 }
@@ -2061,7 +2061,7 @@ unsafe fn ZSTD_BtFindBestMatch_dictMatchState_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_dictMatchState)
 }
@@ -2071,7 +2071,7 @@ unsafe fn ZSTD_BtFindBestMatch_extDict_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_extDict)
 }
@@ -2081,7 +2081,7 @@ unsafe fn ZSTD_BtFindBestMatch_noDict_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_noDict)
 }
@@ -2091,7 +2091,7 @@ unsafe fn ZSTD_BtFindBestMatch_extDict_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_extDict)
 }
@@ -2101,7 +2101,7 @@ unsafe fn ZSTD_BtFindBestMatch_dictMatchState_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
 ) -> size_t {
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_dictMatchState)
 }
