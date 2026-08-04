@@ -84,11 +84,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
         _ => {} // not necessary : flSize is {1,2,3}
     }
 
-    libc::memcpy(
-        ostart.offset(flSize as isize) as *mut core::ffi::c_void,
-        src,
-        srcSize as libc::size_t,
-    );
+    core::ptr::copy_nonoverlapping(src.cast::<u8>(), ostart.offset(flSize as isize), srcSize);
 
     srcSize.wrapping_add(flSize as size_t)
 }

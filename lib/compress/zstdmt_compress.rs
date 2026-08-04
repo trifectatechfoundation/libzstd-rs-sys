@@ -1968,14 +1968,12 @@ unsafe fn ZSTDMT_flushProduced(
             .wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
             .min(((*output).size).wrapping_sub((*output).pos));
         if toFlush > 0 {
-            libc::memcpy(
-                ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
-                    as *mut core::ffi::c_void,
-                ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start
-                    as *const core::ffi::c_char)
-                    .add((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
-                    as *const core::ffi::c_void,
-                toFlush as libc::size_t,
+            core::ptr::copy_nonoverlapping(
+                ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start)
+                    .cast::<u8>()
+                    .add((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed),
+                ((*output).dst).cast::<u8>().add((*output).pos),
+                toFlush,
             );
         }
         (*output).pos = ((*output).pos).wrapping_add(toFlush);
@@ -2305,12 +2303,12 @@ pub unsafe fn ZSTDMT_compressStream_generic(
             if syncPoint.flush != 0 && endOp == ZSTD_e_continue {
                 endOp = ZSTD_e_flush;
             }
-            libc::memcpy(
-                ((*mtctx).inBuff.buffer.start as *mut core::ffi::c_char).add((*mtctx).inBuff.filled)
-                    as *mut core::ffi::c_void,
-                ((*input).src as *const core::ffi::c_char).add((*input).pos)
-                    as *const core::ffi::c_void,
-                syncPoint.toLoad as libc::size_t,
+            core::ptr::copy_nonoverlapping(
+                ((*input).src).cast::<u8>().add((*input).pos),
+                ((*mtctx).inBuff.buffer.start)
+                    .cast::<u8>()
+                    .add((*mtctx).inBuff.filled),
+                syncPoint.toLoad,
             );
             (*input).pos = ((*input).pos).wrapping_add(syncPoint.toLoad);
             (*mtctx).inBuff.filled = ((*mtctx).inBuff.filled).wrapping_add(syncPoint.toLoad);

@@ -688,10 +688,10 @@ unsafe fn ZSTD_noCompressBlock(
         return Error::dstSize_tooSmall.to_error_code();
     }
     MEM_writeLE24(dst, cBlockHeader24);
-    libc::memcpy(
-        dst.byte_add(ZSTD_blockHeaderSize),
-        src,
-        srcSize as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        src.cast::<u8>(),
+        dst.byte_add(ZSTD_blockHeaderSize).cast::<u8>(),
+        srcSize,
     );
     ZSTD_blockHeaderSize.wrapping_add(srcSize)
 }
@@ -3191,7 +3191,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
         if dictBuffer.is_null() {
             return Error::memory_allocation.to_error_code();
         }
-        libc::memcpy(dictBuffer, dict, dictSize as libc::size_t);
+        core::ptr::copy_nonoverlapping(dict.cast::<u8>(), dictBuffer.cast::<u8>(), dictSize);
         (*cctx).localDict.dictBuffer = dictBuffer;
         (*cctx).localDict.dict = dictBuffer;
     }
@@ -5504,11 +5504,7 @@ unsafe fn ZSTD_storeLastLiterals(
     anchor: *const u8,
     lastLLSize: size_t,
 ) {
-    libc::memcpy(
-        seqStorePtr.lit as *mut core::ffi::c_void,
-        anchor as *const core::ffi::c_void,
-        lastLLSize as libc::size_t,
-    );
+    core::ptr::copy_nonoverlapping(anchor, seqStorePtr.lit, lastLLSize);
     seqStorePtr.lit = (seqStorePtr.lit).add(lastLLSize);
 }
 
@@ -7620,11 +7616,7 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
         ZSTD_MAGIC_SKIPPABLE_START.wrapping_add(magicVariant),
     );
     MEM_writeLE32(op.add(4) as *mut core::ffi::c_void, srcSize as u32);
-    libc::memcpy(
-        op.add(8) as *mut core::ffi::c_void,
-        src,
-        srcSize as libc::size_t,
-    );
+    core::ptr::copy_nonoverlapping(src.cast::<u8>(), op.add(8), srcSize);
 
     srcSize.wrapping_add(ZSTD_SKIPPABLEHEADERSIZE as size_t)
 }
@@ -9256,7 +9248,11 @@ unsafe fn ZSTD_initCDict_internal(
             return Error::memory_allocation.to_error_code();
         }
         (*cdict).dictContent = internalBuffer;
-        libc::memcpy(internalBuffer, dictBuffer, dictSize as libc::size_t);
+        core::ptr::copy_nonoverlapping(
+            dictBuffer.cast::<u8>(),
+            internalBuffer.cast::<u8>(),
+            dictSize,
+        );
     }
     (*cdict).dictContentSize = dictSize;
     (*cdict).dictContentType = dictContentType;
