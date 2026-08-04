@@ -402,7 +402,7 @@ fn FSEv05_decodeSymbolFast<const N: usize>(
 }
 #[inline]
 fn FSEv05_endOfDState<const N: usize>(DStatePtr: &FSEv05_DState_t<N>) -> core::ffi::c_uint {
-    (DStatePtr.state == 0) as core::ffi::c_int as core::ffi::c_uint
+    (DStatePtr.state == 0) as core::ffi::c_uint
 }
 const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
 const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
