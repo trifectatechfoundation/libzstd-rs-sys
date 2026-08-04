@@ -778,18 +778,18 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     mls: u32,
 ) -> u32 {
     let cParams = &ms.cParams;
-    let sufficient_len = (*cParams)
+    let sufficient_len = cParams
         .targetLength
         .min(((1 << 12) - 1) as core::ffi::c_uint);
     let base = ms.window.base;
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let hashLog = (*cParams).hashLog;
+    let hashLog = cParams.hashLog;
     let minMatch = (if mls == 3 { 3 } else { 4 }) as u32;
     let hashTable = ms.hashTable;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let mut matchIndex = *hashTable.add(h);
     let bt = ms.chainTable;
-    let btLog = ((*cParams).chainLog).wrapping_sub(1 as core::ffi::c_uint);
+    let btLog = (cParams.chainLog).wrapping_sub(1 as core::ffi::c_uint);
     let btMask = ((1 as core::ffi::c_uint) << btLog).wrapping_sub(1);
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
@@ -802,14 +802,14 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     } else {
         curr.wrapping_sub(btMask)
     };
-    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, (*cParams).windowLog);
+    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, cParams.windowLog);
     let matchLow = if windowLow != 0 { windowLow } else { 1 };
     let mut smallerPtr = bt.offset((2 * (curr & btMask)) as isize);
     let mut largerPtr = bt.offset((2 * (curr & btMask)) as isize).add(1);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1); // farthest referenced position of any match => detects repetitive patterns
     let mut dummy32: u32 = 0;
     let mut mnum = 0u32;
-    let mut nbCompares = (1 as core::ffi::c_uint) << (*cParams).searchLog;
+    let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
 
     let dms = if dictMode == ZSTD_dictMatchState {
         ms.dictMatchState

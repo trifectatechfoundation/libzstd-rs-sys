@@ -89,10 +89,10 @@ pub const kLazySkippingStep: core::ffi::c_int = 8;
 unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hashLog = (*cParams).hashLog;
+    let hashLog = cParams.hashLog;
 
     let bt = ms.chainTable;
-    let btLog = ((*cParams).chainLog).wrapping_sub(1);
+    let btLog = (cParams.chainLog).wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
 
     let base = ms.window.base;
@@ -356,16 +356,16 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hashLog = (*cParams).hashLog;
+    let hashLog = cParams.hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let mut matchIndex = *hashTable.add(h);
 
     let base = ms.window.base;
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, (*cParams).windowLog);
+    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, cParams.windowLog);
 
     let bt = ms.chainTable;
-    let btLog = ((*cParams).chainLog).wrapping_sub(1);
+    let btLog = (cParams.chainLog).wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let btLow = if btMask >= curr {
         0
@@ -376,7 +376,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     let mut nextCandidate = bt.offset((2 * (matchIndex & btMask)) as isize);
     let mut unsortedMark = bt.offset((2 * (matchIndex & btMask)) as isize).add(1);
-    let mut nbCompares = (1 as core::ffi::c_uint) << (*cParams).searchLog;
+    let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
     let mut nbCandidates = nbCompares;
     let mut previousCandidate = 0;
 
@@ -865,7 +865,7 @@ unsafe fn ZSTD_HcFindBestMatch(
 ) -> size_t {
     let cParams = &ms.cParams;
     let chainTable = ms.chainTable;
-    let chainSize = (1 << (*cParams).chainLog) as u32;
+    let chainSize = (1 << cParams.chainLog) as u32;
     let chainMask = chainSize.wrapping_sub(1);
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
@@ -873,7 +873,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     let prefixStart = base.offset(dictLimit as isize);
     let dictEnd = dictBase.offset(dictLimit as isize);
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let maxDistance = 1 << (*cParams).windowLog;
+    let maxDistance = 1 << cParams.windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
@@ -891,7 +891,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     } else {
         0
     };
-    let mut nbAttempts = (1 as core::ffi::c_uint) << (*cParams).searchLog;
+    let mut nbAttempts = (1 as core::ffi::c_uint) << cParams.searchLog;
     let mut ml = (4 - 1) as size_t;
 
     let dms = ms.dictMatchState;
@@ -1390,7 +1390,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     let prefixStart = base.offset(dictLimit as isize);
     let dictEnd = dictBase.offset(dictLimit as isize);
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-    let maxDistance = 1 << (*cParams).windowLog;
+    let maxDistance = 1 << cParams.windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
@@ -1405,7 +1405,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     };
     let rowEntries = (1 as core::ffi::c_uint) << rowLog;
     let rowMask = rowEntries.wrapping_sub(1);
-    let cappedSearchLog = (*cParams).searchLog.min(rowLog);
+    let cappedSearchLog = cParams.searchLog.min(rowLog);
     let groupWidth = ZSTD_row_matchMaskGroupWidth(rowEntries);
     let hashSalt = ms.hashSalt;
     let mut nbAttempts = (1 as core::ffi::c_uint) << cappedSearchLog;
@@ -1431,8 +1431,8 @@ unsafe fn ZSTD_RowFindBestMatch(
                 << ZSTD_LAZY_DDSS_BUCKET_LOG;
             prefetch_read_data(((*dms).hashTable).add(ddsIdx), Locality::L1);
         }
-        ddsExtraAttempts = if (*cParams).searchLog > rowLog {
-            1 << ((*cParams).searchLog).wrapping_sub(rowLog)
+        ddsExtraAttempts = if cParams.searchLog > rowLog {
+            1 << (cParams.searchLog).wrapping_sub(rowLog)
         } else {
             0
         };

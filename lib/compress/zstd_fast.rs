@@ -101,8 +101,8 @@ unsafe fn ZSTD_fillHashTableForCDict(
 ) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hBits = ((*cParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
-    let mls = (*cParams).minMatch;
+    let hBits = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
@@ -139,8 +139,8 @@ unsafe fn ZSTD_fillHashTableForCCtx(
 ) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hBits = (*cParams).hashLog;
-    let mls = (*cParams).minMatch;
+    let hBits = cParams.hashLog;
+    let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
@@ -291,14 +291,14 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hlog = (*cParams).hashLog;
-    let stepSize = ((*cParams).targetLength)
-        .wrapping_add(((*cParams).targetLength == 0) as core::ffi::c_uint)
+    let hlog = cParams.hashLog;
+    let stepSize = (cParams.targetLength)
+        .wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint)
         .wrapping_add(1) as size_t; // min 2
     let base = ms.window.base;
     let istart = src as *const u8;
     let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
-    let prefixStartIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
+    let prefixStartIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
     let prefixStart = base.offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(HASH_READ_SIZE as usize);
@@ -338,7 +338,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
 
     ip0 = ip0.offset((ip0 == prefixStart) as core::ffi::c_int as isize);
     let curr = ip0.offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, (*cParams).windowLog);
+    let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, cParams.windowLog);
     let maxRep = curr.wrapping_sub(windowLow);
     if rep_offset2 > maxRep {
         offsetSaved2 = rep_offset2;
@@ -703,10 +703,10 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hlog = (*cParams).hashLog;
+    let hlog = cParams.hashLog;
     // support stepSize of 0
     let stepSize =
-        ((*cParams).targetLength).wrapping_add(((*cParams).targetLength == 0) as core::ffi::c_uint);
+        (cParams.targetLength).wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint);
     let base = ms.window.base;
     let istart = src as *const u8;
     let mut ip0 = istart;
@@ -736,7 +736,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
 
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
-    let maxDistance = 1 << (*cParams).windowLog;
+    let maxDistance = 1 << cParams.windowLog;
     let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
     assert!(endIndex - prefixStartIndex <= maxDistance);
 
@@ -1055,17 +1055,17 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
     let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hlog = (*cParams).hashLog;
+    let hlog = cParams.hashLog;
     // support stepSize of 0
-    let stepSize = ((*cParams).targetLength)
-        .wrapping_add(((*cParams).targetLength == 0) as core::ffi::c_uint)
+    let stepSize = (cParams.targetLength)
+        .wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint)
         .wrapping_add(1) as size_t;
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
     let istart = src as *const u8;
     let mut anchor = istart;
     let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
-    let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
+    let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, cParams.windowLog);
     let dictStartIndex = lowLimit;
     let dictStart = dictBase.offset(dictStartIndex as isize);
     let dictLimit = ms.window.dictLimit;
