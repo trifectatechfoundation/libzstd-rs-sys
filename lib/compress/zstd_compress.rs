@@ -10994,16 +10994,16 @@ fn ZSTD_validateSequence(
 
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
 /// litLength == 0
-unsafe fn ZSTD_finalizeOffBase(rawOffset: u32, rep: *const u32, ll0: u32) -> u32 {
+fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &[u32; 3], ll0: u32) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
 
-    if ll0 == 0 && rawOffset == *rep {
+    if ll0 == 0 && rawOffset == rep[0] {
         offBase = REPCODE1_TO_OFFBASE as u32;
-    } else if rawOffset == *rep.add(1) {
+    } else if rawOffset == rep[1] {
         offBase = 2u32.wrapping_sub(ll0);
-    } else if rawOffset == *rep.add(2) {
+    } else if rawOffset == rep[2] {
         offBase = 3u32.wrapping_sub(ll0);
-    } else if ll0 != 0 && rawOffset == (*rep).wrapping_sub(1) {
+    } else if ll0 != 0 && rawOffset == rep[0].wrapping_sub(1) {
         offBase = REPCODE3_TO_OFFBASE as u32;
     }
 
@@ -11058,7 +11058,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
             offBase = ZSTD_finalizeOffBase(
                 (*inSeqs.offset(idx as isize)).offset,
-                (updatedRepcodes.rep).as_mut_ptr() as *const u32,
+                &updatedRepcodes.rep,
                 ll0,
             );
             ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
@@ -11252,11 +11252,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
 
         // Check if this offset can be represented with a repcode
         let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-        offBase = ZSTD_finalizeOffBase(
-            rawOffset,
-            (updatedRepcodes.rep).as_mut_ptr() as *const u32,
-            ll0,
-        );
+        offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes.rep, ll0);
         ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
 
         if (*cctx).appliedParams.validateSequences != 0 {
@@ -11757,11 +11753,8 @@ pub unsafe fn ZSTD_convertBlockSequences(
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-            let offBase = ZSTD_finalizeOffBase(
-                (*inSeqs.add(seqNb)).offset,
-                (updatedRepcodes.rep).as_mut_ptr() as *const u32,
-                ll0,
-            );
+            let offBase =
+                ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes.rep, ll0);
             ZSTD_storeSeqOnly(
                 &mut (*cctx).seqStore,
                 litLength as size_t,
