@@ -421,9 +421,7 @@ unsafe fn ZSTD_encodeSequences_body(
     BIT_addBits(
         &mut blockStream,
         (*sequences.add(nbSeq.wrapping_sub(1))).litLength as BitContainerType,
-        *LL_bits
-            .as_ptr()
-            .offset(*llCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
+        LL_bits[*llCodeTable.add(nbSeq.wrapping_sub(1)) as usize] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
@@ -431,9 +429,7 @@ unsafe fn ZSTD_encodeSequences_body(
     BIT_addBits(
         &mut blockStream,
         (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
-        *ML_bits
-            .as_ptr()
-            .offset(*mlCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
+        ML_bits[*mlCodeTable.add(nbSeq.wrapping_sub(1)) as usize] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);

@@ -1650,11 +1650,7 @@ unsafe fn ZSTD_selectBtGetAllMatches(
         ],
     ];
     let mls = (*ms).cParams.minMatch.clamp(3, 6);
-    *(*getAllMatchesFns
-        .as_ptr()
-        .offset(dictMode as core::ffi::c_int as isize))
-    .as_ptr()
-    .offset(mls.wrapping_sub(3) as isize)
+    getAllMatchesFns[dictMode as usize][mls.wrapping_sub(3) as usize]
 }
 
 /// Moves forward in @rawSeqStore by @nbBytes,
