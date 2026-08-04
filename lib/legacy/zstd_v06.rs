@@ -357,7 +357,7 @@ unsafe fn BITv06_reloadDStream(bitD: *mut BITv06_DStream_t) -> BITv06_DStream_st
 #[inline]
 unsafe fn BITv06_endOfDStream(DStream: *const BITv06_DStream_t) -> core::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start && (*DStream).bitsConsumed == size_t::BITS)
-        as core::ffi::c_int as core::ffi::c_uint
+        as core::ffi::c_uint
 }
 #[inline]
 unsafe fn FSEv06_initDState(

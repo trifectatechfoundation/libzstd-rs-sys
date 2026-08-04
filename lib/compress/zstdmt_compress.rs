@@ -1523,9 +1523,8 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         fps.consumed = (fps.consumed).wrapping_add((*jobPtr).consumed as core::ffi::c_ulonglong);
         fps.produced = (fps.produced).wrapping_add(produced as core::ffi::c_ulonglong);
         fps.flushed = (fps.flushed).wrapping_add(flushed as core::ffi::c_ulonglong);
-        fps.nbActiveWorkers = (fps.nbActiveWorkers).wrapping_add(
-            ((*jobPtr).consumed < (*jobPtr).src.size) as core::ffi::c_int as core::ffi::c_uint,
-        );
+        fps.nbActiveWorkers = (fps.nbActiveWorkers)
+            .wrapping_add(((*jobPtr).consumed < (*jobPtr).src.size) as core::ffi::c_uint);
         jobNb += 1;
     }
     fps
@@ -1847,11 +1846,11 @@ unsafe fn ZSTDMT_createCompressionJob(
         *fresh9 = &mut (*mtctx).serial;
         (*((*mtctx).jobs).offset(jobID as isize)).jobID = (*mtctx).nextJobID;
         (*((*mtctx).jobs).offset(jobID as isize)).firstJob =
-            ((*mtctx).nextJobID == 0) as core::ffi::c_int as core::ffi::c_uint;
+            ((*mtctx).nextJobID == 0) as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).lastJob = endFrame as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).frameChecksumNeeded =
             ((*mtctx).params.fParams.checksumFlag != 0 && endFrame && (*mtctx).nextJobID > 0)
-                as core::ffi::c_int as core::ffi::c_uint;
+                as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).dstFlushed = 0;
 
         // Update the round buffer pos and clear the input buffer to be reset
@@ -2315,7 +2314,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
             );
             (*input).pos = ((*input).pos).wrapping_add(syncPoint.toLoad);
             (*mtctx).inBuff.filled = ((*mtctx).inBuff.filled).wrapping_add(syncPoint.toLoad);
-            forwardInputProgress = (syncPoint.toLoad > 0) as core::ffi::c_int as core::ffi::c_uint;
+            forwardInputProgress = (syncPoint.toLoad > 0) as core::ffi::c_uint;
         }
     }
     if (*input).pos < (*input).size && endOp == ZSTD_e_end {
@@ -2345,7 +2344,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     let remainingToFlush = ZSTDMT_flushProduced(
         mtctx,
         output,
-        (forwardInputProgress == 0) as core::ffi::c_int as core::ffi::c_uint, // block if there was no forward input progress
+        (forwardInputProgress == 0) as core::ffi::c_uint, // block if there was no forward input progress
         endOp,
     );
     if (*input).pos < (*input).size {
