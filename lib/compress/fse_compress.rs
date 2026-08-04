@@ -82,18 +82,16 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 
     let mut highThreshold = tableSize.wrapping_sub(1);
 
-    if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulong as core::ffi::c_ulonglong)
-        .wrapping_mul(
-            (maxSymbolValue.wrapping_add(2) as core::ffi::c_ulonglong)
-                .wrapping_add(1 << tableLog)
-                .wrapping_div(2)
-                .wrapping_add(
-                    (size_of::<u64>() as core::ffi::c_ulong)
-                        .wrapping_div(size_of::<u32>() as core::ffi::c_ulong)
-                        as core::ffi::c_ulonglong,
-                ),
-        )
-        > wkspSize as core::ffi::c_ulonglong
+    if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulonglong).wrapping_mul(
+        (maxSymbolValue.wrapping_add(2) as core::ffi::c_ulonglong)
+            .wrapping_add(1 << tableLog)
+            .wrapping_div(2)
+            .wrapping_add(
+                (size_of::<u64>() as core::ffi::c_ulong)
+                    .wrapping_div(size_of::<u32>() as core::ffi::c_ulong)
+                    as core::ffi::c_ulonglong,
+            ),
+    ) > wkspSize as core::ffi::c_ulonglong
     {
         return Error::tableLog_tooLarge.to_error_code();
     }

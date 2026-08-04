@@ -121,7 +121,7 @@ unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     libc::memcpy(
         &mut newReps as *mut Repcodes_t as *mut core::ffi::c_void,
         rep as *const core::ffi::c_void,
-        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+        size_of::<Repcodes_t>(),
     );
     ZSTD_updateRep((newReps.rep).as_mut_ptr(), offBase, ll0);
     newReps
@@ -376,7 +376,7 @@ unsafe fn ZSTD_rescaleFreqs(
             libc::memcpy(
                 (*optPtr).litLengthFreq as *mut core::ffi::c_void,
                 baseLLfreqs.as_ptr() as *const core::ffi::c_void,
-                size_of::<[core::ffi::c_uint; 36]>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<[core::ffi::c_uint; 36]>(),
             );
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), (MaxLL + 1) as size_t);
 
@@ -395,7 +395,7 @@ unsafe fn ZSTD_rescaleFreqs(
             libc::memcpy(
                 (*optPtr).offCodeFreq as *mut core::ffi::c_void,
                 baseOFCfreqs.as_ptr() as *const core::ffi::c_void,
-                size_of::<[core::ffi::c_uint; 32]>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<[core::ffi::c_uint; 32]>(),
             );
             (*optPtr).offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), (MaxOff + 1) as size_t);
         }
@@ -1937,7 +1937,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             libc::memcpy(
                 &mut (*opt).rep as *mut [u32; 3] as *mut core::ffi::c_void,
                 rep as *const core::ffi::c_void,
-                size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<[u32; 3]>(),
             );
 
             // large match -> immediate encoding
@@ -2063,7 +2063,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                     ((*opt.offset(cur.wrapping_add(1) as isize)).rep).as_mut_ptr()
                                         as *mut core::ffi::c_void,
                                     &newReps as *const Repcodes_t as *const core::ffi::c_void,
-                                    size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                                    size_of::<Repcodes_t>(),
                                 );
                                 (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
@@ -2088,7 +2088,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                             ((*opt.offset(cur as isize)).rep).as_mut_ptr()
                                 as *mut core::ffi::c_void,
                             &newReps_0 as *const Repcodes_t as *const core::ffi::c_void,
-                            size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                            size_of::<Repcodes_t>(),
                         );
                     }
 
@@ -2227,13 +2227,13 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                     libc::memcpy(
                         rep as *mut core::ffi::c_void,
                         &reps as *const Repcodes_t as *const core::ffi::c_void,
-                        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                        size_of::<Repcodes_t>(),
                     );
                 } else {
                     libc::memcpy(
                         rep as *mut core::ffi::c_void,
                         (lastStretch.rep).as_mut_ptr() as *const core::ffi::c_void,
-                        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                        size_of::<Repcodes_t>(),
                     );
                     cur = cur.wrapping_sub(lastStretch.litlen);
                 }
@@ -2356,7 +2356,7 @@ unsafe fn ZSTD_initStats_ultra(
     libc::memcpy(
         tmpRep.as_mut_ptr() as *mut core::ffi::c_void,
         rep as *const core::ffi::c_void,
-        size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
+        size_of::<[u32; 3]>(),
     );
 
     // generate stats into ms->opt
