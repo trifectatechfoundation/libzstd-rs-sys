@@ -30,15 +30,15 @@ unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
 }
 
 #[inline]
-unsafe fn FSE_initCState2(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable, symbol: u32) {
+unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: *const FSE_CTable, symbol: u32) {
     FSE_initCState(statePtr, ct);
     let symbolTT =
-        *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = (*statePtr).stateTable as *const u16;
+        *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
+    let stateTable = statePtr.stateTable as *const u16;
     let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add((1 << 15) as u32) >> 16;
-    (*statePtr).value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
-    (*statePtr).value = *stateTable
-        .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
+    statePtr.value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
+    statePtr.value = *stateTable
+        .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 
