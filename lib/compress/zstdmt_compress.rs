@@ -426,9 +426,8 @@ unsafe fn ZSTDMT_releaseBuffer(bufPool: *mut ZSTDMT_bufferPool, buf: Buffer) {
     }
     let guard = (*bufPool).poolMutex.lock().unwrap();
     if (*bufPool).nbBuffers < (*bufPool).totalBuffers {
-        let fresh0 = (*bufPool).nbBuffers;
+        *((*bufPool).buffers).offset((*bufPool).nbBuffers as isize) = buf; // stored for later use
         (*bufPool).nbBuffers = ((*bufPool).nbBuffers).wrapping_add(1);
-        *((*bufPool).buffers).offset(fresh0 as isize) = buf; // stored for later use
         return;
     }
     drop(guard);
@@ -597,10 +596,8 @@ unsafe fn ZSTDMT_releaseCCtx(pool: *mut ZSTDMT_CCtxPool, cctx: *mut ZSTD_CCtx) {
 
     let _guard = (*pool).poolMutex.lock().unwrap();
     if (*pool).availCCtx < (*pool).totalCCtx {
-        let fresh2 = (*pool).availCCtx;
+        *((*pool).cctxs).offset((*pool).availCCtx as isize) = cctx;
         (*pool).availCCtx += 1;
-        let fresh3 = &mut (*((*pool).cctxs).offset(fresh2 as isize));
-        *fresh3 = cctx;
     } else {
         // pool overflow: should not happen, since totalCCtx==nbWorkers
         ZSTD_freeCCtx(cctx);

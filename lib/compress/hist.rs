@@ -24,9 +24,8 @@ pub unsafe fn HIST_add(
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
     while ip < end {
-        let fresh0 = ip;
+        let fresh1 = &mut (*count.offset(*ip as isize));
         ip = ip.add(1);
-        let fresh1 = &mut (*count.offset(*fresh0 as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
     }
 }
@@ -55,9 +54,8 @@ pub unsafe fn HIST_count_simple(
     }
 
     while ip < end {
-        let fresh2 = ip;
+        let fresh3 = &mut (*count.offset(*ip as isize));
         ip = ip.add(1);
-        let fresh3 = &mut (*count.offset(*fresh2 as isize));
         *fresh3 = (*fresh3).wrapping_add(1);
     }
 
@@ -170,9 +168,8 @@ unsafe fn HIST_count_parallel_wksp(
 
     // finish last symbols
     while ip < iend {
-        let fresh20 = ip;
+        let fresh21 = &mut (*Counting1.offset(*ip as isize));
         ip = ip.add(1);
-        let fresh21 = &mut (*Counting1.offset(*fresh20 as isize));
         *fresh21 = (*fresh21).wrapping_add(1);
     }
 

@@ -147,11 +147,9 @@ pub(crate) unsafe fn ZSTD_safecopyLiterals(
         ip = ilimit_w;
     }
     while ip < iend {
-        let fresh0 = ip;
+        *op = *ip;
         ip = ip.add(1);
-        let fresh1 = op;
         op = op.add(1);
-        *fresh1 = *fresh0;
     }
 }
 

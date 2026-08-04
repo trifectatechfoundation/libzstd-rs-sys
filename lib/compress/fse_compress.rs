@@ -110,9 +110,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
             // Low proba symbol
             *cumul.offset(u as isize) =
                 (*cumul.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int + 1) as u16;
-            let fresh0 = highThreshold;
+            *tableSymbol.offset(highThreshold as isize) = u.wrapping_sub(1) as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            *tableSymbol.offset(fresh0 as isize) = u.wrapping_sub(1) as u8;
         } else {
             *cumul.offset(u as isize) = (*cumul.offset(u.wrapping_sub(1) as isize)
                 as core::ffi::c_int
@@ -187,9 +186,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     while u_1 < tableSize {
         let s_1 = *tableSymbol.offset(u_1 as isize);
         let fresh1 = &mut (*cumul.offset(s_1 as isize));
-        let fresh2 = *fresh1;
+        *tableU16.offset(*fresh1 as isize) = tableSize.wrapping_add(u_1) as u16;
         *fresh1 = (*fresh1).wrapping_add(1);
-        *tableU16.offset(fresh2 as isize) = tableSize.wrapping_add(u_1) as u16;
         u_1 = u_1.wrapping_add(1);
     }
 
@@ -319,10 +317,9 @@ unsafe fn FSE_writeNCount_generic(
                 bitCount -= 16;
             }
         }
-        let fresh3 = symbol;
-        symbol = symbol.wrapping_add(1);
 
-        let mut count = *normalizedCounter.offset(fresh3 as isize) as core::ffi::c_int;
+        let mut count = *normalizedCounter.offset(symbol as isize) as core::ffi::c_int;
+        symbol = symbol.wrapping_add(1);
         let max = 2 * threshold - 1 - remaining;
         remaining -= if count < 0 { -count } else { count };
         count += 1; // +1 for extra accuracy

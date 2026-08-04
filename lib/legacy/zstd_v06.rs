@@ -479,9 +479,8 @@ unsafe fn FSEv06_readNCount(
                 return Error::maxSymbolValue_tooSmall.to_error_code();
             }
             while charnum < n0 {
-                let fresh0 = charnum;
+                *normalizedCounter.offset(charnum as isize) = 0;
                 charnum = charnum.wrapping_add(1);
-                *normalizedCounter.offset(fresh0 as isize) = 0;
             }
             if ip <= iend.sub(7) || ip.offset((bitCount >> 3) as isize) <= iend.sub(4) {
                 ip = ip.offset((bitCount >> 3) as isize);
@@ -505,9 +504,8 @@ unsafe fn FSEv06_readNCount(
         }
         count -= 1;
         remaining -= FSEv06_abs(count) as core::ffi::c_int;
-        let fresh1 = charnum;
+        *normalizedCounter.offset(charnum as isize) = count;
         charnum = charnum.wrapping_add(1);
-        *normalizedCounter.offset(fresh1 as isize) = count;
         previous0 = count == 0;
         while remaining < threshold {
             nbBits -= 1;
@@ -561,9 +559,8 @@ unsafe fn FSEv06_buildDTable(
     s = 0;
     while s < maxSV1 {
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
-            let fresh2 = highThreshold;
+            (*tableDecode.offset(highThreshold as isize)).symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            (*tableDecode.offset(fresh2 as isize)).symbol = s as u8;
             *symbolNext.as_mut_ptr().offset(s as isize) = 1;
         } else {
             if *normalizedCounter.offset(s as isize) as core::ffi::c_int
@@ -609,9 +606,8 @@ unsafe fn FSEv06_buildDTable(
     while u < tableSize {
         let symbol = (*tableDecode.offset(u as isize)).symbol;
         let fresh3 = &mut (*symbolNext.as_mut_ptr().offset(symbol as isize));
-        let fresh4 = *fresh3;
+        let nextState = *fresh3;
         *fresh3 = (*fresh3).wrapping_add(1);
-        let nextState = fresh4;
         (*tableDecode.offset(u as isize)).nbBits =
             tableLog.wrapping_sub(BITv06_highbit32(nextState as u32)) as u8;
         (*tableDecode.offset(u as isize)).newState = (((nextState as core::ffi::c_int)
@@ -706,43 +702,39 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         if op > omax.sub(2) {
             return Error::dstSize_tooSmall.to_error_code();
         }
-        let fresh5 = op;
-        op = op.add(1);
-        *fresh5 = (if fast != 0 {
+        *op = (if fast != 0 {
             FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
             FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
+        op = op.add(1);
         if BITv06_reloadDStream(&mut bitD) == BITv06_DStream_overflow {
-            let fresh6 = op;
-            op = op.add(1);
-            *fresh6 = (if fast != 0 {
+            *op = (if fast != 0 {
                 FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
             } else {
                 FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
             }) as u8;
+            op = op.add(1);
             break;
         } else {
             if op > omax.sub(2) {
                 return Error::dstSize_tooSmall.to_error_code();
             }
-            let fresh7 = op;
-            op = op.add(1);
-            *fresh7 = (if fast != 0 {
+            *op = (if fast != 0 {
                 FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
             } else {
                 FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
             }) as u8;
+            op = op.add(1);
             if BITv06_reloadDStream(&mut bitD) != BITv06_DStream_overflow {
                 continue;
             }
-            let fresh8 = op;
-            op = op.add(1);
-            *fresh8 = (if fast != 0 {
+            *op = (if fast != 0 {
                 FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
             } else {
                 FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
             }) as u8;
+            op = op.add(1);
             break;
         }
     }
@@ -989,33 +981,27 @@ unsafe fn HUFv06_decodeStreamX2(
     let pStart = p;
     while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p <= pEnd.sub(4) {
         if MEM_64bits() {
-            let fresh12 = p;
+            *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
             p = p.add(1);
-            *fresh12 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         }
         if MEM_64bits() || HUFv06_MAX_TABLELOG <= 12 {
-            let fresh13 = p;
+            *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
             p = p.add(1);
-            *fresh13 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh14 = p;
+            *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
             p = p.add(1);
-            *fresh14 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         }
-        let fresh15 = p;
+        *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         p = p.add(1);
-        *fresh15 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
     while BITv06_reloadDStream(bitDPtr) == BITv06_DStream_unfinished && p < pEnd {
-        let fresh16 = p;
+        *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         p = p.add(1);
-        *fresh16 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
     while p < pEnd {
-        let fresh17 = p;
+        *p = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
         p = p.add(1);
-        *fresh17 = HUFv06_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
     pEnd.offset_from_unsigned(pStart)
 }
@@ -1161,77 +1147,61 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
         | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
     while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() {
-            let fresh18 = op1;
+            *op1 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
             op1 = op1.add(1);
-            *fresh18 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh19 = op2;
+            *op2 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
             op2 = op2.add(1);
-            *fresh19 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh20 = op3;
+            *op3 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
             op3 = op3.add(1);
-            *fresh20 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh21 = op4;
+            *op4 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
             op4 = op4.add(1);
-            *fresh21 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
         }
         if MEM_64bits() || HUFv06_MAX_TABLELOG <= 12 {
-            let fresh22 = op1;
+            *op1 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
             op1 = op1.add(1);
-            *fresh22 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
         }
         if MEM_64bits() || HUFv06_MAX_TABLELOG <= 12 {
-            let fresh23 = op2;
+            *op2 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
             op2 = op2.add(1);
-            *fresh23 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
         }
         if MEM_64bits() || HUFv06_MAX_TABLELOG <= 12 {
-            let fresh24 = op3;
+            *op3 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
             op3 = op3.add(1);
-            *fresh24 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
         }
         if MEM_64bits() || HUFv06_MAX_TABLELOG <= 12 {
-            let fresh25 = op4;
+            *op4 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
             op4 = op4.add(1);
-            *fresh25 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh26 = op1;
+            *op1 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
             op1 = op1.add(1);
-            *fresh26 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh27 = op2;
+            *op2 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
             op2 = op2.add(1);
-            *fresh27 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh28 = op3;
+            *op3 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
             op3 = op3.add(1);
-            *fresh28 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
         }
         if MEM_64bits() {
-            let fresh29 = op4;
+            *op4 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
             op4 = op4.add(1);
-            *fresh29 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
         }
-        let fresh30 = op1;
+        *op1 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
         op1 = op1.add(1);
-        *fresh30 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
-        let fresh31 = op2;
+        *op2 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
         op2 = op2.add(1);
-        *fresh31 = HUFv06_decodeSymbolX2(&mut bitD2, dt, dtLog);
-        let fresh32 = op3;
+        *op3 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
         op3 = op3.add(1);
-        *fresh32 = HUFv06_decodeSymbolX2(&mut bitD3, dt, dtLog);
-        let fresh33 = op4;
+        *op4 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
         op4 = op4.add(1);
-        *fresh33 = HUFv06_decodeSymbolX2(&mut bitD4, dt, dtLog);
         endSignal = BITv06_reloadDStream(&mut bitD1) as core::ffi::c_uint
             | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
             | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
@@ -1338,9 +1308,8 @@ unsafe fn HUFv06_fillDTableX4Level2(
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
         loop {
-            let fresh34 = i_0;
+            *DTable.offset(i_0 as isize) = DElt;
             i_0 = i_0.wrapping_add(1);
-            *DTable.offset(fresh34 as isize) = DElt;
             if i_0 >= end {
                 break;
             }
@@ -1479,9 +1448,8 @@ unsafe fn HUFv06_readDTableX4(
     while s < nbSymbols {
         let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
         let fresh37 = &mut (*rankStart.offset(w_0 as isize));
-        let fresh38 = *fresh37;
+        let r = *fresh37;
         *fresh37 = (*fresh37).wrapping_add(1);
-        let r = fresh38;
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).symbol = s as u8;
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).weight = w_0 as u8;
         s = s.wrapping_add(1);
@@ -2678,9 +2646,8 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
     if srcSize < MIN_SEQUENCES_SIZE as size_t {
         return Error::srcSize_wrong.to_error_code();
     }
-    let fresh41 = ip;
+    let mut nbSeq = *ip as core::ffi::c_int;
     ip = ip.add(1);
-    let mut nbSeq = *fresh41 as core::ffi::c_int;
     if nbSeq == 0 {
         *nbSeqPtr = 0;
         return 1;
@@ -2696,9 +2663,8 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
             if ip >= iend {
                 return Error::srcSize_wrong.to_error_code();
             }
-            let fresh42 = ip;
+            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + *ip as core::ffi::c_int;
             ip = ip.add(1);
-            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + *fresh42 as core::ffi::c_int;
         }
     }
     *nbSeqPtr = nbSeq;
@@ -3003,11 +2969,9 @@ unsafe fn ZSTDv06_execSequence(
         match_0 = base;
         if op > oend_8 || sequence.matchLength < MINMATCH as size_t {
             while op < oMatchEnd {
-                let fresh43 = match_0;
-                match_0 = match_0.add(1);
-                let fresh44 = op;
+                *op = *match_0;
                 op = op.add(1);
-                *fresh44 = *fresh43;
+                match_0 = match_0.add(1);
             }
             return sequenceLength;
         }
@@ -3045,11 +3009,9 @@ unsafe fn ZSTDv06_execSequence(
             op = oend_8;
         }
         while op < oMatchEnd {
-            let fresh45 = match_0;
-            match_0 = match_0.add(1);
-            let fresh46 = op;
+            *op = *match_0;
             op = op.add(1);
-            *fresh46 = *fresh45;
+            match_0 = match_0.add(1);
         }
     } else {
         ZSTDv06_wildcopy(

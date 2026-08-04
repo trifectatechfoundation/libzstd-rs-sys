@@ -5182,9 +5182,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         return Error::dstSize_tooSmall.to_error_code();
     }
     if nbSeq < 128 {
-        let fresh2 = op;
+        *op = nbSeq as u8;
         op = op.add(1);
-        *fresh2 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
         *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
         *op.add(1) = nbSeq as u8;
@@ -5207,9 +5206,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         return op.offset_from_unsigned(ostart);
     }
 
-    let fresh3 = op;
+    let seqHead = op;
     op = op.add(1);
-    let seqHead = fresh3;
     // build stats for sequences
     let stats = ZSTD_buildSequencesStatistics(
         seqStorePtr,
@@ -7536,13 +7534,11 @@ unsafe fn ZSTD_writeFrameHeader(
         MEM_writeLE32(dst, ZSTD_MAGICNUMBER);
         pos = 4;
     }
-    let fresh7 = pos;
+    *op.add(pos) = frameHeaderDescriptionByte;
     pos = pos.wrapping_add(1);
-    *op.add(fresh7) = frameHeaderDescriptionByte;
     if singleSegment == 0 {
-        let fresh8 = pos;
+        *op.add(pos) = windowLogByte;
         pos = pos.wrapping_add(1);
-        *op.add(fresh8) = windowLogByte;
     }
     match dictIDSizeCode {
         1 => {
@@ -7577,9 +7573,8 @@ unsafe fn ZSTD_writeFrameHeader(
         }
         0 | _ => {
             if singleSegment != 0 {
-                let fresh9 = pos;
+                *op.add(pos) = pledgedSrcSize as u8;
                 pos = pos.wrapping_add(1);
-                *op.add(fresh9) = pledgedSrcSize as u8;
             }
         }
     }
