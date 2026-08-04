@@ -6657,7 +6657,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 
 /// Returns the raw offset represented by the combination of offBase, ll0, and repcode history.
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
-unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: &[u32; 3], offBase: u32, ll0: u32) -> u32 {
+fn ZSTD_resolveRepcodeToRawOffset(rep: &[u32; 3], offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
         return rep[0].wrapping_sub(1);
