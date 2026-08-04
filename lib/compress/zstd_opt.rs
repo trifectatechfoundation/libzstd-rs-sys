@@ -111,9 +111,8 @@ fn ZSTD_MLcode(mlBase: u32) -> u32 {
 }
 
 #[inline]
-unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
-    let mut newReps = repcodes_s { rep: [0; 3] };
-    core::ptr::copy_nonoverlapping(rep, newReps.rep.as_mut_ptr(), ZSTD_REP_NUM as usize);
+fn ZSTD_newRep(rep: &[u32; 3], offBase: u32, ll0: u32) -> Repcodes_t {
+    let mut newReps = repcodes_s { rep: *rep };
     ZSTD_updateRep(&mut newReps.rep, offBase, ll0);
     newReps
 }
@@ -2040,7 +2039,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                 // update offset history - before it disappears
                                 let prev = cur.wrapping_sub(prevMatch.mlen);
                                 let newReps = ZSTD_newRep(
-                                    ((*opt.offset(prev as isize)).rep).as_mut_ptr() as *const u32,
+                                    &(*opt.offset(prev as isize)).rep,
                                     prevMatch.off,
                                     ((*opt.offset(prev as isize)).litlen == 0) as core::ffi::c_int
                                         as u32,
@@ -2062,7 +2061,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                         // just finished a match => alter offset history
                         let prev_0 = cur.wrapping_sub((*opt.offset(cur as isize)).mlen);
                         let newReps_0 = ZSTD_newRep(
-                            ((*opt.offset(prev_0 as isize)).rep).as_mut_ptr() as *const u32,
+                            &(*opt.offset(prev_0 as isize)).rep,
                             (*opt.offset(cur as isize)).off,
                             ((*opt.offset(prev_0 as isize)).litlen == 0) as core::ffi::c_int as u32,
                         );
@@ -2197,7 +2196,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                 if lastStretch.litlen == 0 {
                     // finishing on a match: update offset history
                     let reps = ZSTD_newRep(
-                        ((*opt.offset(cur as isize)).rep).as_mut_ptr() as *const u32,
+                        &(*opt.offset(cur as isize)).rep,
                         lastStretch.off,
                         ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
                     );
