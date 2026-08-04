@@ -286,7 +286,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     mls: u32,
-    useCmov: core::ffi::c_int,
+    useCmov: bool,
 ) -> size_t {
     let mut current_block: u64;
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
@@ -330,7 +330,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     let mut step: size_t = 0;
     let mut nextStep = core::ptr::null::<u8>();
     let kStepIncr = ((1) << (kSearchStrength - 1)) as size_t;
-    let matchFound: ZSTD_match4Found = if useCmov != 0 {
+    let matchFound: ZSTD_match4Found = if useCmov {
         Some(ZSTD_match4Found_cmov as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
     } else {
         Some(ZSTD_match4Found_branch as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
@@ -592,7 +592,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_4_1(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 4, 1)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 4, true)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_5_1(
@@ -602,7 +602,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_5_1(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 5, 1)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 5, true)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_6_1(
@@ -612,7 +612,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_6_1(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 6, 1)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 6, true)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_7_1(
@@ -622,7 +622,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_7_1(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 7, 1)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 7, true)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_4_0(
@@ -632,7 +632,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_4_0(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 4, 0)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 4, false)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_5_0(
@@ -642,7 +642,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_5_0(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 5, 0)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 5, false)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_6_0(
@@ -652,7 +652,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_6_0(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 6, 0)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 6, false)
 }
 
 unsafe fn ZSTD_compressBlock_fast_noDict_7_0(
@@ -662,7 +662,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_7_0(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 7, 0)
+    ZSTD_compressBlock_fast_noDict_generic(ms, seqStore, rep, src, srcSize, 7, false)
 }
 
 pub unsafe fn ZSTD_compressBlock_fast(
@@ -674,8 +674,8 @@ pub unsafe fn ZSTD_compressBlock_fast(
 ) -> size_t {
     let mml = ms.cParams.minMatch;
     // use cmov when "candidate in range" branch is likely unpredictable
-    let useCmov = (ms.cParams.windowLog < 19) as core::ffi::c_int;
-    if useCmov != 0 {
+    let useCmov = ms.cParams.windowLog < 19;
+    if useCmov {
         match mml {
             5 => ZSTD_compressBlock_fast_noDict_5_1(ms, seqStore, rep, src, srcSize),
             6 => ZSTD_compressBlock_fast_noDict_6_1(ms, seqStore, rep, src, srcSize),
