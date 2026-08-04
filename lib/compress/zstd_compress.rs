@@ -1894,7 +1894,7 @@ pub unsafe fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
 
 /// Returns true if the strategy supports using a row based matchfinder
 fn ZSTD_rowMatchFinderSupported(strategy: ZSTD_strategy) -> bool {
-    strategy >= ZSTD_greedy && strategy <= ZSTD_lazy2
+    (ZSTD_greedy..=ZSTD_lazy2).contains(&strategy)
 }
 
 /// Returns true if the strategy and useRowMatchFinder mode indicate that we will use the row based
