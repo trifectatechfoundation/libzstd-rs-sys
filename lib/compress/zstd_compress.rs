@@ -6072,7 +6072,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let mut repeat = prevHuf.repeatMode;
 
     // Prepare nextEntropy assuming reusing the existing table
-    *nextHuf = *prevHuf;
+    core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
 
     if literalsCompressionIsDisabled {
         hufMetadata.hType = set_basic;
@@ -6169,13 +6169,13 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
-            *nextHuf = *prevHuf;
+            core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
             hufMetadata.hType = set_repeat;
             return 0;
         }
     }
     if newCSize.wrapping_add(hSize) >= srcSize {
-        *nextHuf = *prevHuf;
+        core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         hufMetadata.hType = set_basic;
         return 0;
     }
