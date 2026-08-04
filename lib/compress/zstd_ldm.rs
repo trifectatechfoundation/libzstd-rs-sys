@@ -620,7 +620,7 @@ unsafe fn ZSTD_ldm_gear_feed(
     data: *const u8,
     size: size_t,
     splits: *mut size_t,
-    numSplits: *mut core::ffi::c_uint,
+    numSplits: &mut core::ffi::c_uint,
 ) -> size_t {
     let mut current_block: u64;
     let mut n: size_t = 0;
