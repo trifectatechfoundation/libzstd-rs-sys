@@ -1351,21 +1351,21 @@ unsafe fn maybeSplitSequence(
     sequence
 }
 
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: size_t) {
-    let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
-    while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: size_t) {
+    let mut currPos = (rawSeqStore.posInSequence).wrapping_add(nbBytes) as u32;
+    while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
+        let currSeq = *(rawSeqStore.seq).add(rawSeqStore.pos);
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
-            (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
+            rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
         } else {
-            (*rawSeqStore).posInSequence = currPos as size_t;
+            rawSeqStore.posInSequence = currPos as size_t;
             break;
         }
     }
 
-    if currPos == 0 || (*rawSeqStore).pos == (*rawSeqStore).size {
-        (*rawSeqStore).posInSequence = 0;
+    if currPos == 0 || rawSeqStore.pos == rawSeqStore.size {
+        rawSeqStore.posInSequence = 0;
     }
 }
 
