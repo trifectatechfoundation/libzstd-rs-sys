@@ -350,7 +350,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
