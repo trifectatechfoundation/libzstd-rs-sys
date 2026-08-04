@@ -5857,7 +5857,7 @@ unsafe fn ZSTD_copyBlockSequences(
 
         // Update repcode history for the sequence
         ZSTD_updateRep(
-            (repcodes.rep).as_mut_ptr(),
+            &mut repcodes.rep,
             (*inSeqs.add(i)).offBase,
             ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int as u32,
         );
@@ -6702,8 +6702,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
         // Decompression repcode history may use modified seq->offset value taken from compression repcode history.
-        ZSTD_updateRep((dRepcodes.rep).as_mut_ptr(), (*seq).offBase, ll0);
-        ZSTD_updateRep((cRepcodes.rep).as_mut_ptr(), offBase, ll0);
+        ZSTD_updateRep(&mut dRepcodes.rep, (*seq).offBase, ll0);
+        ZSTD_updateRep(&mut cRepcodes.rep, offBase, ll0);
     }
 }
 
@@ -11061,7 +11061,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 (updatedRepcodes.rep).as_mut_ptr() as *const u32,
                 ll0,
             );
-            ZSTD_updateRep((updatedRepcodes.rep).as_mut_ptr(), offBase, ll0);
+            ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
         }
 
         if (*cctx).appliedParams.validateSequences != 0 {
@@ -11257,7 +11257,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
             (updatedRepcodes.rep).as_mut_ptr() as *const u32,
             ll0,
         );
-        ZSTD_updateRep((updatedRepcodes.rep).as_mut_ptr(), offBase, ll0);
+        ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
 
         if (*cctx).appliedParams.validateSequences != 0 {
             (*seqPos).posInSrc =
@@ -11768,7 +11768,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
                 offBase,
                 matchLength as size_t,
             );
-            ZSTD_updateRep((updatedRepcodes.rep).as_mut_ptr(), offBase, ll0);
+            ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
             seqNb = seqNb.wrapping_add(1);
         }
     }

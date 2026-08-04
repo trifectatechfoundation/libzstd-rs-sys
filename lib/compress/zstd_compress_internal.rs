@@ -106,26 +106,22 @@ pub(crate) unsafe fn ZSTD_storeSeq(
 }
 
 #[inline]
-pub(crate) unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
+pub(crate) fn ZSTD_updateRep(rep: &mut [u32; 3], offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.add(2) = *rep.add(1);
-        *rep.add(1) = *rep;
-        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        rep[2] = rep[1];
+        rep[1] = rep[0];
+        rep[0] = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
         let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
         if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep).wrapping_sub(1)
+                rep[0].wrapping_sub(1)
             } else {
-                *rep.offset(repCode as isize)
+                rep[repCode as usize]
             };
-            *rep.add(2) = if repCode >= 2 {
-                *rep.add(1)
-            } else {
-                *rep.add(2)
-            };
-            *rep.add(1) = *rep;
-            *rep = currentOffset;
+            rep[2] = if repCode >= 2 { rep[1] } else { rep[2] };
+            rep[1] = rep[0];
+            rep[0] = currentOffset;
         }
     }
 }
