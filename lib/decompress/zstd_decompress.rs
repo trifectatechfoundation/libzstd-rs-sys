@@ -500,15 +500,13 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     }
     while !(*(hashSet.ddictPtrTable).add(idx)).is_null() {
         if ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) == dictID {
-            let fresh0 = &mut (*(hashSet.ddictPtrTable).add(idx));
-            *fresh0 = ddict;
+            *(hashSet.ddictPtrTable).add(idx) = ddict;
             return 0;
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
-    let fresh1 = &mut (*(hashSet.ddictPtrTable).add(idx));
-    *fresh1 = ddict;
+    *(hashSet.ddictPtrTable).add(idx) = ddict;
     hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
     0
 }
