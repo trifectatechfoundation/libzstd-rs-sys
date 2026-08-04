@@ -2773,15 +2773,14 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
         if current_block == 14136749492126903395 {
             if dictMode as core::ffi::c_uint == ZSTD_noDict as core::ffi::c_int as core::ffi::c_uint
                 && (offset_1 > 0) as core::ffi::c_int
-                    & (MEM_read32(
-                        ip.add(1).offset(-(offset_1 as isize)) as *const core::ffi::c_void
-                    ) == MEM_read32(ip.add(1) as *const core::ffi::c_void))
+                    & (MEM_read32(ip.add(1).sub(offset_1 as usize) as *const core::ffi::c_void)
+                        == MEM_read32(ip.add(1) as *const core::ffi::c_void))
                         as core::ffi::c_int
                     != 0
             {
                 matchLength = (ZSTD_count(
                     ip.add(1).add(4),
-                    ip.add(1).add(4).offset(-(offset_1 as isize)),
+                    ip.add(1).add(4).sub(offset_1 as usize),
                     iend,
                 ))
                 .wrapping_add(4);
@@ -2843,7 +2842,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                 {
                                     let mlRep = (ZSTD_count(
                                         ip.add(4),
-                                        ip.add(4).offset(-(offset_1 as isize)),
+                                        ip.add(4).sub(offset_1 as usize),
                                         iend,
                                     ))
                                     .wrapping_add(4);
@@ -2941,7 +2940,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                     {
                                         let mlRep_1 = (ZSTD_count(
                                             ip.add(4),
-                                            ip.add(4).offset(-(offset_1 as isize)),
+                                            ip.add(4).sub(offset_1 as usize),
                                             iend,
                                         ))
                                         .wrapping_add(4);
@@ -3169,8 +3168,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                     == MEM_read32(ip.offset(-(offset_2 as isize)) as *const core::ffi::c_void)
             {
                 // store sequence
-                matchLength = (ZSTD_count(ip.add(4), ip.add(4).offset(-(offset_2 as isize)), iend))
-                    .wrapping_add(4);
+                matchLength =
+                    (ZSTD_count(ip.add(4), ip.add(4).sub(offset_2 as usize), iend)).wrapping_add(4);
                 offBase = offset_2 as size_t;
                 offset_2 = offset_1;
                 offset_1 = offBase as u32; // swap repcodes
