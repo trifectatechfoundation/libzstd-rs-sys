@@ -752,7 +752,7 @@ unsafe fn HUF_sort(
     huffNode: *mut nodeElt,
     count: *const c_uint,
     maxSymbolValue: u32,
-    rankPosition: *mut rankPos,
+    rankPosition: &mut [rankPos; RANK_POSITION_TABLE_SIZE],
 ) {
     let maxSymbolValue1 = maxSymbolValue + 1;
     /* Compute base and set curr to base.
@@ -761,29 +761,28 @@ unsafe fn HUF_sort(
      * We attribute each symbol to lowerRank's base value, because we want to know where
      * each rank begins in the output, so for rank R we want to count ranks R+1 and above.
      */
-    ptr::write_bytes(rankPosition as *mut u8, 0, size_of::<rankPos>() * 192);
+    rankPosition.fill(rankPos { base: 0, curr: 0 });
     for n in 0..maxSymbolValue1 {
         let lowerRank = HUF_getIndex(*count.offset(n as isize));
         debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
-        (*rankPosition.offset(lowerRank as isize)).base += 1;
+        rankPosition[lowerRank as usize].base += 1;
     }
-    debug_assert!((*rankPosition.add(RANK_POSITION_TABLE_SIZE - 1)).base == 0);
+    debug_assert!(rankPosition[RANK_POSITION_TABLE_SIZE - 1].base == 0);
 
     /* Set up the rankPosition table */
     for n in (1..RANK_POSITION_TABLE_SIZE as u32).rev() {
-        let fresh9 = &mut (*rankPosition.offset((n - 1) as isize)).base;
-        *fresh9 = (*fresh9 as c_int + (*rankPosition.offset(n as isize)).base as c_int) as u16;
-        (*rankPosition.offset((n - 1) as isize)).curr =
-            (*rankPosition.offset((n - 1) as isize)).base;
+        rankPosition[(n - 1) as usize].base = (rankPosition[(n - 1) as usize].base as c_int
+            + rankPosition[n as usize].base as c_int)
+            as u16;
+        rankPosition[(n - 1) as usize].curr = rankPosition[(n - 1) as usize].base;
     }
 
     /* Insert each symbol into their appropriate bucket, setting up rankPosition table. */
     for n in 0..maxSymbolValue1 {
         let c = *count.offset(n as isize);
         let r = (HUF_getIndex(c)) + 1;
-        let fresh10 = &mut (*rankPosition.offset(r as isize)).curr;
-        let pos = *fresh10 as u32;
-        *fresh10 += 1;
+        let pos = rankPosition[r as usize].curr as u32;
+        rankPosition[r as usize].curr += 1;
         debug_assert!(pos < maxSymbolValue1);
         (*huffNode.offset(pos as isize)).count = c;
         (*huffNode.offset(pos as isize)).byte = n as u8;
@@ -791,9 +790,9 @@ unsafe fn HUF_sort(
 
     /* Sort each bucket. */
     for n in RANK_POSITION_DISTINCT_COUNT_CUTOFF..(RANK_POSITION_TABLE_SIZE - 1) as u32 {
-        let bucketSize = (*rankPosition.offset(n as isize)).curr as c_int
-            - (*rankPosition.offset(n as isize)).base as c_int;
-        let bucketStartIdx = (*rankPosition.offset(n as isize)).base as u32;
+        let bucketSize =
+            rankPosition[n as usize].curr as c_int - rankPosition[n as usize].base as c_int;
+        let bucketStartIdx = rankPosition[n as usize].base as u32;
         if bucketSize > 1 {
             debug_assert!(bucketStartIdx < maxSymbolValue1);
             HUF_simpleQuickSort(huffNode.offset(bucketStartIdx as isize), 0, bucketSize - 1);
@@ -971,7 +970,7 @@ pub unsafe fn HUF_buildCTable_wksp(
         huffNode,
         count,
         maxSymbolValue,
-        ((*wksp_tables).rankPosition).as_mut_ptr(),
+        &mut (*wksp_tables).rankPosition,
     );
 
     /* build tree */
