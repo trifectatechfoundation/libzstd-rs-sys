@@ -627,7 +627,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
 /// - Or 0 if it failed to compress.
 unsafe fn ZSTD_compressSubBlock(
     entropy: &ZSTD_entropyCTables_t,
-    entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
+    entropyMetadata: &ZSTD_entropyCTablesMetadata_t,
     sequences: *const SeqDef,
     nbSeq: size_t,
     literals: *const u8,
@@ -635,7 +635,7 @@ unsafe fn ZSTD_compressSubBlock(
     llCode: *const u8,
     mlCode: *const u8,
     ofCode: *const u8,
-    cctxParams: *const ZSTD_CCtx_params,
+    cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     bmi2: core::ffi::c_int,
@@ -651,7 +651,7 @@ unsafe fn ZSTD_compressSubBlock(
 
     let cLitSize = ZSTD_compressSubBlock_literal(
         &entropy.huf.CTable,
-        &(*entropyMetadata).hufMetadata,
+        &entropyMetadata.hufMetadata,
         literals,
         litSize,
         op as *mut core::ffi::c_void,
@@ -671,7 +671,7 @@ unsafe fn ZSTD_compressSubBlock(
 
     let cSeqSize = ZSTD_compressSubBlock_sequences(
         &entropy.fse,
-        &(*entropyMetadata).fseMetadata,
+        &entropyMetadata.fseMetadata,
         sequences,
         nbSeq,
         llCode,
