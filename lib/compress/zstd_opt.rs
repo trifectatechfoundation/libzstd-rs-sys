@@ -1852,12 +1852,6 @@ unsafe fn ZSTD_compressBlock_opt_generic(
         offset: 0,
     };
 
-    ptr::write_bytes(
-        &mut lastStretch as *mut ZSTD_optimal_t as *mut u8,
-        0,
-        size_of::<ZSTD_optimal_t>(),
-    );
-
     optLdm.seqStore = if !(ms.ldmSeqStore).is_null() {
         *ms.ldmSeqStore
     } else {
