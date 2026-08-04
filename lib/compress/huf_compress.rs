@@ -47,7 +47,7 @@ unsafe fn HUF_alignUpWorkspace(
     let mask = align - 1;
     let rem = workspace as size_t & mask;
     let add = (align - (rem)) & mask;
-    let aligned = (workspace as *mut u8).add(add);
+    let aligned = workspace.byte_add(add);
 
     debug_assert!((align & (align - 1)) == 0); /* pow 2 */
     debug_assert!(align <= HUF_WORKSPACE_MAX_ALIGNMENT);
@@ -56,7 +56,7 @@ unsafe fn HUF_alignUpWorkspace(
         debug_assert!(add < align);
         debug_assert!(((aligned as size_t) & mask) == 0);
         *workspaceSizePtr -= add;
-        aligned as *mut c_void
+        aligned
     } else {
         *workspaceSizePtr = 0;
         core::ptr::null_mut()

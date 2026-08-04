@@ -696,7 +696,7 @@ unsafe fn ZSTD_noCompressBlock(
     }
     MEM_writeLE24(dst, cBlockHeader24);
     libc::memcpy(
-        (dst as *mut u8).add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
+        dst.byte_add(ZSTD_blockHeaderSize),
         src,
         srcSize as libc::size_t,
     );
@@ -1133,7 +1133,7 @@ unsafe fn ZSTD_cwksp_internal_advance_phase(
             let alloc = (*ws).objectEnd;
             let bytesToAlign =
                 ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
-            let objectEnd = (alloc as *mut u8).add(bytesToAlign) as *mut core::ffi::c_void;
+            let objectEnd = alloc.byte_add(bytesToAlign);
             if objectEnd > (*ws).workspaceEnd {
                 return Error::memory_allocation.to_error_code();
             }
@@ -1237,7 +1237,7 @@ unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut c
         return core::ptr::null_mut();
     }
     alloc = (*ws).tableEnd;
-    end = (alloc as *mut u8).add(bytes) as *mut core::ffi::c_void;
+    end = alloc.byte_add(bytes);
     top = (*ws).allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
@@ -1254,7 +1254,7 @@ unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut c
 unsafe fn ZSTD_cwksp_reserve_object(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let roundedBytes = ZSTD_cwksp_align(bytes, size_of::<*mut core::ffi::c_void>());
     let alloc = (*ws).objectEnd;
-    let end = (alloc as *mut u8).add(roundedBytes) as *mut core::ffi::c_void;
+    let end = alloc.byte_add(roundedBytes);
     ZSTD_cwksp_assert_internal_consistency(ws);
     if (*ws).phase as core::ffi::c_uint
         != ZSTD_cwksp_alloc_objects as core::ffi::c_int as core::ffi::c_uint
@@ -1335,7 +1335,7 @@ unsafe fn ZSTD_cwksp_init(
     isStatic: ZSTD_cwksp_static_alloc_e,
 ) {
     (*ws).workspace = start;
-    (*ws).workspaceEnd = (start as *mut u8).add(size) as *mut core::ffi::c_void;
+    (*ws).workspaceEnd = start.byte_add(size);
     (*ws).objectEnd = (*ws).workspace;
     (*ws).tableValidEnd = (*ws).objectEnd;
     (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
@@ -7819,7 +7819,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
             &mut (*cctx).workspace,
             &(*cctx).appliedParams,
             src,
-            (src as *const u8).add(srcSize) as *const core::ffi::c_void,
+            src.byte_add(srcSize),
         );
     }
 
