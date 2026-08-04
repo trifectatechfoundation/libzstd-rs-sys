@@ -584,13 +584,13 @@ unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u3
 // Update hashTable3 up to ip (excluded)
 // Assumption: always within prefix (i.e. not within extDict)
 unsafe fn ZSTD_insertAndFindFirstIndexHash3(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
     ip: *const u8,
 ) -> u32 {
-    let hashTable3 = (*ms).hashTable3;
-    let hashLog3 = (*ms).hashLog3;
-    let base = (*ms).window.base;
+    let hashTable3 = ms.hashTable3;
+    let hashLog3 = ms.hashLog3;
+    let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
     let hash3 = ZSTD_hash3Ptr(ip as *const core::ffi::c_void, hashLog3);
 
