@@ -6,16 +6,16 @@ use libc::size_t;
 use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
-const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
+pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
 
 pub const BLOCKSIZE_MIN: c_int = 3500;
 pub const THRESHOLD_PENALTY_RATE: c_int = 16;
 pub const THRESHOLD_BASE: c_int = THRESHOLD_PENALTY_RATE - 2;
 pub const THRESHOLD_PENALTY: c_int = 3;
 
-pub const HASHLENGTH: c_int = 2;
+pub const HASHLENGTH: usize = 2;
 pub const HASHLOG_MAX: c_uint = 10;
-pub const HASHTABLESIZE: c_int = 1 << HASHLOG_MAX;
+pub const HASHTABLESIZE: usize = 1 << HASHLOG_MAX;
 pub const KNUTH: c_uint = 0x9e3779b9;
 
 /// for `hashLog` > 8, hash 2 bytes.
@@ -33,7 +33,7 @@ unsafe fn hash2(p: *const c_void, hashLog: c_uint) -> c_uint {
 
 #[repr(C)]
 pub struct Fingerprint {
-    pub events: [c_uint; 1024],
+    pub events: [c_uint; HASHTABLESIZE],
     pub nbEvents: size_t,
 }
 
@@ -56,10 +56,10 @@ unsafe fn addEvents_generic(
     hashLog: c_uint,
 ) {
     let p = src as *const c_char;
-    let limit = srcSize.wrapping_sub(HASHLENGTH as size_t).wrapping_add(1);
+    let limit = srcSize.wrapping_sub(HASHLENGTH).wrapping_add(1);
     let mut n: size_t = 0;
 
-    debug_assert!(srcSize >= HASHLENGTH as usize);
+    debug_assert!(srcSize >= HASHLENGTH);
     while n < limit {
         fp.events[hash2(p.add(n) as *const c_void, hashLog) as usize] += 1;
         n = n.wrapping_add(samplingRate);
@@ -116,7 +116,7 @@ unsafe fn compareFingerprints(
 }
 
 fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
-    for n in 0..HASHTABLESIZE as usize {
+    for n in 0..HASHTABLESIZE {
         acc.events[n] += newfp.events[n];
     }
     acc.nbEvents += newfp.nbEvents;
