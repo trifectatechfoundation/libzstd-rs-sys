@@ -953,11 +953,12 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
-    ptr::write_bytes(
-        huffNodeTbl.as_mut_ptr().cast::<u8>(),
-        0,
-        size_of::<huffNodeTable>(),
-    );
+    huffNodeTbl.fill(nodeElt {
+        count: 0,
+        parent: 0,
+        byte: 0,
+        nbBits: 0,
+    });
     /* sort, decreasing order */
     HUF_sort(
         &mut huffNodeTbl[1..],
