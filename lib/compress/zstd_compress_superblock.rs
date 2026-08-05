@@ -18,6 +18,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
     ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
     ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS,
+    ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
@@ -211,8 +212,6 @@ pub struct EstimatedBlockSize {
     pub estLitSize: size_t,
     pub estBlockSize: size_t,
 }
-
-pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
 
 #[inline]
 unsafe fn ZSTD_getSequenceLength(
