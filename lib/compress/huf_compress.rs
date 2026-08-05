@@ -674,58 +674,42 @@ fn HUF_getIndex(count: u32) -> u32 {
     }
 }
 
-/// Returns `false` if the huffNode array is not sorted by descending count
-unsafe fn HUF_isSorted(huffNode: *mut nodeElt, maxSymbolValue1: u32) -> bool {
-    for i in 1..maxSymbolValue1 {
-        if (*huffNode.offset(i as isize)).count > (*huffNode.offset((i - 1) as isize)).count {
-            return false;
-        }
-    }
-    true
-}
-
 /// Insertion sort by descending order
 #[inline(always)]
-unsafe fn HUF_insertionSort(mut huffNode: *mut nodeElt, low: c_int, high: c_int) {
+fn HUF_insertionSort(huffNode: &mut [nodeElt], low: c_int, high: c_int) {
     let size = high - low + 1;
-    huffNode = huffNode.offset(low as isize);
+    let huffNode = &mut huffNode[low as usize..];
     for i in 1..size {
-        let key = *huffNode.offset(i as isize);
+        let key = huffNode[i as usize];
         let mut j = i - 1;
-        while j >= 0 && (*huffNode.offset(j as isize)).count < key.count {
-            *huffNode.offset((j + 1) as isize) = *huffNode.offset(j as isize);
+        while j >= 0 && huffNode[j as usize].count < key.count {
+            huffNode[(j + 1) as usize] = huffNode[j as usize];
             j -= 1;
         }
-        *huffNode.offset((j + 1) as isize) = key;
+        huffNode[(j + 1) as usize] = key;
     }
 }
 
 /// Pivot helper function for quicksort.
-unsafe fn HUF_quickSortPartition(arr: *mut nodeElt, low: c_int, high: c_int) -> c_int {
+fn HUF_quickSortPartition(arr: &mut [nodeElt], low: c_int, high: c_int) -> c_int {
     /* Simply select rightmost element as pivot. "Better" selectors like
      * median-of-three don't experimentally appear to have any benefit.
      */
-    let pivot = (*arr.offset(high as isize)).count;
+    let pivot = arr[high as usize].count;
     let mut i = low - 1;
     for j in low..high {
-        if (*arr.offset(j as isize)).count > pivot {
+        if arr[j as usize].count > pivot {
             i += 1;
-            core::ptr::swap(
-                &raw mut *arr.offset(i as isize),
-                &raw mut *arr.offset(j as isize),
-            );
+            arr.swap(i as usize, j as usize);
         }
     }
-    core::ptr::swap(
-        &raw mut *arr.offset((i + 1) as isize),
-        &raw mut *arr.offset(high as isize),
-    );
+    arr.swap((i + 1) as usize, high as usize);
     i + 1
 }
 
 /// Classic quicksort by descending with partially iterative calls
 /// to reduce worst case callstack size.
-unsafe fn HUF_simpleQuickSort(arr: *mut nodeElt, mut low: c_int, mut high: c_int) {
+fn HUF_simpleQuickSort(arr: &mut [nodeElt], mut low: c_int, mut high: c_int) {
     let kInsertionSortThreshold = 8;
 
     if high - low < kInsertionSortThreshold {
@@ -756,7 +740,7 @@ unsafe fn HUF_simpleQuickSort(arr: *mut nodeElt, mut low: c_int, mut high: c_int
 /// * `maxSymbolValue` - Maximum symbol value.
 /// * `rankPosition` - This is a scratch workspace. Must have RANK_POSITION_TABLE_SIZE entries.
 unsafe fn HUF_sort(
-    huffNode: *mut nodeElt,
+    huffNode: &mut [nodeElt],
     count: *const c_uint,
     maxSymbolValue: u32,
     rankPosition: &mut [rankPos; RANK_POSITION_TABLE_SIZE],
@@ -791,8 +775,8 @@ unsafe fn HUF_sort(
         let pos = rankPosition[r as usize].curr as u32;
         rankPosition[r as usize].curr += 1;
         debug_assert!(pos < maxSymbolValue1);
-        (*huffNode.offset(pos as isize)).count = c;
-        (*huffNode.offset(pos as isize)).byte = n as u8;
+        huffNode[pos as usize].count = c;
+        huffNode[pos as usize].byte = n as u8;
     }
 
     /* Sort each bucket. */
@@ -802,10 +786,11 @@ unsafe fn HUF_sort(
         let bucketStartIdx = rankPosition[n as usize].base as u32;
         if bucketSize > 1 {
             debug_assert!(bucketStartIdx < maxSymbolValue1);
-            HUF_simpleQuickSort(huffNode.offset(bucketStartIdx as isize), 0, bucketSize - 1);
+            HUF_simpleQuickSort(&mut huffNode[bucketStartIdx as usize..], 0, bucketSize - 1);
         }
     }
-    debug_assert!(HUF_isSorted(huffNode, maxSymbolValue1));
+
+    debug_assert!(huffNode[..maxSymbolValue1 as usize].is_sorted_by(|a, b| a.count >= b.count));
 }
 
 pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
@@ -953,8 +938,7 @@ pub unsafe fn HUF_buildCTable_wksp(
 ) -> size_t {
     let wksp_tables = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<u32>())
         as *mut HUF_buildCTable_wksp_tables;
-    let huffNode0 = ((*wksp_tables).huffNodeTbl).as_mut_ptr();
-    let huffNode = huffNode0.add(1);
+    let huffNodeTbl = &mut (*wksp_tables).huffNodeTbl;
     let mut nonNullRank: c_int = 0;
 
     const {
@@ -971,14 +955,22 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
-    ptr::write_bytes(huffNode0 as *mut u8, 0, size_of::<huffNodeTable>());
+    ptr::write_bytes(
+        huffNodeTbl.as_mut_ptr().cast::<u8>(),
+        0,
+        size_of::<huffNodeTable>(),
+    );
     /* sort, decreasing order */
     HUF_sort(
-        huffNode,
+        &mut huffNodeTbl[1..],
         count,
         maxSymbolValue,
         &mut (*wksp_tables).rankPosition,
     );
+
+    // HUF_buildTree reaches back to the slot before `huffNode` for its barrier entry,
+    // so this pointer must keep provenance over the whole table.
+    let huffNode = huffNodeTbl.as_mut_ptr().add(1);
 
     /* build tree */
     nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
