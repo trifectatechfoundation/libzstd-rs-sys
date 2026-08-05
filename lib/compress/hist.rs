@@ -7,7 +7,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_read32;
-pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
+pub const HIST_WKSP_SIZE_U32: usize = 1024;
 pub const HIST_WKSP_SIZE: size_t =
     (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
@@ -252,15 +252,14 @@ pub unsafe fn HIST_countFast(
     source: *const core::ffi::c_void,
     sourceSize: size_t,
 ) -> size_t {
-    let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32 as usize] =
-        [0; HIST_WKSP_SIZE_U32 as usize];
+    let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_countFast_wksp(
         count,
         maxSymbolValuePtr,
         source,
         sourceSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        size_of::<[core::ffi::c_uint; HIST_WKSP_SIZE_U32 as usize]>(),
+        size_of::<[core::ffi::c_uint; HIST_WKSP_SIZE_U32]>(),
     )
 }
 
@@ -270,14 +269,13 @@ pub unsafe fn HIST_count(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32 as usize] =
-        [0; HIST_WKSP_SIZE_U32 as usize];
+    let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_count_wksp(
         count,
         maxSymbolValuePtr,
         src,
         srcSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        size_of::<[core::ffi::c_uint; HIST_WKSP_SIZE_U32 as usize]>(),
+        size_of::<[core::ffi::c_uint; HIST_WKSP_SIZE_U32]>(),
     )
 }
