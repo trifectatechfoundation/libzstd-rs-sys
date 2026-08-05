@@ -1599,7 +1599,7 @@ unsafe fn HUF_compressCTable_internal(
 pub union workspace_union {
     pub buildCTable_wksp: HUF_buildCTable_wksp_tables,
     pub writeCTable_wksp: HUF_WriteCTableWksp,
-    pub hist_wksp: [u32; HIST_WKSP_SIZE_U32 as usize],
+    pub hist_wksp: [u32; HIST_WKSP_SIZE_U32],
 }
 
 #[derive(Copy, Clone)]
@@ -1815,7 +1815,7 @@ unsafe fn HUF_compress_internal(
         src as *const u8 as *const c_void,
         srcSize,
         ((*table).wksps.hist_wksp).as_mut_ptr() as *mut c_void,
-        size_of::<[u32; HIST_WKSP_SIZE_U32 as usize]>(),
+        size_of::<[u32; HIST_WKSP_SIZE_U32]>(),
     );
     if ERR_isError(largest) {
         return largest;
