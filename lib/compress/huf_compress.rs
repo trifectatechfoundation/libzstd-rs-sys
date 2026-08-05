@@ -478,8 +478,8 @@ pub unsafe fn HUF_getNbBitsFromCTable(
 /// # Returns
 ///
 /// The maximum number of bits of the Huffman tree after adjustment.
-unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBits: u32) -> u32 {
-    let largestBits = (*huffNode.offset(lastNonNull as isize)).nbBits as u32;
+fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u32) -> u32 {
+    let largestBits = huffNode[lastNonNull as usize].nbBits as u32;
     /* early exit : no elt > targetNbBits, so the tree is already valid. */
     if largestBits <= targetNbBits {
         return largestBits;
@@ -495,17 +495,16 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
          * Compute totalCost, which is how far the sum of the ranks is
          * we are over 2^largestBits after adjust the offending ranks.
          */
-        while (*huffNode.offset(n as isize)).nbBits as u32 > targetNbBits {
-            totalCost += (baseCost
-                - (1 << (largestBits - (*huffNode.offset(n as isize)).nbBits as u32)))
-                as c_int;
-            (*huffNode.offset(n as isize)).nbBits = targetNbBits as u8;
+        while huffNode[n as usize].nbBits as u32 > targetNbBits {
+            totalCost +=
+                (baseCost - (1 << (largestBits - huffNode[n as usize].nbBits as u32))) as c_int;
+            huffNode[n as usize].nbBits = targetNbBits as u8;
             n -= 1;
         }
         /* n stops at huffNode[n].nbBits <= targetNbBits */
-        debug_assert!((*huffNode.offset(n as isize)).nbBits as u32 <= targetNbBits);
+        debug_assert!(huffNode[n as usize].nbBits as u32 <= targetNbBits);
         /* n end at index of smallest symbol using < targetNbBits */
-        while (*huffNode.offset(n as isize)).nbBits as u32 == targetNbBits {
+        while huffNode[n as usize].nbBits as u32 == targetNbBits {
             n -= 1;
         }
 
@@ -523,8 +522,8 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
             {
                 let mut currentNbBits = targetNbBits;
                 for pos in (0..n + 1).rev() {
-                    if ((*huffNode.offset(pos as isize)).nbBits as u32) < currentNbBits {
-                        currentNbBits = (*huffNode.offset(pos as isize)).nbBits as u32; /* < targetNbBits */
+                    if (huffNode[pos as usize].nbBits as u32) < currentNbBits {
+                        currentNbBits = huffNode[pos as usize].nbBits as u32; /* < targetNbBits */
                         rankLast[(targetNbBits - (currentNbBits)) as usize] = pos as u32;
                     }
                 }
@@ -546,8 +545,8 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                         if lowPos == noSymbol {
                             break;
                         }
-                        let highTotal = (*huffNode.offset(highPos as isize)).count;
-                        let lowTotal = 2 * (*huffNode.offset(lowPos as isize)).count;
+                        let highTotal = huffNode[highPos as usize].count;
+                        let lowTotal = 2 * huffNode[lowPos as usize].count;
                         if highTotal <= lowTotal {
                             break;
                         }
@@ -569,8 +568,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
 
                 /* Increase the number of bits to gain back half the rank cost. */
                 totalCost -= 1 << (nBitsToDecrease - 1);
-                let fresh3 =
-                    &mut (*huffNode.offset(rankLast[nBitsToDecrease as usize] as isize)).nbBits;
+                let fresh3 = &mut huffNode[rankLast[nBitsToDecrease as usize] as usize].nbBits;
                 *fresh3 += 1;
 
                 /* Fix up the new rank.
@@ -593,7 +591,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                     rankLast[nBitsToDecrease as usize] = noSymbol;
                 } else {
                     rankLast[nBitsToDecrease as usize] -= 1;
-                    if (*huffNode.offset(rankLast[nBitsToDecrease as usize] as isize)).nbBits as u32
+                    if huffNode[rankLast[nBitsToDecrease as usize] as usize].nbBits as u32
                         != targetNbBits - (nBitsToDecrease)
                     {
                         rankLast[nBitsToDecrease as usize] = noSymbol;
@@ -614,15 +612,15 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                  * let's create one from largest rank 0 (using targetNbBits).
                  */
                 if rankLast[1] == noSymbol {
-                    while (*huffNode.offset(n as isize)).nbBits as u32 == targetNbBits {
+                    while huffNode[n as usize].nbBits as u32 == targetNbBits {
                         n -= 1;
                     }
-                    (*huffNode.offset((n + 1) as isize)).nbBits -= 1;
+                    huffNode[(n + 1) as usize].nbBits -= 1;
                     debug_assert!(n >= 0);
                     rankLast[1] = (n + 1) as u32;
                     totalCost += 1;
                 } else {
-                    (*huffNode.offset((rankLast[1] + 1) as isize)).nbBits -= 1;
+                    huffNode[(rankLast[1] + 1) as usize].nbBits -= 1;
                     rankLast[1] += 1;
                     totalCost += 1;
                 }
@@ -976,11 +974,17 @@ pub unsafe fn HUF_buildCTable_wksp(
     nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
 
     /* determine and enforce maxTableLog */
-    maxNbBits = HUF_setMaxHeight(huffNode, nonNullRank as u32, maxNbBits);
+    maxNbBits = HUF_setMaxHeight(&mut huffNodeTbl[1..], nonNullRank as u32, maxNbBits);
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
         return Error::GENERIC.to_error_code(); /* check fit into table */
     }
-    HUF_buildCTableFromTree(CTable, huffNode, nonNullRank, maxSymbolValue, maxNbBits);
+    HUF_buildCTableFromTree(
+        CTable,
+        huffNodeTbl.as_ptr().add(1),
+        nonNullRank,
+        maxSymbolValue,
+        maxNbBits,
+    );
     maxNbBits as size_t
 }
 
