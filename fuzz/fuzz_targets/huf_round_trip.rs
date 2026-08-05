@@ -133,8 +133,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     let mut c_buf = vec![0u8; cbuf_size];
 
     // Compression table size: (maxSymbol + 2) * sizeof(usize)
-    let ct_size = HUF_CTABLE_SIZE(max_symbol as usize);
-    let mut ct = vec![0u8; ct_size];
+    let mut ct = [0usize; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)];
 
     // Step 4: Optimize table log
     let table_log = unsafe {
@@ -144,7 +143,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             max_symbol,
             workspace.as_mut_ptr().cast(),
             HUF_WORKSPACE_SIZE,
-            ct.as_mut_ptr() as *mut usize,
+            &mut ct,
             count.as_ptr(),
             flags,
         )
@@ -249,7 +248,7 @@ fuzz_target!(|input: HufRoundTripInput| {
                 cbuf_size,
                 input.data[..size].as_ptr().cast(),
                 size,
-                ct.as_ptr() as *const usize,
+                &ct,
                 flags,
             )
         } else {
@@ -259,7 +258,7 @@ fuzz_target!(|input: HufRoundTripInput| {
                 cbuf_size,
                 input.data[..size].as_ptr().cast(),
                 size,
-                ct.as_ptr() as *const usize,
+                &ct,
                 flags,
             )
         }
