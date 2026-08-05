@@ -899,14 +899,14 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
 /// * `maxSymbolValue` - The maximum symbol value.
 /// * `maxNbBits` - The exact maximum number of bits used in the Huffman tree.
 unsafe fn HUF_buildCTableFromTree(
-    CTable: *mut HUF_CElt,
+    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     huffNode: *const nodeElt,
     nonNullRank: c_int,
     maxSymbolValue: u32,
     maxNbBits: u32,
 ) {
     /* fill result into ctable (val, nbBits) */
-    let ct = CTable.add(1);
+    let ct = CTable[1..].as_mut_ptr();
     let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
@@ -934,7 +934,7 @@ unsafe fn HUF_buildCTableFromTree(
         *fresh19 += 1;
     }
 
-    HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
+    HUF_writeCTableHeader(CTable.as_mut_ptr(), maxNbBits, maxSymbolValue);
 }
 
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
@@ -984,13 +984,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
         return Error::GENERIC.to_error_code(); /* check fit into table */
     }
-    HUF_buildCTableFromTree(
-        CTable.as_mut_ptr(),
-        huffNode,
-        nonNullRank,
-        maxSymbolValue,
-        maxNbBits,
-    );
+    HUF_buildCTableFromTree(CTable, huffNode, nonNullRank, maxSymbolValue, maxNbBits);
     maxNbBits as size_t
 }
 
