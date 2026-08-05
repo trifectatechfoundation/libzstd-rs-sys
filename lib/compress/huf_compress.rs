@@ -1610,8 +1610,8 @@ pub struct HUF_compress_tables_t {
     pub wksps: workspace_union,
 }
 
-pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: c_int = 4096;
-pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: c_int = 10; /* Must be >= 2 */
+pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: usize = 4096;
+pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: usize = 10; /* Must be >= 2 */
 
 pub unsafe fn HUF_cardinality(count: *const c_uint, maxSymbolValue: c_uint) -> c_uint {
     let mut cardinality = 0 as c_uint;
@@ -1776,8 +1776,7 @@ unsafe fn HUF_compress_internal(
 
     /* If uncompressible data is suspected, do a smaller sampling first */
     if flags & HUF_flags_suspectUncompressible as c_int != 0
-        && srcSize
-            >= (SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO) as size_t
+        && srcSize >= SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO
     {
         let mut largestTotal = 0usize;
         let mut maxSymbolValueBegin = maxSymbolValue;
@@ -1785,7 +1784,7 @@ unsafe fn HUF_compress_internal(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueBegin,
             src as *const u8 as *const c_void,
-            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize,
+            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
         if ERR_isError(largestBegin) {
             return largestBegin;
@@ -1796,14 +1795,14 @@ unsafe fn HUF_compress_internal(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueEnd,
             src.byte_add(srcSize)
-                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize),
-            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize,
+                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE),
+            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
         if ERR_isError(largestEnd) {
             return largestEnd;
         }
         largestTotal += largestEnd;
-        if largestTotal <= (((2 * SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE) >> 7) + 4) as size_t {
+        if largestTotal <= ((2 * SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE) >> 7) + 4 {
             return 0; /* heuristic : probably not compressible enough */
         }
     }
