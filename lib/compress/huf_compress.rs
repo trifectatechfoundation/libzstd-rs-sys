@@ -219,7 +219,11 @@ pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTable
     ctable.cast::<HUF_CTableHeader>().read()
 }
 
-unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolValue: u32) {
+unsafe fn HUF_writeCTableHeader(
+    ctable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    tableLog: u32,
+    maxSymbolValue: u32,
+) {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
         maxSymbolValue: 0,
@@ -233,7 +237,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     debug_assert!(maxSymbolValue < 256);
     header.maxSymbolValue = maxSymbolValue as u8;
     // the header is stored in the first `HUF_CElt` slot of the table
-    ctable.cast::<HUF_CTableHeader>().write(header);
+    ctable.as_mut_ptr().cast::<HUF_CTableHeader>().write(header);
 }
 
 #[derive(Copy, Clone)]
@@ -365,7 +369,7 @@ pub unsafe fn HUF_readCTable(
 
     *maxSymbolValuePtr = nbSymbols - 1;
 
-    HUF_writeCTableHeader(CTable.as_mut_ptr(), tableLog, *maxSymbolValuePtr);
+    HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
 
     /* Prepare base value per rank */
     {
@@ -934,7 +938,7 @@ unsafe fn HUF_buildCTableFromTree(
         *fresh19 += 1;
     }
 
-    HUF_writeCTableHeader(CTable.as_mut_ptr(), maxNbBits, maxSymbolValue);
+    HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
 }
 
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
