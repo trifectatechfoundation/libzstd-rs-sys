@@ -54,8 +54,8 @@ pub struct ldmState_t {
     pub hashTable: *mut ldmEntry_t,
     pub loadedDictEnd: u32,
     pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
-    pub matchCandidates: [ldmMatchCandidate_t; 64],
+    pub splitIndices: [size_t; LDM_BATCH_SIZE],
+    pub matchCandidates: [ldmMatchCandidate_t; LDM_BATCH_SIZE],
 }
 
 impl Default for ldmState_t {
@@ -148,7 +148,7 @@ use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_btopt, ZSTD_btultra, ZSTD_compre
 
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
-pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
+pub const LDM_BATCH_SIZE: usize = 64;
 
 /// Reduces the indices to protect from index overflow.
 ///
