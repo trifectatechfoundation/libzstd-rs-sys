@@ -17,6 +17,9 @@ pub(crate) static repStartValue: [u32; ZSTD_REP_NUM as usize] = [1, 4, 8];
 
 pub(crate) const ZSTD_FRAMEIDSIZE: usize = 4;
 
+/// header + <= 127 byte tree description
+pub(crate) const ZSTD_MAX_HUF_HEADER_SIZE: usize = 128;
+
 const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 pub(crate) static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub(crate) type blockType_e = core::ffi::c_uint;
