@@ -152,7 +152,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     // Step 5: Build compression table (returns actual tableLog)
     let table_log = unsafe {
         lib::compress::huf_compress::HUF_buildCTable_wksp(
-            ct.as_mut_ptr() as *mut usize,
+            &mut ct,
             count.as_ptr(),
             max_symbol,
             table_log,
@@ -170,7 +170,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         lib::compress::huf_compress::HUF_writeCTable_wksp(
             c_buf.as_mut_ptr().cast(),
             cbuf_size,
-            ct.as_ptr() as *const usize,
+            &ct,
             max_symbol,
             table_log as c_uint,
             workspace.as_mut_ptr().cast(),
