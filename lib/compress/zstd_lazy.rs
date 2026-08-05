@@ -80,6 +80,9 @@ pub const kSearchStrength: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
 
+/// absolute maximum number of entries per row, for all configurations
+const ZSTD_ROW_HASH_MAX_ENTRIES: usize = 64;
+
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
@@ -1479,7 +1482,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     let row = hashTable.offset(relRow as isize);
     let tagRow = tagTable.offset(relRow as isize);
     let headGrouped = (*tagRow as u32 & rowMask) * groupWidth;
-    let mut matchBuffer: [u32; 64] = [0; 64];
+    let mut matchBuffer: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
     let mut numMatches = 0usize;
     let mut currMatch = 0;
     let mut matches = ZSTD_row_getMatchMask(tagRow, tag as u8, headGrouped, rowEntries);
@@ -1574,7 +1577,7 @@ unsafe fn ZSTD_RowFindBestMatch(
         let dmsIndexDelta = dictLimit.wrapping_sub(dmsSize);
 
         let headGrouped_0 = (*dmsTagRow as u32 & rowMask) * groupWidth;
-        let mut matchBuffer_0: [u32; 64] = [0; 64];
+        let mut matchBuffer_0: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
         let mut numMatches_0 = 0usize;
         let mut currMatch_0 = 0;
         let mut matches_0 =
