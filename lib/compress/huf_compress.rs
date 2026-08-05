@@ -326,7 +326,7 @@ pub unsafe fn HUF_writeCTable_wksp(
 }
 
 pub unsafe fn HUF_readCTable(
-    CTable: *mut HUF_CElt,
+    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     maxSymbolValuePtr: &mut c_uint,
     src: *const c_void,
     srcSize: size_t,
@@ -341,7 +341,7 @@ pub unsafe fn HUF_readCTable(
     let mut nbSymbols = 0;
 
     /* get symbol weights */
-    let ct = CTable.add(1);
+    let ct = CTable[1..].as_mut_ptr();
     let readSize = HUF_readStats(
         &mut huffWeight,
         (255 + 1) as size_t,
@@ -365,7 +365,7 @@ pub unsafe fn HUF_readCTable(
 
     *maxSymbolValuePtr = nbSymbols - 1;
 
-    HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
+    HUF_writeCTableHeader(CTable.as_mut_ptr(), tableLog, *maxSymbolValuePtr);
 
     /* Prepare base value per rank */
     {

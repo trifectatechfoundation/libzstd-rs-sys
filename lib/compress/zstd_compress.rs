@@ -7872,7 +7872,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut maxSymbolValue = 255;
     let mut hasZeroWeights = 1;
     let hufHeaderSize = HUF_readCTable(
-        ((*bs).entropy.huf.CTable).as_mut_ptr(),
+        &mut (*bs).entropy.huf.CTable,
         &mut maxSymbolValue,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
