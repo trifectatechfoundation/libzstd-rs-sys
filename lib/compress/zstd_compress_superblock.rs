@@ -7,7 +7,7 @@ use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writ
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
     ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
-    MINMATCH,
+    MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -1231,7 +1231,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t {
         hufMetadata: ZSTD_hufCTablesMetadata_t {
             hType: set_basic,
-            hufDesBuffer: [0; 128],
+            hufDesBuffer: [0; ZSTD_MAX_HUF_HEADER_SIZE],
             hufDesSize: 0,
         },
         fseMetadata: ZSTD_fseCTablesMetadata_t {

@@ -108,7 +108,7 @@ pub const set_basic: SymbolEncodingType_e = 0;
 #[repr(C)]
 pub struct ZSTD_hufCTablesMetadata_t {
     pub hType: SymbolEncodingType_e,
-    pub hufDesBuffer: [u8; 128],
+    pub hufDesBuffer: [u8; ZSTD_MAX_HUF_HEADER_SIZE],
     pub hufDesSize: size_t,
 }
 
@@ -866,8 +866,8 @@ use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
     LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
     MaxLL, MaxML, MaxOff, MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog,
-    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM,
-    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE,
+    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -6075,7 +6075,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         HUF_estimateCompressedSize((nextHuf.CTable).as_mut_ptr(), countWksp, maxSymbolValue);
     let hSize = HUF_writeCTable_wksp(
         (hufMetadata.hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-        size_of::<[u8; 128]>(),
+        size_of::<[u8; ZSTD_MAX_HUF_HEADER_SIZE]>(),
         (nextHuf.CTable).as_mut_ptr(),
         maxSymbolValue,
         huffLog,
@@ -9046,7 +9046,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             entropyMetadata: ZSTD_entropyCTablesMetadata_t {
                 hufMetadata: ZSTD_hufCTablesMetadata_t {
                     hType: set_basic,
-                    hufDesBuffer: [0; 128],
+                    hufDesBuffer: [0; ZSTD_MAX_HUF_HEADER_SIZE],
                     hufDesSize: 0,
                 },
                 fseMetadata: ZSTD_fseCTablesMetadata_t {
