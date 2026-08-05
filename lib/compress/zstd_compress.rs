@@ -76,7 +76,7 @@ pub struct ZSTD_blockSplitCtx {
     pub secondHalfSeqStore: SeqStore_t,
     pub currSeqStore: SeqStore_t,
     pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
+    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
@@ -617,7 +617,7 @@ pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
-pub const ZSTD_MAX_NB_BLOCK_SPLITS: core::ffi::c_int = 196;
+pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
 #[inline]
 fn ZSTD_LLcode(litLength: u32) -> u32 {
@@ -6754,7 +6754,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     cSize
 }
 
-pub const MIN_SEQUENCES_BLOCK_SPLITTING: core::ffi::c_int = 300;
+pub const MIN_SEQUENCES_BLOCK_SPLITTING: usize = 300;
 
 /// Helper function to perform the recursive search for block splits.
 /// Estimates the cost of seqStore prior to split, and estimates the cost of splitting the
@@ -6782,8 +6782,8 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     let mut estimatedSecondHalfSize: size_t = 0;
     let midIdx = startIdx.wrapping_add(endIdx) / 2;
 
-    if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING as size_t
-        || (*splits).idx >= ZSTD_MAX_NB_BLOCK_SPLITS as size_t
+    if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING
+        || (*splits).idx >= ZSTD_MAX_NB_BLOCK_SPLITS
     {
         return;
     }
@@ -9043,7 +9043,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 longLengthType: ZSTD_llt_none,
                 longLengthPos: 0,
             },
-            partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
+            partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS],
             entropyMetadata: ZSTD_entropyCTablesMetadata_t {
                 hufMetadata: ZSTD_hufCTablesMetadata_t {
                     hType: set_basic,
