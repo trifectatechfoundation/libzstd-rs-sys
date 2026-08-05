@@ -940,7 +940,7 @@ unsafe fn HUF_buildCTableFromTree(
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
 /// `workSpace` must be aligned on 4-bytes boundaries, and be at least as large as sizeof([`HUF_buildCTable_wksp_tables`]).
 pub unsafe fn HUF_buildCTable_wksp(
-    CTable: *mut HUF_CElt,
+    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     count: *const c_uint,
     maxSymbolValue: u32,
     mut maxNbBits: u32,
@@ -984,7 +984,13 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
         return Error::GENERIC.to_error_code(); /* check fit into table */
     }
-    HUF_buildCTableFromTree(CTable, huffNode, nonNullRank, maxSymbolValue, maxNbBits);
+    HUF_buildCTableFromTree(
+        CTable.as_mut_ptr(),
+        huffNode,
+        nonNullRank,
+        maxSymbolValue,
+        maxNbBits,
+    );
     maxNbBits as size_t
 }
 
@@ -1658,7 +1664,7 @@ pub unsafe fn HUF_optimalTableLog(
     optLogGuess = minTableLog;
     while optLogGuess <= maxTableLog {
         let maxBits = HUF_buildCTable_wksp(
-            table.as_mut_ptr(),
+            table,
             count,
             maxSymbolValue,
             optLogGuess,
@@ -1864,7 +1870,7 @@ unsafe fn HUF_compress_internal(
         flags,
     );
     let maxBits = HUF_buildCTable_wksp(
-        ((*table).CTable).as_mut_ptr(),
+        &mut (*table).CTable,
         ((*table).count).as_mut_ptr(),
         maxSymbolValue,
         huffLog,

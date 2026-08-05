@@ -6059,7 +6059,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         hufFlags,
     );
     let maxBits = HUF_buildCTable_wksp(
-        (nextHuf.CTable).as_mut_ptr(),
+        &mut nextHuf.CTable,
         countWksp,
         maxSymbolValue,
         huffLog,
