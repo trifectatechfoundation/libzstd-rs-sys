@@ -6077,7 +6077,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let hSize = HUF_writeCTable_wksp(
         (hufMetadata.hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; ZSTD_MAX_HUF_HEADER_SIZE]>(),
-        (nextHuf.CTable).as_mut_ptr(),
+        &nextHuf.CTable,
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,

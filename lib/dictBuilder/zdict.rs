@@ -961,7 +961,7 @@ unsafe fn analyze_entropy_internal(
     let hhSize = HUF_writeCTable_wksp(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
-        hufTable.as_mut_ptr(),
+        &hufTable,
         255,
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,

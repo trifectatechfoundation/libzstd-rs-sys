@@ -247,13 +247,13 @@ pub struct HUF_WriteCTableWksp {
 pub unsafe fn HUF_writeCTable_wksp(
     dst: *mut c_void,
     maxDstSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     maxSymbolValue: c_uint,
     huffLog: c_uint,
     workspace: *mut c_void,
     mut workspaceSize: size_t,
 ) -> size_t {
-    let ct = CTable.add(1);
+    let ct = CTable[1..].as_ptr();
     let op = dst as *mut u8;
     let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
         as *mut HUF_WriteCTableWksp;
@@ -262,8 +262,8 @@ pub unsafe fn HUF_writeCTable_wksp(
         assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
-    debug_assert!(HUF_readCTableHeader(CTable).maxSymbolValue as c_uint == maxSymbolValue);
-    debug_assert!(HUF_readCTableHeader(CTable).tableLog as c_uint == huffLog);
+    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).maxSymbolValue as c_uint == maxSymbolValue);
+    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).tableLog as c_uint == huffLog);
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
@@ -1672,7 +1672,7 @@ pub unsafe fn HUF_optimalTableLog(
             hSize = HUF_writeCTable_wksp(
                 dst,
                 dstSize,
-                table.as_ptr(),
+                table,
                 maxSymbolValue,
                 maxBits as u32,
                 workSpace,
@@ -1882,7 +1882,7 @@ unsafe fn HUF_compress_internal(
         let hSize = HUF_writeCTable_wksp(
             op as *mut c_void,
             dstSize,
-            ((*table).CTable).as_mut_ptr(),
+            &(*table).CTable,
             maxSymbolValue,
             huffLog,
             &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut c_void,
