@@ -17,14 +17,14 @@ pub fn HIST_isError(code: size_t) -> core::ffi::c_uint {
 }
 
 pub unsafe fn HIST_add(
-    count: *mut core::ffi::c_uint,
+    count: &mut [core::ffi::c_uint; 1024],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) {
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
     while ip < end {
-        *count.offset(*ip as isize) += 1;
+        count[usize::from(*ip)] += 1;
         ip = ip.add(1);
     }
 }
