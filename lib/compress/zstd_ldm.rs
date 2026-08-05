@@ -1368,7 +1368,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: &mut RawSeqStore_t,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; ZSTD_REP_NUM as usize],
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1392,7 +1392,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     if cParams.strategy >= ZSTD_btopt {
         let mut lastLLSize: size_t = 0;
         ms.ldmSeqStore = rawSeqStore;
-        lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
+        lastLLSize =
+            blockCompressor.unwrap_unchecked()(ms, seqStore, rep.as_mut_ptr(), src, srcSize);
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
         return lastLLSize;
     }
@@ -1419,16 +1420,16 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         let newLitLength = blockCompressor.unwrap_unchecked()(
             ms,
             seqStore,
-            rep,
+            rep.as_mut_ptr(),
             ip as *const core::ffi::c_void,
             sequence.litLength as size_t,
         );
         ip = ip.offset(sequence.litLength as isize);
         // Update the repcodes
-        for i in (1..ZSTD_REP_NUM).rev() {
-            *rep.offset(i as isize) = *rep.offset((i - 1) as isize);
+        for i in (1..ZSTD_REP_NUM as usize).rev() {
+            rep[i] = rep[i - 1];
         }
-        *rep = sequence.offset;
+        rep[0] = sequence.offset;
         // Store the sequence
         ZSTD_storeSeq(
             seqStore,
@@ -1449,7 +1450,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     blockCompressor.unwrap_unchecked()(
         ms,
         seqStore,
-        rep,
+        rep.as_mut_ptr(),
         ip as *const core::ffi::c_void,
         iend.offset_from_unsigned(ip),
     )
