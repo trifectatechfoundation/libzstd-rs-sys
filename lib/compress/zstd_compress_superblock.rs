@@ -48,7 +48,7 @@ pub struct ZSTD_blockSplitCtx {
     pub secondHalfSeqStore: SeqStore_t,
     pub currSeqStore: SeqStore_t,
     pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
+    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
