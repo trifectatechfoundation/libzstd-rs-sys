@@ -2690,7 +2690,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         130 => {
             if value != 0 {
-                value = value.max(1340);
+                value = value.max(ZSTD_TARGETCBLOCKSIZE_MIN);
                 if !ZSTD_cParam_withinBounds(ZSTD_cParameter::ZSTD_c_targetCBlockSize, value) {
                     return Error::parameter_outOfBound.to_error_code();
                 }
