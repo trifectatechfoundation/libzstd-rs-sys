@@ -887,7 +887,7 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
 /// * `maxNbBits` - The exact maximum number of bits used in the Huffman tree.
 unsafe fn HUF_buildCTableFromTree(
     CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
-    huffNode: *const nodeElt,
+    huffNode: &[nodeElt],
     nonNullRank: c_int,
     maxSymbolValue: u32,
     maxNbBits: u32,
@@ -898,7 +898,7 @@ unsafe fn HUF_buildCTableFromTree(
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
     for n in 0..nonNullRank + 1 {
-        nbPerRank[(*huffNode.offset(n as isize)).nbBits as usize] += 1;
+        nbPerRank[huffNode[n as usize].nbBits as usize] += 1;
     }
 
     /* determine starting value per rank */
@@ -911,8 +911,8 @@ unsafe fn HUF_buildCTableFromTree(
 
     for n in 0..alphabetSize {
         HUF_setNbBits(
-            &mut ct[(*huffNode.offset(n as isize)).byte as usize],
-            (*huffNode.offset(n as isize)).nbBits as size_t,
+            &mut ct[huffNode[n as usize].byte as usize],
+            huffNode[n as usize].nbBits as size_t,
         ); /* push nbBits per symbol, symbol order */
     }
     for n in 0..alphabetSize {
@@ -980,7 +980,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     }
     HUF_buildCTableFromTree(
         CTable,
-        huffNodeTbl.as_ptr().add(1),
+        &huffNodeTbl[1..],
         nonNullRank,
         maxSymbolValue,
         maxNbBits,
