@@ -1785,7 +1785,7 @@ unsafe fn HUF_compress_internal(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueBegin,
             src as *const u8 as *const c_void,
-            4096,
+            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize,
         ) as size_t;
         if ERR_isError(largestBegin) {
             return largestBegin;
@@ -1795,8 +1795,9 @@ unsafe fn HUF_compress_internal(
         let largestEnd = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueEnd,
-            src.byte_add(srcSize).byte_sub(4096),
-            4096,
+            src.byte_add(srcSize)
+                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize),
+            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE as usize,
         ) as size_t;
         if ERR_isError(largestEnd) {
             return largestEnd;
@@ -1814,7 +1815,7 @@ unsafe fn HUF_compress_internal(
         src as *const u8 as *const c_void,
         srcSize,
         ((*table).wksps.hist_wksp).as_mut_ptr() as *mut c_void,
-        size_of::<[u32; 1024]>(),
+        size_of::<[u32; HIST_WKSP_SIZE_U32 as usize]>(),
     );
     if ERR_isError(largest) {
         return largest;
