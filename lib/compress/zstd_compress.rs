@@ -1617,6 +1617,15 @@ pub const ZSTD_COMPRESSBLOCK_BTULTRA2: unsafe fn(
     size_t,
 ) -> size_t = ZSTD_compressBlock_btultra2;
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
+
+/// Maximum size of the hash table dedicated to find 3-bytes matches,
+/// in log format, aka 17 => 1 << 17 == 128Ki positions.
+/// This structure is only used in zstd_opt.
+/// Since allocation is centralized for all strategies, it has to be known here.
+/// The actual (selected) size of the hash table is then stored in ZSTD_MatchState_t.hashLog3,
+/// so that zstd_opt.c doesn't need to know about this constant.
+const ZSTD_HASHLOG3_MAX: u32 = 17;
+
 pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
 
 // ------- Helper functions -------
@@ -3617,11 +3626,7 @@ fn ZSTD_sizeof_matchState(
     };
     let hSize = (1 as size_t) << cParams.hashLog;
     let hashLog3 = if forCCtx != 0 && cParams.minMatch == 3 {
-        if (17) < cParams.windowLog {
-            17
-        } else {
-            cParams.windowLog
-        }
+        cParams.windowLog.min(ZSTD_HASHLOG3_MAX)
     } else {
         0
     };
@@ -4026,11 +4031,7 @@ unsafe fn ZSTD_reset_matchState(
     };
     let hSize = (1 as size_t) << cParams.hashLog;
     let hashLog3 = if forWho == ZSTD_resetTarget_CCtx && cParams.minMatch == 3 {
-        if (17) < cParams.windowLog {
-            17
-        } else {
-            cParams.windowLog
-        }
+        cParams.windowLog.min(ZSTD_HASHLOG3_MAX)
     } else {
         0
     };
