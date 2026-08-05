@@ -201,12 +201,12 @@ fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
     elt
 }
 
-unsafe fn HUF_setNbBits(elt: *mut HUF_CElt, nbBits: size_t) {
+fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: size_t) {
     debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
     *elt = nbBits;
 }
 
-unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
+fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
         debug_assert!((value >> nbBits) == 0);
@@ -257,7 +257,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     workspace: *mut c_void,
     mut workspaceSize: size_t,
 ) -> size_t {
-    let ct = CTable[1..].as_ptr();
+    let ct = &CTable[1..];
     let op = dst as *mut u8;
     let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
         as *mut HUF_WriteCTableWksp;
@@ -283,8 +283,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         (*wksp).bitsToWeight[n as usize] = (huffLog + 1 - n) as u8;
     }
     for n in 0..maxSymbolValue {
-        (*wksp).huffWeight[n as usize] =
-            (*wksp).bitsToWeight[HUF_getNbBits(*ct.offset(n as isize))];
+        (*wksp).huffWeight[n as usize] = (*wksp).bitsToWeight[HUF_getNbBits(ct[n as usize])];
     }
 
     /* attempt weights compression by FSE */
@@ -345,7 +344,6 @@ pub unsafe fn HUF_readCTable(
     let mut nbSymbols = 0;
 
     /* get symbol weights */
-    let ct = CTable[1..].as_mut_ptr();
     let readSize = HUF_readStats(
         &mut huffWeight,
         (255 + 1) as size_t,
@@ -371,6 +369,8 @@ pub unsafe fn HUF_readCTable(
 
     HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
 
+    let ct = &mut CTable[1..];
+
     /* Prepare base value per rank */
     {
         let mut nextRankStart = 0u32;
@@ -388,7 +388,7 @@ pub unsafe fn HUF_readCTable(
         while n_0 < nbSymbols {
             let w = huffWeight[n_0 as usize] as u32;
             HUF_setNbBits(
-                ct.offset(n_0 as isize),
+                &mut ct[n_0 as usize],
                 ((tableLog + 1 - w) as u8 as c_int & -((w != 0) as c_int) as c_int) as size_t,
             );
             n_0 += 1;
@@ -403,7 +403,7 @@ pub unsafe fn HUF_readCTable(
         {
             n_1 = 0;
             while n_1 < nbSymbols {
-                nbPerRank[HUF_getNbBits(*ct.offset(n_1 as isize))] += 1;
+                nbPerRank[HUF_getNbBits(ct[n_1 as usize])] += 1;
                 n_1 += 1;
             }
         }
@@ -428,8 +428,8 @@ pub unsafe fn HUF_readCTable(
             let mut n_3: u32 = 0;
             n_3 = 0;
             while n_3 < nbSymbols {
-                let fresh1 = &mut valPerRank[HUF_getNbBits(*ct.offset(n_3 as isize))];
-                HUF_setValue(ct.offset(n_3 as isize), *fresh1 as size_t);
+                let fresh1 = &mut valPerRank[HUF_getNbBits(ct[n_3 as usize])];
+                HUF_setValue(&mut ct[n_3 as usize], *fresh1 as size_t);
                 *fresh1 += 1;
                 n_3 += 1;
             }
@@ -910,7 +910,7 @@ unsafe fn HUF_buildCTableFromTree(
     maxNbBits: u32,
 ) {
     /* fill result into ctable (val, nbBits) */
-    let ct = CTable[1..].as_mut_ptr();
+    let ct = &mut CTable[1..];
     let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
@@ -928,13 +928,13 @@ unsafe fn HUF_buildCTableFromTree(
 
     for n in 0..alphabetSize {
         HUF_setNbBits(
-            ct.offset((*huffNode.offset(n as isize)).byte as c_int as isize),
+            &mut ct[(*huffNode.offset(n as isize)).byte as usize],
             (*huffNode.offset(n as isize)).nbBits as size_t,
         ); /* push nbBits per symbol, symbol order */
     }
     for n in 0..alphabetSize {
-        let fresh19 = &mut valPerRank[HUF_getNbBits(*ct.offset(n as isize))];
-        HUF_setValue(ct.offset(n as isize), *fresh19 as size_t); /* assign value within rank, symbol order */
+        let fresh19 = &mut valPerRank[HUF_getNbBits(ct[n as usize])];
+        HUF_setValue(&mut ct[n as usize], *fresh19 as size_t); /* assign value within rank, symbol order */
         *fresh19 += 1;
     }
 
