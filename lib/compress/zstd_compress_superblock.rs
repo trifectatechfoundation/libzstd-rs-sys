@@ -17,7 +17,7 @@ use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_MatchState_t,
     ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
     ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
-    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_window_t,
+    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
@@ -119,30 +119,6 @@ pub struct optState_t {
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
 
-#[repr(C)]
-pub struct ldmState_t {
-    pub window: ZSTD_window_t,
-    pub hashTable: *mut ldmEntry_t,
-    pub loadedDictEnd: u32,
-    pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
-    pub matchCandidates: [ldmMatchCandidate_t; 64],
-}
-#[repr(C)]
-pub struct ldmMatchCandidate_t {
-    pub split: *const u8,
-    pub hash: u32,
-    pub checksum: u32,
-    pub bucket: *mut ldmEntry_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmEntry_t {
-    pub offset: u32,
-    pub checksum: u32,
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SeqCollector {
@@ -207,17 +183,6 @@ pub type ZSTD_sequenceProducer_F = Option<
 pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmParams_t {
-    pub enableLdm: ZSTD_ParamSwitch_e,
-    pub hashLog: u32,
-    pub bucketSizeLog: u32,
-    pub minMatchLength: u32,
-    pub hashRateLog: u32,
-    pub windowLog: u32,
-}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
