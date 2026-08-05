@@ -17,7 +17,7 @@ use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_MatchState_t,
     ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
     ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
-    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t,
+    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
@@ -47,7 +47,7 @@ pub struct ZSTD_blockSplitCtx {
     pub secondHalfSeqStore: SeqStore_t,
     pub currSeqStore: SeqStore_t,
     pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; 196],
+    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 

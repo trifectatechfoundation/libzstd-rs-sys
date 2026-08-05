@@ -76,7 +76,7 @@ pub struct ZSTD_blockSplitCtx {
     pub secondHalfSeqStore: SeqStore_t,
     pub currSeqStore: SeqStore_t,
     pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; 196],
+    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
@@ -9042,7 +9042,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 longLengthType: ZSTD_llt_none,
                 longLengthPos: 0,
             },
-            partitions: [0; 196],
+            partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS as usize],
             entropyMetadata: ZSTD_entropyCTablesMetadata_t {
                 hufMetadata: ZSTD_hufCTablesMetadata_t {
                     hType: set_basic,
