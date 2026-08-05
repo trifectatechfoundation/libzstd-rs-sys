@@ -216,12 +216,12 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 
     initStats(fpstats);
     HIST_add(
-        ((*fpstats).pastEvents.events).as_mut_ptr(),
+        &mut (*fpstats).pastEvents.events,
         blockStart,
         SEGMENT_SIZE as size_t,
     );
     HIST_add(
-        ((*fpstats).newEvents.events).as_mut_ptr(),
+        &mut (*fpstats).newEvents.events,
         (blockStart as *const c_char)
             .add(blockSize)
             .sub(SEGMENT_SIZE as usize) as *const c_void,
@@ -233,7 +233,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         return blockSize;
     }
     HIST_add(
-        ((*middleEvents).events).as_mut_ptr(),
+        &mut (*middleEvents).events,
         (blockStart as *const c_char)
             .add(blockSize / 2)
             .sub((SEGMENT_SIZE / 2) as usize) as *const c_void,
