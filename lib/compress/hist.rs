@@ -31,7 +31,7 @@ pub unsafe fn HIST_add(
 
 pub unsafe fn HIST_count_simple(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut core::ffi::c_uint,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> core::ffi::c_uint {
@@ -188,7 +188,7 @@ pub unsafe fn HIST_countFast_wksp(
     workSpaceSize: size_t,
 ) -> size_t {
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
-        return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
+        return HIST_count_simple(count, &mut *maxSymbolValuePtr, source, sourceSize) as size_t;
     }
     if workSpace as size_t & 3 != 0 {
         // must be aligned on 4-bytes boundaries
