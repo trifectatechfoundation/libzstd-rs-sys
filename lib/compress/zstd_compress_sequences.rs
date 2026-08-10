@@ -141,7 +141,7 @@ pub unsafe fn ZSTD_fseBitCost(
     for s in 0..max + 1 {
         let tableLog = cstate.stateLog;
         let badCost = tableLog.wrapping_add(1) << kAccuracyLog;
-        let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
+        let bitCost = FSE_bitCost(ctable, tableLog, s, kAccuracyLog);
         if *count.offset(s as isize) != 0 {
             if bitCost >= badCost {
                 return Error::GENERIC.to_error_code();

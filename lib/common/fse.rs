@@ -173,19 +173,17 @@ pub(crate) unsafe fn FSE_getMaxNbBits(
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_bitCost(
-    symbolTTPtr: *const core::ffi::c_void,
+pub(crate) fn FSE_bitCost(
+    ct: &[FSE_CTable],
     tableLog: u32,
     symbolValue: u32,
     accuracyLog: u32,
 ) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    let minNbBits = (*symbolTT.offset(symbolValue as isize)).deltaNbBits >> 16;
+    let deltaNbBits = FSE_readSymbolTT(ct, tableLog, symbolValue).deltaNbBits;
+    let minNbBits = deltaNbBits >> 16;
     let threshold = minNbBits.wrapping_add(1) << 16;
     let tableSize = ((1) << tableLog) as u32;
-    let deltaFromThreshold = threshold.wrapping_sub(
-        ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(tableSize),
-    );
+    let deltaFromThreshold = threshold.wrapping_sub(deltaNbBits.wrapping_add(tableSize));
     let normalizedDeltaFromThreshold = deltaFromThreshold << accuracyLog >> tableLog;
     let bitMultiplier = ((1) << accuracyLog) as u32;
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
