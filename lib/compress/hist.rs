@@ -83,7 +83,7 @@ pub unsafe fn HIST_count_simple(
 /// histogram's alphabet is larger than *maxSymbolValuePtr)
 unsafe fn HIST_count_parallel_wksp(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut core::ffi::c_uint,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     check: HIST_checkInput_e,
@@ -199,7 +199,7 @@ pub unsafe fn HIST_countFast_wksp(
     }
     HIST_count_parallel_wksp(
         count,
-        maxSymbolValuePtr,
+        &mut *maxSymbolValuePtr,
         source,
         sourceSize,
         trustInput,
@@ -227,7 +227,7 @@ pub unsafe fn HIST_count_wksp(
     if *maxSymbolValuePtr < 255 {
         return HIST_count_parallel_wksp(
             count,
-            maxSymbolValuePtr,
+            &mut *maxSymbolValuePtr,
             source,
             sourceSize,
             checkMaxSymbolValue,
