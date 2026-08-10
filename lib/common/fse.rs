@@ -68,11 +68,21 @@ pub(crate) struct FSE_symbolCompressionTransform {
     pub(crate) deltaNbBits: u32,
 }
 
+/// Read the `index`th `u16` of a `u32`-typed table.
+#[inline]
+fn FSE_readU16(ct: &[FSE_CTable], index: usize) -> u16 {
+    let bytes = ct[index / 2].to_ne_bytes();
+    if index.is_multiple_of(2) {
+        u16::from_ne_bytes([bytes[0], bytes[1]])
+    } else {
+        u16::from_ne_bytes([bytes[2], bytes[3]])
+    }
+}
+
 #[inline]
 pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
     // the table header occupies the first two bytes of `ct`
-    let [b0, b1, ..] = ct[0].to_ne_bytes();
-    let tableLog = u16::from_ne_bytes([b0, b1]) as u32;
+    let tableLog = FSE_readU16(ct, 0) as u32;
 
     // the state table follows the header, and the symbol transformation table
     // follows the state table (which holds `1 << tableLog` u16 values)
