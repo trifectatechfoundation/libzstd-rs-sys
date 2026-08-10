@@ -8,8 +8,8 @@ use crate::lib::common::bitstream::{
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2,
-    FSE_symbolCompressionTransform, FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG,
-    FSE_NCOUNTBOUND,
+    FSE_symbolCompressionTransform, FSE_symbolTTIndex, FSE_writeU16Pair, FSE_DEFAULT_TABLELOG,
+    FSE_MAX_TABLELOG, FSE_MIN_TABLELOG, FSE_NCOUNTBOUND,
 };
 use crate::lib::common::mem::MEM_write64;
 
@@ -594,23 +594,17 @@ pub(crate) unsafe fn FSE_normalizeCount(
 }
 
 /// Fake FSE_CTable, for rle input (always same symbol).
-pub(crate) unsafe fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> size_t {
-    let ptr = ct.as_mut_ptr() as *mut core::ffi::c_void;
-    let tableU16 = (ptr as *mut u16).add(2);
-    let FSCTptr = (ptr as *mut u32).add(2) as *mut core::ffi::c_void;
-    let symbolTT = FSCTptr as *mut FSE_symbolCompressionTransform;
+pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> size_t {
+    // header: a tableLog of zero, and `symbolValue` as the maximum symbol value
+    ct[0] = FSE_writeU16Pair(0, symbolValue as u16);
 
-    // header
-    *tableU16.sub(2) = 0;
-    *tableU16.sub(1) = symbolValue as u16;
-
-    // Build table
-    *tableU16 = 0;
-    *tableU16.add(1) = 0; // just in case
+    // the (two-entry) state table, zeroed just in case
+    ct[1] = FSE_writeU16Pair(0, 0);
 
     // Build Symbol Transformation Table
-    (*symbolTT.offset(symbolValue as isize)).deltaNbBits = 0;
-    (*symbolTT.offset(symbolValue as isize)).deltaFindState = 0;
+    let index = FSE_symbolTTIndex(0) + 2 * symbolValue as usize;
+    ct[index] = 0; // deltaFindState
+    ct[index + 1] = 0; // deltaNbBits
 
     0
 }
