@@ -361,11 +361,11 @@ pub unsafe fn ZSTD_buildCTable(
 unsafe fn ZSTD_encodeSequences_body(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    CTable_MatchLength: *const FSE_CTable,
+    CTable_MatchLength: &[FSE_CTable],
     mlCodeTable: *const u8,
-    CTable_OffsetBits: *const FSE_CTable,
+    CTable_OffsetBits: &[FSE_CTable],
     ofCodeTable: *const u8,
-    CTable_LitLength: *const FSE_CTable,
+    CTable_LitLength: &[FSE_CTable],
     llCodeTable: *const u8,
     sequences: *const SeqDef,
     nbSeq: size_t,
@@ -404,17 +404,17 @@ unsafe fn ZSTD_encodeSequences_body(
     // first symbols
     FSE_initCState2(
         &mut stateMatchLength,
-        CTable_MatchLength,
+        CTable_MatchLength.as_ptr(),
         *mlCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     FSE_initCState2(
         &mut stateOffsetBits,
-        CTable_OffsetBits,
+        CTable_OffsetBits.as_ptr(),
         *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     FSE_initCState2(
         &mut stateLitLength,
-        CTable_LitLength,
+        CTable_LitLength.as_ptr(),
         *llCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     BIT_addBits(
@@ -564,11 +564,11 @@ unsafe fn ZSTD_encodeSequences_default(
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
-        CTable_MatchLength.as_ptr(),
+        CTable_MatchLength,
         mlCodeTable,
-        CTable_OffsetBits.as_ptr(),
+        CTable_OffsetBits,
         ofCodeTable,
-        CTable_LitLength.as_ptr(),
+        CTable_LitLength,
         llCodeTable,
         sequences,
         nbSeq,
@@ -592,11 +592,11 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
-        CTable_MatchLength.as_ptr(),
+        CTable_MatchLength,
         mlCodeTable,
-        CTable_OffsetBits.as_ptr(),
+        CTable_OffsetBits,
         ofCodeTable,
-        CTable_LitLength.as_ptr(),
+        CTable_LitLength,
         llCodeTable,
         sequences,
         nbSeq,
