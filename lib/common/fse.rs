@@ -163,13 +163,10 @@ pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CS
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_getMaxNbBits(
-    symbolTTPtr: *const core::ffi::c_void,
-    symbolValue: u32,
-) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add((((1) << 16) - 1) as u32)
-        >> 16
+pub(crate) fn FSE_getMaxNbBits(ct: &[FSE_CTable], tableLog: u32, symbolValue: u32) -> u32 {
+    let deltaNbBits = FSE_readSymbolTT(ct, tableLog, symbolValue).deltaNbBits;
+
+    deltaNbBits.wrapping_add((((1) << 16) - 1) as u32) >> 16
 }
 
 #[inline]

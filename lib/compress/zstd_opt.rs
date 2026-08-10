@@ -279,7 +279,11 @@ unsafe fn ZSTD_rescaleFreqs(
             (*optPtr).litLengthSum = 0;
             for ll in 0..MaxLL + 1 {
                 let scaleLog_0 = 10u32; // scale to 1K
-                let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll);
+                let bitCost_0 = FSE_getMaxNbBits(
+                    &(*(*optPtr).symbolCosts).fse.litlengthCTable,
+                    llstate.stateLog,
+                    ll,
+                );
                 *((*optPtr).litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
                     1 << scaleLog_0.wrapping_sub(bitCost_0)
                 } else {
@@ -303,7 +307,11 @@ unsafe fn ZSTD_rescaleFreqs(
             (*optPtr).matchLengthSum = 0;
             for ml in 0..MaxML + 1 {
                 let scaleLog_1 = 10u32;
-                let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml);
+                let bitCost_1 = FSE_getMaxNbBits(
+                    &(*(*optPtr).symbolCosts).fse.matchlengthCTable,
+                    mlstate.stateLog,
+                    ml,
+                );
                 *((*optPtr).matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
                     1 << scaleLog_1.wrapping_sub(bitCost_1)
                 } else {
@@ -324,7 +332,11 @@ unsafe fn ZSTD_rescaleFreqs(
             (*optPtr).offCodeSum = 0;
             for of in 0..MaxOff + 1 {
                 let scaleLog_2 = 10u32;
-                let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of);
+                let bitCost_2 = FSE_getMaxNbBits(
+                    &(*(*optPtr).symbolCosts).fse.offcodeCTable,
+                    ofstate.stateLog,
+                    of,
+                );
                 *((*optPtr).offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
                     1 << scaleLog_2.wrapping_sub(bitCost_2)
                 } else {
