@@ -50,7 +50,7 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_addBits(
+pub(crate) fn BIT_addBits(
     bitC: &mut BIT_CStream_t,
     value: BitContainerType,
     nbBits: core::ffi::c_uint,
@@ -60,11 +60,7 @@ pub(crate) unsafe fn BIT_addBits(
 }
 
 #[inline]
-unsafe fn BIT_addBitsFast(
-    bitC: &mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
+fn BIT_addBitsFast(bitC: &mut BIT_CStream_t, value: BitContainerType, nbBits: core::ffi::c_uint) {
     bitC.bitContainer |= value << bitC.bitPos;
     bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
