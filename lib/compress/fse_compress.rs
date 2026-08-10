@@ -620,7 +620,7 @@ unsafe fn FSE_compress_usingCTable_generic(
     dstSize: size_t,
     src: *const core::ffi::c_void,
     mut srcSize: size_t,
-    ct: *const FSE_CTable,
+    ct: &[FSE_CTable],
     fast: bool,
 ) -> size_t {
     let istart = src as *const u8;
@@ -658,9 +658,9 @@ unsafe fn FSE_compress_usingCTable_generic(
 
     if srcSize & 1 != 0 {
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState1, ct, *ip as u32);
+        FSE_initCState2(&mut CState1, ct.as_ptr(), *ip as u32);
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState2, ct, *ip as u32);
+        FSE_initCState2(&mut CState2, ct.as_ptr(), *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         if fast {
@@ -670,9 +670,9 @@ unsafe fn FSE_compress_usingCTable_generic(
         }
     } else {
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState2, ct, *ip as u32);
+        FSE_initCState2(&mut CState2, ct.as_ptr(), *ip as u32);
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState1, ct, *ip as u32);
+        FSE_initCState2(&mut CState1, ct.as_ptr(), *ip as u32);
     }
 
     // join to mod 4
@@ -746,5 +746,5 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
             .wrapping_add(4)
             .wrapping_add(size_of::<size_t>());
 
-    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct.as_ptr(), fast)
+    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, fast)
 }
