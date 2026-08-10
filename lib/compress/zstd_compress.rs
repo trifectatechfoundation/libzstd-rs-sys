@@ -4871,9 +4871,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
-    let CTable_LitLength = (nextEntropy.litlengthCTable).as_mut_ptr();
-    let CTable_OffsetBits = (nextEntropy.offcodeCTable).as_mut_ptr();
-    let CTable_MatchLength = (nextEntropy.matchlengthCTable).as_mut_ptr();
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
     let llCodeTable: *const u8 = (*seqStorePtr).llCode;
     let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
@@ -4917,7 +4914,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let countSize = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
-        CTable_LitLength,
+        &mut nextEntropy.litlengthCTable,
         LLFSELog,
         stats.LLtype as SymbolEncodingType_e,
         countWorkspace,
@@ -4973,7 +4970,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let countSize_0 = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
-        CTable_OffsetBits,
+        &mut nextEntropy.offcodeCTable,
         OffFSELog,
         stats.Offtype as SymbolEncodingType_e,
         countWorkspace,
@@ -5023,7 +5020,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let countSize_1 = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
-        CTable_MatchLength,
+        &mut nextEntropy.matchlengthCTable,
         MLFSELog,
         stats.MLtype as SymbolEncodingType_e,
         countWorkspace,

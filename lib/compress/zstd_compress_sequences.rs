@@ -258,7 +258,7 @@ pub unsafe fn ZSTD_selectEncodingType(
 pub unsafe fn ZSTD_buildCTable(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    nextCTable: *mut FSE_CTable,
+    nextCTable: &mut [FSE_CTable],
     FSELog: u32,
     type_0: SymbolEncodingType_e,
     count: *mut core::ffi::c_uint,
@@ -277,7 +277,7 @@ pub unsafe fn ZSTD_buildCTable(
 
     match type_0 as core::ffi::c_uint {
         1 => {
-            let err_code = FSE_buildCTable_rle(nextCTable, max as u8);
+            let err_code = FSE_buildCTable_rle(nextCTable.as_mut_ptr(), max as u8);
             if ERR_isError(err_code) {
                 return err_code;
             }
@@ -290,14 +290,14 @@ pub unsafe fn ZSTD_buildCTable(
         3 => {
             core::ptr::copy_nonoverlapping(
                 prevCTable.as_ptr().cast::<u8>(),
-                nextCTable.cast::<u8>(),
+                nextCTable.as_mut_ptr().cast::<u8>(),
                 size_of_val(prevCTable),
             );
             0
         }
         0 => {
             let err_code_0 = FSE_buildCTable_wksp(
-                nextCTable,
+                nextCTable.as_mut_ptr(),
                 defaultNorm,
                 defaultMax,
                 defaultNormLog,
@@ -341,7 +341,7 @@ pub unsafe fn ZSTD_buildCTable(
                 return err_code_2;
             }
             let err_code_3 = FSE_buildCTable_wksp(
-                nextCTable,
+                nextCTable.as_mut_ptr(),
                 ((*wksp).norm).as_mut_ptr(),
                 max,
                 tableLog,
