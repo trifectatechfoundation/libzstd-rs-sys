@@ -211,7 +211,7 @@ pub unsafe fn HIST_countFast_wksp(
 /// `workSpace` size must be table of >= HIST_WKSP_SIZE_U32 unsigned
 pub unsafe fn HIST_count_wksp(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut core::ffi::c_uint,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     workSpace: *mut core::ffi::c_void,
@@ -227,7 +227,7 @@ pub unsafe fn HIST_count_wksp(
     if *maxSymbolValuePtr < 255 {
         return HIST_count_parallel_wksp(
             count,
-            &mut *maxSymbolValuePtr,
+            maxSymbolValuePtr,
             source,
             sourceSize,
             checkMaxSymbolValue,
@@ -237,7 +237,7 @@ pub unsafe fn HIST_count_wksp(
     *maxSymbolValuePtr = 255;
     HIST_countFast_wksp(
         count,
-        &mut *maxSymbolValuePtr,
+        maxSymbolValuePtr,
         source,
         sourceSize,
         workSpace,
@@ -272,7 +272,7 @@ pub unsafe fn HIST_count(
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_count_wksp(
         count,
-        maxSymbolValuePtr,
+        &mut *maxSymbolValuePtr,
         src,
         srcSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
