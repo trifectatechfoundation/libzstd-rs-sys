@@ -248,14 +248,14 @@ pub unsafe fn HIST_count_wksp(
 /// fast variant (unsafe : won't check if src contains values beyond count[] limit)
 pub unsafe fn HIST_countFast(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut core::ffi::c_uint,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
 ) -> size_t {
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_countFast_wksp(
         count,
-        &mut *maxSymbolValuePtr,
+        maxSymbolValuePtr,
         source,
         sourceSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
