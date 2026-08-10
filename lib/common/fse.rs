@@ -1,7 +1,6 @@
 use libc::ptrdiff_t;
 
 use crate::lib::common::bitstream::{BIT_CStream_t, BIT_addBits, BIT_flushBits, BitContainerType};
-use crate::lib::common::mem::MEM_read16;
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
 
@@ -70,19 +69,19 @@ pub(crate) struct FSE_symbolCompressionTransform {
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
-    let ptr = ct.as_ptr() as *const core::ffi::c_void;
-    let u16ptr = ptr as *const u16;
-    let tableLog = MEM_read16(ptr) as u32;
-    statePtr.value = (1) << tableLog;
-    statePtr.stateTable = u16ptr.add(2) as *const core::ffi::c_void;
-    statePtr.symbolTT = ct.as_ptr().add(1).offset(
-        (if tableLog != 0 {
-            (1) << tableLog.wrapping_sub(1)
-        } else {
-            1
-        }) as isize,
-    ) as *const core::ffi::c_void;
+pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
+    // the table header occupies the first two bytes of `ct`
+    let [b0, b1, ..] = ct[0].to_ne_bytes();
+    let tableLog = u16::from_ne_bytes([b0, b1]) as u32;
+
+    // the state table follows the header, and the symbol transformation table
+    // follows the state table (which holds `1 << tableLog` u16 values)
+    let stateTable = &ct[1..];
+    let symbolTT = &ct[1 + if tableLog != 0 { 1 << (tableLog - 1) } else { 1 }..];
+
+    statePtr.value = 1 << tableLog;
+    statePtr.stateTable = stateTable.as_ptr().cast::<core::ffi::c_void>();
+    statePtr.symbolTT = symbolTT.as_ptr().cast::<core::ffi::c_void>();
     statePtr.stateLog = tableLog;
 }
 
