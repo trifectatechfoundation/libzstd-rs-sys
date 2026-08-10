@@ -1,52 +1,17 @@
-use libc::{ptrdiff_t, size_t};
+use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast,
-    BIT_initCStream, BitContainerType,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream,
+    BitContainerType,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
-    FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_symbolCompressionTransform,
-    FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG, FSE_NCOUNTBOUND,
+    FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2,
+    FSE_symbolCompressionTransform, FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG,
+    FSE_NCOUNTBOUND,
 };
-use crate::lib::common::mem::{MEM_read16, MEM_write64};
-
-#[inline]
-unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: *const FSE_CTable) {
-    let ptr = ct as *const core::ffi::c_void;
-    let u16ptr = ptr as *const u16;
-    let tableLog = MEM_read16(ptr) as u32;
-    statePtr.value = 1 << tableLog;
-    statePtr.stateTable = u16ptr.add(2) as *const core::ffi::c_void;
-    statePtr.symbolTT = ct.add(1).offset(
-        (if tableLog != 0 {
-            1 << tableLog.wrapping_sub(1)
-        } else {
-            1
-        }) as isize,
-    ) as *const core::ffi::c_void;
-    statePtr.stateLog = tableLog;
-}
-
-#[inline]
-unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: *const FSE_CTable, symbol: u32) {
-    FSE_initCState(statePtr, ct);
-    let symbolTT =
-        *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = statePtr.stateTable as *const u16;
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add((1 << 15) as u32) >> 16;
-    statePtr.value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
-    statePtr.value = *stateTable
-        .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
-        as ptrdiff_t;
-}
-
-#[inline]
-unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t) {
-    BIT_addBits(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
-    BIT_flushBits(bitC);
-}
+use crate::lib::common::mem::MEM_write64;
 
 /// Same as FSE_buildCTable(), but using an externally allocated scratch buffer (`workSpace`).
 /// wkspSize should be sized to handle worst case situation, which is `1<<max_tableLog * sizeof(FSE_FUNCTION_TYPE)`
