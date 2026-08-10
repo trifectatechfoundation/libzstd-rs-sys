@@ -70,13 +70,13 @@ pub(crate) struct FSE_symbolCompressionTransform {
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: *const FSE_CTable) {
-    let ptr = ct as *const core::ffi::c_void;
+pub(crate) unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
+    let ptr = ct.as_ptr() as *const core::ffi::c_void;
     let u16ptr = ptr as *const u16;
     let tableLog = MEM_read16(ptr) as u32;
     statePtr.value = (1) << tableLog;
     statePtr.stateTable = u16ptr.add(2) as *const core::ffi::c_void;
-    statePtr.symbolTT = ct.add(1).offset(
+    statePtr.symbolTT = ct.as_ptr().add(1).offset(
         (if tableLog != 0 {
             (1) << tableLog.wrapping_sub(1)
         } else {
@@ -88,7 +88,7 @@ pub(crate) unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: *const FSE_
 
 #[inline]
 pub(crate) unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
-    FSE_initCState(statePtr, ct.as_ptr());
+    FSE_initCState(statePtr, ct);
     let symbolTT =
         *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
     let stateTable = statePtr.stateTable as *const u16;

@@ -275,10 +275,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 symbolTT: core::ptr::null::<core::ffi::c_void>(),
                 stateLog: 0,
             };
-            FSE_initCState(
-                &mut llstate,
-                ((*(*optPtr).symbolCosts).fse.litlengthCTable).as_ptr(),
-            );
+            FSE_initCState(&mut llstate, &(*(*optPtr).symbolCosts).fse.litlengthCTable);
             (*optPtr).litLengthSum = 0;
             for ll in 0..MaxLL + 1 {
                 let scaleLog_0 = 10u32; // scale to 1K
@@ -301,7 +298,7 @@ unsafe fn ZSTD_rescaleFreqs(
             };
             FSE_initCState(
                 &mut mlstate,
-                ((*(*optPtr).symbolCosts).fse.matchlengthCTable).as_ptr(),
+                &(*(*optPtr).symbolCosts).fse.matchlengthCTable,
             );
             (*optPtr).matchLengthSum = 0;
             for ml in 0..MaxML + 1 {
@@ -323,10 +320,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 symbolTT: core::ptr::null::<core::ffi::c_void>(),
                 stateLog: 0,
             };
-            FSE_initCState(
-                &mut ofstate,
-                ((*(*optPtr).symbolCosts).fse.offcodeCTable).as_ptr(),
-            );
+            FSE_initCState(&mut ofstate, &(*(*optPtr).symbolCosts).fse.offcodeCTable);
             (*optPtr).offCodeSum = 0;
             for of in 0..MaxOff + 1 {
                 let scaleLog_2 = 10u32;
