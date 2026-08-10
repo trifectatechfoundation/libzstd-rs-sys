@@ -187,7 +187,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     mostFrequent: size_t,
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
-    prevCTable: *const FSE_CTable,
+    prevCTable: &[FSE_CTable],
     defaultNorm: *const core::ffi::c_short,
     defaultNormLog: u32,
     isDefaultAllowed: ZSTD_DefaultPolicy_e,
@@ -232,7 +232,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat_none {
-            ZSTD_fseBitCost(prevCTable, count, max)
+            ZSTD_fseBitCost(prevCTable.as_ptr(), count, max)
         } else {
             Error::GENERIC.to_error_code()
         };
