@@ -4928,7 +4928,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
         LL_defaultNormLog,
         MaxLL,
         &prevEntropy.litlengthCTable,
-        size_of::<[FSE_CTable; 329]>(),
         entropyWorkspace,
         entropyWkspSize,
     );
@@ -4985,7 +4984,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
         OF_defaultNormLog,
         DefaultMaxOff,
         &prevEntropy.offcodeCTable,
-        size_of::<[FSE_CTable; 193]>(),
         entropyWorkspace,
         entropyWkspSize,
     );
@@ -5036,7 +5034,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
         ML_defaultNormLog,
         MaxML,
         &prevEntropy.matchlengthCTable,
-        size_of::<[FSE_CTable; 363]>(),
         entropyWorkspace,
         entropyWkspSize,
     );
