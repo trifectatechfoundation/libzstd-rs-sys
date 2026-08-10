@@ -711,7 +711,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     codeTable: *const u8,
     maxCode: core::ffi::c_uint,
     nbSeq: size_t,
-    fseCTable: *const FSE_CTable,
+    fseCTable: &[FSE_CTable],
     additionalBits: *const u8,
     defaultNorm: *const core::ffi::c_short,
     defaultNormLog: u32,
@@ -744,7 +744,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     } else if type_0 == set_rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == set_compressed || type_0 == set_repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
+        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable.as_ptr(), countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
@@ -784,7 +784,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         ofCodeTable,
         MaxOff,
         nbSeq,
-        (fseTables.offcodeCTable).as_ptr(),
+        &fseTables.offcodeCTable,
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
@@ -797,7 +797,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         llCodeTable,
         MaxLL,
         nbSeq,
-        (fseTables.litlengthCTable).as_ptr(),
+        &fseTables.litlengthCTable,
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
@@ -810,7 +810,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         mlCodeTable,
         MaxML,
         nbSeq,
-        (fseTables.matchlengthCTable).as_ptr(),
+        &fseTables.matchlengthCTable,
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
