@@ -594,8 +594,8 @@ pub(crate) unsafe fn FSE_normalizeCount(
 }
 
 /// Fake FSE_CTable, for rle input (always same symbol).
-pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> size_t {
-    let ptr = ct as *mut core::ffi::c_void;
+pub(crate) unsafe fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> size_t {
+    let ptr = ct.as_mut_ptr() as *mut core::ffi::c_void;
     let tableU16 = (ptr as *mut u16).add(2);
     let FSCTptr = (ptr as *mut u32).add(2) as *mut core::ffi::c_void;
     let symbolTT = FSCTptr as *mut FSE_symbolCompressionTransform;

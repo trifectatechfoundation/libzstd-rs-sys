@@ -277,7 +277,7 @@ pub unsafe fn ZSTD_buildCTable(
 
     match type_0 as core::ffi::c_uint {
         1 => {
-            let err_code = FSE_buildCTable_rle(nextCTable.as_mut_ptr(), max as u8);
+            let err_code = FSE_buildCTable_rle(nextCTable, max as u8);
             if ERR_isError(err_code) {
                 return err_code;
             }
