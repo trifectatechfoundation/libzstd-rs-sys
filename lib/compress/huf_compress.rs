@@ -172,7 +172,7 @@ unsafe fn HUF_compressWeights(
             oend.offset_from_unsigned(op),
             weightTable.as_ptr().cast::<c_void>(),
             wtSize,
-            ((*wksp).CTable).as_mut_ptr(),
+            &(*wksp).CTable,
         );
         if ERR_isError(cSize) {
             return cSize;

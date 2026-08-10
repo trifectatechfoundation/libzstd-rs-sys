@@ -738,7 +738,7 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
     dstSize: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    ct: *const FSE_CTable,
+    ct: &[FSE_CTable],
 ) -> size_t {
     let fast = dstSize
         >= srcSize
@@ -746,5 +746,5 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
             .wrapping_add(4)
             .wrapping_add(size_of::<size_t>());
 
-    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, fast)
+    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct.as_ptr(), fast)
 }
