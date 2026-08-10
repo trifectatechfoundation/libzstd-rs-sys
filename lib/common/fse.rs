@@ -84,10 +84,9 @@ pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
     // the table header occupies the first two bytes of `ct`
     let tableLog = FSE_readU16(ct, 0) as u32;
 
-    // the state table follows the header, and the symbol transformation table
-    // follows the state table (which holds `1 << tableLog` u16 values)
+    // the state table follows the header
     let stateTable = &ct[1..];
-    let symbolTT = &ct[1 + if tableLog != 0 { 1 << (tableLog - 1) } else { 1 }..];
+    let symbolTT = &ct[FSE_symbolTTIndex(tableLog)..];
 
     statePtr.value = 1 << tableLog;
     statePtr.stateTable = stateTable.as_ptr().cast::<core::ffi::c_void>();
@@ -96,16 +95,35 @@ pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
+fn FSE_symbolTTIndex(tableLog: u32) -> usize {
+    1 + if tableLog != 0 { 1 << (tableLog - 1) } else { 1 }
+}
+
+/// Read the transform of `symbol` out of the symbol transformation table of `ct`.
+#[inline]
+fn FSE_readSymbolTT(
+    ct: &[FSE_CTable],
+    tableLog: u32,
+    symbol: u32,
+) -> FSE_symbolCompressionTransform {
+    let index = FSE_symbolTTIndex(tableLog) + 2 * symbol as usize;
+
+    FSE_symbolCompressionTransform {
+        deltaFindState: ct[index] as core::ffi::c_int,
+        deltaNbBits: ct[index + 1],
+    }
+}
+
+#[inline]
+pub(crate) fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
     FSE_initCState(statePtr, ct);
-    let symbolTT =
-        *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = statePtr.stateTable as *const u16;
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(((1) << 15) as u32) >> 16;
-    statePtr.value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
-    statePtr.value = *stateTable
-        .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
-        as ptrdiff_t;
+    let symbolTT = FSE_readSymbolTT(ct, statePtr.stateLog, symbol);
+    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add((1) << 15) >> 16;
+    let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
+
+    // the state table starts at the third `u16` of `ct`
+    let index = 2 + (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
+    statePtr.value = FSE_readU16(ct, index as usize) as ptrdiff_t;
 }
 
 #[inline]
