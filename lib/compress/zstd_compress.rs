@@ -5078,9 +5078,6 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
 ) -> size_t {
     let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
-    let CTable_LitLength = (&raw const (nextEntropy.fse.litlengthCTable)).cast::<u32>();
-    let CTable_OffsetBits = (&raw const (nextEntropy.fse.offcodeCTable)).cast::<u32>();
-    let CTable_MatchLength = (&raw const (nextEntropy.fse.matchlengthCTable)).cast::<u32>();
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
@@ -5178,11 +5175,11 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
-        CTable_MatchLength,
+        &nextEntropy.fse.matchlengthCTable,
         mlCodeTable,
-        CTable_OffsetBits,
+        &nextEntropy.fse.offcodeCTable,
         ofCodeTable,
-        CTable_LitLength,
+        &nextEntropy.fse.litlengthCTable,
         llCodeTable,
         sequences,
         nbSeq,
