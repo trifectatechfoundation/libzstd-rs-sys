@@ -658,9 +658,9 @@ unsafe fn FSE_compress_usingCTable_generic(
 
     if srcSize & 1 != 0 {
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState1, ct.as_ptr(), *ip as u32);
+        FSE_initCState2(&mut CState1, ct, *ip as u32);
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState2, ct.as_ptr(), *ip as u32);
+        FSE_initCState2(&mut CState2, ct, *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         if fast {
@@ -670,9 +670,9 @@ unsafe fn FSE_compress_usingCTable_generic(
         }
     } else {
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState2, ct.as_ptr(), *ip as u32);
+        FSE_initCState2(&mut CState2, ct, *ip as u32);
         ip = ip.sub(1);
-        FSE_initCState2(&mut CState1, ct.as_ptr(), *ip as u32);
+        FSE_initCState2(&mut CState1, ct, *ip as u32);
     }
 
     // join to mod 4
