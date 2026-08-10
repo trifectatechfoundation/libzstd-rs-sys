@@ -135,7 +135,7 @@ pub unsafe fn ZSTD_fseBitCost(
         symbolTT: core::ptr::null::<core::ffi::c_void>(),
         stateLog: 0,
     };
-    FSE_initCState(&mut cstate, ctable.as_ptr());
+    FSE_initCState(&mut cstate, ctable);
     if ZSTD_getFSEMaxSymbolValue(ctable) < max {
         return Error::GENERIC.to_error_code();
     }
