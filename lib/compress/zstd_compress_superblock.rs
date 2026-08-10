@@ -744,7 +744,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     } else if type_0 == set_rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == set_compressed || type_0 == set_repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable.as_ptr(), countWksp, max);
+        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;

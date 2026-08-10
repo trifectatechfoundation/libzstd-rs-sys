@@ -124,7 +124,7 @@ unsafe fn ZSTD_entropyCost(
 /// Returns the cost in bits of encoding the distribution in count using ctable.
 /// Returns an error if ctable cannot represent all the symbols in count.
 pub unsafe fn ZSTD_fseBitCost(
-    ctable: *const FSE_CTable,
+    ctable: &[FSE_CTable],
     count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
 ) -> size_t {
@@ -136,8 +136,8 @@ pub unsafe fn ZSTD_fseBitCost(
         symbolTT: core::ptr::null::<core::ffi::c_void>(),
         stateLog: 0,
     };
-    FSE_initCState(&mut cstate, ctable);
-    if ZSTD_getFSEMaxSymbolValue(ctable) < max {
+    FSE_initCState(&mut cstate, ctable.as_ptr());
+    if ZSTD_getFSEMaxSymbolValue(ctable.as_ptr()) < max {
         return Error::GENERIC.to_error_code();
     }
     for s in 0..max + 1 {
@@ -232,7 +232,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat_none {
-            ZSTD_fseBitCost(prevCTable.as_ptr(), count, max)
+            ZSTD_fseBitCost(prevCTable, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };
