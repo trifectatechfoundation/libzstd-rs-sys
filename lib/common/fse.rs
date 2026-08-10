@@ -106,16 +106,16 @@ pub(crate) unsafe fn FSE_initCState2(
 #[inline]
 pub(crate) unsafe fn FSE_encodeSymbol(
     bitC: &mut BIT_CStream_t,
-    statePtr: *mut FSE_CState_t,
+    statePtr: &mut FSE_CState_t,
     symbol: core::ffi::c_uint,
 ) {
     let symbolTT =
-        *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = (*statePtr).stateTable as *const u16;
-    let nbBitsOut = (((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, (*statePtr).value as BitContainerType, nbBitsOut);
-    (*statePtr).value = *stateTable
-        .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
+        *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
+    let stateTable = statePtr.stateTable as *const u16;
+    let nbBitsOut = ((statePtr.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
+    BIT_addBits(bitC, statePtr.value as BitContainerType, nbBitsOut);
+    statePtr.value = *stateTable
+        .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 
