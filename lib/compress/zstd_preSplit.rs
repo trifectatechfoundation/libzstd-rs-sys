@@ -131,11 +131,13 @@ unsafe fn ZSTD_splitBlock_byChunks(
     workspace: *mut c_void,
     wkspSize: size_t,
 ) -> size_t {
+    // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
+    // entry matches the corresponding entry of `hashParams` below.
     static records_fs: [unsafe fn(&mut Fingerprint, *const c_void, size_t) -> (); 4] = [
-        recordFingerprint_generic::<1, 10>,
-        recordFingerprint_generic::<5, 10>,
-        recordFingerprint_generic::<11, 9>,
         recordFingerprint_generic::<43, 8>,
+        recordFingerprint_generic::<11, 9>,
+        recordFingerprint_generic::<5, 10>,
+        recordFingerprint_generic::<1, 10>,
     ];
 
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
