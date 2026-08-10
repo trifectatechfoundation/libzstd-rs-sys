@@ -404,17 +404,17 @@ unsafe fn ZSTD_encodeSequences_body(
     // first symbols
     FSE_initCState2(
         &mut stateMatchLength,
-        CTable_MatchLength.as_ptr(),
+        CTable_MatchLength,
         *mlCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     FSE_initCState2(
         &mut stateOffsetBits,
-        CTable_OffsetBits.as_ptr(),
+        CTable_OffsetBits,
         *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     FSE_initCState2(
         &mut stateLitLength,
-        CTable_LitLength.as_ptr(),
+        CTable_LitLength,
         *llCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
     BIT_addBits(

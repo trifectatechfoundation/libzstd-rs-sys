@@ -87,12 +87,8 @@ pub(crate) unsafe fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: *const FSE_
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_initCState2(
-    statePtr: &mut FSE_CState_t,
-    ct: *const FSE_CTable,
-    symbol: u32,
-) {
-    FSE_initCState(statePtr, ct);
+pub(crate) unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
+    FSE_initCState(statePtr, ct.as_ptr());
     let symbolTT =
         *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
     let stateTable = statePtr.stateTable as *const u16;
