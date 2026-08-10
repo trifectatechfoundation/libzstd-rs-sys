@@ -52,9 +52,8 @@ static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     37, 36, 34, 33, 31, 30, 28, 26, 25, 23, 22, 20, 19, 17, 16, 14, 13, 11, 10, 8, 7, 5, 4, 2, 1,
 ];
 
-unsafe fn ZSTD_getFSEMaxSymbolValue(ctable: *const FSE_CTable) -> core::ffi::c_uint {
-    let ptr = ctable as *const core::ffi::c_void;
-    let u16ptr = ptr as *const u16;
+unsafe fn ZSTD_getFSEMaxSymbolValue(ctable: &[FSE_CTable]) -> core::ffi::c_uint {
+    let u16ptr = ctable.as_ptr() as *const u16;
 
     MEM_read16(u16ptr.add(1) as *const core::ffi::c_void) as u32
 }
@@ -137,7 +136,7 @@ pub unsafe fn ZSTD_fseBitCost(
         stateLog: 0,
     };
     FSE_initCState(&mut cstate, ctable.as_ptr());
-    if ZSTD_getFSEMaxSymbolValue(ctable.as_ptr()) < max {
+    if ZSTD_getFSEMaxSymbolValue(ctable) < max {
         return Error::GENERIC.to_error_code();
     }
     for s in 0..max + 1 {
