@@ -268,7 +268,7 @@ pub unsafe fn ZSTD_buildCTable(
     defaultNorm: *const i16,
     defaultNormLog: u32,
     defaultMax: u32,
-    prevCTable: *const FSE_CTable,
+    prevCTable: &[FSE_CTable],
     prevCTableSize: size_t,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWorkspaceSize: size_t,
@@ -290,7 +290,7 @@ pub unsafe fn ZSTD_buildCTable(
         }
         3 => {
             core::ptr::copy_nonoverlapping(
-                prevCTable.cast::<u8>(),
+                prevCTable.as_ptr().cast::<u8>(),
                 nextCTable.cast::<u8>(),
                 prevCTableSize,
             );
