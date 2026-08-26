@@ -94,6 +94,13 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 
+/// Indicates whether this compression proceeds directly from user-provided
+/// source buffer to user-provided destination buffer (`ZSTDb_not_buffered`), or
+/// whether the context needs to buffer the input/output (`ZSTDb_buffered`).
+pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
+pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
+pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(crate) struct repcodes_s {
