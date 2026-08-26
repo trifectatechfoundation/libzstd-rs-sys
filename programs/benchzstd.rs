@@ -1264,7 +1264,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     segNb = segNb.wrapping_add(1);
                 }
                 pos = u.wrapping_sub(bacc) as u32;
-                bNb = pos.wrapping_div((128 * ((1) << 10)) as core::ffi::c_uint);
+                bNb = pos.wrapping_div((128 * (1 << 10)) as core::ffi::c_uint);
                 fprintf(
                     stderr,
                     c"(sample %u, chunk %u, pos %u) \n".as_ptr(),
@@ -1736,7 +1736,7 @@ pub unsafe fn BMK_syntheticTest(
     res
 }
 unsafe fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
-    let step = (64 * ((1) << 20)) as size_t;
+    let step = (64 * (1 << 20)) as size_t;
     let mut testmem = core::ptr::null_mut();
     requiredMem = (requiredMem >> 26).wrapping_add(1) << 26;
     requiredMem = requiredMem.wrapping_add(step as u64);
@@ -1924,7 +1924,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
                 }
                 return 17;
             }
-            if dictFileSize > (64 * ((1) << 20)) as u64 {
+            if dictFileSize > (64 * (1 << 20)) as u64 {
                 free(fileSizes as *mut core::ffi::c_void);
                 if displayLevel >= 1 {
                     eprintln!(

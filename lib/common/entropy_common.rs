@@ -136,7 +136,7 @@ fn FSE_readNCount_body(
                 break;
             }
             nbBits = remaining.ilog2() as i32 + 1;
-            threshold = (1) << (nbBits - 1);
+            threshold = 1 << (nbBits - 1);
         }
         if charnum >= maxSV1 {
             break;

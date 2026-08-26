@@ -132,7 +132,7 @@ fn FSE_readSymbolTT(
 pub(crate) fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
     FSE_initCState(statePtr, ct);
     let symbolTT = FSE_readSymbolTT(ct, statePtr.stateLog, symbol);
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add((1) << 15) >> 16;
+    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
     let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
 
     // the state table starts at the third `u16` of `ct`
@@ -168,7 +168,7 @@ pub(crate) unsafe fn FSE_getMaxNbBits(
     symbolValue: u32,
 ) -> u32 {
     let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add((((1) << 16) - 1) as u32)
+    ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(((1 << 16) - 1) as u32)
         >> 16
 }
 
@@ -182,12 +182,12 @@ pub(crate) unsafe fn FSE_bitCost(
     let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
     let minNbBits = (*symbolTT.offset(symbolValue as isize)).deltaNbBits >> 16;
     let threshold = minNbBits.wrapping_add(1) << 16;
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let deltaFromThreshold = threshold.wrapping_sub(
         ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(tableSize),
     );
     let normalizedDeltaFromThreshold = deltaFromThreshold << accuracyLog >> tableLog;
-    let bitMultiplier = ((1) << accuracyLog) as u32;
+    let bitMultiplier = (1 << accuracyLog) as u32;
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
 }
 

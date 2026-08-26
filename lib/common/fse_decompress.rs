@@ -81,13 +81,13 @@ fn FSE_buildDTable_internal(
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
     let maxSV1 = maxSymbolValue.wrapping_add(1);
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
 
     if ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
         .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
         as core::ffi::c_ulonglong)
-        .wrapping_add((1) << tableLog)
+        .wrapping_add(1 << tableLog)
         .wrapping_add(8)
         > wkspSize as core::ffi::c_ulonglong
     {
@@ -107,7 +107,7 @@ fn FSE_buildDTable_internal(
         fastMode: 1,
     };
 
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
+    let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
     s = 0;
     while s < maxSV1 {
@@ -343,12 +343,12 @@ fn FSE_decompress_wksp_body(
         return Err(Error::tableLog_tooLarge);
     }
     let ip = &cSrc[NCountLength as usize..];
-    if ((1 + ((1) << tableLog) + 1) as core::ffi::c_ulonglong)
+    if ((1 + (1 << tableLog) + 1) as core::ffi::c_ulonglong)
         .wrapping_add(
             ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
                 .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
                 as core::ffi::c_ulonglong)
-                .wrapping_add((1) << tableLog)
+                .wrapping_add(1 << tableLog)
                 .wrapping_add(8)
                 .wrapping_add(
                     size_of::<core::ffi::c_uint>() as core::ffi::c_ulong

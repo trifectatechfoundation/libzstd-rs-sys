@@ -577,7 +577,7 @@ fn HUFv07_readStats(
         }
         rankStats[usize::from(huffWeight[n_0])] += 1;
         weightTotal =
-            weightTotal.wrapping_add(((1) << huffWeight[n_0] as core::ffi::c_int >> 1) as u32);
+            weightTotal.wrapping_add((1 << huffWeight[n_0] as core::ffi::c_int >> 1) as u32);
         n_0 += 1;
     }
     if weightTotal == 0 {
@@ -588,9 +588,9 @@ fn HUFv07_readStats(
         return Err(Error::corruption_detected);
     }
     *tableLogPtr = tableLog;
-    let total = ((1) << tableLog) as u32;
+    let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
-    let verif = ((1) << BITv07_highbit32(rest)) as u32;
+    let verif = (1 << BITv07_highbit32(rest)) as u32;
     let lastWeight = (BITv07_highbit32(rest)).wrapping_add(1);
     if verif != rest {
         return Err(Error::corruption_detected);
@@ -612,7 +612,7 @@ fn FSEv07_buildDTable<const N: usize>(
     let tableDecode = &mut dt.data;
     let mut symbolNext: [u16; 256] = [0; 256];
     let maxSV1 = maxSymbolValue as usize + 1;
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     if maxSymbolValue > FSEv07_MAX_SYMBOL_VALUE as core::ffi::c_uint {
         return Err(Error::maxSymbolValue_tooLarge);
@@ -626,7 +626,7 @@ fn FSEv07_buildDTable<const N: usize>(
     };
     DTableH.tableLog = tableLog as u16;
     DTableH.fastMode = 1;
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
+    let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     for s in 0..maxSV1 {
         if normalizedCounter[s] == -1 {
             tableDecode[highThreshold as usize].symbol = s as u8;
@@ -1040,7 +1040,7 @@ fn HUFv07_fillDTableX4Level2(
         let symbol = sym.symbol as u32;
         let weight = sym.weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
-        let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
+        let length = (1 << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
         DElt.sequence = LE16(u16::to_le_bytes(
             (baseSeq as u32).wrapping_add(symbol << 8) as u16
@@ -1720,7 +1720,7 @@ pub(crate) fn ZSTDv07_getFrameParams(
         {
             return Err(Error::frameParameter_unsupported);
         }
-        windowSize = (1) << windowLog;
+        windowSize = 1 << windowLog;
         windowSize =
             windowSize.wrapping_add((windowSize >> 3) * (wlByte as core::ffi::c_int & 7) as u32);
     }

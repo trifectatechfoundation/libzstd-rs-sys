@@ -344,7 +344,7 @@ pub unsafe fn FIO_lzmaVersion() -> *const core::ffi::c_char {
     lzma_version_string()
 }
 pub const ADAPT_WINDOWLOG_DEFAULT: core::ffi::c_int = 23;
-pub const DICTSIZE_MAX: core::ffi::c_int = 32 * ((1) << 20);
+pub const DICTSIZE_MAX: core::ffi::c_int = 32 * (1 << 20);
 pub const DEFAULT_FILE_PERMISSIONS: mode_t =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 pub const TEMPORARY_FILE_PERMISSIONS: mode_t = S_IRUSR | S_IWUSR;
@@ -908,7 +908,7 @@ unsafe fn FIO_openDstFile(
                 io::Error::last_os_error(),
             );
         }
-    } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, ((1) << 20) as size_t) != 0
+    } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, (1 << 20) as size_t) != 0
         && g_display_prefs.displayLevel >= 2
     {
         fprintf(
@@ -3543,15 +3543,15 @@ unsafe fn FIO_compressZstdFrame(
     }
     windowSize = UTIL_makeHumanReadableSize(
         (if 1
-            > (if (1) << windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
-                (1) << windowLog
+            > (if 1 << windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
+                1 << windowLog
             } else {
                 pledgedSrcSize as core::ffi::c_ulonglong
             })
         {
             1
-        } else if (1) << windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
-            (1) << windowLog
+        } else if 1 << windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
+            1 << windowLog
         } else {
             pledgedSrcSize as core::ffi::c_ulonglong
         }) as u64,
@@ -4533,7 +4533,7 @@ pub unsafe fn FIO_displayCompressionParameters(prefs: *const FIO_prefs_t) {
         if (*prefs).memLimit != 0 {
             (*prefs).memLimit
         } else {
-            (128 * ((1) << 20)) as core::ffi::c_uint
+            (128 * (1 << 20)) as core::ffi::c_uint
         },
     );
     fprintf(stderr, c" --threads=%d".as_ptr(), (*prefs).nbWorkers);
@@ -5170,14 +5170,14 @@ unsafe fn FIO_freeDResources(mut ress: dRess_t) {
     AIO_ReadPool_free(ress.readCtx);
 }
 unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
-    let blockSize = if (if ((64 * ((1) << 10)) as size_t) < ZSTD_DStreamInSize() {
-        (64 * ((1) << 10)) as size_t
+    let blockSize = if (if ((64 * (1 << 10)) as size_t) < ZSTD_DStreamInSize() {
+        (64 * (1 << 10)) as size_t
     } else {
         ZSTD_DStreamInSize()
     }) < ZSTD_DStreamOutSize()
     {
-        if ((64 * ((1) << 10)) as size_t) < ZSTD_DStreamInSize() {
-            (64 * ((1) << 10)) as size_t
+        if ((64 * (1 << 10)) as size_t) < ZSTD_DStreamInSize() {
+            (64 * (1 << 10)) as size_t
         } else {
             ZSTD_DStreamInSize()
         }
@@ -5260,7 +5260,7 @@ unsafe fn FIO_zstdErrorHelp(
             }) as core::ffi::c_uint
         {
             let windowMB = (windowSize >> 20).wrapping_add(
-                (windowSize & (((1) << 20) - 1) as core::ffi::c_ulonglong != 0) as core::ffi::c_int
+                (windowSize & ((1 << 20) - 1) as core::ffi::c_ulonglong != 0) as core::ffi::c_int
                     as core::ffi::c_ulonglong,
             ) as core::ffi::c_uint;
             assert!(windowSize < ((1 as core::ffi::c_ulonglong) << 52) as core::ffi::c_ulonglong);
@@ -6379,8 +6379,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     }
                 }
                 let frameHeaderDescriptor = *headerBuffer.as_mut_ptr().offset(4);
-                let contentChecksumFlag =
-                    (frameHeaderDescriptor as core::ffi::c_int & (1) << 2) >> 2;
+                let contentChecksumFlag = (frameHeaderDescriptor as core::ffi::c_int & 1 << 2) >> 2;
                 if contentChecksumFlag != 0 {
                     (*info).usesCheck = 1;
                     if fread(

@@ -2964,8 +2964,8 @@ pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
     maxWindowSize: size_t,
 ) -> size_t {
     let bounds = ZSTD_dParam_getBounds(ZSTD_dParameter::ZSTD_d_windowLogMax);
-    let min = (1) << bounds.lowerBound;
-    let max = (1) << bounds.upperBound;
+    let min = 1 << bounds.lowerBound;
+    let max = 1 << bounds.upperBound;
     if (*dctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
@@ -3133,7 +3133,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             if !ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_windowLogMax, value) {
                 return Error::parameter_outOfBound.to_error_code();
             }
-            (*dctx).maxWindowSize = (1) << value;
+            (*dctx).maxWindowSize = 1 << value;
             return 0;
         }
         ZSTD_dParameter::ZSTD_d_experimentalParam1 => {

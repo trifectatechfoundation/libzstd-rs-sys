@@ -451,8 +451,8 @@ unsafe fn FSEv06_readNCount(
     bitStream >>= 4;
     bitCount = 4;
     *tableLogPtr = nbBits as core::ffi::c_uint;
-    remaining = ((1) << nbBits) + 1;
-    threshold = (1) << nbBits;
+    remaining = (1 << nbBits) + 1;
+    threshold = 1 << nbBits;
     nbBits += 1;
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 {
@@ -540,7 +540,7 @@ unsafe fn FSEv06_buildDTable(
     let tableDecode = tdPtr as *mut FSEv06_decode_t;
     let mut symbolNext: [u16; 256] = [0; 256];
     let maxSV1 = maxSymbolValue.wrapping_add(1);
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     if maxSymbolValue > FSEv06_MAX_SYMBOL_VALUE as core::ffi::c_uint {
         return Error::maxSymbolValue_tooLarge.to_error_code();
@@ -554,7 +554,7 @@ unsafe fn FSEv06_buildDTable(
     };
     DTableH.tableLog = tableLog as u16;
     DTableH.fastMode = 1;
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
+    let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
     s = 0;
     while s < maxSV1 {
@@ -873,9 +873,8 @@ unsafe fn HUFv06_readStats(
         }
         let fresh9 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
         *fresh9 = (*fresh9).wrapping_add(1);
-        weightTotal = weightTotal.wrapping_add(
-            ((1) << *huffWeight.offset(n_0 as isize) as core::ffi::c_int >> 1) as u32,
-        );
+        weightTotal = weightTotal
+            .wrapping_add((1 << *huffWeight.offset(n_0 as isize) as core::ffi::c_int >> 1) as u32);
         n_0 = n_0.wrapping_add(1);
     }
     if weightTotal == 0 {
@@ -886,9 +885,9 @@ unsafe fn HUFv06_readStats(
         return Error::corruption_detected.to_error_code();
     }
     *tableLogPtr = tableLog;
-    let total = ((1) << tableLog) as u32;
+    let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
-    let verif = ((1) << BITv06_highbit32(rest)) as u32;
+    let verif = (1 << BITv06_highbit32(rest)) as u32;
     let lastWeight = (BITv06_highbit32(rest)).wrapping_add(1);
     if verif != rest {
         return Error::corruption_detected.to_error_code();
@@ -944,7 +943,7 @@ unsafe fn HUFv06_readDTableX2(
     n = 0;
     while n < nbSymbols {
         let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
-        let length = ((1) << w >> 1) as u32;
+        let length = (1 << w >> 1) as u32;
         let mut i: u32 = 0;
         let mut D = HUFv06_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
@@ -1297,7 +1296,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
         let symbol = (*sortedSymbols.offset(s as isize)).symbol as u32;
         let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
-        let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
+        let length = (1 << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
         let mut i_0 = start;
         let end = start.wrapping_add(length);
@@ -1344,7 +1343,7 @@ unsafe fn HUFv06_fillDTableX4(
         let weight = (*sortedList.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
-        let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
+        let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut sortedRank: u32 = 0;
             let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;

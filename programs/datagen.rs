@@ -7,7 +7,7 @@ extern "C" {
 }
 type fixedPoint_24_8 = u32;
 pub const LTLOG: core::ffi::c_int = 13;
-pub const LTSIZE: core::ffi::c_int = (1) << LTLOG;
+pub const LTSIZE: core::ffi::c_int = 1 << LTLOG;
 pub const LTMASK: core::ffi::c_int = LTSIZE - 1;
 unsafe fn RDG_rand(src: *mut u32) -> u32 {
     static prime1: u32 = 2654435761;
@@ -39,10 +39,10 @@ unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, ld: fixedPoint_24_8) {
     u = 0;
     while u < LTSIZE as u32 {
         let weight = (((LTSIZE as u32).wrapping_sub(u) * ld) >> 8).wrapping_add(1);
-        let end = if u.wrapping_add(weight) < ((1) << 13) as u32 {
+        let end = if u.wrapping_add(weight) < (1 << 13) as u32 {
             u.wrapping_add(weight)
         } else {
-            ((1) << 13) as u32
+            (1 << 13) as u32
         };
         while u < end {
             let fresh0 = u;
@@ -168,8 +168,8 @@ pub unsafe fn RDG_genStdout(
     seed: core::ffi::c_uint,
 ) {
     let mut seed32 = seed;
-    let stdBlockSize = (128 * ((1) << 10)) as size_t;
-    let stdDictSize = (32 * ((1) << 10)) as size_t;
+    let stdBlockSize = (128 * (1 << 10)) as size_t;
+    let stdDictSize = (32 * (1 << 10)) as size_t;
     let buff = malloc(stdDictSize.wrapping_add(stdBlockSize)) as *mut u8;
     let mut total = 0u64;
     let mut ldt: [u8; 8192] = [0; 8192];

@@ -97,7 +97,7 @@ pub const PATH_SEP: core::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 pub const AT_FDCWD: core::ffi::c_int = -(100);
 pub const __S_IFMT: core::ffi::c_int = 0o170000 as core::ffi::c_int;
-pub const UTIME_NOW: core::ffi::c_long = ((1) << 30) - 1;
+pub const UTIME_NOW: core::ffi::c_long = (1 << 30) - 1;
 pub const ENOMEM: core::ffi::c_int = 12;
 pub const EEXIST: core::ffi::c_int = 17;
 static mut g_traceDepth: core::ffi::c_int = 0;
@@ -135,8 +135,8 @@ pub unsafe fn UTIL_requireUserConfirmation(
     }
     result
 }
-pub const LIST_SIZE_INCREASE: size_t = 8 as size_t * ((1) << 10) as size_t;
-pub const MAX_FILE_OF_FILE_NAMES_SIZE: core::ffi::c_int = ((1) << 20) * 50;
+pub const LIST_SIZE_INCREASE: size_t = 8 as size_t * (1 << 10) as size_t;
+pub const MAX_FILE_OF_FILE_NAMES_SIZE: core::ffi::c_int = (1 << 20) * 50;
 pub unsafe fn UTIL_traceFileStat() {
     g_traceFileStat = 1;
 }
@@ -1153,7 +1153,7 @@ unsafe fn UTIL_readFileContent(
     inFile: *mut FILE,
     totalReadPtr: *mut size_t,
 ) -> *mut core::ffi::c_char {
-    let mut bufSize = (64 * ((1) << 10)) as size_t;
+    let mut bufSize = (64 * (1 << 10)) as size_t;
     let mut totalRead = 0;
     let mut bytesRead = 0;
     let mut buf = malloc(bufSize) as *mut core::ffi::c_char;
@@ -1171,7 +1171,7 @@ unsafe fn UTIL_readFileContent(
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
-        if bufSize.wrapping_sub(totalRead) < ((1) << 10) as size_t {
+        if bufSize.wrapping_sub(totalRead) < (1 << 10) as size_t {
             if bufSize >= MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
                 free(buf as *mut core::ffi::c_void);
                 return core::ptr::null_mut();
