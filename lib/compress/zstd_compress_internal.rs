@@ -80,10 +80,14 @@ pub struct ZSTD_entropyCTables_t {
     pub fse: ZSTD_fseCTables_t,
 }
 
-pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
-pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
-pub(crate) const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
-pub(crate) const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum LongLengthType {
+    #[default]
+    None = 0,
+    Literal = 1,
+    Match = 2,
+}
 
 pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqStore: *const SeqStore_t,
@@ -95,10 +99,10 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
     };
 
     if (*seqStore).longLengthPos == (seq as usize - (*seqStore).sequencesStart as usize) as u32 {
-        if (*seqStore).longLengthType == ZSTD_llt_literalLength {
+        if (*seqStore).longLengthType == LongLengthType::Literal {
             seqLen.litLength += 0x10000;
         }
-        if (*seqStore).longLengthType == ZSTD_llt_matchLength {
+        if (*seqStore).longLengthType == LongLengthType::Match {
             seqLen.matchLength += 0x10000;
         }
     }
@@ -240,7 +244,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     matchLength: usize,
 ) {
     if litLength > 0xffff {
-        seqStorePtr.longLengthType = ZSTD_llt_literalLength;
+        seqStorePtr.longLengthType = LongLengthType::Literal;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
@@ -248,7 +252,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     (*(seqStorePtr.sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as usize);
     if mlBase > 0xffff {
-        seqStorePtr.longLengthType = ZSTD_llt_matchLength;
+        seqStorePtr.longLengthType = LongLengthType::Match;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
