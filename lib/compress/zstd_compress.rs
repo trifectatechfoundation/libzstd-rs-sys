@@ -70,18 +70,6 @@ pub struct ZSTD_Sequence {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_blockSplitCtx {
-    pub fullSeqStoreChunk: SeqStore_t,
-    pub firstHalfSeqStore: SeqStore_t,
-    pub secondHalfSeqStore: SeqStore_t,
-    pub currSeqStore: SeqStore_t,
-    pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
-    pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ZSTD_entropyCTablesMetadata_t {
     pub hufMetadata: ZSTD_hufCTablesMetadata_t,
     pub fseMetadata: ZSTD_fseCTablesMetadata_t,
@@ -828,11 +816,11 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_OptPrice_e, ZSTD_blockState_t,
-    ZSTD_buffered_policy_e, ZSTD_count, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
-    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
-    ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq,
-    ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_OptPrice_e, ZSTD_blockSplitCtx,
+    ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
+    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
+    ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
     ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };

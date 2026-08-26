@@ -9,8 +9,8 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_Sequence, ZSTD_compressedBlockState_t,
-    ZSTD_dedicatedDictSearch, ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict,
-    ZSTD_window_t, HASH_READ_SIZE,
+    ZSTD_dedicatedDictSearch, ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_entropyCTablesMetadata_t,
+    ZSTD_extDict, ZSTD_noDict, ZSTD_window_t, HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
@@ -100,6 +100,20 @@ pub struct SeqCollector {
 pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
 pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
 pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
+
+/// Struct that contains all elements of block splitter that should be allocated
+/// in a wksp.
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_blockSplitCtx {
+    pub fullSeqStoreChunk: SeqStore_t,
+    pub firstHalfSeqStore: SeqStore_t,
+    pub secondHalfSeqStore: SeqStore_t,
+    pub currSeqStore: SeqStore_t,
+    pub nextSeqStore: SeqStore_t,
+    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
+    pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
