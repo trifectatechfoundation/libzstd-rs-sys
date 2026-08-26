@@ -1,24 +1,3 @@
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut core::ffi::c_uint,
-    pub litLengthFreq: *mut core::ffi::c_uint,
-    pub matchLengthFreq: *mut core::ffi::c_uint,
-    pub offCodeFreq: *mut core::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
@@ -82,14 +61,12 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t,
-    ZSTD_selectBlockCompressor, ZSTD_window_t,
+    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_dtlm_fast, ZSTD_entropyCTables_t,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_tfp_forCCtx,
-    ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_count, ZSTD_count_2segments, ZSTD_dtlm_fast, ZSTD_matchState_dictMode, ZSTD_storeSeq,
+    ZSTD_tfp_forCCtx, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
+    ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;

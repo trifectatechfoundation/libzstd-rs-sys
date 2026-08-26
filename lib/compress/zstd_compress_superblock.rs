@@ -16,11 +16,11 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_buildBlockEntropyStats,
     ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_fseCTablesMetadata_t,
-    ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_TARGETCBLOCKSIZE_MIN,
+    ZSTD_hufCTablesMetadata_t, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, ZSTD_OptPrice_e, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_hufCTables_t,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_match_t, ZSTD_updateRep,
+    repcodes_s, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_hufCTables_t,
+    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -28,7 +28,6 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::ZSTD_ParamSwitch_e;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -51,27 +50,6 @@ pub struct ZSTD_inBuffer_s {
     pub src: *const core::ffi::c_void,
     pub size: size_t,
     pub pos: size_t,
-}
-
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut core::ffi::c_uint,
-    pub litLengthFreq: *mut core::ffi::c_uint,
-    pub matchLengthFreq: *mut core::ffi::c_uint,
-    pub offCodeFreq: *mut core::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
 
 #[derive(Copy, Clone)]

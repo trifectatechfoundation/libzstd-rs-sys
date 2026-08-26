@@ -1,26 +1,5 @@
 use core::arch::asm;
 
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut core::ffi::c_uint,
-    pub litLengthFreq: *mut core::ffi::c_uint,
-    pub matchLengthFreq: *mut core::ffi::c_uint,
-    pub offCodeFreq: *mut core::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-}
-
 pub type searchMethod_e = core::ffi::c_uint;
 pub const search_rowHash: searchMethod_e = 2;
 pub const search_binaryTree: searchMethod_e = 1;
@@ -32,15 +11,14 @@ use libc::size_t;
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
-use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
+use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_dedicatedDictSearch,
-    ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_entropyCTables_t, ZSTD_extDict,
-    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hashPtrSalted,
-    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_noDict, ZSTD_storeSeq,
+    ZSTD_count, ZSTD_count_2segments, ZSTD_dedicatedDictSearch, ZSTD_dictMatchState,
+    ZSTD_dictMode_e, ZSTD_extDict, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex,
+    ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_noDict, ZSTD_storeSeq,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
-use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
+use crate::lib::zstd::ZSTD_compressionParameters;
 
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
