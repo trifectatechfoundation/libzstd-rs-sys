@@ -126,16 +126,6 @@ pub struct SeqDef_s {
     pub mlBase: u16,
 }
 
-pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_prefixDict_s {
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-}
-
 pub type ZSTD_CDict = ZSTD_CDict_s;
 
 #[repr(C)]
@@ -314,16 +304,6 @@ pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
 pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
 pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
 pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_localDict {
-    pub dictBuffer: *mut core::ffi::c_void,
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-    pub cdict: *mut ZSTD_CDict,
-}
 
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 
@@ -784,11 +764,12 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
     ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
-    ZSTDb_buffered, ZSTDb_not_buffered, ZSTDcs_created, ZSTDcs_ending, ZSTDcs_init, ZSTDcs_ongoing,
+    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_localDict,
+    ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict,
+    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx,
+    ZSTD_tfp_forCDict, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
+    ZSTDcs_created, ZSTDcs_ending, ZSTDcs_init, ZSTDcs_ongoing,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;

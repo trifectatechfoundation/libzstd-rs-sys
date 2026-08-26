@@ -14,7 +14,7 @@ use crate::lib::compress::huf_compress::{
     HUF_compress1X_usingCTable, HUF_compress4X_usingCTable, HUF_estimateCompressedSize,
 };
 use crate::lib::compress::zstd_compress::{
-    SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_buildBlockEntropyStats,
+    SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_buildBlockEntropyStats,
     ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_fseCTablesMetadata_t,
     ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
@@ -28,7 +28,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_dictContentType_e};
+use crate::lib::zstd::ZSTD_ParamSwitch_e;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -44,24 +44,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
-
-#[repr(C)]
-pub struct ZSTD_prefixDict_s {
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-}
-
-#[repr(C)]
-pub struct ZSTD_localDict {
-    pub dictBuffer: *mut core::ffi::c_void,
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-    pub cdict: *mut ZSTD_CDict,
-}
-
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 
 #[repr(C)]

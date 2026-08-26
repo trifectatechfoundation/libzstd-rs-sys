@@ -8,11 +8,12 @@ use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
-    SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_Sequence, ZSTD_compressedBlockState_t,
+    SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_Sequence, ZSTD_compressedBlockState_t,
     ZSTD_entropyCTablesMetadata_t, ZSTD_window_t, HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
+use crate::lib::zstd::ZSTD_dictContentType_e;
 
 pub type ZSTD_compressionStage_e = core::ffi::c_uint;
 pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
@@ -24,6 +25,26 @@ pub type ZSTD_cStreamStage = core::ffi::c_uint;
 pub const zcss_flush: ZSTD_cStreamStage = 2;
 pub const zcss_load: ZSTD_cStreamStage = 1;
 pub const zcss_init: ZSTD_cStreamStage = 0;
+
+pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_prefixDict_s {
+    pub dict: *const core::ffi::c_void,
+    pub dictSize: size_t,
+    pub dictContentType: ZSTD_dictContentType_e,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_localDict {
+    pub dictBuffer: *mut core::ffi::c_void,
+    pub dict: *const core::ffi::c_void,
+    pub dictSize: size_t,
+    pub dictContentType: ZSTD_dictContentType_e,
+    pub cdict: *mut ZSTD_CDict,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
