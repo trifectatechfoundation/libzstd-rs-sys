@@ -70,12 +70,6 @@ pub struct ldmParams_t {
     pub windowLog: u32,
 }
 
-pub type ZSTD_dictMode_e = core::ffi::c_uint;
-pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
-pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
-pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
-pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
-
 pub type ZSTD_BlockCompressor_f = Option<
     unsafe fn(
         &mut ZSTD_MatchState_t,

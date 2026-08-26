@@ -9,8 +9,7 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_Sequence, ZSTD_compressedBlockState_t,
-    ZSTD_dedicatedDictSearch, ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_entropyCTablesMetadata_t,
-    ZSTD_extDict, ZSTD_noDict, ZSTD_window_t, HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
+    ZSTD_entropyCTablesMetadata_t, ZSTD_window_t, HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
@@ -121,6 +120,12 @@ pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
 pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
 pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
 pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
+
+pub type ZSTD_dictMode_e = core::ffi::c_uint;
+pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
+pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
+pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
+pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
