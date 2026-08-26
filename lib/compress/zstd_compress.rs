@@ -44,7 +44,7 @@ pub struct ZSTD_CCtx_s {
     pub(super) outBuffSize: size_t,
     pub(super) outBuffContentSize: size_t,
     pub(super) outBuffFlushedSize: size_t,
-    pub(super) streamStage: ZSTD_cStreamStage,
+    pub(super) streamStage: StreamStage,
     pub(super) frameEnded: u32,
     pub(super) expectedInBuffer: ZSTD_inBuffer,
     pub(super) stableIn_notConsumed: size_t,
@@ -699,17 +699,16 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, zcss_flush, zcss_init, zcss_load, zop_dynamic, CompressionStage,
-    Repcodes_t, SeqCollector, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx,
-    ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_cStreamStage, ZSTD_count, ZSTD_cpm_attachDict,
-    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
-    ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t,
-    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
-    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_localDict, ZSTD_longLengthType_e,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
-    ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict,
-    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
+    optState_t, repcodes_s, zop_dynamic, CompressionStage, Repcodes_t, SeqCollector, StreamStage,
+    ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t,
+    ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
+    ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e,
+    ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
+    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
+    ZSTD_llt_none, ZSTD_localDict, ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t,
+    ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e,
+    ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
@@ -2266,7 +2265,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
     param: ZSTD_cParameter,
     value: core::ffi::c_int,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         if ZSTD_isUpdateAuthorized(param) {
             (*cctx).cParamsChanged = 1;
         } else {
@@ -2773,7 +2772,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
     cctx: *mut ZSTD_CCtx,
     params: *const ZSTD_CCtx_params,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
     if !((*cctx).cdict).is_null() {
@@ -2913,7 +2912,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
     cctx: *mut ZSTD_CCtx,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
 
@@ -2961,7 +2960,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
     ZSTD_clearAllDicts(cctx); // erase any previously set dictionary
@@ -3012,7 +3011,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
     cctx: *mut ZSTD_CCtx,
     cdict: *const ZSTD_CDict,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
 
@@ -3029,7 +3028,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
     cctx: *mut ZSTD_CCtx,
     pool: *mut ZSTD_threadPool,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
 
@@ -3054,7 +3053,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
     prefixSize: size_t,
     dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
-    if (*cctx).streamStage != zcss_init {
+    if (*cctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
 
@@ -3080,7 +3079,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
         ZSTD_ResetDirective::ZSTD_reset_session_only
             | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
     ) {
-        (*cctx).streamStage = zcss_init;
+        (*cctx).streamStage = StreamStage::Init;
         (*cctx).pledgedSrcSizePlusOne = 0;
     }
 
@@ -3089,7 +3088,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
         ZSTD_ResetDirective::ZSTD_reset_parameters
             | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
     ) {
-        if (*cctx).streamStage != zcss_init {
+        if (*cctx).streamStage != StreamStage::Init {
             return Error::stage_wrong.to_error_code();
         }
         ZSTD_clearAllDicts(cctx);
@@ -8773,7 +8772,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         outBuffSize: 0,
         outBuffContentSize: 0,
         outBuffFlushedSize: 0,
-        streamStage: zcss_init,
+        streamStage: StreamStage::Init,
         frameEnded: 0,
         expectedInBuffer: ZSTD_inBuffer_s {
             src: core::ptr::null::<core::ffi::c_void>(),
@@ -10041,9 +10040,9 @@ unsafe fn ZSTD_compressStream_generic(
 
     while someMoreWork {
         let mut current_block_156: u64;
-        match (*zcs).streamStage as core::ffi::c_uint {
-            0 => return Error::init_missing.to_error_code(),
-            1 => {
+        match (*zcs).streamStage {
+            StreamStage::Init => return Error::init_missing.to_error_code(),
+            StreamStage::Load => {
                 if flushMode == ZSTD_e_end
                     && (oend.offset_from_unsigned(op)
                         >= ZSTD_compressBound(iend.offset_from_unsigned(ip))
@@ -10211,18 +10210,15 @@ unsafe fn ZSTD_compressStream_generic(
                             } else {
                                 (*zcs).outBuffContentSize = cSize_0;
                                 (*zcs).outBuffFlushedSize = 0;
-                                (*zcs).streamStage = zcss_flush; // pass-through to flush stage
+                                (*zcs).streamStage = StreamStage::Flush; // pass-through to flush stage
                                 current_block_156 = 5431927413890720344;
                             }
                         }
                     }
                 }
             }
-            2 => {
+            StreamStage::Flush => {
                 current_block_156 = 5431927413890720344;
-            }
-            _ => {
-                current_block_156 = 16754622181974910496;
             }
         }
         if current_block_156 == 5431927413890720344 {
@@ -10247,7 +10243,7 @@ unsafe fn ZSTD_compressStream_generic(
                     someMoreWork = false;
                     ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
                 } else {
-                    (*zcs).streamStage = zcss_load;
+                    (*zcs).streamStage = StreamStage::Load;
                 }
             }
         }
@@ -10436,7 +10432,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         };
         (*cctx).consumedSrcSize = 0;
         (*cctx).producedCSize = 0;
-        (*cctx).streamStage = zcss_load;
+        (*cctx).streamStage = StreamStage::Load;
         (*cctx).appliedParams = params;
     } else {
         let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1);
@@ -10470,7 +10466,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
 
         (*cctx).outBuffFlushedSize = 0;
         (*cctx).outBuffContentSize = (*cctx).outBuffFlushedSize;
-        (*cctx).streamStage = zcss_load;
+        (*cctx).streamStage = StreamStage::Load;
         (*cctx).frameEnded = 0;
     }
 
@@ -10498,7 +10494,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
     }
 
     // transparent initialization stage
-    if (*cctx).streamStage == zcss_init {
+    if (*cctx).streamStage == StreamStage::Init {
         // no obligation to start from pos==0
         let inputSize = ((*input).size).wrapping_sub((*input).pos);
         let totalInputSize = inputSize.wrapping_add((*cctx).stableIn_notConsumed);
