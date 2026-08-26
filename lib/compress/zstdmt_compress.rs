@@ -22,7 +22,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_dtlm_fast, ZSTD_window_hasExtDict, ZSTD_window_update,
+    ZSTD_cpm_noAttachDict, ZSTD_dtlm_fast, ZSTD_window_hasExtDict, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -203,8 +203,6 @@ struct SyncPoint {
     flush: core::ffi::c_int,
 }
 
-type ZSTD_CParamMode_e = core::ffi::c_uint;
-const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 

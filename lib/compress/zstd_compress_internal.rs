@@ -127,6 +127,25 @@ pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
 pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
 pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
 
+pub type ZSTD_CParamMode_e = core::ffi::c_uint;
+/// `ZSTD_getCParams`, `ZSTD_getParams`, `ZSTD_adjustParams`.
+/// We don't know what these parameters are for. We default to the legacy
+/// behavior of taking both the source size and the dict size into account
+/// when selecting and adjusting parameters.
+pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
+/// Creating a CDict.
+/// In this mode we take both the source size and the dictionary size
+/// into account when selecting and adjusting the parameters.
+pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
+/// Compression with `ZSTD_dictMatchState` or `ZSTD_dedicatedDictSearch`.
+/// In this mode we only take the srcSize into account when selecting
+/// and adjusting parameters.
+pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
+/// Compression with `ZSTD_noDict` or `ZSTD_extDict`.
+/// In this mode we use both the srcSize and the dictSize
+/// when selecting and adjusting parameters.
+pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(crate) struct repcodes_s {
