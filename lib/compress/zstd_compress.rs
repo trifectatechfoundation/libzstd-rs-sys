@@ -345,14 +345,6 @@ pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
 pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
 pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
 
-#[repr(C)]
-pub struct SeqCollector {
-    pub collectSequences: core::ffi::c_int,
-    pub seqStart: *mut ZSTD_Sequence,
-    pub seqIndex: size_t,
-    pub maxSequences: size_t,
-}
-
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 
 #[derive(Copy, Clone, Default)]
@@ -839,11 +831,12 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_blockState_t, ZSTD_count,
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_OptPrice_e, ZSTD_blockState_t,
+    ZSTD_count, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength,
+    ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none,
+    ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq,
+    ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;

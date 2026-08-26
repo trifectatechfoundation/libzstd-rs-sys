@@ -114,15 +114,6 @@ pub struct optState_t {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct SeqCollector {
-    pub collectSequences: core::ffi::c_int,
-    pub seqStart: *mut ZSTD_Sequence,
-    pub seqIndex: size_t,
-    pub maxSequences: size_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct XXH64_state_s {
     pub total_len: XXH64_hash_t,
     pub v: [XXH64_hash_t; 4],
