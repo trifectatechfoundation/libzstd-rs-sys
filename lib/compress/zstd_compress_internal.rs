@@ -16,11 +16,15 @@ use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ZSTD_Sequence, ZSTD_dictContentType_e};
 
-pub type ZSTD_compressionStage_e = core::ffi::c_uint;
-pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
-pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
-pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
-pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum CompressionStage {
+    #[default]
+    Created = 0,
+    Init = 1,
+    Ongoing = 2,
+    Ending = 3,
+}
 
 pub type ZSTD_cStreamStage = core::ffi::c_uint;
 pub const zcss_flush: ZSTD_cStreamStage = 2;

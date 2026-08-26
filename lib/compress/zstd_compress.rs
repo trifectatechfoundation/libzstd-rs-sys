@@ -6,7 +6,7 @@ pub type ZSTD_CCtx = ZSTD_CCtx_s;
 
 #[repr(C)]
 pub struct ZSTD_CCtx_s {
-    pub(super) stage: ZSTD_compressionStage_e,
+    pub(super) stage: CompressionStage,
     pub(super) cParamsChanged: core::ffi::c_int,
     pub(super) bmi2: core::ffi::c_int,
     pub(super) requestedParams: ZSTD_CCtx_params,
@@ -699,18 +699,17 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, zcss_flush, zcss_init, zcss_load, zop_dynamic, Repcodes_t,
-    SeqCollector, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t,
-    ZSTD_buffered_policy_e, ZSTD_cStreamStage, ZSTD_compressionStage_e, ZSTD_count,
-    ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
-    ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full,
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_localDict,
-    ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict,
-    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx,
-    ZSTD_tfp_forCDict, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
-    ZSTDcs_created, ZSTDcs_ending, ZSTDcs_init, ZSTDcs_ongoing,
+    optState_t, repcodes_s, zcss_flush, zcss_init, zcss_load, zop_dynamic, CompressionStage,
+    Repcodes_t, SeqCollector, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx,
+    ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_cStreamStage, ZSTD_count, ZSTD_cpm_attachDict,
+    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
+    ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
+    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_localDict, ZSTD_longLengthType_e,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
+    ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict,
+    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
+    ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
@@ -4123,7 +4122,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).blockSizeMax = blockSize;
 
     ZSTD_XXH64_reset(&mut (*zc).xxhState, 0);
-    (*zc).stage = ZSTDcs_init;
+    (*zc).stage = CompressionStage::Init;
     (*zc).dictID = 0;
     (*zc).dictContentSize = 0;
 
@@ -4439,8 +4438,8 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
 }
 
 /// Duplicate an existing context `srcCCtx` into another one `dstCCtx`.
-/// Only works during stage ZSTDcs_init (i.e. after creation, but before first call to
-/// ZSTD_compressContinue()).
+/// Only works during stage `CompressionStage::Init` (i.e. after creation, but
+/// before first call to `ZSTD_compressContinue`).
 /// The "context", in this case, refers to the hash and chain tables,
 /// entropy tables, and dictionary references.
 /// `windowLog` value is enforced if != 0, otherwise value is copied from srcCCtx.
@@ -4456,7 +4455,7 @@ unsafe fn ZSTD_copyCCtx_internal(
     pledgedSrcSize: u64,
     zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
-    if (*srcCCtx).stage != ZSTDcs_init {
+    if (*srcCCtx).stage != CompressionStage::Init {
         return Error::stage_wrong.to_error_code();
     }
     (*dstCCtx).customMem = (*srcCCtx).customMem;
@@ -7219,7 +7218,7 @@ unsafe fn ZSTD_compress_frameChunk(
     }
 
     if lastFrameChunk != 0 && op > ostart {
-        (*cctx).stage = ZSTDcs_ending;
+        (*cctx).stage = CompressionStage::Ending;
     }
     op.offset_from_unsigned(ostart)
 }
@@ -7387,11 +7386,11 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
     let mut fhSize = 0;
 
-    if (*cctx).stage == ZSTDcs_created {
+    if (*cctx).stage == CompressionStage::Created {
         return Error::stage_wrong.to_error_code();
     }
 
-    if frame != 0 && (*cctx).stage == ZSTDcs_init {
+    if frame != 0 && (*cctx).stage == CompressionStage::Init {
         fhSize = ZSTD_writeFrameHeader(
             dst,
             dstCapacity,
@@ -7405,7 +7404,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         dst = (dst as *mut core::ffi::c_char).add(fhSize) as *mut core::ffi::c_void;
-        (*cctx).stage = ZSTDcs_ongoing;
+        (*cctx).stage = CompressionStage::Ongoing;
     }
 
     if srcSize == 0 {
@@ -8241,12 +8240,12 @@ unsafe fn ZSTD_writeEpilogue(
     let ostart = dst as *mut u8;
     let mut op = ostart;
 
-    if (*cctx).stage == ZSTDcs_created {
+    if (*cctx).stage == CompressionStage::Created {
         return Error::stage_wrong.to_error_code();
     }
 
     // special case: empty frame
-    if (*cctx).stage == ZSTDcs_init {
+    if (*cctx).stage == CompressionStage::Init {
         let fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0);
         let err_code = fhSize;
         if ERR_isError(err_code) {
@@ -8254,10 +8253,10 @@ unsafe fn ZSTD_writeEpilogue(
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         op = op.add(fhSize);
-        (*cctx).stage = ZSTDcs_ongoing;
+        (*cctx).stage = CompressionStage::Ongoing;
     }
 
-    if (*cctx).stage != ZSTDcs_ending {
+    if (*cctx).stage != CompressionStage::Ending {
         // write one last empty block, make it the "last" block
         let cBlockHeader24 = 1u32
             .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
@@ -8280,7 +8279,7 @@ unsafe fn ZSTD_writeEpilogue(
     }
 
     // return to "created but no init" status
-    (*cctx).stage = ZSTDcs_created;
+    (*cctx).stage = CompressionStage::Created;
     op.offset_from_unsigned(ostart)
 }
 
@@ -8474,7 +8473,7 @@ pub unsafe extern "C" fn ZSTD_compress(
 ) -> size_t {
     let mut result: size_t = 0;
     let mut ctxBody = ZSTD_CCtx_s {
-        stage: ZSTDcs_created,
+        stage: CompressionStage::Created,
         cParamsChanged: 0,
         bmi2: 0,
         requestedParams: ZSTD_CCtx_params_s {
