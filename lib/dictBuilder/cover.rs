@@ -271,9 +271,7 @@ unsafe extern "C" fn COVER_strict_cmp8(
 }
 
 crate::lib::polyfill::cfg_select! {
-    miri => {
-        /* a fallback implementation is used */
-    }
+    miri => { /* a fallback implementation is used */ }
     target_vendor = "apple" => {
         extern "C" {
             fn qsort_r(
@@ -307,9 +305,7 @@ crate::lib::polyfill::cfg_select! {
             );
         }
     }
-    _ => {
-        /* a fallback implementation is used */
-    }
+    _ => { /* a fallback implementation is used */ }
 }
 
 type __compar_d_fn_t = unsafe extern "C" fn(
@@ -327,6 +323,7 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
 
     debug_assert_eq!(ctx.suffixSize, ctx.suffix.len());
 
+    #[rustfmt::skip]
     crate::lib::polyfill::cfg_select! {
         all(not(miri), target_vendor = "apple") => {
             unsafe {
@@ -363,8 +360,8 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
         }
         _ => {
             ctx.suffix.sort_by(|lp, rp| {
-                let lhs = &ctx.samples[*lp as usize..][.. ctx.d as size_t];
-                let rhs = &ctx.samples[*rp as usize..][.. ctx.d as size_t];
+                let lhs = &ctx.samples[*lp as usize..][..ctx.d as size_t];
+                let rhs = &ctx.samples[*rp as usize..][..ctx.d as size_t];
 
                 lhs.cmp(rhs)
             });
