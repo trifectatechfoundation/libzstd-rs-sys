@@ -29,10 +29,10 @@ use crate::lib::compress::zstd_ldm::{
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::{
-    ZSTD_ParamSwitch_e, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_rawContent,
-    ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_frameProgression, ZSTD_inBuffer,
-    ZSTD_outBuffer_s, ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX,
-    ZSTD_CONTENTSIZE_UNKNOWN,
+    ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
+    ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
+    ZSTD_e_end, ZSTD_e_flush, ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer_s,
+    ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_UNKNOWN,
 };
 
 #[repr(C)]
@@ -193,10 +193,6 @@ struct ZSTDMT_jobDescription {
 }
 
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
-type ZSTD_EndDirective = core::ffi::c_uint;
-const ZSTD_e_end: ZSTD_EndDirective = 2;
-const ZSTD_e_flush: ZSTD_EndDirective = 1;
-const ZSTD_e_continue: ZSTD_EndDirective = 0;
 #[repr(C)]
 struct SyncPoint {
     toLoad: size_t,
