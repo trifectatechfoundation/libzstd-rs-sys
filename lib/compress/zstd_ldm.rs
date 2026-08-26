@@ -64,7 +64,7 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_count_2segments, ZSTD_dtlm_fast, ZSTD_matchState_dictMode, ZSTD_storeSeq,
+    DictTableLoadMethod, ZSTD_count, ZSTD_count_2segments, ZSTD_matchState_dictMode, ZSTD_storeSeq,
     ZSTD_tfp_forCCtx, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
     ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
@@ -744,7 +744,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
             ZSTD_fillHashTable(
                 ms,
                 iend as *const core::ffi::c_void,
-                ZSTD_dtlm_fast,
+                DictTableLoadMethod::Fast,
                 ZSTD_tfp_forCCtx,
             );
         }
@@ -752,7 +752,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
             ZSTD_fillDoubleHashTable(
                 ms,
                 iend as *const core::ffi::c_void,
-                ZSTD_dtlm_fast,
+                DictTableLoadMethod::Fast,
                 ZSTD_tfp_forCCtx,
             );
         }

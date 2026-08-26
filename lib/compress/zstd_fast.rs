@@ -9,9 +9,9 @@ use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_count_2segments, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast,
-    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCDict,
+    DictTableLoadMethod, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
+    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCDict,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -45,7 +45,7 @@ fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
 unsafe fn ZSTD_fillHashTableForCDict(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
@@ -62,8 +62,8 @@ unsafe fn ZSTD_fillHashTableForCDict(
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
         let hashAndTag = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         ZSTD_writeTaggedIndex(hashTable, hashAndTag, curr);
-        if dtlm != ZSTD_dtlm_fast {
-            // Only load extra positions for ZSTD_dtlm_full
+        if dtlm != DictTableLoadMethod::Fast {
+            // Only load extra positions for DictTableLoadMethod::Full
             for p in 1..fastHashFillStep {
                 let hashAndTag_0 = ZSTD_hashPtr(
                     ip.offset(p as isize) as *const core::ffi::c_void,
@@ -83,7 +83,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
 unsafe fn ZSTD_fillHashTableForCCtx(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
@@ -100,8 +100,8 @@ unsafe fn ZSTD_fillHashTableForCCtx(
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
         let hash0 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         *hashTable.add(hash0) = curr;
-        if dtlm != ZSTD_dtlm_fast {
-            // Only load extra positions for ZSTD_dtlm_full
+        if dtlm != DictTableLoadMethod::Fast {
+            // Only load extra positions for DictTableLoadMethod::Full
             for p in 1..fastHashFillStep {
                 let hash = ZSTD_hashPtr(
                     ip.offset(p as isize) as *const core::ffi::c_void,
@@ -121,7 +121,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
 pub unsafe fn ZSTD_fillHashTable(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
     tfp: ZSTD_tableFillPurpose_e,
 ) {
     if tfp == ZSTD_tfp_forCDict {
