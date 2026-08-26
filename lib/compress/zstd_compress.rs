@@ -320,9 +320,6 @@ pub type ZSTD_sequenceProducer_F = Option<
     ) -> size_t,
 >;
 
-pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
-pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
-pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
 pub type unalignArch = size_t;
 
 #[derive(Copy, Clone)]
@@ -783,17 +780,18 @@ use crate::lib::compress::zstdmt_compress::{
 };
 use crate::lib::zstd::{
     Format, ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_Sequence,
-    ZSTD_bm_buffered, ZSTD_bm_stable, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2,
-    ZSTD_bufferMode_e, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_customMem, ZSTD_dct_auto,
-    ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dfast, ZSTD_dictAttachPref_e,
-    ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef,
-    ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush, ZSTD_error_stabilityCondition_notRespected,
-    ZSTD_fast, ZSTD_frameParameters, ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer,
-    ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2, ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters,
-    ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CLEVEL_DEFAULT,
-    ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_START,
-    ZSTD_SKIPPABLEHEADERSIZE, ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX,
-    ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_SequenceFormat_e, ZSTD_bm_buffered, ZSTD_bm_stable, ZSTD_btlazy2, ZSTD_btopt,
+    ZSTD_btultra, ZSTD_btultra2, ZSTD_bufferMode_e, ZSTD_cParameter, ZSTD_compressionParameters,
+    ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dfast,
+    ZSTD_dictAttachPref_e, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy,
+    ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush,
+    ZSTD_error_stabilityCondition_notRespected, ZSTD_fast, ZSTD_frameParameters,
+    ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2,
+    ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sf_explicitBlockDelimiters,
+    ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN,
+    ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY,
+    ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE, ZSTD_VERSION_NUMBER,
+    ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
 };
 
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
