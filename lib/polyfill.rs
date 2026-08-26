@@ -48,14 +48,17 @@ unsafe fn prefetch_read_data_internal<T, const LOCALITY: i32>(ptr: *const T) {
         feature = "nightly" => {
             use core::hint::Locality;
 
-            core::hint::prefetch_read(ptr, const {
-                match LOCALITY {
-                    1 => Locality::L3,
-                    2 => Locality::L2,
-                    3 => Locality::L1,
-                    _ => panic!(),
-                }
-            })
+            core::hint::prefetch_read(
+                ptr,
+                const {
+                    match LOCALITY {
+                        1 => Locality::L3,
+                        2 => Locality::L2,
+                        3 => Locality::L1,
+                        _ => panic!(),
+                    }
+                },
+            )
         }
         target_arch = "x86_64" => {
             use core::arch::x86_64;
@@ -106,7 +109,7 @@ impl<T> PointerExt for *mut T {
 
 cfg_select! {
     feature = "nightly" => {
-        pub use core::hint::{likely, unlikely, cold_path};
+        pub use core::hint::{cold_path, likely, unlikely};
     }
     _ => {
         #[inline(always)]
