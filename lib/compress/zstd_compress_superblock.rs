@@ -14,10 +14,9 @@ use crate::lib::compress::huf_compress::{
     HUF_compress1X_usingCTable, HUF_compress4X_usingCTable, HUF_estimateCompressedSize,
 };
 use crate::lib::compress::zstd_compress::{
-    SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_MatchState_t,
-    ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
-    ZSTD_fseCTablesMetadata_t, ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS,
-    ZSTD_TARGETCBLOCKSIZE_MIN,
+    SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_buildBlockEntropyStats,
+    ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_fseCTablesMetadata_t,
+    ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_OptPrice_e, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_hufCTables_t,
@@ -91,13 +90,6 @@ pub const zcss_init: ZSTD_cStreamStage = 0;
 pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
 pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
 pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
-
-#[repr(C)]
-pub struct ZSTD_blockState_t {
-    pub prevCBlock: *mut ZSTD_compressedBlockState_t,
-    pub nextCBlock: *mut ZSTD_compressedBlockState_t,
-    pub matchState: ZSTD_MatchState_t,
-}
 
 #[repr(C)]
 pub struct optState_t {
