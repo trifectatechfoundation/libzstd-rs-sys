@@ -8,9 +8,9 @@ use crate::lib::common::mem::{MEM_read32, MEM_read64};
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_count_2segments, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast,
-    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCDict,
+    DictTableLoadMethod, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
+    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCDict,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -43,7 +43,7 @@ fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
 unsafe fn ZSTD_fillDoubleHashTableForCDict(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
@@ -75,8 +75,8 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
             if i == 0 || *hashLarge.add(lgHashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS) == 0 {
                 ZSTD_writeTaggedIndex(hashLarge, lgHashAndTag, curr.wrapping_add(i));
             }
-            // Only load extra positions for ZSTD_dtlm_full
-            if dtlm == ZSTD_dtlm_fast {
+            // Only load extra positions for DictTableLoadMethod::Full
+            if dtlm == DictTableLoadMethod::Fast {
                 break;
             }
         }
@@ -87,7 +87,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
 unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
@@ -118,8 +118,8 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
             if i == 0 || *hashLarge.add(lgHash) == 0 {
                 *hashLarge.add(lgHash) = curr.wrapping_add(i);
             }
-            // Only load extra positions for ZSTD_dtlm_full
-            if dtlm == ZSTD_dtlm_fast {
+            // Only load extra positions for DictTableLoadMethod::Full
+            if dtlm == DictTableLoadMethod::Fast {
                 break;
             }
         }
@@ -130,7 +130,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
 pub unsafe fn ZSTD_fillDoubleHashTable(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-    dtlm: ZSTD_dictTableLoadMethod_e,
+    dtlm: DictTableLoadMethod,
     tfp: ZSTD_tableFillPurpose_e,
 ) {
     if tfp == ZSTD_tfp_forCDict {

@@ -22,7 +22,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_cpm_noAttachDict, ZSTD_dtlm_fast, ZSTD_window_hasExtDict, ZSTD_window_update,
+    DictTableLoadMethod, ZSTD_cpm_noAttachDict, ZSTD_window_hasExtDict, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -878,7 +878,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                             core::ptr::null(),
                             0,
                             ZSTD_dct_auto,
-                            ZSTD_dtlm_fast,
+                            DictTableLoadMethod::Fast,
                             (*job).cdict,
                             &jobParams,
                             (*job).fullFrameSize,
@@ -934,7 +934,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                         (*job).prefix.start,
                                         (*job).prefix.size,
                                         ZSTD_dct_rawContent,
-                                        ZSTD_dtlm_fast,
+                                        DictTableLoadMethod::Fast,
                                         core::ptr::null(),
                                         &jobParams,
                                         pledgedSrcSize as core::ffi::c_ulonglong,

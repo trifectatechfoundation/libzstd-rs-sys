@@ -188,9 +188,14 @@ pub struct ZSTD_blockSplitCtx {
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
-pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
-pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum DictTableLoadMethod {
+    #[default]
+    Fast = 0,
+    Full = 1,
+}
+
 pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
 pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
 pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
