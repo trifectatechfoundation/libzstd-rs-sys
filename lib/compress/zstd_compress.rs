@@ -86,12 +86,6 @@ pub struct ZSTD_fseCTablesMetadata_t {
     pub lastCountSize: size_t,
 }
 
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTablesMetadata_t {
@@ -721,11 +715,12 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
-    bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
-    LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
-    MaxLL, MaxML, MaxOff, MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog,
-    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE,
-    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    bt_compressed, bt_raw, bt_rle, repStartValue, set_basic, set_compressed, set_repeat, set_rle,
+    DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog, LitHufLog, Litbits,
+    MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, MaxSeq,
+    OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType_e, ZSTD_cpuSupportsBmi2,
+    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,

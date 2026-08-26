@@ -7,18 +7,15 @@ use crate::lib::common::huf::{
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
-use crate::lib::common::zstd_internal::LitHufLog;
+use crate::lib::common::zstd_internal::{
+    set_basic, set_compressed, set_repeat, set_rle, LitHufLog,
+};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hufCTables_t;
 use crate::lib::zstd::{ZSTD_btultra, ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
 pub type huf_compress_f = Option<
     unsafe extern "C" fn(
         *mut core::ffi::c_void,

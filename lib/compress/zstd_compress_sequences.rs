@@ -9,7 +9,10 @@ use crate::lib::common::fse::{
     FSE_initCState2, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
 };
 use crate::lib::common::mem::MEM_32bits;
-use crate::lib::common::zstd_internal::{LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog};
+use crate::lib::common::zstd_internal::{
+    set_basic, set_compressed, set_repeat, set_rle, LLFSELog, LL_bits, MLFSELog, ML_bits,
+    OffFSELog, SymbolEncodingType_e,
+};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_writeNCount,
@@ -18,11 +21,6 @@ use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 use crate::ZSTD_isError;
 
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
 pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
 pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
 pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
