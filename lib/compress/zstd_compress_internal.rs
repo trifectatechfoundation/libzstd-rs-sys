@@ -6,8 +6,8 @@ use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
-    SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_dedicatedDictSearch, ZSTD_dictMatchState,
-    ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict, ZSTD_window_t, HASH_READ_SIZE,
+    SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_compressedBlockState_t, ZSTD_dedicatedDictSearch,
+    ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict, ZSTD_window_t, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
@@ -75,6 +75,13 @@ pub struct ZSTD_match_t {
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
+
+#[repr(C)]
+pub struct ZSTD_blockState_t {
+    pub prevCBlock: *mut ZSTD_compressedBlockState_t,
+    pub nextCBlock: *mut ZSTD_compressedBlockState_t,
+    pub matchState: ZSTD_MatchState_t,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
