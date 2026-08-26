@@ -115,6 +115,13 @@ pub struct ZSTD_blockSplitCtx {
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
+pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
+pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
+pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
+pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
+pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
+pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(crate) struct repcodes_s {

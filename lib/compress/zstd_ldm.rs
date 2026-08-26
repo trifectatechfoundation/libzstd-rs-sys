@@ -70,12 +70,6 @@ pub struct ldmParams_t {
     pub windowLog: u32,
 }
 
-pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
-pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
-pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
-pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
-pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -108,9 +102,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_window_enforceMaxDist,
-    ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_dtlm_fast, ZSTD_entropyCTables_t,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_tfp_forCCtx,
+    ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;

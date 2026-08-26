@@ -21,12 +21,6 @@ pub struct optState_t {
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
 
-pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
-pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
-pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
-pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
-pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 use libc::size_t;
@@ -35,9 +29,10 @@ use crate::lib::common::mem::{MEM_read32, MEM_read64};
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
-    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_match_t, ZSTD_storeSeq,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast,
+    ZSTD_entropyCTables_t, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
+    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_tableFillPurpose_e,
+    ZSTD_tfp_forCDict,
 };
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
 
