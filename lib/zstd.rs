@@ -112,6 +112,44 @@ pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
 /// Collect more data, encoder decides when to output compressed result, for optimal compression ratio.
 pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_Sequence {
+    /// The offset of the match. (NOT the same as the offset code)
+    /// If offset == 0 and matchLength == 0, this sequence represents the last
+    /// literals in the block of litLength size.
+    pub offset: core::ffi::c_uint,
+    /// Literal length of the sequence.
+    pub litLength: core::ffi::c_uint,
+    /// Match length of the sequence.
+    ///
+    /// Note: Users of this API may provide a sequence with matchLength == litLength == offset == 0.
+    /// In this case, we will treat the sequence as a marker for a block boundary.
+    pub matchLength: core::ffi::c_uint,
+    /// Represents which repeat offset is represented by the field 'offset'.
+    /// Ranges from `[0, 3]`.
+    ///
+    /// Repeat offsets are essentially previous offsets from previous sequences sorted in
+    /// recency order. For more detail, see doc/zstd_compression_format.md
+    ///
+    /// If rep == 0, then 'offset' does not contain a repeat offset.
+    /// If rep > 0:
+    ///  If litLength != 0:
+    ///      rep == 1 --> offset == repeat_offset_1
+    ///      rep == 2 --> offset == repeat_offset_2
+    ///      rep == 3 --> offset == repeat_offset_3
+    ///  If litLength == 0:
+    ///      rep == 1 --> offset == repeat_offset_2
+    ///      rep == 2 --> offset == repeat_offset_3
+    ///      rep == 3 --> offset == repeat_offset_1 - 1
+    ///
+    /// Note: This field is optional. `ZSTD_generateSequences()` will calculate the value of
+    /// 'rep', but repeat offsets do not necessarily need to be calculated from an external
+    /// sequence provider perspective. For example, `ZSTD_compressSequences()` does not
+    /// use this 'rep' field at all (as of now).
+    pub rep: core::ffi::c_uint,
+}
+
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_compressionParameters {

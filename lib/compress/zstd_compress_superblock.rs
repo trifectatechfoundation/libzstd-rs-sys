@@ -29,15 +29,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_Sequence {
-    pub offset: core::ffi::c_uint,
-    pub litLength: core::ffi::c_uint,
-    pub matchLength: core::ffi::c_uint,
-    pub rep: core::ffi::c_uint,
-}
+use crate::lib::zstd::ZSTD_Sequence;
 
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 
