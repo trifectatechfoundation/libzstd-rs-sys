@@ -29,7 +29,6 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::ZSTD_Sequence;
 
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 
@@ -77,20 +76,6 @@ pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
 pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
 pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
 pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
-
-pub type ZSTD_sequenceProducer_F = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        *mut ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_int,
-        size_t,
-    ) -> size_t,
->;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

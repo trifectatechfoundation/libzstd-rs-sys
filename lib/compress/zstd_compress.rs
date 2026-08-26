@@ -306,20 +306,6 @@ pub struct ZSTD_CCtx_params_s {
     pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
 }
 
-pub type ZSTD_sequenceProducer_F = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        *mut ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_int,
-        size_t,
-    ) -> size_t,
->;
-
 pub type unalignArch = size_t;
 
 #[derive(Copy, Clone)]
@@ -787,11 +773,12 @@ use crate::lib::zstd::{
     ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush,
     ZSTD_error_stabilityCondition_notRespected, ZSTD_fast, ZSTD_frameParameters,
     ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2,
-    ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sf_explicitBlockDelimiters,
-    ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN,
-    ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY,
-    ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE, ZSTD_VERSION_NUMBER,
-    ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sequenceProducer_F,
+    ZSTD_sf_explicitBlockDelimiters, ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
+    ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER,
+    ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE,
+    ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32,
+    ZSTD_WINDOWLOG_MAX_64,
 };
 
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
