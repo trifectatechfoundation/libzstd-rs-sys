@@ -445,12 +445,6 @@ pub const ZSTD_resetTarget_CDict: ZSTD_resetTarget_e = 0;
 pub type ZSTD_indexResetPolicy_e = core::ffi::c_uint;
 pub const ZSTDirp_reset: ZSTD_indexResetPolicy_e = 1;
 pub const ZSTDirp_continue: ZSTD_indexResetPolicy_e = 0;
-pub type ZSTD_CParamMode_e = core::ffi::c_uint;
-pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
-pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
-pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
-pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -804,8 +798,9 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_OptPrice_e, ZSTD_blockSplitCtx,
-    ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count, ZSTD_dictMode_e,
+    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_CParamMode_e, ZSTD_OptPrice_e,
+    ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict,
+    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
     ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t,
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
     ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
