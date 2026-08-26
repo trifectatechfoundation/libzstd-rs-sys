@@ -20,22 +20,6 @@ pub struct optState_t {
 }
 
 #[repr(C)]
-pub struct ZSTD_entropyCTables_t {
-    pub huf: ZSTD_hufCTables_t,
-    pub fse: ZSTD_fseCTables_t,
-}
-
-#[repr(C)]
-pub struct ZSTD_fseCTables_t {
-    pub offcodeCTable: [FSE_CTable; 193],
-    pub matchlengthCTable: [FSE_CTable; 363],
-    pub litlengthCTable: [FSE_CTable; 329],
-    pub offcode_repeatMode: FSE_repeat,
-    pub matchlength_repeatMode: FSE_repeat,
-    pub litlength_repeatMode: FSE_repeat,
-}
-
-#[repr(C)]
 pub struct ZSTD_match_t {
     pub off: u32,
     pub len: u32,
@@ -123,7 +107,6 @@ pub struct ldmRollingHashState_t {
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{
@@ -131,8 +114,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_hufCTables_t, ZSTD_matchState_dictMode,
-    ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
     ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;

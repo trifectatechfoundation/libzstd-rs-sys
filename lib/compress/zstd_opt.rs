@@ -1,19 +1,3 @@
-#[repr(C)]
-pub struct ZSTD_entropyCTables_t {
-    pub huf: ZSTD_hufCTables_t,
-    pub fse: ZSTD_fseCTables_t,
-}
-
-#[repr(C)]
-pub struct ZSTD_fseCTables_t {
-    pub offcodeCTable: [FSE_CTable; 193],
-    pub matchlengthCTable: [FSE_CTable; 363],
-    pub litlengthCTable: [FSE_CTable; 329],
-    pub offcode_repeatMode: FSE_repeat,
-    pub matchlength_repeatMode: FSE_repeat,
-    pub litlength_repeatMode: FSE_repeat,
-}
-
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -48,9 +32,7 @@ pub const base_0possible: base_directive_e = 0;
 use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
-use crate::lib::common::fse::{
-    FSE_CState_t, FSE_CTable, FSE_getMaxNbBits, FSE_initCState, FSE_repeat,
-};
+use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits, FSE_initCState};
 use crate::lib::common::huf::HUF_repeat_valid;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{
@@ -64,8 +46,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, zop_predef, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_hufCTables_t,
-    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
+    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_updateRep,
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 

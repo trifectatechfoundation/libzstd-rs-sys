@@ -200,24 +200,6 @@ pub struct ZSTD_compressedBlockState_t {
     pub rep: [u32; 3],
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyCTables_t {
-    pub huf: ZSTD_hufCTables_t,
-    pub fse: ZSTD_fseCTables_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_fseCTables_t {
-    pub offcodeCTable: [FSE_CTable; 193],
-    pub matchlengthCTable: [FSE_CTable; 363],
-    pub litlengthCTable: [FSE_CTable; 329],
-    pub offcode_repeatMode: FSE_repeat,
-    pub matchlength_repeatMode: FSE_repeat,
-    pub litlength_repeatMode: FSE_repeat,
-}
-
 #[repr(C)]
 pub struct ZSTD_MatchState_t {
     pub window: ZSTD_window_t,
@@ -871,11 +853,12 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength,
-    ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none,
-    ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
+    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
