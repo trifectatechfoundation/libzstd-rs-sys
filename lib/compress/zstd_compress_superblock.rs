@@ -87,9 +87,6 @@ pub type ZSTD_cStreamStage = core::ffi::c_uint;
 pub const zcss_flush: ZSTD_cStreamStage = 2;
 pub const zcss_load: ZSTD_cStreamStage = 1;
 pub const zcss_init: ZSTD_cStreamStage = 0;
-pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
-pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
-pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
 
 #[repr(C)]
 pub struct optState_t {
