@@ -161,12 +161,6 @@ pub struct ZSTD_frameParameters {
     pub noDictIDFlag: core::ffi::c_int,
 }
 
-pub type ZSTD_compressionStage_e = core::ffi::c_uint;
-pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
-pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
-pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
-pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_SequenceLength {
