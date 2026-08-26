@@ -8,8 +8,9 @@ use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
-    SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_Sequence, ZSTD_compressedBlockState_t,
-    ZSTD_entropyCTablesMetadata_t, ZSTD_window_t, HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
+    ParamSwitch, SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_Sequence,
+    ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t,
+    HASH_READ_SIZE, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
@@ -109,6 +110,27 @@ pub struct ZSTD_match_t {
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
+
+#[repr(C)]
+pub struct optState_t {
+    pub litFreq: *mut core::ffi::c_uint,
+    pub litLengthFreq: *mut core::ffi::c_uint,
+    pub matchLengthFreq: *mut core::ffi::c_uint,
+    pub offCodeFreq: *mut core::ffi::c_uint,
+    pub matchTable: *mut ZSTD_match_t,
+    pub priceTable: *mut ZSTD_optimal_t,
+    pub litSum: u32,
+    pub litLengthSum: u32,
+    pub matchLengthSum: u32,
+    pub offCodeSum: u32,
+    pub litSumBasePrice: u32,
+    pub litLengthSumBasePrice: u32,
+    pub matchLengthSumBasePrice: u32,
+    pub offCodeSumBasePrice: u32,
+    pub priceType: ZSTD_OptPrice_e,
+    pub symbolCosts: *const ZSTD_entropyCTables_t,
+    pub literalCompressionMode: ParamSwitch,
+}
 
 #[repr(C)]
 pub struct ZSTD_blockState_t {
