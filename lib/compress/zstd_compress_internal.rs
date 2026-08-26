@@ -20,6 +20,11 @@ pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
 pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
 pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
 
+pub type ZSTD_cStreamStage = core::ffi::c_uint;
+pub const zcss_flush: ZSTD_cStreamStage = 2;
+pub const zcss_load: ZSTD_cStreamStage = 1;
+pub const zcss_init: ZSTD_cStreamStage = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
