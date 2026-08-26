@@ -71,11 +71,6 @@ pub struct ZSTD_inBuffer_s {
     pub pos: size_t,
 }
 
-pub type ZSTD_cStreamStage = core::ffi::c_uint;
-pub const zcss_flush: ZSTD_cStreamStage = 2;
-pub const zcss_load: ZSTD_cStreamStage = 1;
-pub const zcss_init: ZSTD_cStreamStage = 0;
-
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
