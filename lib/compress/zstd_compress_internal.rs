@@ -204,11 +204,15 @@ pub enum TableFillPurpose {
     ForCDict = 1,
 }
 
-pub type ZSTD_dictMode_e = core::ffi::c_uint;
-pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
-pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
-pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
-pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
+pub enum DictMode {
+    #[default]
+    NoDict = 0,
+    ExtDict = 1,
+    DictMatchState = 2,
+    DedicatedDictSearch = 3,
+}
 
 pub type ZSTD_CParamMode_e = core::ffi::c_uint;
 /// `ZSTD_getCParams`, `ZSTD_getParams`, `ZSTD_adjustParams`.
@@ -220,11 +224,11 @@ pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
 /// In this mode we take both the source size and the dictionary size
 /// into account when selecting and adjusting the parameters.
 pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
-/// Compression with `ZSTD_dictMatchState` or `ZSTD_dedicatedDictSearch`.
+/// Compression with [`DictMode::DictMatchState`] or [`DictMode::DedicatedDictSearch`].
 /// In this mode we only take the srcSize into account when selecting
 /// and adjusting parameters.
 pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
-/// Compression with `ZSTD_noDict` or `ZSTD_extDict`.
+/// Compression with [`DictMode::NoDict`] or [`DictMode::ExtDict`].
 /// In this mode we use both the srcSize and the dictSize
 /// when selecting and adjusting parameters.
 pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
@@ -582,18 +586,18 @@ pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
-pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    (if ZSTD_window_hasExtDict((*ms).window) {
-        ZSTD_extDict as core::ffi::c_int
+pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> DictMode {
+    if ZSTD_window_hasExtDict((*ms).window) {
+        DictMode::ExtDict
     } else if !((*ms).dictMatchState).is_null() {
         if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
-            ZSTD_dedicatedDictSearch as core::ffi::c_int
+            DictMode::DedicatedDictSearch
         } else {
-            ZSTD_dictMatchState as core::ffi::c_int
+            DictMode::DictMatchState
         }
     } else {
-        ZSTD_noDict as core::ffi::c_int
-    }) as ZSTD_dictMode_e
+        DictMode::NoDict
+    }
 }
 
 /// Updates the window by appending [src, src + srcSize) to the window.
