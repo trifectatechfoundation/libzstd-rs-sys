@@ -16,7 +16,7 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_buildBlockEntropyStats,
     ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_fseCTablesMetadata_t,
-    ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS, ZSTD_TARGETCBLOCKSIZE_MIN,
+    ZSTD_hufCTablesMetadata_t, ZSTD_optimal_t, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_OptPrice_e, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_hufCTables_t,
@@ -37,18 +37,6 @@ pub struct ZSTD_Sequence {
     pub litLength: core::ffi::c_uint,
     pub matchLength: core::ffi::c_uint,
     pub rep: core::ffi::c_uint,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_blockSplitCtx {
-    pub fullSeqStoreChunk: SeqStore_t,
-    pub firstHalfSeqStore: SeqStore_t,
-    pub secondHalfSeqStore: SeqStore_t,
-    pub currSeqStore: SeqStore_t,
-    pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
-    pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 
 pub type SymbolEncodingType_e = core::ffi::c_uint;
