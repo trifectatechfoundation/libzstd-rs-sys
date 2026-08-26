@@ -119,9 +119,13 @@ pub struct ZSTD_match_t {
     pub len: u32,
 }
 
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum OptPrice {
+    #[default]
+    Dynamic = 0,
+    Predef = 1,
+}
 
 #[repr(C)]
 pub struct optState_t {
@@ -139,7 +143,7 @@ pub struct optState_t {
     pub litLengthSumBasePrice: u32,
     pub matchLengthSumBasePrice: u32,
     pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
+    pub priceType: OptPrice,
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ParamSwitch,
 }
