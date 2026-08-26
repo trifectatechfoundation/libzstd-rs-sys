@@ -76,15 +76,22 @@ jobs:
           - target: "aarch64-pc-windows-msvc"
             rust: stable
             os: windows-11-arm
+
+          - target: "x86_64-unknown-linux-gnu"
+            rust: msrv
+            os: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+      - name: Set target rust version
+        if: ${{ matrix.rust == 'msrv' }}
+        run: echo "MSRV=$(grep rust-version Cargo.toml | grep MSRV | awk -F '\"' '{print $2}')" >> $GITHUB_ENV
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
-          toolchain: stable
+          toolchain: ${{ env.MSRV || matrix.rust || 'stable' }}
           targets: "${{ matrix.target }}"
       - name: target
         run: "rustc -vV | sed -n 's|host: ||p'"
