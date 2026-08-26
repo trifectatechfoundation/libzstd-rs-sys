@@ -26,10 +26,14 @@ pub enum CompressionStage {
     Ending = 3,
 }
 
-pub type ZSTD_cStreamStage = core::ffi::c_uint;
-pub const zcss_flush: ZSTD_cStreamStage = 2;
-pub const zcss_load: ZSTD_cStreamStage = 1;
-pub const zcss_init: ZSTD_cStreamStage = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum StreamStage {
+    #[default]
+    Init = 0,
+    Load = 1,
+    Flush = 2,
+}
 
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 
