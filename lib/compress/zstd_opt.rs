@@ -1,9 +1,3 @@
-pub type ZSTD_dictMode_e = core::ffi::c_uint;
-pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
-pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
-pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
-pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
-
 pub type ZSTD_getAllMatchesFn = Option<
     unsafe fn(
         *mut ZSTD_match_t,
@@ -46,8 +40,9 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, zop_predef, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
-    ZSTD_storeSeq, ZSTD_updateRep,
+    ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_extDict, ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr,
+    ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_noDict, ZSTD_storeSeq,
+    ZSTD_updateRep,
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
