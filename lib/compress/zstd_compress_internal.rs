@@ -14,6 +14,12 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
 
+pub type ZSTD_compressionStage_e = core::ffi::c_uint;
+pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
+pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
+pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
+pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {

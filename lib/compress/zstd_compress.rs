@@ -384,11 +384,6 @@ pub type ZSTD_sequenceProducer_F = Option<
 pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-pub type ZSTD_compressionStage_e = core::ffi::c_uint;
-pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
-pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
-pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
-pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
 pub type unalignArch = size_t;
 
 #[derive(Copy, Clone)]
@@ -789,16 +784,16 @@ use crate::lib::compress::huf_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e,
-    ZSTD_OptPrice_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count,
-    ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
-    ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full,
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
-    ZSTDb_buffered, ZSTDb_not_buffered, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_OptPrice_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_buffered_policy_e,
+    ZSTD_compressionStage_e, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
+    ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e,
+    ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
+    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
+    ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq,
+    ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict,
+    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
+    ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered, ZSTDcs_created, ZSTDcs_ending,
+    ZSTDcs_init, ZSTDcs_ongoing, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
