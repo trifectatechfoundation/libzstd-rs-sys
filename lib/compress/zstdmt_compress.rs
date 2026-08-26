@@ -21,7 +21,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
     ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
-use crate::lib::compress::zstd_compress_internal::{ZSTD_window_hasExtDict, ZSTD_window_update};
+use crate::lib::compress::zstd_compress_internal::{
+    ZSTD_dtlm_fast, ZSTD_window_hasExtDict, ZSTD_window_update,
+};
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
@@ -195,9 +197,6 @@ type ZSTD_EndDirective = core::ffi::c_uint;
 const ZSTD_e_end: ZSTD_EndDirective = 2;
 const ZSTD_e_flush: ZSTD_EndDirective = 1;
 const ZSTD_e_continue: ZSTD_EndDirective = 0;
-type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
-const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
-
 #[repr(C)]
 struct SyncPoint {
     toLoad: size_t,
