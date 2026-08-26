@@ -64,8 +64,8 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, ZSTD_count, ZSTD_count_2segments, ZSTD_matchState_dictMode, ZSTD_storeSeq,
-    ZSTD_tfp_forCCtx, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
     ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
@@ -745,7 +745,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
                 ms,
                 iend as *const core::ffi::c_void,
                 DictTableLoadMethod::Fast,
-                ZSTD_tfp_forCCtx,
+                TableFillPurpose::ForCCtx,
             );
         }
         2 => {
@@ -753,7 +753,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
                 ms,
                 iend as *const core::ffi::c_void,
                 DictTableLoadMethod::Fast,
-                ZSTD_tfp_forCCtx,
+                TableFillPurpose::ForCCtx,
             );
         }
         3 | 4 | 5 | 6 | 7 | 8 | 9 | _ => {}

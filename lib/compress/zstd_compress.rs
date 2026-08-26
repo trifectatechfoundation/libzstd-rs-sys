@@ -700,14 +700,14 @@ use crate::lib::compress::huf_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, repcodes_s, BufferedPolicy, CompressionStage, DictTableLoadMethod, LongLengthType,
-    OptPrice, Repcodes_t, SeqCollector, StreamStage, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e,
-    ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
-    ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e, ZSTD_entropyCTables_t,
-    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
-    ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict,
-    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    OptPrice, Repcodes_t, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
+    ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_cpm_attachDict,
+    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
+    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -7525,7 +7525,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
     dtlm: DictTableLoadMethod,
-    tfp: ZSTD_tableFillPurpose_e,
+    tfp: TableFillPurpose,
 ) -> size_t {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
@@ -7546,7 +7546,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
 
     let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
-    if CDictTaggedIndices && tfp == ZSTD_tfp_forCDict {
+    if CDictTaggedIndices && tfp == TableFillPurpose::ForCDict {
         let shortCacheMaxDictSize = ((1 as core::ffi::c_uint) << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
             .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
         maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
@@ -7845,7 +7845,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
     dtlm: DictTableLoadMethod,
-    tfp: ZSTD_tableFillPurpose_e,
+    tfp: TableFillPurpose,
     workspace: *mut core::ffi::c_void,
 ) -> size_t {
     let mut dictPtr = dict as *const u8;
@@ -7896,7 +7896,7 @@ unsafe fn ZSTD_compress_insertDictionary(
     dictSize: size_t,
     dictContentType: ZSTD_dictContentType_e,
     dtlm: DictTableLoadMethod,
-    tfp: ZSTD_tableFillPurpose_e,
+    tfp: TableFillPurpose,
     workspace: *mut core::ffi::c_void,
 ) -> size_t {
     if dict.is_null() || dictSize < 8 {
@@ -7989,7 +7989,7 @@ unsafe fn ZSTD_compressBegin_internal(
             (*cdict).dictContentSize,
             (*cdict).dictContentType,
             dtlm,
-            ZSTD_tfp_forCCtx,
+            TableFillPurpose::ForCCtx,
             (*cctx).tmpWorkspace,
         )
     } else {
@@ -8003,7 +8003,7 @@ unsafe fn ZSTD_compressBegin_internal(
             dictSize,
             dictContentType,
             dtlm,
-            ZSTD_tfp_forCCtx,
+            TableFillPurpose::ForCCtx,
             (*cctx).tmpWorkspace,
         )
     };
@@ -9015,7 +9015,7 @@ unsafe fn ZSTD_initCDict_internal(
         (*cdict).dictContentSize,
         dictContentType,
         DictTableLoadMethod::Full,
-        ZSTD_tfp_forCDict,
+        TableFillPurpose::ForCDict,
         (*cdict).entropyWorkspace as *mut core::ffi::c_void,
     );
     let err_code_0 = dictID;
