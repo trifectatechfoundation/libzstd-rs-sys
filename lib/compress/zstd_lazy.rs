@@ -21,12 +21,6 @@ pub struct optState_t {
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
 
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -47,7 +41,7 @@ use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_op
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
     ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hashPtrSalted,
-    ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};

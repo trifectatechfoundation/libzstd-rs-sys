@@ -41,13 +41,13 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    optState_t, rawSeq, ParamSwitch, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t,
-    ZSTD_optimal_t, ZSTD_resetSeqStore,
+    optState_t, rawSeq, ParamSwitch, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t,
+    ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, zop_predef, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
-    ZSTD_updateRep,
+    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
+    ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 

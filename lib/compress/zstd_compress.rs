@@ -291,13 +291,6 @@ pub struct ZSTD_optimal_t {
     pub rep: [u32; 3],
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_window_t {
@@ -856,7 +849,7 @@ use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_entropyCTables_t,
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
     ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
     ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };

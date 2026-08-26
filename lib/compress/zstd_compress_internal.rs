@@ -63,6 +63,15 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqLen
 }
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_match_t {
+    /// Offset sumtype code for the match, using `ZSTD_storeSeq()` format
+    pub off: u32,
+    /// Raw length of match
+    pub len: u32,
+}
+
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
