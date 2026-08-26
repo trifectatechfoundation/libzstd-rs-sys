@@ -5,7 +5,7 @@ exclude = [ "fuzz" ]
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.95"
+rust-version = "1.95" # MSRV
 
 [package]
 name = "libzstd-rs-sys"
