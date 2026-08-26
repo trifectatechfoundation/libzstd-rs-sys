@@ -30,61 +30,6 @@ use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
 
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const core::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
-
-type XXH64_hash_t = u64;
-type XXH32_hash_t = u32;
-
-#[repr(C)]
-pub struct ZSTD_cwksp {
-    pub workspace: *mut core::ffi::c_void,
-    pub workspaceEnd: *mut core::ffi::c_void,
-    pub objectEnd: *mut core::ffi::c_void,
-    pub tableEnd: *mut core::ffi::c_void,
-    pub tableValidEnd: *mut core::ffi::c_void,
-    pub allocStart: *mut core::ffi::c_void,
-    pub initOnceStart: *mut core::ffi::c_void,
-    pub allocFailed: u8,
-    pub workspaceOversizedDuration: core::ffi::c_int,
-    pub phase: ZSTD_cwksp_alloc_phase_e,
-    pub isStatic: ZSTD_cwksp_static_alloc_e,
-}
-
-pub type ZSTD_cwksp_static_alloc_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_static_alloc: ZSTD_cwksp_static_alloc_e = 1;
-pub const ZSTD_cwksp_dynamic_alloc: ZSTD_cwksp_static_alloc_e = 0;
-pub type ZSTD_cwksp_alloc_phase_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
-pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
-pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
-pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameParameters {
-    pub contentSizeFlag: core::ffi::c_int,
-    pub checksumFlag: core::ffi::c_int,
-    pub noDictIDFlag: core::ffi::c_int,
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_SequenceLength {

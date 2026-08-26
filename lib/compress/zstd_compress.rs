@@ -306,8 +306,6 @@ pub struct ZSTD_CCtx_params_s {
     pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
 }
 
-pub type unalignArch = size_t;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_symbolEncodingTypeStats_t {
@@ -319,7 +317,6 @@ pub struct ZSTD_symbolEncodingTypeStats_t {
     pub longOffsets: bool,
 }
 
-pub type S16 = i16;
 pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
 pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
 pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
