@@ -9,9 +9,9 @@ use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
-    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
-    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCDict,
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
+    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
+    ZSTD_storeSeq,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -122,9 +122,9 @@ pub unsafe fn ZSTD_fillHashTable(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
     dtlm: DictTableLoadMethod,
-    tfp: ZSTD_tableFillPurpose_e,
+    tfp: TableFillPurpose,
 ) {
-    if tfp == ZSTD_tfp_forCDict {
+    if tfp == TableFillPurpose::ForCDict {
         ZSTD_fillHashTableForCDict(ms, end, dtlm);
     } else {
         ZSTD_fillHashTableForCCtx(ms, end, dtlm);
