@@ -5,9 +5,10 @@ use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
-    bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
-    ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
-    MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
+    bt_compressed, bt_raw, set_basic, set_compressed, set_repeat, set_rle, DefaultMaxOff, LL_bits,
+    LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML,
+    MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType_e, MINMATCH,
+    ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -38,11 +39,6 @@ pub struct ZSTD_Sequence {
     pub rep: core::ffi::c_uint,
 }
 
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 
 #[repr(C)]

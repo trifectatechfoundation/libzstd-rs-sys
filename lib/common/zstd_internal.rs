@@ -27,6 +27,12 @@ pub(crate) const bt_raw: blockType_e = 0;
 pub(crate) const bt_rle: blockType_e = 1;
 pub(crate) const bt_compressed: blockType_e = 2;
 
+pub(crate) type SymbolEncodingType_e = core::ffi::c_uint;
+pub(crate) const set_basic: SymbolEncodingType_e = 0;
+pub(crate) const set_rle: SymbolEncodingType_e = 1;
+pub(crate) const set_compressed: SymbolEncodingType_e = 2;
+pub(crate) const set_repeat: SymbolEncodingType_e = 3;
+
 pub(crate) const MINMATCH: core::ffi::c_int = 3;
 
 pub(crate) const Litbits: u32 = 8;
