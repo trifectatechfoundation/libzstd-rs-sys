@@ -34,13 +34,11 @@ use libc::size_t;
 
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
-use crate::lib::compress::zstd_compress::{
-    SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
-};
+use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
     ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq,
+    ZSTD_match_t, ZSTD_storeSeq,
 };
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
 

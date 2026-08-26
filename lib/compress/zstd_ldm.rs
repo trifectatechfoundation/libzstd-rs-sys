@@ -19,12 +19,6 @@ pub struct optState_t {
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
 
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
@@ -115,8 +109,9 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_entropyCTables_t,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
-    ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_window_enforceMaxDist,
+    ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
