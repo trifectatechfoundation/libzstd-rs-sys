@@ -218,13 +218,6 @@ pub struct ZSTD_fseCTables_t {
     pub litlength_repeatMode: FSE_repeat,
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
-    pub repeatMode: HUF_repeat,
-}
-
 #[repr(C)]
 pub struct ZSTD_MatchState_t {
     pub window: ZSTD_window_t,
@@ -850,9 +843,8 @@ use crate::lib::common::fse::{
     FSE_CTable, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
 };
 use crate::lib::common::huf::{
-    HUF_CElt, HUF_flags_optimalDepth, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_CTABLE_SIZE_ST, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
-    HUF_WORKSPACE_SIZE,
+    HUF_flags_optimalDepth, HUF_repeat_check, HUF_repeat_none, HUF_repeat_valid,
+    HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
@@ -880,10 +872,10 @@ use crate::lib::compress::huf_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, zop_dynamic, Repcodes_t, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength,
-    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none,
+    ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_storeSeqOnly,
+    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
+    ZSTD_window_update, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

@@ -1,4 +1,5 @@
 use crate::internal::MEM_readLE32;
+use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST};
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
@@ -9,6 +10,13 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_hufCTables_t {
+    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
+    pub repeatMode: HUF_repeat,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
