@@ -39,10 +39,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, OptPrice, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_dictMatchState, ZSTD_dictMode_e, ZSTD_extDict, ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr,
-    ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_noDict, ZSTD_storeSeq,
-    ZSTD_updateRep,
+    optState_t, repcodes_s, DictMode, OptPrice, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
+    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
+    ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
@@ -704,7 +703,7 @@ unsafe fn ZSTD_updateTree_internal(
     ip: *const u8,
     iend: *const u8,
     mls: u32,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) {
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
@@ -717,7 +716,7 @@ unsafe fn ZSTD_updateTree_internal(
             iend,
             target,
             mls,
-            dictMode == ZSTD_extDict,
+            dictMode == DictMode::ExtDict,
         );
         idx = idx.wrapping_add(forward);
     }
@@ -726,7 +725,7 @@ unsafe fn ZSTD_updateTree_internal(
 }
 
 pub unsafe fn ZSTD_updateTree(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8) {
-    ZSTD_updateTree_internal(ms, ip, iend, ms.cParams.minMatch, ZSTD_noDict);
+    ZSTD_updateTree_internal(ms, ip, iend, ms.cParams.minMatch, DictMode::NoDict);
 }
 
 #[inline(always)]
@@ -736,7 +735,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iLimit: *const u8,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
     rep: *const u32,
     ll0: u32,
     lengthToBeat: u32,
@@ -776,62 +775,63 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut mnum = 0u32;
     let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
 
-    let dms = if dictMode == ZSTD_dictMatchState {
+    let dms = if dictMode == DictMode::DictMatchState {
         ms.dictMatchState
     } else {
         core::ptr::null()
     };
-    let dmsCParams = if dictMode == ZSTD_dictMatchState {
+    let dmsCParams = if dictMode == DictMode::DictMatchState {
         &(*dms).cParams
     } else {
         core::ptr::null()
     };
-    let dmsBase = if dictMode == ZSTD_dictMatchState {
+    let dmsBase = if dictMode == DictMode::DictMatchState {
         (*dms).window.base
     } else {
         core::ptr::null()
     };
-    let dmsEnd = if dictMode == ZSTD_dictMatchState {
+    let dmsEnd = if dictMode == DictMode::DictMatchState {
         (*dms).window.nextSrc
     } else {
         core::ptr::null()
     };
-    let dmsHighLimit = if dictMode == ZSTD_dictMatchState {
+    let dmsHighLimit = if dictMode == DictMode::DictMatchState {
         dmsEnd.offset_from(dmsBase) as core::ffi::c_long as u32
     } else {
         0
     };
-    let dmsLowLimit = if dictMode == ZSTD_dictMatchState {
+    let dmsLowLimit = if dictMode == DictMode::DictMatchState {
         (*dms).window.lowLimit
     } else {
         0
     };
-    let dmsIndexDelta = if dictMode == ZSTD_dictMatchState {
+    let dmsIndexDelta = if dictMode == DictMode::DictMatchState {
         windowLow.wrapping_sub(dmsHighLimit)
     } else {
         0
     };
-    let dmsHashLog = if dictMode == ZSTD_dictMatchState {
+    let dmsHashLog = if dictMode == DictMode::DictMatchState {
         (*dmsCParams).hashLog
     } else {
         hashLog
     };
-    let dmsBtLog = if dictMode == ZSTD_dictMatchState {
+    let dmsBtLog = if dictMode == DictMode::DictMatchState {
         ((*dmsCParams).chainLog).wrapping_sub(1)
     } else {
         btLog
     };
-    let dmsBtMask = if dictMode == ZSTD_dictMatchState {
+    let dmsBtMask = if dictMode == DictMode::DictMatchState {
         ((1 as core::ffi::c_uint) << dmsBtLog).wrapping_sub(1)
     } else {
         0
     };
-    let dmsBtLow =
-        if dictMode == ZSTD_dictMatchState && dmsBtMask < dmsHighLimit.wrapping_sub(dmsLowLimit) {
-            dmsHighLimit.wrapping_sub(dmsBtMask)
-        } else {
-            dmsLowLimit
-        };
+    let dmsBtLow = if dictMode == DictMode::DictMatchState
+        && dmsBtMask < dmsHighLimit.wrapping_sub(dmsLowLimit)
+    {
+        dmsHighLimit.wrapping_sub(dmsBtMask)
+    } else {
+        dmsLowLimit
+    };
 
     let mut bestLength = lengthToBeat.wrapping_sub(1) as size_t;
 
@@ -867,7 +867,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     .wrapping_add(minMatch);
             }
         } else {
-            let repMatch = if dictMode == ZSTD_dictMatchState {
+            let repMatch = if dictMode == DictMode::DictMatchState {
                 dmsBase
                     .offset(repIndex as isize)
                     .sub(dmsIndexDelta as usize)
@@ -876,7 +876,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             };
 
             // intentional overflow, equivalent to `curr > repIndex >= windowLow`
-            if dictMode == ZSTD_extDict
+            if dictMode == DictMode::ExtDict
                 && (repOffset.wrapping_sub(1) < curr.wrapping_sub(windowLow))
                     & ZSTD_index_overlap_check(dictLimit, repIndex)
                 && ZSTD_readMINMATCH(ip as *const core::ffi::c_void, minMatch)
@@ -892,7 +892,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     .wrapping_add(minMatch);
             }
             // intentional overflow, equivalent to `curr > repIndex >= dmsLowLimit`
-            if dictMode == ZSTD_dictMatchState
+            if dictMode == DictMode::DictMatchState
                 && (repOffset.wrapping_sub(1)
                     < curr.wrapping_sub(dmsLowLimit.wrapping_add(dmsIndexDelta)))
                     & ZSTD_index_overlap_check(dictLimit, repIndex)
@@ -935,8 +935,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             != 0
         {
             let mut mlen: size_t = 0;
-            if dictMode == ZSTD_noDict
-                || dictMode == ZSTD_dictMatchState
+            if dictMode == DictMode::NoDict
+                || dictMode == DictMode::DictMatchState
                 || matchIndex3 >= dictLimit
             {
                 let match_0 = base.offset(matchIndex3 as isize);
@@ -975,8 +975,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         // guaranteed minimum nb of common bytes
         let mut matchLength = commonLengthSmaller.min(commonLengthLarger);
 
-        if dictMode == ZSTD_noDict
-            || dictMode == ZSTD_dictMatchState
+        if dictMode == DictMode::NoDict
+            || dictMode == DictMode::DictMatchState
             || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t
         {
             match_2 = base.offset(matchIndex as isize);
@@ -1019,7 +1019,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 | (ip.add(matchLength) == iLimit) as core::ffi::c_int
                 != 0
             {
-                if dictMode == ZSTD_dictMatchState {
+                if dictMode == DictMode::DictMatchState {
                     nbCompares = 0; // break should also skip searching dms
                 }
                 break; // drop, to preserve bt consistency (miss a little bit of compression)
@@ -1057,7 +1057,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     *largerPtr = 0;
     *smallerPtr = *largerPtr;
 
-    if dictMode == ZSTD_dictMatchState && nbCompares != 0 {
+    if dictMode == DictMode::DictMatchState && nbCompares != 0 {
         let dmsH = ZSTD_hashPtr(ip as *const core::ffi::c_void, dmsHashLog, mls);
         let mut dictMatchIndex = *((*dms).hashTable).add(dmsH);
         let dmsBt: *const u32 = (*dms).chainTable;
@@ -1133,7 +1133,7 @@ unsafe fn ZSTD_btGetAllMatches_internal(
     rep: *const u32,
     ll0: u32,
     lengthToBeat: u32,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
     mls: u32,
 ) -> u32 {
     if ip < (ms.window.base).offset(ms.nextToUpdate as isize) {
@@ -1173,7 +1173,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_5(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_noDict,
+        DictMode::NoDict,
         5,
     )
 }
@@ -1197,7 +1197,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_6(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_noDict,
+        DictMode::NoDict,
         6,
     )
 }
@@ -1221,7 +1221,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_4(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_noDict,
+        DictMode::NoDict,
         4,
     )
 }
@@ -1245,7 +1245,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_3(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_noDict,
+        DictMode::NoDict,
         3,
     )
 }
@@ -1269,7 +1269,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_5(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_extDict,
+        DictMode::ExtDict,
         5,
     )
 }
@@ -1293,7 +1293,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_6(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_extDict,
+        DictMode::ExtDict,
         6,
     )
 }
@@ -1317,7 +1317,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_4(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_extDict,
+        DictMode::ExtDict,
         4,
     )
 }
@@ -1341,7 +1341,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_3(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_extDict,
+        DictMode::ExtDict,
         3,
     )
 }
@@ -1365,7 +1365,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_5(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_dictMatchState,
+        DictMode::DictMatchState,
         5,
     )
 }
@@ -1389,7 +1389,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_6(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_dictMatchState,
+        DictMode::DictMatchState,
         6,
     )
 }
@@ -1413,7 +1413,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_3(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_dictMatchState,
+        DictMode::DictMatchState,
         3,
     )
 }
@@ -1437,14 +1437,14 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_4(
         rep,
         ll0,
         lengthToBeat,
-        ZSTD_dictMatchState,
+        DictMode::DictMatchState,
         4,
     )
 }
 
 unsafe fn ZSTD_selectBtGetAllMatches(
     ms: &ZSTD_MatchState_t,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) -> ZSTD_getAllMatchesFn {
     let getAllMatchesFns: [[ZSTD_getAllMatchesFn; 4]; 3] = [
         [
@@ -1770,7 +1770,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     optLevel: core::ffi::c_int,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) -> size_t {
     let mut current_block: u64;
     let optStatePtr: *mut optState_t = &mut ms.opt;
@@ -2239,7 +2239,7 @@ unsafe fn ZSTD_compressBlock_opt0(
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) -> size_t {
     ZSTD_compressBlock_opt_generic(ms, seqStore, rep, src, srcSize, 0, dictMode)
 }
@@ -2250,7 +2250,7 @@ unsafe fn ZSTD_compressBlock_opt2(
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) -> size_t {
     ZSTD_compressBlock_opt_generic(ms, seqStore, rep, src, srcSize, 2, dictMode)
 }
@@ -2262,7 +2262,7 @@ pub unsafe fn ZSTD_compressBlock_btopt(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, ZSTD_noDict)
+    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, DictMode::NoDict)
 }
 
 /// Make a first compression pass, just to seed stats with more accurate starting values.
@@ -2279,7 +2279,14 @@ unsafe fn ZSTD_initStats_ultra(
     core::ptr::copy_nonoverlapping(rep, tmpRep.as_mut_ptr(), ZSTD_REP_NUM as usize);
 
     // generate stats into ms->opt
-    ZSTD_compressBlock_opt2(ms, seqStore, tmpRep.as_mut_ptr(), src, srcSize, ZSTD_noDict);
+    ZSTD_compressBlock_opt2(
+        ms,
+        seqStore,
+        tmpRep.as_mut_ptr(),
+        src,
+        srcSize,
+        DictMode::NoDict,
+    );
 
     // invalidate first scan from history, only keep entropy stats
     ZSTD_resetSeqStore(seqStore);
@@ -2296,7 +2303,7 @@ pub unsafe fn ZSTD_compressBlock_btultra(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_noDict)
+    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, DictMode::NoDict)
 }
 
 pub unsafe fn ZSTD_compressBlock_btultra2(
@@ -2325,7 +2332,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
         ZSTD_initStats_ultra(ms, seqStore, rep, src, srcSize);
     }
 
-    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_noDict)
+    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, DictMode::NoDict)
 }
 
 pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
@@ -2335,7 +2342,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, ZSTD_dictMatchState)
+    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, DictMode::DictMatchState)
 }
 
 pub unsafe fn ZSTD_compressBlock_btopt_extDict(
@@ -2345,7 +2352,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, ZSTD_extDict)
+    ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, DictMode::ExtDict)
 }
 
 pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
@@ -2355,7 +2362,7 @@ pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_dictMatchState)
+    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, DictMode::DictMatchState)
 }
 
 pub unsafe fn ZSTD_compressBlock_btultra_extDict(
@@ -2365,7 +2372,7 @@ pub unsafe fn ZSTD_compressBlock_btultra_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_extDict)
+    ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, DictMode::ExtDict)
 }
 
 // note: no btultra2 variant for extDict nor dictMatchState,

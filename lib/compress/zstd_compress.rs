@@ -699,10 +699,10 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, BufferedPolicy, CompressionStage, DictTableLoadMethod, LongLengthType,
-    OptPrice, Repcodes_t, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
-    ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_cpm_attachDict,
-    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
+    optState_t, repcodes_s, BufferedPolicy, CompressionStage, DictMode, DictTableLoadMethod,
+    LongLengthType, OptPrice, Repcodes_t, SeqCollector, StreamStage, TableFillPurpose,
+    ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
+    ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s,
     ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
@@ -5113,7 +5113,7 @@ unsafe fn ZSTD_entropyCompressSeqStore(
 pub fn ZSTD_selectBlockCompressor(
     strat: ZSTD_strategy,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
-    dictMode: ZSTD_dictMode_e,
+    dictMode: DictMode,
 ) -> ZSTD_BlockCompressor_f {
     static blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = [
         [
