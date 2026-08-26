@@ -70,16 +70,6 @@ pub struct ldmParams_t {
     pub windowLog: u32,
 }
 
-pub type ZSTD_BlockCompressor_f = Option<
-    unsafe fn(
-        &mut ZSTD_MatchState_t,
-        &mut SeqStore_t,
-        *mut u32,
-        *const core::ffi::c_void,
-        size_t,
-    ) -> size_t,
->;
-
 #[repr(C)]
 pub struct ldmRollingHashState_t {
     pub rolling: u64,
