@@ -155,7 +155,7 @@ const ZBUFFv05ds_init: ZBUFFv05_dStage = 0;
 const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb525 as core::ffi::c_uint;
 const ZSTDv05_WINDOWLOG_ABSOLUTEMIN: u8 = 11;
 const ZSTDv05_DICT_MAGIC: core::ffi::c_uint = 0xec30a435 as core::ffi::c_uint;
-const BLOCKSIZE: core::ffi::c_int = 128 * ((1) << 10);
+const BLOCKSIZE: core::ffi::c_int = 128 * (1 << 10);
 static ZSTDv05_blockHeaderSize: size_t = 3;
 static ZSTDv05_frameHeaderSize_min: size_t = 5;
 const ZSTDv05_frameHeaderSize_max: core::ffi::c_int = 5;
@@ -425,13 +425,13 @@ fn FSEv05_buildDTable<const N: usize>(
         fastMode: 0,
     };
     let tableDecode = &mut dt.data;
-    let tableSize = ((1) << tableLog) as u32;
+    let tableSize = (1 << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
     let step = FSEv05_tableStep(tableSize);
     let mut symbolNext: [u16; 256] = [0; 256];
     let mut position = 0u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
+    let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     let mut noLarge = 1;
     if maxSymbolValue > FSEv05_MAX_SYMBOL_VALUE as core::ffi::c_uint {
         return Err(Error::maxSymbolValue_tooLarge);
@@ -514,8 +514,8 @@ unsafe fn FSEv05_readNCount(
     bitStream >>= 4;
     let mut bitCount = 4;
     *tableLogPtr = nbBits as core::ffi::c_uint;
-    let mut remaining = ((1) << nbBits) + 1;
-    let mut threshold = (1) << nbBits;
+    let mut remaining = (1 << nbBits) + 1;
+    let mut threshold = 1 << nbBits;
     nbBits += 1;
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 {
@@ -794,7 +794,7 @@ fn HUFv05_readStats(
         }
         let fresh7 = &mut rankStats[w as usize];
         *fresh7 = (*fresh7).wrapping_add(1);
-        weightTotal = weightTotal.wrapping_add(((1) << w as core::ffi::c_int >> 1) as u32);
+        weightTotal = weightTotal.wrapping_add((1 << w as core::ffi::c_int >> 1) as u32);
     }
     if weightTotal == 0 {
         return Err(Error::corruption_detected);
@@ -803,9 +803,9 @@ fn HUFv05_readStats(
     if tableLog > HUFv05_ABSOLUTEMAX_TABLELOG as u32 {
         return Err(Error::corruption_detected);
     }
-    let total = ((1) << tableLog) as u32;
+    let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
-    let verif = ((1) << BITv05_highbit32(rest)) as u32;
+    let verif = (1 << BITv05_highbit32(rest)) as u32;
     let lastWeight = (BITv05_highbit32(rest)).wrapping_add(1);
     if verif != rest {
         return Err(Error::corruption_detected);
@@ -849,7 +849,7 @@ unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> Result<size_t, Er
     n = 0;
     while n < nbSymbols {
         let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
-        let length = ((1) << w >> 1) as u32;
+        let length = (1 << w >> 1) as u32;
         let mut i: u32 = 0;
         let mut D = HUFv05_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
@@ -1106,7 +1106,7 @@ fn HUFv05_fillDTableX4Level2(
         let symbol = (sortedSymbols[s]).symbol as u32;
         let weight = (sortedSymbols[s]).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
-        let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
+        let length = (1 << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
         let mut i_0 = start;
         let end = start.wrapping_add(length);
@@ -1143,7 +1143,7 @@ fn HUFv05_fillDTableX4(
         let weight = (sortedList[s]).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start: u32 = rankVal[weight as usize];
-        let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
+        let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
             if minWeight < 1 {

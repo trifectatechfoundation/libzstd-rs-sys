@@ -253,7 +253,7 @@ fn FASTCOVER_ctx_init<'a>(
         totalSamplesSize
     };
 
-    const GB: usize = (1) << 30;
+    const GB: usize = 1 << 30;
     const FASTCOVER_MAX_SAMPLES_SIZE: usize = match usize::BITS {
         64 => 4 * GB,
         _ => GB,

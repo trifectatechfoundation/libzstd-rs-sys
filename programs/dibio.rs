@@ -28,7 +28,7 @@ pub struct fileStats {
 }
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 pub const SEC_TO_MICRO: core::ffi::c_int = 1000000;
-pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * ((1) << 10);
+pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * (1 << 10);
 pub const MEMMULT: core::ffi::c_int = 11;
 pub const COVER_MEMMULT: core::ffi::c_int = 9;
 pub const FASTCOVER_MEMMULT: core::ffi::c_int = 1;
@@ -101,10 +101,10 @@ unsafe fn DiB_loadFiles(
                     targetChunkSize as i64
                 }) as size_t
             } else {
-                (if fileSize < (128 * ((1) << 10)) as i64 {
+                (if fileSize < (128 * (1 << 10)) as i64 {
                     fileSize
                 } else {
-                    (128 * ((1) << 10)) as i64
+                    (128 * (1 << 10)) as i64
                 }) as size_t
             };
             if totalDataLoaded.wrapping_add(fileDataLoaded) > *bufferSizePtr {
@@ -179,7 +179,7 @@ unsafe fn DiB_loadFiles(
         fprintf(
             stderr,
             c"Loaded %d KB total training data, %d nb samples \n".as_ptr(),
-            (totalDataLoaded / ((1) << 10) as size_t) as core::ffi::c_int,
+            (totalDataLoaded / (1 << 10) as size_t) as core::ffi::c_int,
             nbSamplesLoaded,
         );
     }
@@ -214,7 +214,7 @@ unsafe fn DiB_shuffle(fileNamesTable: *mut *const core::ffi::c_char, nbFiles: co
     }
 }
 unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
-    let step = (8 * ((1) << 20)) as size_t;
+    let step = (8 * (1 << 20)) as size_t;
     let mut testmem = core::ptr::null_mut::<core::ffi::c_void>();
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
     requiredMem = requiredMem.wrapping_add(step as core::ffi::c_ulonglong);
@@ -310,15 +310,15 @@ unsafe fn DiB_fileStats(
                         stderr,
                         c"Sample file '%s' is too large, limiting to %d KB\n".as_ptr(),
                         *fileNamesTable.offset(n as isize),
-                        128 * ((1) << 10) / ((1) << 10),
+                        128 * (1 << 10) / (1 << 10),
                     );
                 }
             }
             fs.nbSamples += 1;
-            fs.totalSizeToLoad += if fileSize < (128 * ((1) << 10)) as i64 {
+            fs.totalSizeToLoad += if fileSize < (128 * (1 << 10)) as i64 {
                 fileSize
             } else {
-                (128 * ((1) << 10)) as i64
+                (128 * (1 << 10)) as i64
             };
         }
         n += 1;
@@ -328,7 +328,7 @@ unsafe fn DiB_fileStats(
             stderr,
             c"Found training data %d files, %d KB, %d samples\n".as_ptr(),
             nbFiles,
-            (fs.totalSizeToLoad / ((1) << 10) as i64) as core::ffi::c_int,
+            (fs.totalSizeToLoad / (1 << 10) as i64) as core::ffi::c_int,
             fs.nbSamples,
         );
     }
@@ -435,7 +435,7 @@ pub unsafe fn DiB_trainFromFiles(
                 stderr,
                 c"!  As a consequence, only the first %u bytes of each sample are loaded \n"
                     .as_ptr(),
-                128 * ((1) << 10),
+                128 * (1 << 10),
             );
         }
     }
@@ -483,8 +483,8 @@ pub unsafe fn DiB_trainFromFiles(
         fprintf(
             stderr,
             c"Training samples set too large (%u MB); training on %u MB only...\n".as_ptr(),
-            (fs.totalSizeToLoad / ((1) << 20) as i64) as core::ffi::c_uint,
-            (loadedSize / ((1) << 20) as size_t) as core::ffi::c_uint,
+            (fs.totalSizeToLoad / (1 << 20) as i64) as core::ffi::c_uint,
+            (loadedSize / (1 << 20) as size_t) as core::ffi::c_uint,
         );
     }
     nbSamplesLoaded = DiB_loadFiles(

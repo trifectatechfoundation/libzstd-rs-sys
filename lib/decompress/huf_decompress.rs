@@ -409,7 +409,7 @@ pub fn HUF_readDTableX1_wksp(
     let mut rankStart = 0;
     for w in 1..tableLog.wrapping_add(1) {
         let symbolCount = wksp.rankVal[w as usize] as usize;
-        let length = (1) << w >> 1;
+        let length = 1 << w >> 1;
         let dt = dt[rankStart..][..length * symbolCount].chunks_exact_mut(length);
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
 
@@ -926,7 +926,7 @@ fn HUF_fillDTableX2ForWeight(
     baseSeq: u16,
     level: core::ffi::c_int,
 ) {
-    let length = (1) << (tableLog.wrapping_sub(nbBits) & 0x1f);
+    let length = 1 << (tableLog.wrapping_sub(nbBits) & 0x1f);
     let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
 
     for (sorted_symbol, chunk) in sorted_symbols.iter().zip(chunks) {
@@ -1001,7 +1001,7 @@ fn HUF_fillDTableX2(
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut start = rankVal[w] as core::ffi::c_int;
-            let length = (1) << (targetLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
+            let length = 1 << (targetLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
             let minWeight = Ord::max(nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int, 1);
 
             for s in range {

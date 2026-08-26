@@ -706,7 +706,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         tableLog,
     };
 
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
+    let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
 
     for (s, &v) in normalizedCounter.iter().enumerate() {
         if v == -1 {
@@ -2368,7 +2368,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
         return Err(Error::dstSize_tooSmall);
     }
     if offset == Offset::Long
-        || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
+        || !use_prefetch_decoder && totalHistorySize > (1 << 24) as size_t && nbSeq > 8
     {
         let info = match dctx.OFTptr {
             None => OF_defaultDTable.get_offset_info(nbSeq as usize),

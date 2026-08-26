@@ -577,7 +577,7 @@ fn COVER_ctx_init<'a>(
                 (if size_of::<size_t>() == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
-                    (1 as core::ffi::c_uint).wrapping_mul((1) << 30)
+                    (1 as core::ffi::c_uint).wrapping_mul(1 << 30)
                 }) >> 20,
             );
         }
