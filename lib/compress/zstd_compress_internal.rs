@@ -164,11 +164,15 @@ pub struct SeqCollector {
 }
 
 /// Indicates whether this compression proceeds directly from user-provided
-/// source buffer to user-provided destination buffer (`ZSTDb_not_buffered`), or
-/// whether the context needs to buffer the input/output (`ZSTDb_buffered`).
-pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
-pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
-pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
+/// source buffer to user-provided destination buffer (`BufferedPolicy::NotBuffered`), or
+/// whether the context needs to buffer the input/output (`BufferedPolicy::Buffered`).
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum BufferedPolicy {
+    #[default]
+    NotBuffered = 0,
+    Buffered = 1,
+}
 
 /// Struct that contains all elements of block splitter that should be allocated
 /// in a wksp.
