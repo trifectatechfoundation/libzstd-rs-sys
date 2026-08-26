@@ -34,7 +34,7 @@ pub struct ZSTD_CCtx_s {
     pub(super) blockState: ZSTD_blockState_t,
     pub(super) tmpWorkspace: *mut core::ffi::c_void,
     pub(super) tmpWkspSize: size_t,
-    pub(super) bufferedPolicy: ZSTD_buffered_policy_e,
+    pub(super) bufferedPolicy: BufferedPolicy,
     pub(super) inBuff: *mut u8,
     pub(super) inBuffSize: size_t,
     pub(super) inToCompress: size_t,
@@ -699,17 +699,16 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, CompressionStage, LongLengthType, OptPrice, Repcodes_t, SeqCollector,
-    StreamStage, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t,
-    ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
+    optState_t, repcodes_s, BufferedPolicy, CompressionStage, LongLengthType, OptPrice, Repcodes_t,
+    SeqCollector, StreamStage, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx,
+    ZSTD_blockState_t, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
     ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e,
     ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
     ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_matchState_dictMode,
     ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly,
     ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep,
     ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
-    ZSTDb_buffered, ZSTDb_not_buffered, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -3995,7 +3994,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     pledgedSrcSize: u64,
     loadedDictSize: size_t,
     crp: ZSTD_compResetPolicy_e,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     let ws: *mut ZSTD_cwksp = &mut (*zc).workspace;
 
@@ -4020,12 +4019,14 @@ unsafe fn ZSTD_resetCCtx_internal(
         params.cParams.minMatch,
         ZSTD_hasExtSeqProd(params),
     );
-    let buffOutSize = if zbuff == ZSTDb_buffered && params.outBufferMode == ZSTD_bm_buffered {
-        (ZSTD_compressBound(blockSize)).wrapping_add(1)
-    } else {
-        0
-    };
-    let buffInSize = if zbuff == ZSTDb_buffered && params.inBufferMode == ZSTD_bm_buffered {
+    let buffOutSize =
+        if zbuff == BufferedPolicy::Buffered && params.outBufferMode == ZSTD_bm_buffered {
+            (ZSTD_compressBound(blockSize)).wrapping_add(1)
+        } else {
+            0
+        };
+    let buffInSize = if zbuff == BufferedPolicy::Buffered && params.inBufferMode == ZSTD_bm_buffered
+    {
         windowSize.wrapping_add(blockSize)
     } else {
         0
@@ -4252,7 +4253,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
     pledgedSrcSize: u64,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     let mut adjusted_cdict_cParams = (*cdict).matchState.cParams;
     let windowLog = params.cParams.windowLog;
@@ -4331,7 +4332,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
     pledgedSrcSize: u64,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     let cdict_cParams: *const ZSTD_compressionParameters = &(*cdict).matchState.cParams;
 
@@ -4427,7 +4428,7 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
     cdict: *const ZSTD_CDict,
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     if ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
         ZSTD_resetCCtx_byAttachingCDict(cctx, cdict, *params, pledgedSrcSize, zbuff)
@@ -4452,7 +4453,7 @@ unsafe fn ZSTD_copyCCtx_internal(
     srcCCtx: *const ZSTD_CCtx,
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: u64,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     if (*srcCCtx).stage != CompressionStage::Init {
         return Error::stage_wrong.to_error_code();
@@ -7944,7 +7945,7 @@ unsafe fn ZSTD_compressBegin_internal(
     cdict: *const ZSTD_CDict,
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
-    zbuff: ZSTD_buffered_policy_e,
+    zbuff: BufferedPolicy,
 ) -> size_t {
     let dictContentSize = if !cdict.is_null() {
         (*cdict).dictContentSize
@@ -8042,7 +8043,7 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
         cdict,
         params,
         pledgedSrcSize,
-        ZSTDb_not_buffered,
+        BufferedPolicy::NotBuffered,
     )
 }
 
@@ -8204,7 +8205,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         core::ptr::null(),
         &cctxParams,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTDb_not_buffered,
+        BufferedPolicy::NotBuffered,
     )
 }
 
@@ -8394,7 +8395,7 @@ pub unsafe fn ZSTD_compress_advanced_internal(
         core::ptr::null::<ZSTD_CDict>(),
         params,
         srcSize as u64,
-        ZSTDb_not_buffered,
+        BufferedPolicy::NotBuffered,
     );
     if ERR_isError(err_code) {
         return err_code;
@@ -8762,7 +8763,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         },
         tmpWorkspace: core::ptr::null_mut::<core::ffi::c_void>(),
         tmpWkspSize: 0,
-        bufferedPolicy: ZSTDb_not_buffered,
+        bufferedPolicy: BufferedPolicy::NotBuffered,
         inBuff: core::ptr::null_mut(),
         inBuffSize: 0,
         inToCompress: 0,
@@ -9590,7 +9591,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         cdict,
         &cctxParams,
         pledgedSrcSize,
-        ZSTDb_not_buffered,
+        BufferedPolicy::NotBuffered,
     )
 }
 
@@ -10445,7 +10446,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             (*cctx).cdict,
             &params,
             pledgedSrcSize,
-            ZSTDb_buffered,
+            BufferedPolicy::Buffered,
         );
         if ERR_isError(err_code_1) {
             return err_code_1;
