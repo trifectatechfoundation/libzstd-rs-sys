@@ -97,7 +97,7 @@ pub struct SeqStore_t {
     pub ofCode: *mut u8,
     pub maxNbSeq: size_t,
     pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
+    pub longLengthType: LongLengthType,
     pub longLengthPos: u32,
 }
 
@@ -699,16 +699,16 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, zop_dynamic, CompressionStage, Repcodes_t, SeqCollector, StreamStage,
-    ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t,
-    ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict, ZSTD_cpm_createCDict,
-    ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e,
-    ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
-    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
-    ZSTD_llt_none, ZSTD_localDict, ZSTD_longLengthType_e, ZSTD_matchState_dictMode, ZSTD_match_t,
-    ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e,
-    ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
+    optState_t, repcodes_s, zop_dynamic, CompressionStage, LongLengthType, Repcodes_t,
+    SeqCollector, StreamStage, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx,
+    ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict,
+    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
+    ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
+    ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict,
+    ZSTD_updateRep, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
+    ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
@@ -4656,10 +4656,10 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
             longOffsets = true;
         }
     }
-    if (*seqStorePtr).longLengthType == ZSTD_llt_literalLength {
+    if (*seqStorePtr).longLengthType == LongLengthType::Literal {
         *llCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxLL as u8;
     }
-    if (*seqStorePtr).longLengthType == ZSTD_llt_matchLength {
+    if (*seqStorePtr).longLengthType == LongLengthType::Match {
         *mlCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxML as u8;
     }
     longOffsets
@@ -5264,7 +5264,7 @@ unsafe fn ZSTD_storeLastLiterals(
 pub fn ZSTD_resetSeqStore(ssPtr: &mut SeqStore_t) {
     ssPtr.lit = ssPtr.litStart;
     ssPtr.sequences = ssPtr.sequencesStart;
-    ssPtr.longLengthType = ZSTD_llt_none;
+    ssPtr.longLengthType = LongLengthType::None;
 }
 
 /// Validates and post-processes sequences obtained through the external matchfinder API:
@@ -5576,10 +5576,10 @@ unsafe fn ZSTD_copyBlockSequences(
         // There can only be one because we add MINMATCH to every match length,
         // and blocks are at most 128K.
         if i == (*seqStore).longLengthPos as size_t {
-            if (*seqStore).longLengthType == ZSTD_llt_literalLength {
+            if (*seqStore).longLengthType == LongLengthType::Literal {
                 let fresh4 = &mut (*outSeqs.add(i)).litLength;
                 *fresh4 = (*fresh4).wrapping_add(0x10000);
-            } else if (*seqStore).longLengthType == ZSTD_llt_matchLength {
+            } else if (*seqStore).longLengthType == LongLengthType::Match {
                 let fresh5 = &mut (*outSeqs.add(i)).matchLength;
                 *fresh5 = (*fresh5).wrapping_add(0x10000);
             }
@@ -6334,7 +6334,7 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t
         let seq = *((*seqStore).sequencesStart).add(i);
         literalsBytes = literalsBytes.wrapping_add(seq.litLength as size_t);
         if i == (*seqStore).longLengthPos as size_t
-            && (*seqStore).longLengthType == ZSTD_llt_literalLength
+            && (*seqStore).longLengthType == LongLengthType::Literal
         {
             literalsBytes = literalsBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
         }
@@ -6350,7 +6350,7 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
         let seq = *((*seqStore).sequencesStart).add(i);
         matchBytes = matchBytes.wrapping_add((seq.mlBase as core::ffi::c_int + MINMATCH) as size_t);
         if i == (*seqStore).longLengthPos as size_t
-            && (*seqStore).longLengthType == ZSTD_llt_matchLength
+            && (*seqStore).longLengthType == LongLengthType::Match
         {
             matchBytes = matchBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
         }
@@ -6374,11 +6374,11 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
     }
 
     // Move longLengthPos into the correct position if necessary
-    if (*originalSeqStore).longLengthType != ZSTD_llt_none {
+    if (*originalSeqStore).longLengthType != LongLengthType::None {
         if ((*originalSeqStore).longLengthPos as size_t) < startIdx
             || (*originalSeqStore).longLengthPos as size_t > endIdx
         {
-            resultSeqStore.longLengthType = ZSTD_llt_none;
+            resultSeqStore.longLengthType = LongLengthType::None;
         } else {
             resultSeqStore.longLengthPos =
                 (resultSeqStore.longLengthPos).wrapping_sub(startIdx as u32);
@@ -6422,7 +6422,7 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
     seqStore: *const SeqStore_t,
     nbSeq: u32,
 ) {
-    let longLitLenIdx = if (*seqStore).longLengthType == ZSTD_llt_literalLength {
+    let longLitLenIdx = if (*seqStore).longLengthType == LongLengthType::Literal {
         (*seqStore).longLengthPos
     } else {
         nbSeq
@@ -8669,7 +8669,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             ofCode: core::ptr::null_mut::<u8>(),
             maxNbSeq: 0,
             maxNbLit: 0,
-            longLengthType: ZSTD_llt_none,
+            longLengthType: LongLengthType::None,
             longLengthPos: 0,
         },
         ldmState: ldmState_t {
@@ -8807,7 +8807,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 ofCode: core::ptr::null_mut::<u8>(),
                 maxNbSeq: 0,
                 maxNbLit: 0,
-                longLengthType: ZSTD_llt_none,
+                longLengthType: LongLengthType::None,
                 longLengthPos: 0,
             },
             firstHalfSeqStore: SeqStore_t {
@@ -8820,7 +8820,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 ofCode: core::ptr::null_mut::<u8>(),
                 maxNbSeq: 0,
                 maxNbLit: 0,
-                longLengthType: ZSTD_llt_none,
+                longLengthType: LongLengthType::None,
                 longLengthPos: 0,
             },
             secondHalfSeqStore: SeqStore_t {
@@ -8833,7 +8833,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 ofCode: core::ptr::null_mut::<u8>(),
                 maxNbSeq: 0,
                 maxNbLit: 0,
-                longLengthType: ZSTD_llt_none,
+                longLengthType: LongLengthType::None,
                 longLengthPos: 0,
             },
             currSeqStore: SeqStore_t {
@@ -8846,7 +8846,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 ofCode: core::ptr::null_mut::<u8>(),
                 maxNbSeq: 0,
                 maxNbLit: 0,
-                longLengthType: ZSTD_llt_none,
+                longLengthType: LongLengthType::None,
                 longLengthPos: 0,
             },
             nextSeqStore: SeqStore_t {
@@ -8859,7 +8859,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 ofCode: core::ptr::null_mut::<u8>(),
                 maxNbSeq: 0,
                 maxNbLit: 0,
-                longLengthType: ZSTD_llt_none,
+                longLengthType: LongLengthType::None,
                 longLengthPos: 0,
             },
             partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS],
@@ -11469,10 +11469,10 @@ pub unsafe fn ZSTD_convertBlockSequences(
         (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(nbSequences).sub(1);
         if longl != 0 {
             if longl <= nbSequences.wrapping_sub(1) {
-                (*cctx).seqStore.longLengthType = ZSTD_llt_matchLength;
+                (*cctx).seqStore.longLengthType = LongLengthType::Match;
                 (*cctx).seqStore.longLengthPos = longl.wrapping_sub(1) as u32;
             } else {
-                (*cctx).seqStore.longLengthType = ZSTD_llt_literalLength;
+                (*cctx).seqStore.longLengthType = LongLengthType::Literal;
                 (*cctx).seqStore.longLengthPos = longl
                     .wrapping_sub(nbSequences.wrapping_sub(1))
                     .wrapping_sub(1) as u32;
