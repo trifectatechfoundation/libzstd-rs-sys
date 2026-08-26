@@ -395,10 +395,6 @@ pub struct ZSTD_bounds {
     pub upperBound: core::ffi::c_int,
 }
 
-pub type ZSTD_EndDirective = core::ffi::c_uint;
-pub const ZSTD_e_end: ZSTD_EndDirective = 2;
-pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
-pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_CStream = ZSTD_CCtx;
 
 pub type ZSTD_SequenceCopier_f = Option<
@@ -795,12 +791,12 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::{
-    Format, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_bm_buffered, ZSTD_bm_stable,
-    ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2, ZSTD_bufferMode_e, ZSTD_cParameter,
-    ZSTD_compressionParameters, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict,
+    Format, ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_bm_buffered,
+    ZSTD_bm_stable, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2, ZSTD_bufferMode_e,
+    ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict,
     ZSTD_dct_rawContent, ZSTD_dfast, ZSTD_dictAttachPref_e, ZSTD_dictContentType_e,
-    ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef,
-    ZSTD_error_stabilityCondition_notRespected, ZSTD_fast, ZSTD_frameParameters,
+    ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end,
+    ZSTD_e_flush, ZSTD_error_stabilityCondition_notRespected, ZSTD_fast, ZSTD_frameParameters,
     ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2,
     ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
     ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER,
