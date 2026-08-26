@@ -92,10 +92,6 @@ pub type ZSTD_sequenceProducer_F = Option<
     ) -> size_t,
 >;
 
-pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
-pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
-pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameParameters {

@@ -645,3 +645,9 @@ impl TryFrom<i32> for ZSTD_ParamSwitch_e {
         }
     }
 }
+
+pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
+/// `ZSTD_Sequence[]` has no block delimiters, just sequences
+pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
+/// `ZSTD_Sequence[]` contains explicit block delimiters
+pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
