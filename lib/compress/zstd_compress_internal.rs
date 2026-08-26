@@ -1,4 +1,5 @@
 use crate::internal::MEM_readLE32;
+use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST};
 use crate::lib::common::zstd_internal::{
@@ -20,22 +21,26 @@ pub struct ZSTD_hufCTables_t {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub(crate) struct repcodes_s {
-    pub rep: [u32; 3],
+pub struct ZSTD_fseCTables_t {
+    pub offcodeCTable: [FSE_CTable; 193],
+    pub matchlengthCTable: [FSE_CTable; 363],
+    pub litlengthCTable: [FSE_CTable; 329],
+    pub offcode_repeatMode: FSE_repeat,
+    pub matchlength_repeatMode: FSE_repeat,
+    pub litlength_repeatMode: FSE_repeat,
 }
 
-pub(crate) type Repcodes_t = repcodes_s;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_entropyCTables_t {
+    pub huf: ZSTD_hufCTables_t,
+    pub fse: ZSTD_fseCTables_t,
+}
 
 pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub(crate) const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub(crate) const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-
-pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
-    3500 * (1 << 20)
-} else {
-    2000 * (1 << 20)
-};
 
 pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqStore: *const SeqStore_t,
@@ -61,6 +66,20 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub(crate) struct repcodes_s {
+    pub rep: [u32; 3],
+}
+
+pub(crate) type Repcodes_t = repcodes_s;
+
+pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
+    3500 * (1 << 20)
+} else {
+    2000 * (1 << 20)
+};
 
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeqOnly(
