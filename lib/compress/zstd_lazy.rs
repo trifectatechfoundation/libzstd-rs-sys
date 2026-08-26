@@ -38,12 +38,6 @@ pub struct ZSTD_fseCTables_t {
 }
 
 #[repr(C)]
-pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
-    pub repeatMode: HUF_repeat,
-}
-
-#[repr(C)]
 pub struct ZSTD_match_t {
     pub off: u32,
     pub len: u32,
@@ -64,14 +58,13 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
-use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
-    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check,
-    ZSTD_storeSeq,
+    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_hufCTables_t,
+    ZSTD_index_overlap_check, ZSTD_storeSeq,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};

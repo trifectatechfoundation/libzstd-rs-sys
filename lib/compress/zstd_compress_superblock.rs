@@ -17,11 +17,11 @@ use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_MatchState_t,
     ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
     ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
-    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS,
-    ZSTD_TARGETCBLOCKSIZE_MIN,
+    ZSTD_match_t, ZSTD_optimal_t, ZSTD_MAX_NB_BLOCK_SPLITS, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, ZSTD_OptPrice_e, ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
+    repcodes_s, ZSTD_OptPrice_e, ZSTD_hufCTables_t, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
+    ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,

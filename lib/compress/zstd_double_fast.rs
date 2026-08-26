@@ -37,12 +37,6 @@ pub struct ZSTD_fseCTables_t {
     pub litlength_repeatMode: FSE_repeat,
 }
 
-#[repr(C)]
-pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
-    pub repeatMode: HUF_repeat,
-}
-
 pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -54,7 +48,6 @@ pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 use libc::size_t;
 
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
-use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_read32, MEM_read64};
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{
@@ -62,7 +55,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
-    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hufCTables_t, ZSTD_index_overlap_check,
+    ZSTD_storeSeq,
 };
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
 
