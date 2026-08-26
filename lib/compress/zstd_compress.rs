@@ -410,16 +410,6 @@ pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
 pub const ZSTDbss_noCompress: C2RustUnnamed_2 = 1;
 pub const ZSTDbss_compress: C2RustUnnamed_2 = 0;
 
-pub type ZSTD_BlockCompressor_f = Option<
-    unsafe fn(
-        &mut ZSTD_MatchState_t,
-        &mut SeqStore_t,
-        *mut u32,
-        *const core::ffi::c_void,
-        size_t,
-    ) -> size_t,
->;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_SequencePosition {
@@ -798,16 +788,17 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_CParamMode_e, ZSTD_OptPrice_e,
-    ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count, ZSTD_cpm_attachDict,
-    ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown, ZSTD_dictMode_e,
-    ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full, ZSTD_entropyCTables_t,
-    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_llt_literalLength,
-    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
-    ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx,
-    ZSTD_tfp_forCDict, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTDb_buffered, ZSTDb_not_buffered,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    repcodes_s, zop_dynamic, Repcodes_t, SeqCollector, ZSTD_BlockCompressor_f, ZSTD_CParamMode_e,
+    ZSTD_OptPrice_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_buffered_policy_e, ZSTD_count,
+    ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
+    ZSTD_dictMode_e, ZSTD_dictTableLoadMethod_e, ZSTD_dtlm_fast, ZSTD_dtlm_full,
+    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_storeSeq, ZSTD_storeSeqOnly,
+    ZSTD_tableFillPurpose_e, ZSTD_tfp_forCCtx, ZSTD_tfp_forCDict, ZSTD_updateRep,
+    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTDb_buffered, ZSTDb_not_buffered, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

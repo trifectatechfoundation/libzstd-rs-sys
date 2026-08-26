@@ -146,6 +146,16 @@ pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
 /// when selecting and adjusting parameters.
 pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 
+pub type ZSTD_BlockCompressor_f = Option<
+    unsafe fn(
+        &mut ZSTD_MatchState_t,
+        &mut SeqStore_t,
+        *mut u32,
+        *const core::ffi::c_void,
+        size_t,
+    ) -> size_t,
+>;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(crate) struct repcodes_s {
