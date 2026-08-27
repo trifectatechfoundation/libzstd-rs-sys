@@ -7327,14 +7327,14 @@ unsafe fn ZSTD_loadDictionaryContent(
 /// dictionaries with 100% valid symbols can be assumed valid.
 unsafe fn ZSTD_dictNCountRepeat(
     normalizedCounter: *mut core::ffi::c_short,
-    dictMaxSymbolValue: core::ffi::c_uint,
-    maxSymbolValue: core::ffi::c_uint,
+    dictMaxSymbolValue: u8,
+    maxSymbolValue: u8,
 ) -> FSE_repeat {
     if dictMaxSymbolValue < maxSymbolValue {
         return FSE_repeat_check;
     }
-    for s in 0..maxSymbolValue + 1 {
-        if *normalizedCounter.offset(s as isize) as core::ffi::c_int == 0 {
+    for s in 0..usize::from(maxSymbolValue) + 1 {
+        if *normalizedCounter.add(s) as core::ffi::c_int == 0 {
             return FSE_repeat_check;
         }
     }
@@ -7429,11 +7429,8 @@ pub unsafe fn ZSTD_loadCEntropy(
     )) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*bs).entropy.fse.matchlength_repeatMode = ZSTD_dictNCountRepeat(
-        matchlengthNCount.as_mut_ptr(),
-        u32::from(matchlengthMaxValue),
-        u32::from(MaxML),
-    );
+    (*bs).entropy.fse.matchlength_repeatMode =
+        ZSTD_dictNCountRepeat(matchlengthNCount.as_mut_ptr(), matchlengthMaxValue, MaxML);
     dictPtr = dictPtr.add(matchlengthHeaderSize);
 
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
@@ -7462,11 +7459,8 @@ pub unsafe fn ZSTD_loadCEntropy(
     )) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*bs).entropy.fse.litlength_repeatMode = ZSTD_dictNCountRepeat(
-        litlengthNCount.as_mut_ptr(),
-        u32::from(litlengthMaxValue),
-        u32::from(MaxLL),
-    );
+    (*bs).entropy.fse.litlength_repeatMode =
+        ZSTD_dictNCountRepeat(litlengthNCount.as_mut_ptr(), litlengthMaxValue, MaxLL);
     dictPtr = dictPtr.add(litlengthHeaderSize);
 
     if dictPtr.add(12) > dictEnd {
@@ -7478,19 +7472,20 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(12);
 
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
-    let mut offcodeMax = u32::from(MaxOff);
+    let mut offcodeMax = MaxOff;
     if dictContentSize
         <= (-(1 as core::ffi::c_int) as u32)
             .wrapping_sub((128 as core::ffi::c_int * ((1 as core::ffi::c_int) << 10)) as u32)
             as size_t
     {
         let maxOffset = (dictContentSize as u32).wrapping_add((128 * (1 << 10)) as u32);
-        offcodeMax = ZSTD_highbit32(maxOffset);
+        // `maxOffset` is a `u32`, so its highest set bit is at most 31
+        offcodeMax = ZSTD_highbit32(maxOffset) as u8;
     }
     // All offset values <= dictContentSize + 128 KB must be representable for a valid table
     (*bs).entropy.fse.offcode_repeatMode = ZSTD_dictNCountRepeat(
         offcodeNCount.as_mut_ptr(),
-        u32::from(offcodeMaxValue),
+        offcodeMaxValue,
         offcodeMax.min(31),
     );
 
