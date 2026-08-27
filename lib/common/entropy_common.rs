@@ -382,7 +382,7 @@ impl DTable {
 
     pub(super) fn destructure_mut(
         &mut self,
-        max_symbol_value: u32,
+        max_symbol_value: u8,
         tableLog: u32,
     ) -> (
         &mut FSE_DTableHeader,
@@ -395,7 +395,7 @@ impl DTable {
             core::slice::from_raw_parts_mut(rest.as_mut_ptr().cast::<u16>(), rest.len() * 2)
         };
 
-        let (symbols, rest) = rest.split_at_mut(max_symbol_value as usize + 1);
+        let (symbols, rest) = rest.split_at_mut(usize::from(max_symbol_value) + 1);
         let spread = unsafe {
             core::slice::from_raw_parts_mut(rest.as_mut_ptr().cast::<u8>(), rest.len() * 2)
         };
