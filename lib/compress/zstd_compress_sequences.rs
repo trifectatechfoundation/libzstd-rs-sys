@@ -93,16 +93,11 @@ unsafe fn ZSTD_NCountCost(
 
 /// Returns the cost in bits of encoding the distribution described by count
 /// using the entropy bound.
-unsafe fn ZSTD_entropyCost(
-    count: *const core::ffi::c_uint,
-    max: core::ffi::c_uint,
-    total: size_t,
-) -> size_t {
+unsafe fn ZSTD_entropyCost(count: *const core::ffi::c_uint, max: u8, total: size_t) -> size_t {
     let mut cost = 0u32;
-    for s in 0..max + 1 {
-        let mut norm = ((256 as core::ffi::c_uint).wrapping_mul(*count.offset(s as isize))
-            as size_t
-            / total) as core::ffi::c_uint;
+    for s in 0..=max {
+        let mut norm =
+            (256u32.wrapping_mul(*count.offset(s as isize)) as size_t / total) as core::ffi::c_uint;
         if *count.offset(s as isize) != 0 && norm == 0 {
             norm = 1;
         }
@@ -175,7 +170,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
 pub unsafe fn ZSTD_selectEncodingType(
     repeatMode: &mut FSE_repeat,
     count: *const core::ffi::c_uint,
-    max: core::ffi::c_uint,
+    max: u8,
     mostFrequent: size_t,
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
@@ -219,16 +214,16 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, u32::from(max))
         } else {
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat_none {
-            ZSTD_fseBitCost(prevCTable, count, max)
+            ZSTD_fseBitCost(prevCTable, count, u32::from(max))
         } else {
             Error::GENERIC.to_error_code()
         };
-        let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
+        let NCountCost = ZSTD_NCountCost(count, u32::from(max), nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {

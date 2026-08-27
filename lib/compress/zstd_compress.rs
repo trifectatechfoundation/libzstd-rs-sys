@@ -4461,7 +4461,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    let max = u32::from(max);
     nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.litlength_repeatMode,
@@ -4483,7 +4482,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         LLFSELog,
         stats.LLtype,
         countWorkspace,
-        max,
+        u32::from(max),
         llCodeTable,
         nbSeq,
         LL_defaultNorm.as_ptr(),
@@ -4512,9 +4511,8 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    let max_0 = u32::from(max_0);
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
-    let defaultPolicy = if max_0 <= u32::from(DefaultMaxOff) {
+    let defaultPolicy = if max_0 <= DefaultMaxOff {
         DefaultPolicy::Allowed
     } else {
         DefaultPolicy::Disallowed
@@ -4540,7 +4538,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         OffFSELog,
         stats.Offtype,
         countWorkspace,
-        max_0,
+        u32::from(max_0),
         ofCodeTable,
         nbSeq,
         OF_defaultNorm.as_ptr(),
@@ -4569,7 +4567,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    let max_1 = u32::from(max_1);
     nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.matchlength_repeatMode,
@@ -4591,7 +4588,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         MLFSELog,
         stats.MLtype,
         countWorkspace,
-        max_1,
+        u32::from(max_1),
         mlCodeTable,
         nbSeq,
         ML_defaultNorm.as_ptr(),
