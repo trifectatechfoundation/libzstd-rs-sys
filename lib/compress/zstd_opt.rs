@@ -271,9 +271,9 @@ unsafe fn ZSTD_rescaleFreqs(
                 &(*(*optPtr).symbolCosts).fse.matchlengthCTable,
             );
             (*optPtr).matchLengthSum = 0;
-            for ml in 0..MaxML + 1 {
+            for ml in 0..=MaxML {
                 let scaleLog_1 = 10u32;
-                let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml);
+                let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, u32::from(ml));
                 *((*optPtr).matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
                     1 << scaleLog_1.wrapping_sub(bitCost_1)
                 } else {
@@ -330,13 +330,12 @@ unsafe fn ZSTD_rescaleFreqs(
             );
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), usize::from(MaxLL) + 1);
 
-            let mut ml_0: core::ffi::c_uint = 0;
-            ml_0 = 0;
+            let mut ml_0: u8 = 0;
             while ml_0 <= MaxML {
                 *((*optPtr).matchLengthFreq).offset(ml_0 as isize) = 1;
                 ml_0 = ml_0.wrapping_add(1);
             }
-            (*optPtr).matchLengthSum = MaxML + 1;
+            (*optPtr).matchLengthSum = u32::from(MaxML) + 1;
 
             let baseOFCfreqs: [core::ffi::c_uint; 32] = [
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -355,7 +354,7 @@ unsafe fn ZSTD_rescaleFreqs(
             (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, MaxLit, 12);
         }
         (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, u32::from(MaxLL), 11);
-        (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, MaxML, 11);
+        (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, u32::from(MaxML), 11);
         (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, u32::from(MaxOff), 11);
     }
 

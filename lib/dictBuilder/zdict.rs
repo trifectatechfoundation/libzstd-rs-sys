@@ -929,7 +929,7 @@ unsafe fn analyze_entropy_internal(
         MLFSELog,
         matchLengthCount.as_mut_ptr(),
         total as size_t,
-        MaxML,
+        u32::from(MaxML),
         true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
@@ -998,7 +998,7 @@ unsafe fn analyze_entropy_internal(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
         matchLengthNCount.as_mut_ptr(),
-        MaxML,
+        u32::from(MaxML),
         mlLog,
     );
     if let Some(err) = Error::from_error_code(mhSize) {

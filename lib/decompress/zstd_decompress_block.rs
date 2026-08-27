@@ -999,7 +999,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
         MLtype,
-        MaxML,
+        u32::from(MaxML),
         MLFSELog,
         &src[ip..],
         &ML_base,
