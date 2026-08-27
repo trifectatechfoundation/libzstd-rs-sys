@@ -7348,7 +7348,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictSize: size_t,
 ) -> size_t {
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
-    let mut offcodeMaxValue = u32::from(MaxOff);
+    let mut offcodeMaxValue = MaxOff;
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
     dictPtr = dictPtr.add(8);
@@ -7404,7 +7404,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(offcodeHeaderSize);
 
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
-    let mut matchlengthMaxValue = u32::from(MaxML);
+    let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
     let matchlengthHeaderSize = FSE_readNCount(
         &mut matchlengthNCount,
@@ -7422,7 +7422,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if ERR_isError(FSE_buildCTable_wksp(
         ((*bs).entropy.fse.matchlengthCTable).as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
-        matchlengthMaxValue,
+        u32::from(matchlengthMaxValue),
         matchlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,
@@ -7431,13 +7431,13 @@ pub unsafe fn ZSTD_loadCEntropy(
     }
     (*bs).entropy.fse.matchlength_repeatMode = ZSTD_dictNCountRepeat(
         matchlengthNCount.as_mut_ptr(),
-        matchlengthMaxValue,
+        u32::from(matchlengthMaxValue),
         u32::from(MaxML),
     );
     dictPtr = dictPtr.add(matchlengthHeaderSize);
 
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut litlengthMaxValue = u32::from(MaxLL);
+    let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount(
         &mut litlengthNCount,
@@ -7455,7 +7455,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if ERR_isError(FSE_buildCTable_wksp(
         ((*bs).entropy.fse.litlengthCTable).as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
-        litlengthMaxValue,
+        u32::from(litlengthMaxValue),
         litlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,
@@ -7464,7 +7464,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     }
     (*bs).entropy.fse.litlength_repeatMode = ZSTD_dictNCountRepeat(
         litlengthNCount.as_mut_ptr(),
-        litlengthMaxValue,
+        u32::from(litlengthMaxValue),
         u32::from(MaxLL),
     );
     dictPtr = dictPtr.add(litlengthHeaderSize);
@@ -7490,7 +7490,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     // All offset values <= dictContentSize + 128 KB must be representable for a valid table
     (*bs).entropy.fse.offcode_repeatMode = ZSTD_dictNCountRepeat(
         offcodeNCount.as_mut_ptr(),
-        offcodeMaxValue,
+        u32::from(offcodeMaxValue),
         offcodeMax.min(31),
     );
 

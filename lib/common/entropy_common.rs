@@ -13,7 +13,7 @@ use crate::lib::polyfill::likely;
 #[inline(always)]
 fn FSE_readNCount_body(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
@@ -27,7 +27,7 @@ fn FSE_readNCount_body(
     let mut bitStream: u32 = 0;
     let mut bitCount: core::ffi::c_int = 0;
     let mut charnum = 0 as core::ffi::c_uint;
-    let maxSV1 = (*maxSVPtr).wrapping_add(1);
+    let maxSV1 = u32::from(*maxSVPtr) + 1;
     let mut previous_was_0 = false;
     if hbSize < 8 {
         let mut buffer = [0u8; 8];
@@ -162,7 +162,11 @@ fn FSE_readNCount_body(
         return Err(Error::corruption_detected);
     }
 
-    *maxSVPtr = charnum.wrapping_sub(1);
+    match u8::try_from(charnum - 1) {
+        Ok(v) => *maxSVPtr = v,
+        Err(_) => return Err(Error::maxSymbolValue_tooSmall),
+    }
+
     ip += ((bitCount + 7) >> 3) as usize;
 
     Ok(ip)
@@ -170,7 +174,7 @@ fn FSE_readNCount_body(
 
 fn FSE_readNCount_body_default(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
@@ -178,7 +182,7 @@ fn FSE_readNCount_body_default(
 }
 fn FSE_readNCount_body_bmi2(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
@@ -187,7 +191,7 @@ fn FSE_readNCount_body_bmi2(
 
 pub(super) fn FSE_readNCount_bmi2(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
     bmi2: core::ffi::c_int,
@@ -201,7 +205,7 @@ pub(super) fn FSE_readNCount_bmi2(
 
 pub(crate) unsafe fn FSE_readNCount(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: *const core::ffi::c_void,
     hbSize: size_t,
@@ -221,7 +225,7 @@ pub(crate) unsafe fn FSE_readNCount(
 
 pub(crate) fn FSE_readNCount_slice(
     normalizedCounter: &mut [i16],
-    maxSVPtr: &mut core::ffi::c_uint,
+    maxSVPtr: &mut u8,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {

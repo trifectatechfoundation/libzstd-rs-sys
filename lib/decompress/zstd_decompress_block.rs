@@ -836,7 +836,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     DTableSpace: &mut SymbolTable<N>,
     DTablePtr: &mut Option<NonNull<SymbolTable<N>>>,
     type_0: SymbolEncodingType,
-    mut max: core::ffi::c_uint,
+    mut max: u8,
     maxLog: u32,
     src: &[u8],
     baseValue: &'static [u32],
@@ -853,7 +853,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
                 return Err(Error::srcSize_wrong);
             };
 
-            if u32::from(symbol) > max {
+            if symbol > max {
                 return Err(Error::corruption_detected);
             }
 
@@ -963,7 +963,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.LLTable,
         &mut dctx.LLTptr,
         LLtype,
-        u32::from(MaxLL),
+        MaxLL,
         LLFSELog,
         &src[ip..],
         &LL_base,
@@ -981,7 +981,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
         OFtype,
-        u32::from(MaxOff),
+        MaxOff,
         OffFSELog,
         &src[ip..],
         &OF_base,
@@ -999,7 +999,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
         MLtype,
-        u32::from(MaxML),
+        MaxML,
         MLFSELog,
         &src[ip..],
         &ML_base,

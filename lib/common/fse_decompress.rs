@@ -327,7 +327,7 @@ fn FSE_decompress_wksp_body(
     let mut wkspSize = size_of::<Workspace>();
 
     let mut tableLog: core::ffi::c_uint = 0;
-    let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as core::ffi::c_uint;
+    let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as u8;
     if wkspSize < size_of::<FSE_DecompressWksp>() {
         return Err(Error::GENERIC);
     }
@@ -346,7 +346,7 @@ fn FSE_decompress_wksp_body(
     if ((1 + (1 << tableLog) + 1) as core::ffi::c_ulonglong)
         .wrapping_add(
             ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-                .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
+                .wrapping_mul(u32::from(maxSymbolValue).wrapping_add(1) as core::ffi::c_ulong)
                 as core::ffi::c_ulonglong)
                 .wrapping_add(1 << tableLog)
                 .wrapping_add(8)
@@ -378,7 +378,7 @@ fn FSE_decompress_wksp_body(
     let () = FSE_buildDTable_internal(
         &mut workspace.dtable,
         &workspace.a.ncount,
-        maxSymbolValue,
+        u32::from(maxSymbolValue),
         tableLog,
     )?;
 
