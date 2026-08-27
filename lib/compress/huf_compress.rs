@@ -124,9 +124,8 @@ unsafe fn HUF_compressWeights(
             return 0; /* each symbol present maximum once => not compressible */
         }
     }
-    let maxSymbolValue = c_uint::from(maxSymbolValue);
-
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
+    let maxSymbolValue = c_uint::from(maxSymbolValue);
     let _var_err__ = FSE_normalizeCount(
         ((*wksp).norm).as_mut_ptr(),
         tableLog,
@@ -1647,7 +1646,7 @@ pub unsafe fn HUF_optimalTableLog(
 
     if flags & HUF_flags_optimalDepth as c_int == 0 {
         /* cheap evaluation, based on FSE */
-        return FSE_optimalTableLog_internal(maxTableLog, srcSize, c_uint::from(maxSymbolValue), 1);
+        return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
     let dst = workSpace.byte_offset(size_of::<HUF_WriteCTableWksp>() as isize);
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();

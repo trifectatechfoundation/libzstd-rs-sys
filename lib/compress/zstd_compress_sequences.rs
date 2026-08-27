@@ -70,7 +70,7 @@ unsafe fn ZSTD_NCountCost(
 ) -> size_t {
     let mut wksp: [u8; 512] = [0; 512];
     let mut norm: [i16; 53] = [0; 53];
-    let tableLog = FSE_optimalTableLog(FSELog, nbSeq, u32::from(max));
+    let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
     let err_code = FSE_normalizeCount(
         norm.as_mut_ptr(),
         tableLog,
@@ -300,7 +300,7 @@ pub unsafe fn ZSTD_buildCTable(
         SymbolEncodingType::Compressed => {
             let wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
             let mut nbSeq_1 = nbSeq;
-            let tableLog = FSE_optimalTableLog(FSELog, nbSeq, u32::from(max));
+            let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
             if *count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize) > 1 {
                 let fresh0 = &mut (*count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize));
                 *fresh0 = (*fresh0).wrapping_sub(1);

@@ -370,12 +370,12 @@ fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) -> core::
 pub(crate) fn FSE_optimalTableLog_internal(
     maxTableLog: core::ffi::c_uint,
     srcSize: size_t,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     minus: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
     let maxBitsSrc = (ZSTD_highbit32(srcSize.wrapping_sub(1) as u32)).wrapping_sub(minus);
     let mut tableLog = maxTableLog;
-    let minBits = FSE_minTableLog(srcSize, maxSymbolValue);
+    let minBits = FSE_minTableLog(srcSize, u32::from(maxSymbolValue));
 
     if tableLog == 0 {
         tableLog = FSE_DEFAULT_TABLELOG as u32;
@@ -398,7 +398,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
 pub(crate) fn FSE_optimalTableLog(
     maxTableLog: core::ffi::c_uint,
     srcSize: size_t,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
 ) -> core::ffi::c_uint {
     FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 2)
 }
