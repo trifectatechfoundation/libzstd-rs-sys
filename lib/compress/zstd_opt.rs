@@ -224,10 +224,12 @@ unsafe fn ZSTD_rescaleFreqs(
             if compressedLiterals {
                 // generate literals statistics from huffman table
                 (*optPtr).litSum = 0;
-                for lit in 0..MaxLit + 1 {
+                for lit in 0..=MaxLit {
                     let scaleLog = 11u32; // scale to 2K
-                    let bitCost =
-                        HUF_getNbBitsFromCTable(&(*(*optPtr).symbolCosts).huf.CTable, lit);
+                    let bitCost = HUF_getNbBitsFromCTable(
+                        &(*(*optPtr).symbolCosts).huf.CTable,
+                        u32::from(lit),
+                    );
                     *((*optPtr).litFreq).offset(lit as isize) = (if bitCost != 0 {
                         1 << scaleLog.wrapping_sub(bitCost)
                     } else {
@@ -308,7 +310,7 @@ unsafe fn ZSTD_rescaleFreqs(
             // first block, no dictionary
             if compressedLiterals {
                 // base initial cost of literals on direct frequency within src
-                let mut lit_0 = MaxLit as u8;
+                let mut lit_0 = MaxLit;
                 HIST_count_simple(
                     (*optPtr).litFreq,
                     &mut lit_0,
@@ -316,7 +318,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     srcSize, // use raw first block to init statistics
                 );
                 (*optPtr).litSum =
-                    ZSTD_downscaleStats((*optPtr).litFreq, MaxLit, 8, base_0possible);
+                    ZSTD_downscaleStats((*optPtr).litFreq, u32::from(MaxLit), 8, base_0possible);
             }
 
             let baseLLfreqs: [core::ffi::c_uint; 36] = [
@@ -351,7 +353,7 @@ unsafe fn ZSTD_rescaleFreqs(
     } else {
         // new block: scale down accumulated statistics
         if compressedLiterals {
-            (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, MaxLit, 12);
+            (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, u32::from(MaxLit), 12);
         }
         (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, u32::from(MaxLL), 11);
         (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, u32::from(MaxML), 11);

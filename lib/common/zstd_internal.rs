@@ -72,7 +72,8 @@ pub(crate) const MINMATCH: core::ffi::c_int = 3;
 
 pub(crate) const Litbits: u32 = 8;
 pub(crate) const LitHufLog: u32 = 11;
-pub(crate) const MaxLit: u32 = (1 << Litbits) - 1;
+const _: () = assert!(MaxLit as u32 == (1u32 << Litbits) - 1);
+pub(crate) const MaxLit: u8 = 255;
 pub(crate) const MaxML: u8 = 52;
 pub(crate) const MaxLL: u8 = 35;
 pub(crate) const DefaultMaxOff: u8 = 28;
