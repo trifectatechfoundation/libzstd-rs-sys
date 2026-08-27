@@ -103,7 +103,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     let mut table_log = input.table_log as c_uint % 12 + 1;
 
     // Step 1: Get histogram
-    const HUF_SYMBOLVALUE_MAX: c_uint = 255;
+    const HUF_SYMBOLVALUE_MAX: u8 = 255;
     let mut count = vec![0u32; 256];
     let mut max_symbol = HUF_SYMBOLVALUE_MAX;
 
@@ -115,15 +115,12 @@ fuzz_target!(|input: HufRoundTripInput| {
             size,
         )
     };
-
     assert!(!ERR_isError(most_frequent), "HIST_count failed");
 
     // Skip RLE (all bytes the same)
     if most_frequent == size {
         return;
     }
-
-    assert!(max_symbol <= 255);
 
     // Step 2: Adjust table_log based on alphabet size
     table_log = adjust_table_log(table_log as usize, max_symbol as usize) as u32;

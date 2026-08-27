@@ -13,8 +13,8 @@ use crate::lib::common::huf::{
     HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
     HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_SIZE_ST,
-    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT,
-    HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
+    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8,
+    HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -93,7 +93,7 @@ unsafe fn HUF_compressWeights(
     let mut op = ostart;
     let oend = ostart.add(dstSize);
 
-    let mut maxSymbolValue = HUF_TABLELOG_MAX as c_uint;
+    let mut maxSymbolValue = HUF_TABLELOG_MAX as u8;
     let mut tableLog = MAX_FSE_TABLELOG_FOR_HUFF_HEADER as u32;
     let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
         as *mut HUF_CompressWeightsWksp;
@@ -124,6 +124,7 @@ unsafe fn HUF_compressWeights(
             return 0; /* each symbol present maximum once => not compressible */
         }
     }
+    let maxSymbolValue = c_uint::from(maxSymbolValue);
 
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
     let _var_err__ = FSE_normalizeCount(
@@ -222,7 +223,7 @@ pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTable
 unsafe fn HUF_writeCTableHeader(
     ctable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     tableLog: u32,
-    maxSymbolValue: u32,
+    maxSymbolValue: u8,
 ) {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
@@ -234,8 +235,7 @@ unsafe fn HUF_writeCTableHeader(
     }
     debug_assert!(tableLog < 256);
     header.tableLog = tableLog as u8;
-    debug_assert!(maxSymbolValue < 256);
-    header.maxSymbolValue = maxSymbolValue as u8;
+    header.maxSymbolValue = maxSymbolValue;
     // the header is stored in the first `HUF_CElt` slot of the table
     ctable.as_mut_ptr().cast::<HUF_CTableHeader>().write(header);
 }
@@ -252,7 +252,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     dst: *mut c_void,
     maxDstSize: size_t,
     CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
-    maxSymbolValue: c_uint,
+    maxSymbolValue: u8,
     huffLog: c_uint,
     workspace: *mut c_void,
     mut workspaceSize: size_t,
@@ -266,24 +266,28 @@ pub unsafe fn HUF_writeCTable_wksp(
         assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
-    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).maxSymbolValue as c_uint == maxSymbolValue);
+    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).maxSymbolValue == maxSymbolValue);
     debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).tableLog as c_uint == huffLog);
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
         return Error::GENERIC.to_error_code();
     }
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
-        return Error::maxSymbolValue_tooLarge.to_error_code();
-    }
+
+    let maxSymbolValue = usize::from(maxSymbolValue);
 
     /* convert to weight */
     (*wksp).bitsToWeight[0] = 0;
     for n in 1..huffLog + 1 {
         (*wksp).bitsToWeight[n as usize] = (huffLog + 1 - n) as u8;
     }
-    for n in 0..maxSymbolValue {
-        (*wksp).huffWeight[n as usize] = (*wksp).bitsToWeight[HUF_getNbBits(ct[n as usize])];
+    let bitsToWeight = &(*wksp).bitsToWeight;
+    let huffWeight = &mut (*wksp).huffWeight;
+    for (weight, &elt) in huffWeight[..maxSymbolValue]
+        .iter_mut()
+        .zip(&ct[..maxSymbolValue])
+    {
+        *weight = bitsToWeight[HUF_getNbBits(elt)];
     }
 
     /* attempt weights compression by FSE */
@@ -295,14 +299,14 @@ pub unsafe fn HUF_writeCTable_wksp(
             op.add(1) as *mut c_void,
             maxDstSize - 1,
             &(*wksp).huffWeight,
-            maxSymbolValue as size_t,
+            maxSymbolValue,
             &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
             size_of::<HUF_CompressWeightsWksp>(),
         );
         if ERR_isError(hSize) {
             return hSize;
         }
-        if (hSize > 1) && (hSize < (maxSymbolValue / 2) as size_t) {
+        if (hSize > 1) && (hSize < maxSymbolValue / 2) {
             /* FSE compressed */
             *op = hSize as u8;
             return hSize + 1;
@@ -310,27 +314,26 @@ pub unsafe fn HUF_writeCTable_wksp(
     }
 
     /* write raw values as 4-bits (max : 15) */
-    if maxSymbolValue > (256 - 128) as c_uint {
+    if maxSymbolValue > 256 - 128 {
         return Error::GENERIC.to_error_code(); /* should not happen : likely means source cannot be compressed */
     }
-    if (maxSymbolValue.div_ceil(2) + 1) as size_t > maxDstSize {
+    if maxSymbolValue.div_ceil(2) + 1 > maxDstSize {
         return Error::dstSize_tooSmall.to_error_code(); /* not enough space within dst buffer */
     }
-    *op = ((128 as c_uint/*special case*/) + (maxSymbolValue - 1)) as u8;
-    (*wksp).huffWeight[maxSymbolValue as usize] = 0;
+    // 128 is the special-case marker; `maxSymbolValue <= 128` was just checked, so this fits a byte
+    *op = (128 + maxSymbolValue - 1) as u8;
+    (*wksp).huffWeight[maxSymbolValue] = 0;
     let mut n = 0;
     while n < maxSymbolValue {
-        *op.offset(((n / 2) + 1) as isize) = ((((*wksp).huffWeight[n as usize] as c_int) << 4)
-            + (*wksp).huffWeight[(n + 1) as usize] as c_int)
-            as u8;
+        *op.add((n / 2) + 1) = ((*wksp).huffWeight[n] << 4) + (*wksp).huffWeight[n + 1];
         n += 2;
     }
-    (maxSymbolValue.div_ceil(2) + 1) as size_t
+    maxSymbolValue.div_ceil(2) + 1
 }
 
 pub unsafe fn HUF_readCTable(
     CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
-    maxSymbolValuePtr: &mut c_uint,
+    maxSymbolValuePtr: &mut u8,
     src: *const c_void,
     srcSize: size_t,
     hasZeroWeights: &mut c_uint,
@@ -361,11 +364,15 @@ pub unsafe fn HUF_readCTable(
     if tableLog > HUF_TABLELOG_MAX as u32 {
         return Error::tableLog_tooLarge.to_error_code();
     }
-    if nbSymbols > (*maxSymbolValuePtr) + 1 {
+    if nbSymbols > c_uint::from(*maxSymbolValuePtr) + 1 {
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
 
-    *maxSymbolValuePtr = nbSymbols - 1;
+    // the check above bounds `nbSymbols - 1` by `*maxSymbolValuePtr`
+    match u8::try_from(nbSymbols - 1) {
+        Ok(v) => *maxSymbolValuePtr = v,
+        Err(_) => return Error::maxSymbolValue_tooSmall.to_error_code(),
+    };
 
     HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
 
@@ -740,10 +747,10 @@ fn HUF_simpleQuickSort(arr: &mut [nodeElt], mut low: c_int, mut high: c_int) {
 unsafe fn HUF_sort(
     huffNode: &mut [nodeElt],
     count: *const c_uint,
-    maxSymbolValue: u32,
+    maxSymbolValue: u8,
     rankPosition: &mut [rankPos; RANK_POSITION_TABLE_SIZE],
 ) {
-    let maxSymbolValue1 = maxSymbolValue + 1;
+    let maxSymbolValue1 = u32::from(maxSymbolValue) + 1;
     /* Compute base and set curr to base.
      * For symbol s let lowerRank = HUF_getIndex(count[n]) and rank = lowerRank + 1.
      * See HUF_getIndex to see bucketing strategy.
@@ -803,7 +810,7 @@ pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
 /// # Returns
 ///
 /// The smallest node in the Huffman tree (by count).
-unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
+unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
     let huffNode0 = huffNode.sub(1);
     let mut nonNullRank: c_int = 0;
     let mut lowS: c_int = 0;
@@ -812,7 +819,7 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
     let mut nodeRoot: c_int = 0;
 
     /* init for parents */
-    nonNullRank = maxSymbolValue as c_int;
+    nonNullRank = c_int::from(maxSymbolValue);
     while (*huffNode.offset(nonNullRank as isize)).count == 0 {
         nonNullRank -= 1;
     }
@@ -889,14 +896,14 @@ unsafe fn HUF_buildCTableFromTree(
     CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     huffNode: &[nodeElt],
     nonNullRank: c_int,
-    maxSymbolValue: u32,
+    maxSymbolValue: u8,
     maxNbBits: u32,
 ) {
     /* fill result into ctable (val, nbBits) */
     let ct = &mut CTable[1..];
     let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
-    let alphabetSize = (maxSymbolValue + 1) as c_int;
+    let alphabetSize = c_int::from(maxSymbolValue) + 1;
     for n in 0..nonNullRank + 1 {
         nbPerRank[huffNode[n as usize].nbBits as usize] += 1;
     }
@@ -929,7 +936,7 @@ unsafe fn HUF_buildCTableFromTree(
 pub unsafe fn HUF_buildCTable_wksp(
     CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
     count: *const c_uint,
-    maxSymbolValue: u32,
+    maxSymbolValue: u8,
     mut maxNbBits: u32,
     workSpace: *mut c_void,
     mut wkspSize: size_t,
@@ -949,9 +956,6 @@ pub unsafe fn HUF_buildCTable_wksp(
     }
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
-    }
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
-        return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     huffNodeTbl.fill(nodeElt {
         count: 0,
@@ -992,12 +996,12 @@ pub unsafe fn HUF_buildCTable_wksp(
 pub unsafe fn HUF_estimateCompressedSize(
     CTable: *const HUF_CElt,
     count: *const c_uint,
-    maxSymbolValue: c_uint,
+    maxSymbolValue: u8,
 ) -> size_t {
     let ct = CTable.add(1);
     let mut nbBits = 0usize;
-    for s in 0..maxSymbolValue as c_int + 1 {
-        nbBits += HUF_getNbBits(*ct.offset(s as isize)) * *count.offset(s as isize) as size_t;
+    for s in 0..usize::from(maxSymbolValue) + 1 {
+        nbBits += HUF_getNbBits(*ct.add(s)) * *count.add(s) as size_t;
     }
     nbBits >> 3
 }
@@ -1005,7 +1009,7 @@ pub unsafe fn HUF_estimateCompressedSize(
 pub unsafe fn HUF_validateCTable(
     CTable: *const HUF_CElt,
     count: *const c_uint,
-    maxSymbolValue: c_uint,
+    maxSymbolValue: u8,
 ) -> bool {
     let header = HUF_readCTableHeader(CTable);
     let ct = CTable.add(1);
@@ -1013,12 +1017,12 @@ pub unsafe fn HUF_validateCTable(
 
     debug_assert!(header.tableLog as usize <= HUF_TABLELOG_ABSOLUTEMAX);
 
-    if (header.maxSymbolValue as c_uint) < maxSymbolValue {
+    if header.maxSymbolValue < maxSymbolValue {
         return false;
     }
-    for s in 0..maxSymbolValue as c_int + 1 {
+    for s in 0..usize::from(maxSymbolValue) + 1 {
         // NOTE: use `&` rather than `&&` to keep the loop branch-free
-        bad |= (*count.offset(s as isize) != 0) & (HUF_getNbBits(*ct.offset(s as isize)) == 0);
+        bad |= (*count.add(s) != 0) & (HUF_getNbBits(*ct.add(s)) == 0);
     }
     !bad
 }
@@ -1614,10 +1618,10 @@ pub struct HUF_compress_tables_t {
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: usize = 4096;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: usize = 10; /* Must be >= 2 */
 
-pub unsafe fn HUF_cardinality(count: *const c_uint, maxSymbolValue: c_uint) -> c_uint {
+pub unsafe fn HUF_cardinality(count: *const c_uint, maxSymbolValue: u8) -> c_uint {
     let mut cardinality = 0 as c_uint;
-    for i in 0..maxSymbolValue + 1 {
-        if *count.offset(i as isize) != 0 {
+    for i in 0..usize::from(maxSymbolValue) + 1 {
+        if *count.add(i) != 0 {
             cardinality += 1;
         }
     }
@@ -1631,7 +1635,7 @@ pub fn HUF_minTableLog(symbolCardinality: c_uint) -> c_uint {
 pub unsafe fn HUF_optimalTableLog(
     maxTableLog: c_uint,
     srcSize: size_t,
-    maxSymbolValue: c_uint,
+    maxSymbolValue: u8,
     workSpace: *mut c_void,
     wkspSize: size_t,
     table: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
@@ -1643,7 +1647,7 @@ pub unsafe fn HUF_optimalTableLog(
 
     if flags & HUF_flags_optimalDepth as c_int == 0 {
         /* cheap evaluation, based on FSE */
-        return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
+        return FSE_optimalTableLog_internal(maxTableLog, srcSize, c_uint::from(maxSymbolValue), 1);
     }
     let dst = workSpace.byte_offset(size_of::<HUF_WriteCTableWksp>() as isize);
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
@@ -1704,7 +1708,7 @@ unsafe fn HUF_compress_internal(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    mut maxSymbolValue: c_uint,
+    maxSymbolValue: c_uint,
     mut huffLog: c_uint,
     nbStreams: HUF_nbStreams_e,
     workSpace: *mut c_void,
@@ -1746,12 +1750,15 @@ unsafe fn HUF_compress_internal(
         return Error::tableLog_tooLarge.to_error_code(); /* current block size limit */
     }
 
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
+    // The value is restricted to the u8 range, so let's just use a u8.
+    const _: () = assert!(HUF_SYMBOLVALUE_MAX == 255);
+
+    let Ok(mut maxSymbolValue) = u8::try_from(maxSymbolValue) else {
         return Error::maxSymbolValue_tooLarge.to_error_code();
-    }
+    };
 
     if maxSymbolValue == 0 {
-        maxSymbolValue = HUF_SYMBOLVALUE_MAX;
+        maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
     }
 
     if huffLog == 0 {

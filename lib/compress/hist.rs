@@ -31,7 +31,7 @@ pub unsafe fn HIST_add(
 
 pub unsafe fn HIST_count_simple(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> core::ffi::c_uint {
@@ -43,9 +43,7 @@ pub unsafe fn HIST_count_simple(
     ptr::write_bytes(
         count as *mut u8,
         0,
-        (maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
-            .wrapping_mul(size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
-            as libc::size_t,
+        (usize::from(maxSymbolValue) + 1) * size_of::<core::ffi::c_uint>(),
     );
     if srcSize == 0 {
         *maxSymbolValuePtr = 0;
@@ -53,18 +51,20 @@ pub unsafe fn HIST_count_simple(
     }
 
     while ip < end {
-        *count.offset(*ip as isize) += 1;
+        *count.add(usize::from(*ip)) += 1;
         ip = ip.add(1);
     }
 
-    while *count.offset(maxSymbolValue as isize) == 0 {
-        maxSymbolValue = maxSymbolValue.wrapping_sub(1);
+    // `srcSize` is non-zero, so (assuming no symbol exceeds `maxSymbolValue`, which this
+    // variant deliberately does not check) at least one symbol has a non-zero count
+    while *count.add(usize::from(maxSymbolValue)) == 0 {
+        maxSymbolValue -= 1;
     }
     *maxSymbolValuePtr = maxSymbolValue;
 
-    for s in 0..maxSymbolValue + 1 {
-        if *count.offset(s as isize) > largestCount {
-            largestCount = *count.offset(s as isize);
+    for s in 0..usize::from(maxSymbolValue) + 1 {
+        if *count.add(s) > largestCount {
+            largestCount = *count.add(s);
         }
     }
 
@@ -83,7 +83,7 @@ pub unsafe fn HIST_count_simple(
 /// histogram's alphabet is larger than *maxSymbolValuePtr)
 unsafe fn HIST_count_parallel_wksp(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     check: HIST_checkInput_e,
@@ -91,8 +91,7 @@ unsafe fn HIST_count_parallel_wksp(
 ) -> size_t {
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
-    let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as core::ffi::c_ulong)
-        .wrapping_mul(size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
+    let countSize = (usize::from(*maxSymbolValuePtr) + 1) * size_of::<core::ffi::c_uint>();
     let mut max = 0;
     let Counting1 = workSpace;
     let Counting2 = Counting1.add(256);
@@ -101,7 +100,7 @@ unsafe fn HIST_count_parallel_wksp(
 
     // safety checks
     if sourceSize == 0 {
-        ptr::write_bytes(count as *mut u8, 0, countSize as libc::size_t);
+        ptr::write_bytes(count as *mut u8, 0, countSize);
         *maxSymbolValuePtr = 0;
         return 0;
     }
@@ -166,15 +165,16 @@ unsafe fn HIST_count_parallel_wksp(
         }
     }
 
-    let mut maxSymbolValue = 255 as core::ffi::c_uint;
-    while *Counting1.offset(maxSymbolValue as isize) == 0 {
-        maxSymbolValue = maxSymbolValue.wrapping_sub(1);
+    // `sourceSize` is non-zero, so at least one symbol has a non-zero count
+    let mut maxSymbolValue = u8::MAX;
+    while *Counting1.add(usize::from(maxSymbolValue)) == 0 {
+        maxSymbolValue -= 1;
     }
     if check != 0 && maxSymbolValue > *maxSymbolValuePtr {
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    core::ptr::copy(Counting1 as *const u8, count as *mut u8, countSize as usize);
+    core::ptr::copy(Counting1 as *const u8, count as *mut u8, countSize);
 
     max as size_t
 }
@@ -184,7 +184,7 @@ unsafe fn HIST_count_parallel_wksp(
 /// `workSpaceSize` must be >= HIST_WKSP_SIZE
 pub unsafe fn HIST_countFast_wksp(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     workSpace: *mut core::ffi::c_void,
@@ -214,7 +214,7 @@ pub unsafe fn HIST_countFast_wksp(
 /// `workSpace` size must be table of >= HIST_WKSP_SIZE_U32 unsigned
 pub unsafe fn HIST_count_wksp(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     workSpace: *mut core::ffi::c_void,
@@ -227,7 +227,7 @@ pub unsafe fn HIST_count_wksp(
     if workSpaceSize < HIST_WKSP_SIZE {
         return Error::workSpace_tooSmall.to_error_code();
     }
-    if *maxSymbolValuePtr < 255 {
+    if *maxSymbolValuePtr < u8::MAX {
         return HIST_count_parallel_wksp(
             count,
             maxSymbolValuePtr,
@@ -237,7 +237,7 @@ pub unsafe fn HIST_count_wksp(
             workSpace as *mut u32,
         );
     }
-    *maxSymbolValuePtr = 255;
+    *maxSymbolValuePtr = u8::MAX;
     HIST_countFast_wksp(
         count,
         maxSymbolValuePtr,
@@ -251,7 +251,7 @@ pub unsafe fn HIST_count_wksp(
 /// fast variant (unsafe : won't check if src contains values beyond count[] limit)
 pub unsafe fn HIST_countFast(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
 ) -> size_t {
@@ -268,7 +268,7 @@ pub unsafe fn HIST_countFast(
 
 pub unsafe fn HIST_count(
     count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: &mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {

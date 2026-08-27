@@ -507,7 +507,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     writeEntropy: bool,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
-    let mut maxSymbolValue = 255;
+    let mut maxSymbolValue = u8::MAX;
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
     if hufMetadata.hType == SymbolEncodingType::Basic {
@@ -556,7 +556,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     let ctStart = ctp;
     let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
-    let mut max = maxCode;
+    let mut max = maxCode as u8;
 
     HIST_countFast_wksp(
         countWksp,
@@ -566,6 +566,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         workspace,
         wkspSize,
     );
+    let max = core::ffi::c_uint::from(max);
     if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {

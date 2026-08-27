@@ -11,7 +11,8 @@ pub const HUF_WORKSPACE_SIZE: usize = (8 << 10) + 512;
 pub(crate) const HUF_TABLELOG_MAX: usize = 12;
 /// Default tableLog value when none specified
 pub(crate) const HUF_TABLELOG_DEFAULT: u32 = 11;
-pub(crate) const HUF_SYMBOLVALUE_MAX: u32 = 255;
+pub(crate) const HUF_SYMBOLVALUE_MAX: u32 = HUF_SYMBOLVALUE_MAX_U8 as u32;
+pub(crate) const HUF_SYMBOLVALUE_MAX_U8: u8 = 255;
 
 pub(crate) const HUF_CTABLE_WORKSPACE_SIZE_U32: usize =
     (4 * (HUF_SYMBOLVALUE_MAX as usize + 1)) + 192;
