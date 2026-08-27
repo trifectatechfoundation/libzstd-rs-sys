@@ -64,19 +64,19 @@ fn ZSTD_useLowProbCount(nbSeq: size_t) -> bool {
 /// Returns an error if any of the helper functions return an error.
 unsafe fn ZSTD_NCountCost(
     count: *const core::ffi::c_uint,
-    max: core::ffi::c_uint,
+    max: u8,
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
 ) -> size_t {
     let mut wksp: [u8; 512] = [0; 512];
     let mut norm: [i16; 53] = [0; 53];
-    let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
+    let tableLog = FSE_optimalTableLog(FSELog, nbSeq, u32::from(max));
     let err_code = FSE_normalizeCount(
         norm.as_mut_ptr(),
         tableLog,
         count,
         nbSeq,
-        max,
+        u32::from(max),
         ZSTD_useLowProbCount(nbSeq),
     );
     if ERR_isError(err_code) {
@@ -86,7 +86,7 @@ unsafe fn ZSTD_NCountCost(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; 512]>(),
         norm.as_mut_ptr(),
-        max,
+        u32::from(max),
         tableLog,
     )
 }
@@ -223,7 +223,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         } else {
             Error::GENERIC.to_error_code()
         };
-        let NCountCost = ZSTD_NCountCost(count, u32::from(max), nbSeq, FSELog);
+        let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
