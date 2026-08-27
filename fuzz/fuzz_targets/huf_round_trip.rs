@@ -120,9 +120,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         return;
     }
 
-    if max_symbol <= 255 {
-        return;
-    }
+    assert!(max_symbol <= 255);
 
     // Step 2: Adjust table_log based on alphabet size
     table_log = adjust_table_log(table_log as usize, max_symbol as usize) as u32;
