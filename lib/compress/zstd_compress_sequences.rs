@@ -113,7 +113,7 @@ unsafe fn ZSTD_entropyCost(count: *const core::ffi::c_uint, max: u8, total: size
 pub unsafe fn ZSTD_fseBitCost(
     ctable: &[FSE_CTable],
     count: *const core::ffi::c_uint,
-    max: core::ffi::c_uint,
+    max: u8,
 ) -> size_t {
     let kAccuracyLog = 8;
     let mut cost = 0usize;
@@ -124,10 +124,10 @@ pub unsafe fn ZSTD_fseBitCost(
         stateLog: 0,
     };
     FSE_initCState(&mut cstate, ctable);
-    if u32::from(ZSTD_getFSEMaxSymbolValue(ctable)) < max {
+    if ZSTD_getFSEMaxSymbolValue(ctable) < u16::from(max) {
         return Error::GENERIC.to_error_code();
     }
-    for s in 0..max + 1 {
+    for s in 0..u32::from(max) + 1 {
         let tableLog = cstate.stateLog;
         let badCost = tableLog.wrapping_add(1) << kAccuracyLog;
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
@@ -219,7 +219,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat_none {
-            ZSTD_fseBitCost(prevCTable, count, u32::from(max))
+            ZSTD_fseBitCost(prevCTable, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };

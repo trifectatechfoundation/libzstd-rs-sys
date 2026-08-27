@@ -5827,7 +5827,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     } else if type_0 == SymbolEncodingType::Rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, u32::from(max));
+        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
