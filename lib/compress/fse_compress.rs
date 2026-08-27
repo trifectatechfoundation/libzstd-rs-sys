@@ -19,7 +19,7 @@ use crate::lib::common::mem::MEM_write64;
 pub(crate) unsafe fn FSE_buildCTable_wksp(
     ct: *mut FSE_CTable,
     normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
     workSpace: *mut core::ffi::c_void,
     wkspSize: size_t,
@@ -36,7 +36,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     let step = (tableSize >> 1)
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3);
-    let maxSV1 = maxSymbolValue.wrapping_add(1);
+    let maxSV1 = u32::from(maxSymbolValue) + 1;
 
     let cumul = workSpace as *mut u16;
     let tableSymbol = cumul.offset(maxSV1.wrapping_add(1) as isize) as *mut u8;
@@ -44,7 +44,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     let mut highThreshold = tableSize.wrapping_sub(1);
 
     if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulonglong).wrapping_mul(
-        (maxSymbolValue.wrapping_add(2) as core::ffi::c_ulonglong)
+        ((u32::from(maxSymbolValue) + 2) as core::ffi::c_ulonglong)
             .wrapping_add(1 << tableLog)
             .wrapping_div(2)
             .wrapping_add(
@@ -59,7 +59,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 
     // CTable header
     *tableU16.sub(2) = tableLog as u16;
-    *tableU16.sub(1) = maxSymbolValue as u16;
+    *tableU16.sub(1) = u16::from(maxSymbolValue);
 
     // For explanations on how to distribute symbol values over the table :
     // https://fastcompression.blogspot.fr/2014/02/fse-distributing-symbol-values.html
@@ -155,8 +155,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     // Build Symbol Transformation Table
     let mut total = 0u32;
     let mut s_2: core::ffi::c_uint = 0;
-    s_2 = 0;
-    while s_2 <= maxSymbolValue {
+    while s_2 < maxSV1 {
         match *normalizedCounter.offset(s_2 as isize) as core::ffi::c_int {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
