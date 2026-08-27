@@ -148,6 +148,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             flags,
         )
     };
+    assert!(table_log <= 12);
 
     // Step 5: Build compression table (returns actual tableLog)
     let table_log = unsafe {
