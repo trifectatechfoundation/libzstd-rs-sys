@@ -946,7 +946,7 @@ unsafe fn analyze_entropy_internal(
         LLFSELog,
         litLengthCount.as_mut_ptr(),
         total as size_t,
-        MaxLL,
+        u32::from(MaxLL),
         true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
@@ -1015,7 +1015,7 @@ unsafe fn analyze_entropy_internal(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
         litLengthNCount.as_mut_ptr(),
-        MaxLL,
+        u32::from(MaxLL),
         llLog,
     );
     if let Some(err) = Error::from_error_code(lhSize) {

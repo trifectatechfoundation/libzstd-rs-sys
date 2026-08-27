@@ -963,7 +963,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.LLTable,
         &mut dctx.LLTptr,
         LLtype,
-        MaxLL,
+        u32::from(MaxLL),
         LLFSELog,
         &src[ip..],
         &LL_base,

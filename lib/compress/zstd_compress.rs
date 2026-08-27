@@ -3204,7 +3204,7 @@ fn ZSTD_sizeof_matchState(
     let optPotentialSpace =
         (ZSTD_cwksp_aligned64_alloc_size(((MaxML + 1) as size_t).wrapping_mul(size_of::<u32>())))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                ((MaxLL + 1) as size_t).wrapping_mul(size_of::<u32>()),
+                (usize::from(MaxLL) + 1).wrapping_mul(size_of::<u32>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
                 ((MaxOff + 1) as size_t).wrapping_mul(size_of::<u32>()),
@@ -3663,7 +3663,7 @@ unsafe fn ZSTD_reset_matchState(
         ) as *mut core::ffi::c_uint;
         ms.opt.litLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
-            ((MaxLL + 1) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>()),
+            (usize::from(MaxLL) + 1).wrapping_mul(size_of::<core::ffi::c_uint>()),
         ) as *mut core::ffi::c_uint;
         ms.opt.matchLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
@@ -4399,7 +4399,7 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
         }
     }
     if (*seqStorePtr).longLengthType == LongLengthType::Literal {
-        *llCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxLL as u8;
+        *llCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxLL;
     }
     if (*seqStorePtr).longLengthType == LongLengthType::Match {
         *mlCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxML as u8;
@@ -4452,7 +4452,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     };
 
     // build CTable for Literal Lengths
-    let mut max = MaxLL as u8;
+    let mut max = MaxLL;
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
@@ -4487,7 +4487,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        MaxLL,
+        u32::from(MaxLL),
         &prevEntropy.litlengthCTable,
         entropyWorkspace,
         entropyWkspSize,
@@ -5883,12 +5883,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         fseMetadata.llType,
         llCodeTable,
         nbSeq,
-        MaxLL,
+        u32::from(MaxLL),
         &fseTables.litlengthCTable,
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        MaxLL,
+        u32::from(MaxLL),
         workspace,
         wkspSize,
     ));
@@ -7435,7 +7435,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(matchlengthHeaderSize);
 
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut litlengthMaxValue = MaxLL;
+    let mut litlengthMaxValue = u32::from(MaxLL);
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount(
         &mut litlengthNCount,
@@ -7460,8 +7460,11 @@ pub unsafe fn ZSTD_loadCEntropy(
     )) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*bs).entropy.fse.litlength_repeatMode =
-        ZSTD_dictNCountRepeat(litlengthNCount.as_mut_ptr(), litlengthMaxValue, MaxLL);
+    (*bs).entropy.fse.litlength_repeatMode = ZSTD_dictNCountRepeat(
+        litlengthNCount.as_mut_ptr(),
+        litlengthMaxValue,
+        u32::from(MaxLL),
+    );
     dictPtr = dictPtr.add(litlengthHeaderSize);
 
     if dictPtr.add(12) > dictEnd {

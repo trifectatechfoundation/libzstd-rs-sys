@@ -2380,7 +2380,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
     );
     dictPtr = &dictPtr[matchlengthHeaderSize..];
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut litlengthMaxValue = MaxLL;
+    let mut litlengthMaxValue = u32::from(MaxLL);
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount_slice(
         &mut litlengthNCount,
