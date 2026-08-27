@@ -7422,7 +7422,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if ERR_isError(FSE_buildCTable_wksp(
         ((*bs).entropy.fse.matchlengthCTable).as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
-        u32::from(matchlengthMaxValue),
+        matchlengthMaxValue,
         matchlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,
@@ -7455,7 +7455,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if ERR_isError(FSE_buildCTable_wksp(
         ((*bs).entropy.fse.litlengthCTable).as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
-        u32::from(litlengthMaxValue),
+        litlengthMaxValue,
         litlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,

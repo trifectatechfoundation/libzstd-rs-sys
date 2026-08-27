@@ -287,7 +287,7 @@ pub unsafe fn ZSTD_buildCTable(
             let err_code_0 = FSE_buildCTable_wksp(
                 nextCTable.as_mut_ptr(),
                 defaultNorm,
-                u32::from(defaultMax),
+                defaultMax,
                 defaultNormLog,
                 entropyWorkspace,
                 entropyWorkspaceSize,
@@ -331,7 +331,7 @@ pub unsafe fn ZSTD_buildCTable(
             let err_code_3 = FSE_buildCTable_wksp(
                 nextCTable.as_mut_ptr(),
                 ((*wksp).norm).as_mut_ptr(),
-                u32::from(max),
+                max,
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
                 size_of::<[u32; 285]>(),
