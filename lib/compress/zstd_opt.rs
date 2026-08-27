@@ -308,7 +308,7 @@ unsafe fn ZSTD_rescaleFreqs(
             // first block, no dictionary
             if compressedLiterals {
                 // base initial cost of literals on direct frequency within src
-                let mut lit_0 = MaxLit;
+                let mut lit_0 = MaxLit as u8;
                 HIST_count_simple(
                     (*optPtr).litFreq,
                     &mut lit_0,

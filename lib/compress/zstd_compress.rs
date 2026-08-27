@@ -666,7 +666,7 @@ use crate::lib::common::fse::{
 };
 use crate::lib::common::huf::{
     HUF_flags_optimalDepth, HUF_repeat_check, HUF_repeat_none, HUF_repeat_valid,
-    HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
+    HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
@@ -4452,7 +4452,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     };
 
     // build CTable for Literal Lengths
-    let mut max = MaxLL;
+    let mut max = MaxLL as u8;
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
@@ -4461,6 +4461,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
+    let max = u32::from(max);
     nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.litlength_repeatMode,
@@ -4502,7 +4503,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     op = op.add(countSize);
 
     // build CTable for Offsets
-    let mut max_0 = MaxOff;
+    let mut max_0 = MaxOff as u8;
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
@@ -4511,6 +4512,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
+    let max_0 = u32::from(max_0);
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
     let defaultPolicy = if max_0 <= DefaultMaxOff {
         DefaultPolicy::Allowed
@@ -4558,7 +4560,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     op = op.add(countSize_0);
 
     // build CTable for MatchLengths
-    let mut max_1 = MaxML;
+    let mut max_1 = MaxML as u8;
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_1,
@@ -4567,6 +4569,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
+    let max_1 = u32::from(max_1);
     nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.matchlength_repeatMode,
@@ -5495,7 +5498,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         ((HUF_SYMBOLVALUE_MAX + 1) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
     let nodeWksp = countWkspStart.add(countWkspSize);
     let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
-    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
+    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
     let mut huffLog = LitHufLog;
     let mut repeat = prevHuf.repeatMode;
 
@@ -5750,7 +5753,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     writeEntropy: bool,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
-    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
+    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
     let literalSectionHeaderSize =
         (3 + (litSize >= (1 << 10) as size_t) as core::ffi::c_int
             + (litSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
@@ -5808,7 +5811,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     let ctStart = ctp;
     let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
-    let mut max = maxCode;
+    let mut max = maxCode as u8;
 
     HIST_countFast_wksp(
         countWksp,
@@ -5818,6 +5821,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         workspace,
         wkspSize,
     );
+    let max = u32::from(max);
     if type_0 == SymbolEncodingType::Basic {
         /* We selected this encoding type, so it must be valid. */
         assert!(max <= defaultMax);
@@ -7354,7 +7358,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(8);
     (*bs).entropy.huf.repeatMode = HUF_repeat_check;
 
-    let mut maxSymbolValue = 255;
+    let mut maxSymbolValue = u8::MAX;
     let mut hasZeroWeights = 1;
     let hufHeaderSize = HUF_readCTable(
         &mut (*bs).entropy.huf.CTable,
@@ -7366,7 +7370,7 @@ pub unsafe fn ZSTD_loadCEntropy(
 
     // We only set the loaded table as valid if it contains all non-zero
     // weights. Otherwise, we set it to check
-    if hasZeroWeights == 0 && maxSymbolValue == 255 {
+    if hasZeroWeights == 0 && maxSymbolValue == u8::MAX {
         (*bs).entropy.huf.repeatMode = HUF_repeat_valid;
     }
 
