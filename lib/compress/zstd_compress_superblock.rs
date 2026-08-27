@@ -615,7 +615,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
         fseMetadata.ofType,
         ofCodeTable,
-        MaxOff,
+        u32::from(MaxOff),
         nbSeq,
         &fseTables.offcodeCTable,
         core::ptr::null(),

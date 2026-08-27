@@ -981,7 +981,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
         OFtype,
-        MaxOff,
+        u32::from(MaxOff),
         OffFSELog,
         &src[ip..],
         &OF_base,
@@ -1593,7 +1593,7 @@ fn ZSTD_decodeSequence(
 
     // NOTE: experimentally this assert provides valuable information for downstream optimizations.
     // it is deliberately not a debug_assert!.
-    assert!(ofBits as u32 <= MaxOff);
+    assert!(ofBits <= MaxOff);
 
     let mut offset: size_t = 0;
     if ofBits > 1 {

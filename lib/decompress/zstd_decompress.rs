@@ -2323,7 +2323,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
 
     dictPtr = &dictPtr[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
-    let mut offcodeMaxValue = MaxOff;
+    let mut offcodeMaxValue = u32::from(MaxOff);
     let mut offcodeLog: core::ffi::c_uint = 0;
     let offcodeHeaderSize = FSE_readNCount_slice(
         &mut offcodeNCount,

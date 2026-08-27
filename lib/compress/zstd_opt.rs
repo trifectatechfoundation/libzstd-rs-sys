@@ -292,9 +292,9 @@ unsafe fn ZSTD_rescaleFreqs(
             };
             FSE_initCState(&mut ofstate, &(*(*optPtr).symbolCosts).fse.offcodeCTable);
             (*optPtr).offCodeSum = 0;
-            for of in 0..MaxOff + 1 {
+            for of in 0..=MaxOff {
                 let scaleLog_2 = 10u32;
-                let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of);
+                let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, u32::from(of));
                 *((*optPtr).offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
                     1 << scaleLog_2.wrapping_sub(bitCost_2)
                 } else {
@@ -347,7 +347,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 (*optPtr).offCodeFreq,
                 baseOFCfreqs.len(),
             );
-            (*optPtr).offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), (MaxOff + 1) as size_t);
+            (*optPtr).offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), usize::from(MaxOff) + 1);
         }
     } else {
         // new block: scale down accumulated statistics
@@ -356,7 +356,7 @@ unsafe fn ZSTD_rescaleFreqs(
         }
         (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, MaxLL, 11);
         (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, MaxML, 11);
-        (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, MaxOff, 11);
+        (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, u32::from(MaxOff), 11);
     }
 
     ZSTD_setBasePrices(optPtr, optLevel);
