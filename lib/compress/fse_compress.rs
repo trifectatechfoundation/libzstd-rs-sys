@@ -410,9 +410,10 @@ unsafe fn FSE_normalizeM2(
     tableLog: u32,
     count: *const core::ffi::c_uint,
     mut total: size_t,
-    maxSymbolValue: u32,
+    maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
 ) -> size_t {
+    let maxSV1 = u32::from(maxSymbolValue) + 1;
     let NOT_YET_ASSIGNED = -2 as core::ffi::c_short;
     let mut s: u32 = 0;
     let mut distributed = 0u32;
@@ -421,7 +422,7 @@ unsafe fn FSE_normalizeM2(
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
 
-    for s in 0..maxSymbolValue + 1 {
+    for s in 0..maxSV1 {
         if *count.offset(s as isize) == 0 {
             *norm.offset(s as isize) = 0;
         } else if *count.offset(s as isize) <= lowThreshold {
@@ -445,7 +446,7 @@ unsafe fn FSE_normalizeM2(
     if total / ToDistribute as size_t > lowOne as size_t {
         // risk of rounding to zero
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
-        for s in 0..maxSymbolValue + 1 {
+        for s in 0..maxSV1 {
             if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
                 && *count.offset(s as isize) <= lowOne
             {
@@ -457,13 +458,13 @@ unsafe fn FSE_normalizeM2(
         ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
     }
 
-    if distributed == maxSymbolValue.wrapping_add(1) {
+    if distributed == maxSV1 {
         // all values are pretty poor;
         // probably incompressible data (should have already been detected);
         // find max, then give all remaining points to max
         let mut maxV = 0;
         let mut maxC = 0;
-        for s in 0..maxSymbolValue + 1 {
+        for s in 0..maxSV1 {
             if *count.offset(s as isize) > maxC {
                 maxV = s;
                 maxC = *count.offset(s as isize);
@@ -484,7 +485,7 @@ unsafe fn FSE_normalizeM2(
                 ToDistribute = ToDistribute.wrapping_sub(1);
                 *norm.offset(s as isize) += 1;
             }
-            s = s.wrapping_add(1) % maxSymbolValue.wrapping_add(1);
+            s = s.wrapping_add(1) % maxSV1;
         }
         return 0;
     }
@@ -493,7 +494,7 @@ unsafe fn FSE_normalizeM2(
     let mid = (1u64 << vStepLog.wrapping_sub(1)).wrapping_sub(1);
     let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
-    for s in 0..maxSymbolValue + 1 {
+    for s in 0..maxSV1 {
         if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int {
             let end = tmpTotal.wrapping_add(*count.offset(s as isize) as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
@@ -577,7 +578,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
             tableLog,
             count,
             total,
-            u32::from(maxSymbolValue),
+            maxSymbolValue,
             lowProbCount,
         );
         if ERR_isError(errorCode) {
