@@ -143,7 +143,7 @@ unsafe fn HUF_compressWeights(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             ((*wksp).norm).as_mut_ptr(),
-            c_uint::from(maxSymbolValue),
+            maxSymbolValue,
             tableLog,
         );
         if ERR_isError(hSize) {

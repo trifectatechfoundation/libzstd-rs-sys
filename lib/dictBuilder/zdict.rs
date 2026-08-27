@@ -743,7 +743,7 @@ fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit[254] = 1;
 }
 
-const OFFCODE_MAX: u32 = 30; // only applicable to first block
+const OFFCODE_MAX: u8 = 30; // only applicable to first block
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     maxDstSize: size_t,
@@ -793,7 +793,7 @@ unsafe fn analyze_entropy_internal(
 
     const KB: usize = 1 << 10;
     let offcodeMax = dictBufferSize.wrapping_add(128 * KB).ilog2() as u8;
-    if u32::from(offcodeMax) > OFFCODE_MAX {
+    if offcodeMax > OFFCODE_MAX {
         return Err(Error::dictionaryCreation_failed); // dictionary too large
     }
 
@@ -997,7 +997,7 @@ unsafe fn analyze_entropy_internal(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
         matchLengthNCount.as_mut_ptr(),
-        u32::from(MaxML),
+        MaxML,
         mlLog,
     );
     if let Some(err) = Error::from_error_code(mhSize) {
@@ -1014,7 +1014,7 @@ unsafe fn analyze_entropy_internal(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
         litLengthNCount.as_mut_ptr(),
-        u32::from(MaxLL),
+        MaxLL,
         llLog,
     );
     if let Some(err) = Error::from_error_code(lhSize) {
