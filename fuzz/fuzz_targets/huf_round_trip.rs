@@ -115,8 +115,10 @@ fuzz_target!(|input: HufRoundTripInput| {
         )
     };
 
-    // Skip if error or RLE (all bytes the same)
-    if ZSTD_isError(most_frequent) == 1 || most_frequent == size {
+    assert!(!ERR_isError(most_frequent), "HIST_count failed");
+
+    // Skip RLE (all bytes the same)
+    if most_frequent == size {
         return;
     }
 
@@ -159,9 +161,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         )
     };
 
-    if ZSTD_isError(table_log) == 1 {
-        return;
-    }
+    assert!(!ERR_isError(table_log), "HUF_buildCTable_wksp failed");
 
     // Step 6: Write compression table to buffer
     let table_size = unsafe {
@@ -204,21 +204,15 @@ fuzz_target!(|input: HufRoundTripInput| {
         );
 
         // Fall back to X1 if tableLog_tooLarge
-        if ZSTD_isError(result) == 1 {
-            let err_code = ERR_getErrorCode(result);
-            if err_code == ZSTD_error_tableLog_tooLarge as u32 {
-                // tableLog_tooLarge error code
-                let mut x1_workspace: lib::decompress::Workspace =
-                    lib::decompress::Workspace::default();
-                lib::decompress::huf_decompress::HUF_readDTableX1_wksp(
-                    &mut dt,
-                    &c_buf[..table_size],
-                    &mut x1_workspace,
-                    flags,
-                )
-            } else {
-                return; // Other error
-            }
+        if ERR_getErrorCode(result) == ZSTD_error_tableLog_tooLarge {
+            let mut x1_workspace: lib::decompress::Workspace =
+                lib::decompress::Workspace::default();
+            lib::decompress::huf_decompress::HUF_readDTableX1_wksp(
+                &mut dt,
+                &c_buf[..table_size],
+                &mut x1_workspace,
+                flags,
+            )
         } else {
             result
         }
@@ -233,9 +227,10 @@ fuzz_target!(|input: HufRoundTripInput| {
         )
     };
 
-    if ZSTD_isError(dt_read_size) == 1 {
-        return;
-    }
+    assert!(
+        !ERR_isError(dt_read_size),
+        "reading the decompression table failed"
+    );
 
     // Step 8: Compress the data (overwrites cBuf)
     let compress_size = unsafe {
@@ -262,9 +257,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         }
     };
 
-    if ZSTD_isError(compress_size) == 1 {
-        return;
-    }
+    assert!(!ERR_isError(compress_size), "compression failed");
 
     // C code skips decompression if cSize == 0
     if compress_size == 0 {
@@ -295,9 +288,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     };
 
     // Step 10: Verify decompression
-    if ZSTD_isError(decompress_size) == 1 {
-        panic!("Decompression failed");
-    }
+    assert!(!ERR_isError(decompress_size), "decompression failed");
 
     assert_eq!(
         decompress_size, size,
