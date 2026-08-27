@@ -541,13 +541,13 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
 unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     type_0: SymbolEncodingType,
     codeTable: *const u8,
-    maxCode: core::ffi::c_uint,
+    maxCode: u8,
     nbSeq: size_t,
     fseCTable: &[FSE_CTable],
     additionalBits: *const u8,
     defaultNorm: *const core::ffi::c_short,
     defaultNormLog: u32,
-    defaultMax: u32,
+    defaultMax: u8,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
@@ -556,7 +556,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     let ctStart = ctp;
     let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
-    let mut max = maxCode as u8;
+    let mut max = maxCode;
 
     HIST_countFast_wksp(
         countWksp,
@@ -566,18 +566,17 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         workspace,
         wkspSize,
     );
-    let max = core::ffi::c_uint::from(max);
     if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, u32::from(max))
         } else {
             Error::GENERIC.to_error_code()
         };
     } else if type_0 == SymbolEncodingType::Rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
+        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, u32::from(max));
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
@@ -615,39 +614,39 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
         fseMetadata.ofType,
         ofCodeTable,
-        u32::from(MaxOff),
+        MaxOff,
         nbSeq,
         &fseTables.offcodeCTable,
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        u32::from(DefaultMaxOff),
+        DefaultMaxOff,
         workspace,
         wkspSize,
     ));
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
         fseMetadata.llType,
         llCodeTable,
-        u32::from(MaxLL),
+        MaxLL,
         nbSeq,
         &fseTables.litlengthCTable,
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        u32::from(MaxLL),
+        MaxLL,
         workspace,
         wkspSize,
     ));
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
         fseMetadata.mlType,
         mlCodeTable,
-        u32::from(MaxML),
+        MaxML,
         nbSeq,
         &fseTables.matchlengthCTable,
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        u32::from(MaxML),
+        MaxML,
         workspace,
         wkspSize,
     ));
