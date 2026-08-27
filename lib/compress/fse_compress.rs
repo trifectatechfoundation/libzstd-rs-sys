@@ -361,9 +361,9 @@ pub(crate) unsafe fn FSE_writeNCount(
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
-fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) -> core::ffi::c_uint {
+fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: u8) -> core::ffi::c_uint {
     let minBitsSrc = (ZSTD_highbit32(srcSize as u32)).wrapping_add(1);
-    let minBitsSymbols = (ZSTD_highbit32(maxSymbolValue)).wrapping_add(2);
+    let minBitsSymbols = maxSymbolValue.ilog2().wrapping_add(2);
     minBitsSrc.min(minBitsSymbols)
 }
 
@@ -375,7 +375,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
 ) -> core::ffi::c_uint {
     let maxBitsSrc = (ZSTD_highbit32(srcSize.wrapping_sub(1) as u32)).wrapping_sub(minus);
     let mut tableLog = maxTableLog;
-    let minBits = FSE_minTableLog(srcSize, u32::from(maxSymbolValue));
+    let minBits = FSE_minTableLog(srcSize, maxSymbolValue);
 
     if tableLog == 0 {
         tableLog = FSE_DEFAULT_TABLELOG as u32;
@@ -515,7 +515,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     mut tableLog: core::ffi::c_uint,
     count: *const core::ffi::c_uint,
     total: size_t,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     useLowProbCount: bool,
 ) -> size_t {
     // Sanity checks
@@ -542,7 +542,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let mut largestP = 0;
     let lowThreshold = (total >> tableLog) as u32;
 
-    for s in 0..maxSymbolValue + 1 {
+    for s in 0..u32::from(maxSymbolValue) + 1 {
         if *count.offset(s as isize) as size_t == total {
             return 0; // rle special case
         }
@@ -577,7 +577,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
             tableLog,
             count,
             total,
-            maxSymbolValue,
+            u32::from(maxSymbolValue),
             lowProbCount,
         );
         if ERR_isError(errorCode) {

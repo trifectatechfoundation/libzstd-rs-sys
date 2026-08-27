@@ -76,7 +76,7 @@ unsafe fn ZSTD_NCountCost(
         tableLog,
         count,
         nbSeq,
-        u32::from(max),
+        max,
         ZSTD_useLowProbCount(nbSeq),
     );
     if ERR_isError(err_code) {
@@ -306,7 +306,6 @@ pub unsafe fn ZSTD_buildCTable(
                 *fresh0 = (*fresh0).wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
-            let max = u32::from(max);
             let err_code_1 = FSE_normalizeCount(
                 ((*wksp).norm).as_mut_ptr(),
                 tableLog,
@@ -322,7 +321,7 @@ pub unsafe fn ZSTD_buildCTable(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
                 ((*wksp).norm).as_mut_ptr(),
-                max,
+                u32::from(max),
                 tableLog,
             );
             let err_code_2 = NCountSize;
@@ -332,7 +331,7 @@ pub unsafe fn ZSTD_buildCTable(
             let err_code_3 = FSE_buildCTable_wksp(
                 nextCTable.as_mut_ptr(),
                 ((*wksp).norm).as_mut_ptr(),
-                max,
+                u32::from(max),
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
                 size_of::<[u32; 285]>(),
