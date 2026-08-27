@@ -75,26 +75,21 @@ impl<'a> FSE_DState_t<'a> {
 fn FSE_buildDTable_internal(
     dt: &mut DTable,
     normalizedCounter: &[core::ffi::c_short; 256],
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
 ) -> Result<(), Error> {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
-    let maxSV1 = maxSymbolValue.wrapping_add(1);
+    let maxSV1 = u32::from(maxSymbolValue) + 1;
     let tableSize = (1 << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
 
     if ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-        .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
-        as core::ffi::c_ulonglong)
+        .wrapping_mul(maxSV1 as core::ffi::c_ulong) as core::ffi::c_ulonglong)
         .wrapping_add(1 << tableLog)
         .wrapping_add(8)
         > wkspSize as core::ffi::c_ulonglong
     {
-        return Err(Error::maxSymbolValue_tooLarge);
-    }
-
-    if maxSymbolValue > FSE_MAX_SYMBOL_VALUE as core::ffi::c_uint {
         return Err(Error::maxSymbolValue_tooLarge);
     }
 
@@ -378,7 +373,7 @@ fn FSE_decompress_wksp_body(
     let () = FSE_buildDTable_internal(
         &mut workspace.dtable,
         &workspace.a.ncount,
-        u32::from(maxSymbolValue),
+        maxSymbolValue,
         tableLog,
     )?;
 
