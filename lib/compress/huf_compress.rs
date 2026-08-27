@@ -125,7 +125,6 @@ unsafe fn HUF_compressWeights(
         }
     }
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
-    let maxSymbolValue = c_uint::from(maxSymbolValue);
     let _var_err__ = FSE_normalizeCount(
         ((*wksp).norm).as_mut_ptr(),
         tableLog,
@@ -144,7 +143,7 @@ unsafe fn HUF_compressWeights(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             ((*wksp).norm).as_mut_ptr(),
-            maxSymbolValue,
+            c_uint::from(maxSymbolValue),
             tableLog,
         );
         if ERR_isError(hSize) {
@@ -157,7 +156,7 @@ unsafe fn HUF_compressWeights(
     let _var_err___0 = FSE_buildCTable_wksp(
         ((*wksp).CTable).as_mut_ptr(),
         ((*wksp).norm).as_mut_ptr(),
-        maxSymbolValue,
+        c_uint::from(maxSymbolValue),
         tableLog,
         ((*wksp).scratchBuffer).as_mut_ptr() as *mut c_void,
         size_of::<[u32; 41]>(),

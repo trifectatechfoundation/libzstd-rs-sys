@@ -3,7 +3,6 @@ use std::time::{Duration, Instant};
 
 use libc::size_t;
 
-use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{
     HUF_CElt, HUF_CTABLE_SIZE_ST, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
@@ -793,8 +792,8 @@ unsafe fn analyze_entropy_internal(
     let mut hufTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)] = [0; HUF_CTABLE_SIZE_ST(255)];
 
     const KB: usize = 1 << 10;
-    let offcodeMax = ZSTD_highbit32(dictBufferSize.wrapping_add(128 * KB) as u32);
-    if offcodeMax > OFFCODE_MAX {
+    let offcodeMax = dictBufferSize.wrapping_add(128 * KB).ilog2() as u8;
+    if u32::from(offcodeMax) > OFFCODE_MAX {
         return Err(Error::dictionaryCreation_failed); // dictionary too large
     }
 
@@ -929,7 +928,7 @@ unsafe fn analyze_entropy_internal(
         MLFSELog,
         matchLengthCount.as_mut_ptr(),
         total as size_t,
-        u32::from(MaxML),
+        MaxML,
         true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
@@ -946,7 +945,7 @@ unsafe fn analyze_entropy_internal(
         LLFSELog,
         litLengthCount.as_mut_ptr(),
         total as size_t,
-        u32::from(MaxLL),
+        MaxLL,
         true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
