@@ -5794,12 +5794,12 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     type_0: SymbolEncodingType,
     codeTable: *const u8,
     nbSeq: size_t,
-    maxCode: core::ffi::c_uint,
+    maxCode: u8,
     fseCTable: &[FSE_CTable],
     additionalBits: *const u8,
     defaultNorm: *const core::ffi::c_short,
     defaultNormLog: u32,
-    defaultMax: u32,
+    defaultMax: u8,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
@@ -5808,7 +5808,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     let ctStart = ctp;
     let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
-    let mut max = maxCode as u8;
+    let mut max = maxCode;
 
     HIST_countFast_wksp(
         countWksp,
@@ -5818,17 +5818,16 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         workspace,
         wkspSize,
     );
-    let max = u32::from(max);
     if type_0 == SymbolEncodingType::Basic {
         /* We selected this encoding type, so it must be valid. */
         assert!(max <= defaultMax);
 
         cSymbolTypeSizeEstimateInBits =
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max);
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, u32::from(max));
     } else if type_0 == SymbolEncodingType::Rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
+        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, u32::from(max));
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
@@ -5870,12 +5869,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         fseMetadata.ofType,
         ofCodeTable,
         nbSeq,
-        u32::from(MaxOff),
+        MaxOff,
         &fseTables.offcodeCTable,
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        u32::from(DefaultMaxOff),
+        DefaultMaxOff,
         workspace,
         wkspSize,
     ));
@@ -5883,12 +5882,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         fseMetadata.llType,
         llCodeTable,
         nbSeq,
-        u32::from(MaxLL),
+        MaxLL,
         &fseTables.litlengthCTable,
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        u32::from(MaxLL),
+        MaxLL,
         workspace,
         wkspSize,
     ));
@@ -5896,12 +5895,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         fseMetadata.mlType,
         mlCodeTable,
         nbSeq,
-        u32::from(MaxML),
+        MaxML,
         &fseTables.matchlengthCTable,
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        u32::from(MaxML),
+        MaxML,
         workspace,
         wkspSize,
     ));
