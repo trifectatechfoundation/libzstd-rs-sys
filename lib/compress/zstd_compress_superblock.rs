@@ -641,13 +641,13 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
         fseMetadata.mlType,
         mlCodeTable,
-        MaxML,
+        u32::from(MaxML),
         nbSeq,
         &fseTables.matchlengthCTable,
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        MaxML,
+        u32::from(MaxML),
         workspace,
         wkspSize,
     ));
