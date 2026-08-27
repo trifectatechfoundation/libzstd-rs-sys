@@ -99,7 +99,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     }
 
     // Clamp table_log to valid range (1-12)
-    let mut table_log = (input.table_log as c_uint % 12).max(1);
+    let mut table_log = input.table_log as c_uint % 12 + 1;
 
     // Step 1: Get histogram
     const HUF_SYMBOLVALUE_MAX: c_uint = 255;
