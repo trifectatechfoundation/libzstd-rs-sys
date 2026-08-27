@@ -4502,7 +4502,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     op = op.add(countSize);
 
     // build CTable for Offsets
-    let mut max_0 = MaxOff as u8;
+    let mut max_0 = MaxOff;
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
@@ -5870,7 +5870,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         fseMetadata.ofType,
         ofCodeTable,
         nbSeq,
-        MaxOff,
+        u32::from(MaxOff),
         &fseTables.offcodeCTable,
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
@@ -7349,7 +7349,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictSize: size_t,
 ) -> size_t {
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
-    let mut offcodeMaxValue = MaxOff;
+    let mut offcodeMaxValue = u32::from(MaxOff);
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
     dictPtr = dictPtr.add(8);
@@ -7473,7 +7473,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(12);
 
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
-    let mut offcodeMax = MaxOff;
+    let mut offcodeMax = u32::from(MaxOff);
     if dictContentSize
         <= (-(1 as core::ffi::c_int) as u32)
             .wrapping_sub((128 as core::ffi::c_int * ((1 as core::ffi::c_int) << 10)) as u32)
