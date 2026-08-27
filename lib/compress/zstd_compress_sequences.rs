@@ -148,11 +148,11 @@ pub unsafe fn ZSTD_crossEntropyCost(
     norm: *const core::ffi::c_short,
     accuracyLog: core::ffi::c_uint,
     count: *const core::ffi::c_uint,
-    max: core::ffi::c_uint,
+    max: u8,
 ) -> size_t {
     let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
     let mut cost = 0usize;
-    for s in 0..max + 1 {
+    for s in 0..u32::from(max) + 1 {
         let normAcc = if *norm.offset(s as isize) as core::ffi::c_int != -1 {
             *norm.offset(s as isize) as core::ffi::c_uint
         } else {
@@ -214,7 +214,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, u32::from(max))
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };

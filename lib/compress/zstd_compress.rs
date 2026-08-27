@@ -5823,7 +5823,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         assert!(max <= defaultMax);
 
         cSymbolTypeSizeEstimateInBits =
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, u32::from(max));
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max);
     } else if type_0 == SymbolEncodingType::Rle {
         cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {

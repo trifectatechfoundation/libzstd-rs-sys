@@ -569,7 +569,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, u32::from(max))
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
         } else {
             Error::GENERIC.to_error_code()
         };
