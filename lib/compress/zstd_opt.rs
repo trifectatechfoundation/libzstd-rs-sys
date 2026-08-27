@@ -247,9 +247,9 @@ unsafe fn ZSTD_rescaleFreqs(
             };
             FSE_initCState(&mut llstate, &(*(*optPtr).symbolCosts).fse.litlengthCTable);
             (*optPtr).litLengthSum = 0;
-            for ll in 0..MaxLL + 1 {
+            for ll in 0..=MaxLL {
                 let scaleLog_0 = 10u32; // scale to 1K
-                let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll);
+                let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, u32::from(ll));
                 *((*optPtr).litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
                     1 << scaleLog_0.wrapping_sub(bitCost_0)
                 } else {
@@ -328,7 +328,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 (*optPtr).litLengthFreq,
                 baseLLfreqs.len(),
             );
-            (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), (MaxLL + 1) as size_t);
+            (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), usize::from(MaxLL) + 1);
 
             let mut ml_0: core::ffi::c_uint = 0;
             ml_0 = 0;
@@ -354,7 +354,7 @@ unsafe fn ZSTD_rescaleFreqs(
         if compressedLiterals {
             (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, MaxLit, 12);
         }
-        (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, MaxLL, 11);
+        (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, u32::from(MaxLL), 11);
         (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, MaxML, 11);
         (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, u32::from(MaxOff), 11);
     }
