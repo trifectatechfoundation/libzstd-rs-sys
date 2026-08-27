@@ -1,4 +1,5 @@
 #![no_main]
+#![allow(non_snake_case)]
 
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
@@ -135,6 +136,18 @@ fuzz_target!(|input: HufRoundTripInput| {
     // Compression table size: (maxSymbol + 2) * sizeof(usize)
     let mut ct = [0usize; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)];
 
+    // C code does: dt[0] = tableLog * 0x01000001
+    // This initializes the DTable description with the tableLog
+    // In Rust, we need to set this via the description field
+    let mut dt = lib::decompress::huf_decompress::DTable::default();
+    let [maxTableLog, tableType, tableLog, reserved] = (table_log * 0x01000001).to_le_bytes();
+    dt.description = lib::decompress::huf_decompress::DTableDesc {
+        maxTableLog,
+        tableType,
+        tableLog,
+        reserved,
+    };
+
     // Step 4: Optimize table log
     let table_log = unsafe {
         lib::compress::huf_compress::HUF_optimalTableLog(
@@ -182,17 +195,6 @@ fuzz_target!(|input: HufRoundTripInput| {
     }
 
     // Step 7: Read decompression table (X1 or X2)
-    let mut dt = lib::decompress::huf_decompress::DTable::default();
-
-    // C code does: dt[0] = tableLog * 0x01000001
-    // This initializes the DTable description with the tableLog
-    // In Rust, we need to set this via the description field
-    let desc_value = (table_log as u32) * 0x01000001;
-    dt.description.maxTableLog = (desc_value & 0xFF) as u8;
-    dt.description.tableType = ((desc_value >> 8) & 0xFF) as u8;
-    dt.description.tableLog = ((desc_value >> 16) & 0xFF) as u8;
-    dt.description.reserved = ((desc_value >> 24) & 0xFF) as u8;
-
     let dt_read_size = if input.symbols {
         // Try X2 first
         let mut x2_workspace: lib::decompress::huf_decompress::HUF_ReadDTableX2_Workspace =
