@@ -189,9 +189,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     0
 }
 
-fn FSE_NCountWriteBound(maxSymbolValue: core::ffi::c_uint, tableLog: core::ffi::c_uint) -> size_t {
-    let maxHeaderSize = maxSymbolValue
-        .wrapping_add(1)
+fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size_t {
+    let maxHeaderSize = (u32::from(maxSymbolValue) + 1)
         .wrapping_mul(tableLog)
         .wrapping_add(4) // bitCount initialized at 4
         .wrapping_add(2) // first two symbols may use one additional bit each
@@ -210,7 +209,7 @@ unsafe fn FSE_writeNCount_generic(
     header: *mut core::ffi::c_void,
     headerBufferSize: size_t,
     normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
     writeIsSafe: core::ffi::c_uint,
 ) -> size_t {
@@ -224,7 +223,7 @@ unsafe fn FSE_writeNCount_generic(
     let mut bitStream = 0;
     let mut bitCount = 0;
     let mut symbol = 0;
-    let alphabetSize = maxSymbolValue.wrapping_add(1);
+    let alphabetSize = u32::from(maxSymbolValue) + 1;
     let mut previousIs0 = false;
 
     // Table Size
@@ -329,7 +328,7 @@ pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
     bufferSize: size_t,
     normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
 ) -> size_t {
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {

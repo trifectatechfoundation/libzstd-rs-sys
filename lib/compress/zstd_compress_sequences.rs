@@ -86,7 +86,7 @@ unsafe fn ZSTD_NCountCost(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; 512]>(),
         norm.as_mut_ptr(),
-        u32::from(max),
+        max,
         tableLog,
     )
 }
@@ -321,7 +321,7 @@ pub unsafe fn ZSTD_buildCTable(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
                 ((*wksp).norm).as_mut_ptr(),
-                u32::from(max),
+                max,
                 tableLog,
             );
             let err_code_2 = NCountSize;
