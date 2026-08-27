@@ -117,34 +117,37 @@ unsafe fn HIST_count_parallel_wksp(
     let mut cached = MEM_read32(ip as *const core::ffi::c_void);
     ip = ip.add(4);
     while ip < iend.sub(15) {
-        let mut c = cached;
+        let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c as u8 as isize) += 1;
-        *Counting2.offset((c >> 8) as u8 as isize) += 1;
-        *Counting3.offset((c >> 16) as u8 as isize) += 1;
-        *Counting4.offset((c >> 24) as isize) += 1;
-        c = cached;
+        *Counting1.offset(c3 as isize) += 1;
+        *Counting2.offset(c2 as isize) += 1;
+        *Counting3.offset(c1 as isize) += 1;
+        *Counting4.offset(c0 as isize) += 1;
+
+        let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c as u8 as isize) += 1;
-        *Counting2.offset((c >> 8) as u8 as isize) += 1;
-        *Counting3.offset((c >> 16) as u8 as isize) += 1;
-        *Counting4.offset((c >> 24) as isize) += 1;
-        c = cached;
+        *Counting1.offset(c3 as isize) += 1;
+        *Counting2.offset(c2 as isize) += 1;
+        *Counting3.offset(c1 as isize) += 1;
+        *Counting4.offset(c0 as isize) += 1;
+
+        let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c as u8 as isize) += 1;
-        *Counting2.offset((c >> 8) as u8 as isize) += 1;
-        *Counting3.offset((c >> 16) as u8 as isize) += 1;
-        *Counting4.offset((c >> 24) as isize) += 1;
-        c = cached;
+        *Counting1.offset(c3 as isize) += 1;
+        *Counting2.offset(c2 as isize) += 1;
+        *Counting3.offset(c1 as isize) += 1;
+        *Counting4.offset(c0 as isize) += 1;
+
+        let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c as u8 as isize) += 1;
-        *Counting2.offset((c >> 8) as u8 as isize) += 1;
-        *Counting3.offset((c >> 16) as u8 as isize) += 1;
-        *Counting4.offset((c >> 24) as isize) += 1;
+        *Counting1.offset(c3 as isize) += 1;
+        *Counting2.offset(c2 as isize) += 1;
+        *Counting3.offset(c1 as isize) += 1;
+        *Counting4.offset(c0 as isize) += 1;
     }
     ip = ip.sub(4);
 
