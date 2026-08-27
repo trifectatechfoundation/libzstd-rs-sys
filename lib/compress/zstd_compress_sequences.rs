@@ -46,9 +46,9 @@ static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     37, 36, 34, 33, 31, 30, 28, 26, 25, 23, 22, 20, 19, 17, 16, 14, 13, 11, 10, 8, 7, 5, 4, 2, 1,
 ];
 
-fn ZSTD_getFSEMaxSymbolValue(ctable: &[FSE_CTable]) -> core::ffi::c_uint {
+fn ZSTD_getFSEMaxSymbolValue(ctable: &[FSE_CTable]) -> u16 {
     let [_, _, a, b] = ctable[0].to_ne_bytes();
-    u32::from(u16::from_ne_bytes([a, b]))
+    u16::from_ne_bytes([a, b])
 }
 
 /// Returns true if we should use ncount=-1 else we should
@@ -129,7 +129,7 @@ pub unsafe fn ZSTD_fseBitCost(
         stateLog: 0,
     };
     FSE_initCState(&mut cstate, ctable);
-    if ZSTD_getFSEMaxSymbolValue(ctable) < max {
+    if u32::from(ZSTD_getFSEMaxSymbolValue(ctable)) < max {
         return Error::GENERIC.to_error_code();
     }
     for s in 0..max + 1 {
