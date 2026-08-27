@@ -2323,7 +2323,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
 
     dictPtr = &dictPtr[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
-    let mut offcodeMaxValue = u32::from(MaxOff);
+    let mut offcodeMaxValue = MaxOff;
     let mut offcodeLog: core::ffi::c_uint = 0;
     let offcodeHeaderSize = FSE_readNCount_slice(
         &mut offcodeNCount,
@@ -2352,7 +2352,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
     );
     dictPtr = &dictPtr[offcodeHeaderSize..];
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
-    let mut matchlengthMaxValue = u32::from(MaxML);
+    let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
     let matchlengthHeaderSize = FSE_readNCount_slice(
         &mut matchlengthNCount,
@@ -2380,7 +2380,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
     );
     dictPtr = &dictPtr[matchlengthHeaderSize..];
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut litlengthMaxValue = u32::from(MaxLL);
+    let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount_slice(
         &mut litlengthNCount,
