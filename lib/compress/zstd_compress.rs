@@ -4514,7 +4514,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     );
     let max_0 = u32::from(max_0);
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
-    let defaultPolicy = if max_0 <= DefaultMaxOff {
+    let defaultPolicy = if max_0 <= u32::from(DefaultMaxOff) {
         DefaultPolicy::Allowed
     } else {
         DefaultPolicy::Disallowed
@@ -4545,7 +4545,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        DefaultMaxOff,
+        u32::from(DefaultMaxOff),
         &prevEntropy.offcodeCTable,
         entropyWorkspace,
         entropyWkspSize,
@@ -5878,7 +5878,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        DefaultMaxOff,
+        u32::from(DefaultMaxOff),
         workspace,
         wkspSize,
     ));

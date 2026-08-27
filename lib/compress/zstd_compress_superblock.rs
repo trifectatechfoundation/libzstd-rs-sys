@@ -621,7 +621,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        DefaultMaxOff,
+        u32::from(DefaultMaxOff),
         workspace,
         wkspSize,
     ));
