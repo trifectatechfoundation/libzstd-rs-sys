@@ -699,10 +699,9 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, BufferedPolicy, CompressionStage, DictMode, DictTableLoadMethod,
-    LongLengthType, OptPrice, Repcodes_t, SeqCollector, StreamStage, TableFillPurpose,
-    ZSTD_BlockCompressor_f, ZSTD_CParamMode_e, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
-    ZSTD_cpm_attachDict, ZSTD_cpm_createCDict, ZSTD_cpm_noAttachDict, ZSTD_cpm_unknown,
+    optState_t, repcodes_s, BufferedPolicy, CParamMode, CompressionStage, DictMode,
+    DictTableLoadMethod, LongLengthType, OptPrice, Repcodes_t, SeqCollector, StreamStage,
+    TableFillPurpose, ZSTD_BlockCompressor_f, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s,
     ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
@@ -3240,7 +3239,7 @@ fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
 /// Optimize `cPar` for a specified input (`srcSize` and `dictSize`).
 /// Mostly downsize to reduce memory consumption and initialization latency.
 /// `srcSize` can be ZSTD_CONTENTSIZE_UNKNOWN when not known.
-/// `mode` is the mode for parameter adjustment. See docs for `ZSTD_CParamMode_e`.
+/// `mode` is the mode for parameter adjustment. See docs for [`CParamMode`].
 ///
 /// Note: `srcSize==0` means 0!
 ///
@@ -3249,7 +3248,7 @@ fn ZSTD_adjustCParams_internal(
     mut cPar: ZSTD_compressionParameters,
     mut srcSize: core::ffi::c_ulonglong,
     mut dictSize: size_t,
-    mode: ZSTD_CParamMode_e,
+    mode: CParamMode,
     mut useRowMatchFinder: ZSTD_ParamSwitch_e,
 ) -> ZSTD_compressionParameters {
     let minSrcSize = 513; // (1<<9) + 1
@@ -3312,7 +3311,7 @@ fn ZSTD_adjustCParams_internal(
 
     // We can't use more than 32 bits of hash in total, so that means that we require:
     // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
-    if mode == ZSTD_cpm_createCDict && unsafe { ZSTD_CDictIndicesAreTagged(&cPar) } {
+    if mode == CParamMode::CreateCDict && unsafe { ZSTD_CDictIndicesAreTagged(&cPar) } {
         let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
         if cPar.hashLog > maxShortCacheHashLog {
             cPar.hashLog = maxShortCacheHashLog;
@@ -3360,7 +3359,7 @@ pub extern "C" fn ZSTD_adjustCParams(
         cPar,
         srcSize,
         dictSize,
-        ZSTD_cpm_unknown,
+        CParamMode::Unknown,
         ZSTD_ParamSwitch_e::ZSTD_ps_auto,
     )
 }
@@ -3397,8 +3396,9 @@ pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
     CCtxParams: *const ZSTD_CCtx_params,
     mut srcSizeHint: u64,
     dictSize: size_t,
-    mode: ZSTD_CParamMode_e,
+    mode: core::ffi::c_int,
 ) -> ZSTD_compressionParameters {
+    let mode = CParamMode::from(mode);
     let mut cParams = ZSTD_compressionParameters {
         windowLog: 0,
         chainLog: 0,
@@ -3585,8 +3585,12 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
     params: *const ZSTD_CCtx_params,
 ) -> size_t {
-    let cParams =
-        ZSTD_getCParamsFromCCtxParams(params, ZSTD_CONTENTSIZE_UNKNOWN, 0, ZSTD_cpm_noAttachDict);
+    let cParams = ZSTD_getCParamsFromCCtxParams(
+        params,
+        ZSTD_CONTENTSIZE_UNKNOWN,
+        0,
+        CParamMode::NoAttachDict as i32,
+    );
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode((*params).useRowMatchFinder, &cParams);
 
     if (*params).nbWorkers > 0 {
@@ -3640,7 +3644,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi:
     for srcSizeHint in SRC_SIZE_TIERS {
         // Choose the set of cParams for a given level across all srcSizes that give the largest cctxSize
         let cParams =
-            ZSTD_getCParams_internal(compressionLevel, srcSizeHint, 0, ZSTD_cpm_noAttachDict);
+            ZSTD_getCParams_internal(compressionLevel, srcSizeHint, 0, CParamMode::NoAttachDict);
         largestSize = ZSTD_estimateCCtxSize_usingCParams(cParams).max(largestSize);
     }
     largestSize
@@ -3668,8 +3672,12 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     if (*params).nbWorkers > 0 {
         return Error::GENERIC.to_error_code();
     }
-    let cParams =
-        ZSTD_getCParamsFromCCtxParams(params, ZSTD_CONTENTSIZE_UNKNOWN, 0, ZSTD_cpm_noAttachDict);
+    let cParams = ZSTD_getCParamsFromCCtxParams(
+        params,
+        ZSTD_CONTENTSIZE_UNKNOWN,
+        0,
+        CParamMode::NoAttachDict as i32,
+    );
     let blockSize = ZSTD_resolveMaxBlockSize((*params).maxBlockSize).min(1 << cParams.windowLog);
     let inBuffSize = if (*params).inBufferMode == ZSTD_bm_buffered {
         ((1 as size_t) << cParams.windowLog).wrapping_add(blockSize)
@@ -3721,7 +3729,7 @@ unsafe fn ZSTD_estimateCStreamSize_internal(compressionLevel: core::ffi::c_int) 
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
-        ZSTD_cpm_noAttachDict,
+        CParamMode::NoAttachDict,
     );
     ZSTD_estimateCStreamSize_usingCParams(cParams)
 }
@@ -4265,7 +4273,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         adjusted_cdict_cParams,
         pledgedSrcSize as core::ffi::c_ulonglong,
         (*cdict).dictContentSize,
-        ZSTD_cpm_attachDict,
+        CParamMode::AttachDict,
         params.useRowMatchFinder,
     );
     params.cParams.windowLog = windowLog;
@@ -8183,7 +8191,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
-        ZSTD_cpm_noAttachDict,
+        CParamMode::NoAttachDict,
     );
     ZSTD_CCtxParams_init_internal(
         &mut cctxParams,
@@ -8417,7 +8425,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
         compressionLevel,
         srcSize as core::ffi::c_ulonglong,
         if !dict.is_null() { dictSize } else { 0 },
-        ZSTD_cpm_noAttachDict,
+        CParamMode::NoAttachDict,
     );
     ZSTD_CCtxParams_init_internal(
         &mut (*cctx).simpleApiParams,
@@ -8933,7 +8941,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
-        ZSTD_cpm_createCDict,
+        CParamMode::CreateCDict,
     );
     ZSTD_estimateCDictSize_advanced(dictSize, cParams, ZSTD_dlm_byCopy)
 }
@@ -9181,7 +9189,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
             &cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN,
             dictSize,
-            ZSTD_cpm_createCDict,
+            CParamMode::CreateCDict as i32,
         );
     }
 
@@ -9192,7 +9200,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
             &cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN,
             dictSize,
-            ZSTD_cpm_createCDict,
+            CParamMode::CreateCDict as i32,
         );
     }
 
@@ -9236,7 +9244,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
-        ZSTD_cpm_createCDict,
+        CParamMode::CreateCDict,
     );
     let cdict = ZSTD_createCDict_advanced(
         dict,
@@ -9268,7 +9276,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
-        ZSTD_cpm_createCDict,
+        CParamMode::CreateCDict,
     );
     let cdict = ZSTD_createCDict_advanced(
         dict,
@@ -9730,11 +9738,11 @@ unsafe fn ZSTD_getCParamMode(
     cdict: *const ZSTD_CDict,
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
-) -> ZSTD_CParamMode_e {
+) -> CParamMode {
     if !cdict.is_null() && ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
-        ZSTD_cpm_attachDict
+        CParamMode::AttachDict
     } else {
-        ZSTD_cpm_noAttachDict
+        CParamMode::NoAttachDict
     }
 }
 
@@ -10366,7 +10374,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         &params,
         ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
         dictSize,
-        mode,
+        mode as i32,
     );
 
     params.postBlockSplitter =
@@ -11964,8 +11972,8 @@ fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParamete
     }
 }
 
-fn ZSTD_getCParamRowSize(srcSizeHint: u64, mut dictSize: size_t, mode: ZSTD_CParamMode_e) -> u64 {
-    if mode == 1 {
+fn ZSTD_getCParamRowSize(srcSizeHint: u64, mut dictSize: size_t, mode: CParamMode) -> u64 {
+    if mode == CParamMode::AttachDict {
         dictSize = 0;
     }
 
@@ -11994,7 +12002,7 @@ pub extern "C" fn ZSTD_getCParams(
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, ZSTD_cpm_unknown)
+    ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
 
 /// Same idea as ZSTD_getCParams().
@@ -12012,7 +12020,7 @@ pub unsafe extern "C" fn ZSTD_getParams(
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, ZSTD_cpm_unknown)
+    ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
 
 pub const __INT_MAX__: core::ffi::c_int = 2147483647;
@@ -13050,7 +13058,8 @@ fn ZSTD_dedicatedDictSearch_getCParams(
     compressionLevel: core::ffi::c_int,
     dictSize: size_t,
 ) -> ZSTD_compressionParameters {
-    let mut cParams = ZSTD_getCParams_internal(compressionLevel, 0, dictSize, ZSTD_cpm_createCDict);
+    let mut cParams =
+        ZSTD_getCParams_internal(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
     if let 3..=5 = cParams.strategy as core::ffi::c_uint {
         cParams.hashLog =
             (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
@@ -13066,12 +13075,12 @@ fn ZSTD_dedicatedDictSearch_getCParams(
 ///
 /// srcSizeHint 0 means 0, use ZSTD_CONTENTSIZE_UNKNOWN for unknown.
 /// Use dictSize == 0 for unknown or unused.
-/// `mode` controls how we treat the `dictSize`. See docs for `ZSTD_CParamMode_e`.
+/// `mode` controls how we treat the `dictSize`. See docs for [`CParamMode`].
 fn ZSTD_getCParams_internal(
     compressionLevel: core::ffi::c_int,
     srcSizeHint: core::ffi::c_ulonglong,
     dictSize: size_t,
-    mode: ZSTD_CParamMode_e,
+    mode: CParamMode,
 ) -> ZSTD_compressionParameters {
     let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
     let tableID = ((rSize <= (256 * (1 << 10)) as u64) as core::ffi::c_int
@@ -13116,7 +13125,7 @@ fn ZSTD_getParams_internal(
     compressionLevel: core::ffi::c_int,
     srcSizeHint: core::ffi::c_ulonglong,
     dictSize: size_t,
-    mode: ZSTD_CParamMode_e,
+    mode: CParamMode,
 ) -> ZSTD_parameters {
     let mut params = ZSTD_parameters {
         cParams: ZSTD_compressionParameters {

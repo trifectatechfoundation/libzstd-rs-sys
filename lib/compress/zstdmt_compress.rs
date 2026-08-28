@@ -22,7 +22,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, ZSTD_cpm_noAttachDict, ZSTD_window_hasExtDict, ZSTD_window_update,
+    CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -1456,7 +1456,7 @@ pub unsafe fn ZSTDMT_updateCParams_whileCompressing(
         cctxParams,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
-        ZSTD_cpm_noAttachDict,
+        CParamMode::NoAttachDict as i32,
     );
     cParams.windowLog = saved_wlog;
     (*mtctx).params.cParams = cParams;
