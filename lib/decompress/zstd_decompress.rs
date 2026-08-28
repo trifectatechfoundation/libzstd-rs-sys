@@ -13,7 +13,7 @@ use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
-    repStartValue, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize,
+    repStartValue, BlockType, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
     ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
@@ -26,8 +26,8 @@ use crate::lib::decompress::zstd_decompress_block::{
     ZSTD_decompressBlock_internal_help, ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
-    blockProperties_t, BlockType, DecompressStage, DictUses, LL_base, ML_base, NextInputType,
-    OF_base, OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_entropyDTables_t,
+    blockProperties_t, DecompressStage, DictUses, LL_base, ML_base, NextInputType, OF_base,
+    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_entropyDTables_t,
     ZSTD_frame, ZSTD_skippableFrame,
 };
 use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;

@@ -503,7 +503,7 @@ unsafe fn ZSTD_noCompressBlock(
     lastBlock: u32,
 ) -> size_t {
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
+        .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
         return Error::dstSize_tooSmall.to_error_code();
@@ -527,7 +527,7 @@ unsafe fn ZSTD_rleCompressBlock(
 ) -> size_t {
     let op = dst as *mut u8;
     let cBlockHeader = lastBlock
-        .wrapping_add((bt_rle as core::ffi::c_int as u32) << 1)
+        .wrapping_add((BlockType::Rle as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if dstCapacity < 4 {
         return Error::dstSize_tooSmall.to_error_code();
@@ -682,11 +682,11 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
-    bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
-    LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
-    MaxLL, MaxML, MaxOff, MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType,
-    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE,
-    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
+    LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
+    MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType, ZSTD_cpuSupportsBmi2,
+    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -5784,11 +5784,11 @@ unsafe fn writeBlockHeader(
 ) {
     let cBlockHeader = if cSize == 1 {
         lastBlock
-            .wrapping_add((bt_rle as core::ffi::c_int as u32) << 1)
+            .wrapping_add((BlockType::Rle as u32) << 1)
             .wrapping_add((blockSize << 3) as u32)
     } else {
         lastBlock
-            .wrapping_add((bt_compressed as core::ffi::c_int as u32) << 1)
+            .wrapping_add((BlockType::Compressed as u32) << 1)
             .wrapping_add((cSize << 3) as u32)
     };
     MEM_writeLE24(op, cBlockHeader);
@@ -7173,11 +7173,11 @@ unsafe fn ZSTD_compress_frameChunk(
             } else {
                 let cBlockHeader = if cSize == 1 {
                     lastBlock
-                        .wrapping_add((bt_rle as core::ffi::c_int as u32) << 1)
+                        .wrapping_add((BlockType::Rle as u32) << 1)
                         .wrapping_add((blockSize << 3) as u32)
                 } else {
                     lastBlock
-                        .wrapping_add((bt_compressed as core::ffi::c_int as u32) << 1)
+                        .wrapping_add((BlockType::Compressed as u32) << 1)
                         .wrapping_add((cSize << 3) as u32)
                 };
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
@@ -7350,7 +7350,7 @@ pub unsafe fn ZSTD_writeLastEmptyBlock(dst: *mut core::ffi::c_void, dstCapacity:
     if dstCapacity < ZSTD_blockHeaderSize {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    let cBlockHeader24 = (1u32).wrapping_add((bt_raw as core::ffi::c_int as u32) << 1);
+    let cBlockHeader24 = (1u32).wrapping_add((BlockType::Raw as u32) << 1);
     MEM_writeLE24(dst, cBlockHeader24);
     ZSTD_blockHeaderSize
 }
@@ -8251,7 +8251,7 @@ unsafe fn ZSTD_writeEpilogue(
     if (*cctx).stage != CompressionStage::Ending {
         // write one last empty block, make it the "last" block
         let cBlockHeader24 = 1u32
-            .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
+            .wrapping_add((BlockType::Raw as u32) << 1)
             .wrapping_add(0);
         if dstCapacity < 3 as size_t {
             return Error::dstSize_tooSmall.to_error_code();
@@ -11158,7 +11158,7 @@ unsafe fn ZSTD_compressSequences_internal(
 
     // Special case: empty frame
     if remaining == 0 {
-        let cBlockHeader24 = 1u32.wrapping_add((bt_raw as core::ffi::c_int as u32) << 1);
+        let cBlockHeader24 = 1u32.wrapping_add((BlockType::Raw as u32) << 1);
         if dstCapacity < 4 {
             return Error::dstSize_tooSmall.to_error_code();
         }
@@ -11298,7 +11298,7 @@ unsafe fn ZSTD_compressSequences_internal(
 
                 // Write block header into beginning of block
                 cBlockHeader = lastBlock
-                    .wrapping_add((bt_compressed as core::ffi::c_int as u32) << 1)
+                    .wrapping_add((BlockType::Compressed as u32) << 1)
                     .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
                 cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
@@ -11672,7 +11672,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
 
     // Special case: empty frame
     if nbSequences == 1 && (*inSeqs).litLength == 0 {
-        let cBlockHeader24 = 1u32.wrapping_add((bt_raw as core::ffi::c_int as u32) << 1);
+        let cBlockHeader24 = 1u32.wrapping_add((BlockType::Raw as u32) << 1);
         if dstCapacity < 3 {
             return Error::dstSize_tooSmall.to_error_code();
         }
@@ -11768,7 +11768,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
 
             // Write block header into beginning of block
             cBlockHeader = lastBlock
-                .wrapping_add((bt_compressed as core::ffi::c_int as u32) << 1)
+                .wrapping_add((BlockType::Compressed as u32) << 1)
                 .wrapping_add((compressedSeqsSize << 3) as u32);
             MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
             cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);

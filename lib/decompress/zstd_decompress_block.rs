@@ -12,15 +12,16 @@ use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
-    LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
-    MaxSeq, OffFSELog, Overlap, SymbolEncodingType, ZSTD_copy16, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
-    ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
+    BlockType, LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits,
+    MaxOff, MaxSeq, OffFSELog, Overlap, SymbolEncodingType, ZSTD_copy16, ZSTD_wildcopy,
+    LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN,
+    ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
 use crate::lib::decompress::huf_decompress::{HUF_decompress4X_hufOnly_wksp, Writer};
-use crate::lib::decompress::{blockProperties_t, BlockType, SymbolTable};
+use crate::lib::decompress::{blockProperties_t, SymbolTable};
 use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
     ZSTD_seqSymbol_header,
