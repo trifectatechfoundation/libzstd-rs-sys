@@ -18,8 +18,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
     ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
     ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
-    ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
-    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
+    ZSTD_getCParamsFromCCtxParams_internal, ZSTD_invalidateRepCodes,
+    ZSTD_referenceExternalSequences, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t,
+    ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
     CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_update,
@@ -1452,11 +1453,11 @@ pub unsafe fn ZSTDMT_updateCParams_whileCompressing(
     let compressionLevel = cctxParams.compressionLevel;
     (*mtctx).params.compressionLevel = compressionLevel;
 
-    let mut cParams = ZSTD_getCParamsFromCCtxParams(
+    let mut cParams = ZSTD_getCParamsFromCCtxParams_internal(
         cctxParams,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
-        CParamMode::NoAttachDict as i32,
+        CParamMode::NoAttachDict,
     );
     cParams.windowLog = saved_wlog;
     (*mtctx).params.cParams = cParams;

@@ -3394,11 +3394,21 @@ fn ZSTD_overrideCParams(
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCCtxParams))]
 pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
     CCtxParams: *const ZSTD_CCtx_params,
-    mut srcSizeHint: u64,
+    srcSizeHint: u64,
     dictSize: size_t,
     mode: core::ffi::c_int,
 ) -> ZSTD_compressionParameters {
     let mode = CParamMode::from(mode);
+
+    ZSTD_getCParamsFromCCtxParams_internal(&*CCtxParams, srcSizeHint, dictSize, mode)
+}
+
+pub fn ZSTD_getCParamsFromCCtxParams_internal(
+    CCtxParams: &ZSTD_CCtx_params,
+    mut srcSizeHint: u64,
+    dictSize: size_t,
+    mode: CParamMode,
+) -> ZSTD_compressionParameters {
     let mut cParams = ZSTD_compressionParameters {
         windowLog: 0,
         chainLog: 0,
@@ -3409,20 +3419,20 @@ pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
         strategy: 0,
     };
     if srcSizeHint as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-        && (*CCtxParams).srcSizeHint > 0
+        && CCtxParams.srcSizeHint > 0
     {
-        srcSizeHint = (*CCtxParams).srcSizeHint as u64;
+        srcSizeHint = CCtxParams.srcSizeHint as u64;
     }
     cParams = ZSTD_getCParams_internal(
-        (*CCtxParams).compressionLevel,
+        CCtxParams.compressionLevel,
         srcSizeHint as core::ffi::c_ulonglong,
         dictSize,
         mode,
     );
-    if (*CCtxParams).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if CCtxParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG as core::ffi::c_uint;
     }
-    ZSTD_overrideCParams(&mut cParams, &(*CCtxParams).cParams);
+    ZSTD_overrideCParams(&mut cParams, &CCtxParams.cParams);
 
     // srcSizeHint == 0 means 0
     ZSTD_adjustCParams_internal(
@@ -3430,7 +3440,7 @@ pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
         srcSizeHint as core::ffi::c_ulonglong,
         dictSize,
         mode,
-        (*CCtxParams).useRowMatchFinder,
+        CCtxParams.useRowMatchFinder,
     )
 }
 
@@ -3585,11 +3595,11 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
     params: *const ZSTD_CCtx_params,
 ) -> size_t {
-    let cParams = ZSTD_getCParamsFromCCtxParams(
-        params,
+    let cParams = ZSTD_getCParamsFromCCtxParams_internal(
+        &*params,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
-        CParamMode::NoAttachDict as i32,
+        CParamMode::NoAttachDict,
     );
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode((*params).useRowMatchFinder, &cParams);
 
@@ -3672,11 +3682,11 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     if (*params).nbWorkers > 0 {
         return Error::GENERIC.to_error_code();
     }
-    let cParams = ZSTD_getCParamsFromCCtxParams(
-        params,
+    let cParams = ZSTD_getCParamsFromCCtxParams_internal(
+        &*params,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
-        CParamMode::NoAttachDict as i32,
+        CParamMode::NoAttachDict,
     );
     let blockSize = ZSTD_resolveMaxBlockSize((*params).maxBlockSize).min(1 << cParams.windowLog);
     let inBuffSize = if (*params).inBufferMode == ZSTD_bm_buffered {
@@ -9185,22 +9195,22 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         cParams = ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
         ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
     } else {
-        cParams = ZSTD_getCParamsFromCCtxParams(
+        cParams = ZSTD_getCParamsFromCCtxParams_internal(
             &cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN,
             dictSize,
-            CParamMode::CreateCDict as i32,
+            CParamMode::CreateCDict,
         );
     }
 
     if !ZSTD_dedicatedDictSearch_isSupported(&cParams) {
         // Fall back to non-DDSS params
         cctxParams.enableDedicatedDictSearch = 0;
-        cParams = ZSTD_getCParamsFromCCtxParams(
+        cParams = ZSTD_getCParamsFromCCtxParams_internal(
             &cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN,
             dictSize,
-            CParamMode::CreateCDict as i32,
+            CParamMode::CreateCDict,
         );
     }
 
@@ -10370,11 +10380,11 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         &params,
         ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
     );
-    params.cParams = ZSTD_getCParamsFromCCtxParams(
+    params.cParams = ZSTD_getCParamsFromCCtxParams_internal(
         &params,
         ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
         dictSize,
-        mode as i32,
+        mode,
     );
 
     params.postBlockSplitter =
