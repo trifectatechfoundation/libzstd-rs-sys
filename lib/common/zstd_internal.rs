@@ -22,10 +22,27 @@ pub(crate) const ZSTD_MAX_HUF_HEADER_SIZE: usize = 128;
 
 const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 pub(crate) static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
-pub(crate) type blockType_e = core::ffi::c_uint;
-pub(crate) const bt_raw: blockType_e = 0;
-pub(crate) const bt_rle: blockType_e = 1;
-pub(crate) const bt_compressed: blockType_e = 2;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum BlockType {
+    #[default]
+    Raw = 0,
+    Rle = 1,
+    Compressed = 2,
+    Reserved = 3,
+}
+
+impl From<u32> for BlockType {
+    fn from(value: u32) -> Self {
+        match value {
+            0 => Self::Raw,
+            1 => Self::Rle,
+            2 => Self::Compressed,
+            3 => Self::Reserved,
+            _ => panic!("invalid `BlockType`: {value}"),
+        }
+    }
+}
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]

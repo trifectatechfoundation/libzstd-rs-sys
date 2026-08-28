@@ -5,9 +5,9 @@ use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
-    bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
-    ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
-    SymbolEncodingType, MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
+    BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
+    ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType,
+    MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -77,7 +77,7 @@ unsafe fn ZSTD_noCompressBlock(
     lastBlock: u32,
 ) -> size_t {
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
+        .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
         return Error::dstSize_tooSmall.to_error_code();
@@ -490,7 +490,7 @@ unsafe fn ZSTD_compressSubBlock(
     // Write block header
     let cSize = (op.offset_from_unsigned(ostart)).wrapping_sub(ZSTD_blockHeaderSize);
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_compressed as core::ffi::c_int as u32) << 1)
+        .wrapping_add((BlockType::Compressed as u32) << 1)
         .wrapping_add((cSize << 3) as u32);
     MEM_writeLE24(ostart as *mut core::ffi::c_void, cBlockHeader24);
 

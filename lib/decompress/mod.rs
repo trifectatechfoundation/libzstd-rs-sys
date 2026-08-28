@@ -3,7 +3,7 @@ use libc::size_t;
 
 use crate::lib::common::xxhash::XXH64_state_t;
 
-use crate::lib::common::zstd_internal::WILDCOPY_OVERLENGTH;
+use crate::lib::common::zstd_internal::{BlockType, WILDCOPY_OVERLENGTH};
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
@@ -149,27 +149,6 @@ pub(crate) struct blockProperties_t {
     pub blockType: BlockType,
     pub lastBlock: bool,
     pub origSize: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) enum BlockType {
-    #[default]
-    Raw = 0,
-    Rle = 1,
-    Compressed = 2,
-    Reserved = 3,
-}
-
-impl From<u32> for BlockType {
-    fn from(value: u32) -> Self {
-        match value {
-            0 => Self::Raw,
-            1 => Self::Rle,
-            2 => Self::Compressed,
-            3 => Self::Reserved,
-            _ => panic!("invalid `BlockType`: {value}"),
-        }
-    }
 }
 
 #[derive(Default)]
