@@ -306,7 +306,7 @@ pub struct ZSTD_CCtx_params_s {
     pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_symbolEncodingTypeStats_t {
     pub LLtype: SymbolEncodingType,
@@ -4719,18 +4719,12 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
     let llCodeTable: *const u8 = (*seqStorePtr).llCode;
     let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
-    let mut stats = ZSTD_symbolEncodingTypeStats_t {
-        LLtype: SymbolEncodingType::Basic,
-        Offtype: SymbolEncodingType::Basic,
-        MLtype: SymbolEncodingType::Basic,
-        size: 0,
-        lastCountSize: 0,
-        longOffsets: false,
-    };
 
-    stats.lastCountSize = 0;
     // convert length/distances into codes
-    stats.longOffsets = ZSTD_seqToCodes(seqStorePtr);
+    let mut stats = ZSTD_symbolEncodingTypeStats_t {
+        longOffsets: ZSTD_seqToCodes(seqStorePtr),
+        ..Default::default()
+    };
 
     // build CTable for Literal Lengths
     let mut max = MaxLL;
@@ -5949,22 +5943,11 @@ pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
 unsafe fn ZSTD_buildDummySequencesStatistics(
     nextEntropy: &mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
-    let stats = {
-        ZSTD_symbolEncodingTypeStats_t {
-            LLtype: SymbolEncodingType::Basic,
-            Offtype: SymbolEncodingType::Basic,
-            MLtype: SymbolEncodingType::Basic,
-            size: 0,
-            lastCountSize: 0,
-            longOffsets: false,
-        }
-    };
-
     nextEntropy.litlength_repeatMode = FSE_repeat_none;
     nextEntropy.offcode_repeatMode = FSE_repeat_none;
     nextEntropy.matchlength_repeatMode = FSE_repeat_none;
 
-    stats
+    ZSTD_symbolEncodingTypeStats_t::default()
 }
 
 /// Builds entropy for the sequences.
@@ -5993,15 +5976,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     let entropyWorkspaceSize =
         wkspSize.wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
 
-    let mut stats = ZSTD_symbolEncodingTypeStats_t {
-        LLtype: SymbolEncodingType::Basic,
-        Offtype: SymbolEncodingType::Basic,
-        MLtype: SymbolEncodingType::Basic,
-        size: 0,
-        lastCountSize: 0,
-        longOffsets: false,
-    };
-    stats = if nbSeq != 0 {
+    let stats = if nbSeq != 0 {
         ZSTD_buildSequencesStatistics(
             seqStorePtr,
             nbSeq,
