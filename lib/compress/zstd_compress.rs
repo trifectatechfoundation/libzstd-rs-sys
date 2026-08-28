@@ -256,18 +256,23 @@ pub struct ZSTD_cwksp {
     pub initOnceStart: *mut core::ffi::c_void,
     pub allocFailed: u8,
     pub workspaceOversizedDuration: core::ffi::c_int,
-    pub phase: ZSTD_cwksp_alloc_phase_e,
+    pub phase: CwkspAllocPhase,
     pub isStatic: ZSTD_cwksp_static_alloc_e,
 }
 
 pub type ZSTD_cwksp_static_alloc_e = core::ffi::c_uint;
 pub const ZSTD_cwksp_static_alloc: ZSTD_cwksp_static_alloc_e = 1;
 pub const ZSTD_cwksp_dynamic_alloc: ZSTD_cwksp_static_alloc_e = 0;
-pub type ZSTD_cwksp_alloc_phase_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
-pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
-pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
-pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
+
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub enum CwkspAllocPhase {
+    #[default]
+    Objects = 0,
+    AlignedInitOnce = 1,
+    Aligned = 2,
+    Buffers = 3,
+}
 
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 
@@ -887,13 +892,10 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
 ///
 /// 0 on success, or zstd error
 #[inline]
-unsafe fn ZSTD_cwksp_internal_advance_phase(
-    ws: *mut ZSTD_cwksp,
-    phase: ZSTD_cwksp_alloc_phase_e,
-) -> size_t {
-    if phase > (*ws).phase as core::ffi::c_uint {
-        if ((*ws).phase as core::ffi::c_uint) < ZSTD_cwksp_alloc_aligned_init_once
-            && phase >= ZSTD_cwksp_alloc_aligned_init_once
+unsafe fn ZSTD_cwksp_internal_advance_phase(ws: *mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
+    if phase > (*ws).phase {
+        if (*ws).phase < CwkspAllocPhase::AlignedInitOnce
+            && phase >= CwkspAllocPhase::AlignedInitOnce
         {
             (*ws).tableValidEnd = (*ws).objectEnd;
             (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
@@ -929,7 +931,7 @@ fn ZSTD_cwksp_owns_buffer(ws: &ZSTD_cwksp, ptr: *const core::ffi::c_void) -> boo
 unsafe fn ZSTD_cwksp_reserve_internal(
     ws: *mut ZSTD_cwksp,
     bytes: size_t,
-    phase: ZSTD_cwksp_alloc_phase_e,
+    phase: CwkspAllocPhase,
 ) -> *mut core::ffi::c_void {
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) || bytes == 0 {
@@ -942,7 +944,7 @@ unsafe fn ZSTD_cwksp_reserve_internal(
 /// Reserves and returns unaligned memory.
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_buffer(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
-    ZSTD_cwksp_reserve_internal(ws, bytes, ZSTD_cwksp_alloc_buffers) as *mut u8
+    ZSTD_cwksp_reserve_internal(ws, bytes, CwkspAllocPhase::Buffers) as *mut u8
 }
 
 /// Reserves and returns memory sized on and aligned on ZSTD_CWKSP_ALIGNMENT_BYTES (64 bytes).
@@ -957,7 +959,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
     let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
-    let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, ZSTD_cwksp_alloc_aligned_init_once);
+    let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, CwkspAllocPhase::AlignedInitOnce);
     if !ptr.is_null() && ptr < (*ws).initOnceStart {
         ptr::write_bytes(
             ptr as *mut u8,
@@ -986,7 +988,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned64(
     ZSTD_cwksp_reserve_internal(
         ws,
         ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t),
-        ZSTD_cwksp_alloc_aligned,
+        CwkspAllocPhase::Aligned,
     )
 }
 
@@ -994,13 +996,11 @@ unsafe fn ZSTD_cwksp_reserve_aligned64(
 /// constrained, allowing us to reuse them without memset()-ing them.
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
-    let phase = ZSTD_cwksp_alloc_aligned_init_once;
+    let phase = CwkspAllocPhase::AlignedInitOnce;
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     let mut end = core::ptr::null_mut::<core::ffi::c_void>();
     let mut top = core::ptr::null_mut::<core::ffi::c_void>();
-    if ((*ws).phase as core::ffi::c_uint) < phase as core::ffi::c_uint
-        && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase))
-    {
+    if (*ws).phase < phase && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) {
         return core::ptr::null_mut();
     }
     alloc = (*ws).tableEnd;
@@ -1023,7 +1023,7 @@ unsafe fn ZSTD_cwksp_reserve_object(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut 
     let alloc = (*ws).objectEnd;
     let end = alloc.byte_add(roundedBytes);
     ZSTD_cwksp_assert_internal_consistency(ws);
-    if (*ws).phase != ZSTD_cwksp_alloc_objects || end > (*ws).workspaceEnd {
+    if (*ws).phase != CwkspAllocPhase::Objects || end > (*ws).workspaceEnd {
         (*ws).allocFailed = 1;
         return core::ptr::null_mut();
     }
@@ -1074,8 +1074,8 @@ unsafe fn ZSTD_cwksp_clear(ws: *mut ZSTD_cwksp) {
     (*ws).tableEnd = (*ws).objectEnd;
     (*ws).allocStart = ZSTD_cwksp_initialAllocStart(ws);
     (*ws).allocFailed = 0;
-    if (*ws).phase > ZSTD_cwksp_alloc_aligned_init_once {
-        (*ws).phase = ZSTD_cwksp_alloc_aligned_init_once;
+    if (*ws).phase > CwkspAllocPhase::AlignedInitOnce {
+        (*ws).phase = CwkspAllocPhase::AlignedInitOnce;
     }
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
@@ -1101,7 +1101,7 @@ unsafe fn ZSTD_cwksp_init(
     (*ws).objectEnd = (*ws).workspace;
     (*ws).tableValidEnd = (*ws).objectEnd;
     (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
-    (*ws).phase = ZSTD_cwksp_alloc_objects;
+    (*ws).phase = CwkspAllocPhase::Objects;
     (*ws).isStatic = isStatic;
     ZSTD_cwksp_clear(ws);
     (*ws).workspaceOversizedDuration = 0;
@@ -1527,7 +1527,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
         allocFailed: 0,
         workspaceOversizedDuration: 0,
-        phase: ZSTD_cwksp_alloc_objects,
+        phase: CwkspAllocPhase::Objects,
         isStatic: ZSTD_cwksp_dynamic_alloc,
     };
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
@@ -8637,7 +8637,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
             allocFailed: 0,
             workspaceOversizedDuration: 0,
-            phase: ZSTD_cwksp_alloc_objects,
+            phase: CwkspAllocPhase::Objects,
             isStatic: ZSTD_cwksp_dynamic_alloc,
         },
         blockSizeMax: 0,
@@ -9059,7 +9059,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
         allocFailed: 0,
         workspaceOversizedDuration: 0,
-        phase: ZSTD_cwksp_alloc_objects,
+        phase: CwkspAllocPhase::Objects,
         isStatic: ZSTD_cwksp_dynamic_alloc,
     };
 
@@ -9412,7 +9412,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
         allocFailed: 0,
         workspaceOversizedDuration: 0,
-        phase: ZSTD_cwksp_alloc_objects,
+        phase: CwkspAllocPhase::Objects,
         isStatic: ZSTD_cwksp_dynamic_alloc,
     };
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_static_alloc);
