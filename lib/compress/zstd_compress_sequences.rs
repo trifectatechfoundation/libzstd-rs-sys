@@ -10,8 +10,7 @@ use crate::lib::common::fse::{
 };
 use crate::lib::common::mem::MEM_32bits;
 use crate::lib::common::zstd_internal::{
-    set_basic, set_compressed, set_repeat, set_rle, LLFSELog, LL_bits, MLFSELog, ML_bits,
-    OffFSELog, SymbolEncodingType_e,
+    LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog, SymbolEncodingType,
 };
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
@@ -188,16 +187,16 @@ pub unsafe fn ZSTD_selectEncodingType(
     defaultNormLog: u32,
     isDefaultAllowed: ZSTD_DefaultPolicy_e,
     strategy: ZSTD_strategy,
-) -> SymbolEncodingType_e {
+) -> SymbolEncodingType {
     if mostFrequent == nbSeq {
         *repeatMode = FSE_repeat_none;
         if isDefaultAllowed != 0 && nbSeq <= 2 {
-            // Prefer set_basic over set_rle when there are 2 or fewer symbols,
-            // since RLE uses 1 byte, but set_basic uses 5-6 bits per symbol.
+            // Prefer SymbolEncodingType::Basic over SymbolEncodingType::Rle when there are 2 or fewer symbols,
+            // since RLE uses 1 byte, but SymbolEncodingType::Basic uses 5-6 bits per symbol.
             // If basic encoding isn't possible, always choose RLE.
-            return set_basic;
+            return SymbolEncodingType::Basic;
         }
-        return set_rle;
+        return SymbolEncodingType::Rle;
     }
     if (strategy as core::ffi::c_uint) < ZSTD_lazy {
         if isDefaultAllowed as u64 != 0 {
@@ -207,7 +206,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
             if *repeatMode == FSE_repeat_valid && nbSeq < staticFse_nbSeq_max {
-                return set_repeat;
+                return SymbolEncodingType::Repeat;
             }
             if nbSeq < dynamicFse_nbSeq_min
                 || mostFrequent < nbSeq >> defaultNormLog.wrapping_sub(1)
@@ -218,7 +217,7 @@ pub unsafe fn ZSTD_selectEncodingType(
                 // analysis, we don't need to waste time checking both repeating tables
                 // and default tables.
                 *repeatMode = FSE_repeat_none;
-                return set_basic;
+                return SymbolEncodingType::Basic;
             }
         }
     } else {
@@ -242,14 +241,14 @@ pub unsafe fn ZSTD_selectEncodingType(
         assert!(ZSTD_isError(NCountCost) == 0);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat_none;
-            return set_basic;
+            return SymbolEncodingType::Basic;
         }
         if repeatCost <= compressedCost {
-            return set_repeat;
+            return SymbolEncodingType::Repeat;
         }
     }
     *repeatMode = FSE_repeat_check;
-    set_compressed
+    SymbolEncodingType::Compressed
 }
 
 pub unsafe fn ZSTD_buildCTable(
@@ -257,7 +256,7 @@ pub unsafe fn ZSTD_buildCTable(
     dstCapacity: size_t,
     nextCTable: &mut [FSE_CTable],
     FSELog: u32,
-    type_0: SymbolEncodingType_e,
+    type_0: SymbolEncodingType,
     count: *mut core::ffi::c_uint,
     max: u32,
     codeTable: *const u8,
@@ -272,8 +271,8 @@ pub unsafe fn ZSTD_buildCTable(
     let op = dst as *mut u8;
     let oend: *const u8 = op.add(dstCapacity);
 
-    match type_0 as core::ffi::c_uint {
-        1 => {
+    match type_0 {
+        SymbolEncodingType::Rle => {
             let err_code = FSE_buildCTable_rle(nextCTable, max as u8);
             if ERR_isError(err_code) {
                 return err_code;
@@ -284,7 +283,7 @@ pub unsafe fn ZSTD_buildCTable(
             *op = *codeTable;
             1
         }
-        3 => {
+        SymbolEncodingType::Repeat => {
             core::ptr::copy_nonoverlapping(
                 prevCTable.as_ptr().cast::<u8>(),
                 nextCTable.as_mut_ptr().cast::<u8>(),
@@ -292,7 +291,7 @@ pub unsafe fn ZSTD_buildCTable(
             );
             0
         }
-        0 => {
+        SymbolEncodingType::Basic => {
             let err_code_0 = FSE_buildCTable_wksp(
                 nextCTable.as_mut_ptr(),
                 defaultNorm,
@@ -306,7 +305,7 @@ pub unsafe fn ZSTD_buildCTable(
             }
             0
         }
-        2 => {
+        SymbolEncodingType::Compressed => {
             let wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
             let mut nbSeq_1 = nbSeq;
             let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
@@ -350,7 +349,6 @@ pub unsafe fn ZSTD_buildCTable(
             }
             NCountSize
         }
-        _ => Error::GENERIC.to_error_code(),
     }
 }
 
