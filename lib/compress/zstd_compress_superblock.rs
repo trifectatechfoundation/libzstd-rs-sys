@@ -5,10 +5,9 @@ use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_CTABLE_SIZE_ST};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
-    bt_compressed, bt_raw, set_basic, set_compressed, set_repeat, set_rle, DefaultMaxOff, LL_bits,
-    LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML,
-    MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType_e, MINMATCH,
-    ZSTD_MAX_HUF_HEADER_SIZE,
+    bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
+    ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
+    SymbolEncodingType, MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -108,10 +107,10 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 /// in writing the header, otherwise it is set to 0.
 ///
 /// hufMetadata->hType has literals block type info.
-///     If it is set_basic, all sub-blocks literals section will be Raw_Literals_Block.
-///     If it is set_rle, all sub-blocks literals section will be RLE_Literals_Block.
-///     If it is set_compressed, first sub-block's literals section will be Compressed_Literals_Block
-///     If it is set_compressed, first sub-block's literals section will be Treeless_Literals_Block
+///     If it is [`SymbolEncodingType::Basic`], all sub-blocks literals section will be Raw_Literals_Block.
+///     If it is [`SymbolEncodingType::Rle`], all sub-blocks literals section will be RLE_Literals_Block.
+///     If it is [`SymbolEncodingType::Compressed`], first sub-block's literals section will be Compressed_Literals_Block
+///     If it is [`SymbolEncodingType::Compressed`], first sub-block's literals section will be Treeless_Literals_Block
 ///     and the following sub-blocks' literals sections will be Treeless_Literals_Block.
 ///
 /// # Returns
@@ -139,22 +138,22 @@ unsafe fn ZSTD_compressSubBlock_literal(
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
     let singleStream = lhSize == 3;
-    let hType = (if writeEntropy {
-        hufMetadata.hType as core::ffi::c_uint
+    let hType = if writeEntropy {
+        hufMetadata.hType
     } else {
-        set_repeat
-    }) as SymbolEncodingType_e;
+        SymbolEncodingType::Repeat
+    };
     let mut cLitSize = 0usize;
 
     *entropyWritten = false;
-    if litSize == 0 || hufMetadata.hType == set_basic {
+    if litSize == 0 || hufMetadata.hType == SymbolEncodingType::Basic {
         return ZSTD_noCompressLiterals(
             dst,
             dstSize,
             literals as *const core::ffi::c_void,
             litSize,
         );
-    } else if hufMetadata.hType == set_rle {
+    } else if hufMetadata.hType == SymbolEncodingType::Rle {
         return ZSTD_compressRleLiteralsBlock(
             dst,
             dstSize,
@@ -163,7 +162,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
 
-    if writeEntropy && hufMetadata.hType == set_compressed {
+    if writeEntropy && hufMetadata.hType == SymbolEncodingType::Compressed {
         core::ptr::copy_nonoverlapping(
             hufMetadata.hufDesBuffer.as_ptr(),
             op,
@@ -348,9 +347,9 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     op = op.add(1);
 
     if writeEntropy {
-        let LLtype = fseMetadata.llType;
-        let Offtype = fseMetadata.ofType;
-        let MLtype = fseMetadata.mlType;
+        let LLtype = fseMetadata.llType as u32;
+        let Offtype = fseMetadata.ofType as u32;
+        let MLtype = fseMetadata.mlType as u32;
         *seqHead = (LLtype << 6)
             .wrapping_add(Offtype << 4)
             .wrapping_add(MLtype << 2) as u8;
@@ -361,7 +360,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         );
         op = op.add(fseMetadata.fseTablesSize);
     } else {
-        let repeat = set_repeat as core::ffi::c_int as u32;
+        let repeat = SymbolEncodingType::Repeat as u32;
         *seqHead = (repeat << 6)
             .wrapping_add(repeat << 4)
             .wrapping_add(repeat << 2) as u8;
@@ -389,8 +388,8 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // zstd versions <= 1.3.4 mistakenly report corruption when
     // FSE_readNCount() receives a buffer < 4 bytes.
     // Fixed by https://github.com/facebook/zstd/pull/1146.
-    // This can happen when the last set_compressed table present is 2
-    // bytes and the bitstream is only one byte.
+    // This can happen when the last SymbolEncodingType::Compressed table
+    // present is 2 bytes and the bitstream is only one byte.
     // In this exceedingly rare case, we will simply emit an uncompressed
     // block, since it isn't worth optimizing.
     if writeEntropy
@@ -511,11 +510,13 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     let mut maxSymbolValue = 255;
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
-    if hufMetadata.hType == set_basic {
+    if hufMetadata.hType == SymbolEncodingType::Basic {
         return litSize;
-    } else if hufMetadata.hType == set_rle {
+    } else if hufMetadata.hType == SymbolEncodingType::Rle {
         return 1;
-    } else if hufMetadata.hType == set_compressed || hufMetadata.hType == set_repeat {
+    } else if hufMetadata.hType == SymbolEncodingType::Compressed
+        || hufMetadata.hType == SymbolEncodingType::Repeat
+    {
         let largest = HIST_count_wksp(
             countWksp,
             &mut maxSymbolValue,
@@ -538,7 +539,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
 }
 
 unsafe fn ZSTD_estimateSubBlockSize_symbolType(
-    type_0: SymbolEncodingType_e,
+    type_0: SymbolEncodingType,
     codeTable: *const u8,
     maxCode: core::ffi::c_uint,
     nbSeq: size_t,
@@ -565,16 +566,16 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         workspace,
         wkspSize,
     );
-    if type_0 == set_basic {
+    if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
         } else {
             Error::GENERIC.to_error_code()
         };
-    } else if type_0 == set_rle {
+    } else if type_0 == SymbolEncodingType::Rle {
         cSymbolTypeSizeEstimateInBits = 0;
-    } else if type_0 == set_compressed || type_0 == set_repeat {
+    } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
@@ -699,13 +700,19 @@ unsafe fn ZSTD_estimateSubBlockSize(
 }
 
 fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bool {
-    if fseMetadata.llType == set_compressed || fseMetadata.llType == set_rle {
+    if fseMetadata.llType == SymbolEncodingType::Compressed
+        || fseMetadata.llType == SymbolEncodingType::Rle
+    {
         return true;
     }
-    if fseMetadata.mlType == set_compressed || fseMetadata.mlType == set_rle {
+    if fseMetadata.mlType == SymbolEncodingType::Compressed
+        || fseMetadata.mlType == SymbolEncodingType::Rle
+    {
         return true;
     }
-    if fseMetadata.ofType == set_compressed || fseMetadata.ofType == set_rle {
+    if fseMetadata.ofType == SymbolEncodingType::Compressed
+        || fseMetadata.ofType == SymbolEncodingType::Rle
+    {
         return true;
     }
     false
@@ -808,7 +815,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut ofCodePtr: *const u8 = seqStorePtr.ofCode;
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
     let targetCBlockSize = minTarget.max(cctxParams.targetCBlockSize);
-    let mut writeLitEntropy = entropyMetadata.hufMetadata.hType == set_compressed;
+    let mut writeLitEntropy = entropyMetadata.hufMetadata.hType == SymbolEncodingType::Compressed;
     let mut writeSeqEntropy = true;
 
     // let's start by a general estimation for the full block
@@ -1025,14 +1032,14 @@ pub unsafe fn ZSTD_compressSuperBlock(
 ) -> size_t {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t {
         hufMetadata: ZSTD_hufCTablesMetadata_t {
-            hType: set_basic,
+            hType: SymbolEncodingType::Basic,
             hufDesBuffer: [0; ZSTD_MAX_HUF_HEADER_SIZE],
             hufDesSize: 0,
         },
         fseMetadata: ZSTD_fseCTablesMetadata_t {
-            llType: set_basic,
-            ofType: set_basic,
-            mlType: set_basic,
+            llType: SymbolEncodingType::Basic,
+            ofType: SymbolEncodingType::Basic,
+            mlType: SymbolEncodingType::Basic,
             fseTablesBuffer: [0; 133],
             fseTablesSize: 0,
             lastCountSize: 0,

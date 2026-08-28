@@ -13,8 +13,8 @@ use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
-    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_wildcopy, LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG,
-    OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
+    MaxSeq, OffFSELog, Overlap, SymbolEncodingType, ZSTD_copy16, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
+    ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -132,28 +132,6 @@ pub struct seq_t {
 pub struct ZSTD_OffsetInfo {
     pub longOffsetShare: core::ffi::c_uint,
     pub maxNbAdditionalBits: core::ffi::c_uint,
-}
-
-#[repr(u32)]
-enum SymbolEncodingType_e {
-    set_basic = 0,
-    set_rle = 1,
-    set_compressed = 2,
-    set_repeat = 3,
-}
-
-impl TryFrom<u8> for SymbolEncodingType_e {
-    type Error = ();
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(SymbolEncodingType_e::set_basic),
-            1 => Ok(SymbolEncodingType_e::set_rle),
-            2 => Ok(SymbolEncodingType_e::set_compressed),
-            3 => Ok(SymbolEncodingType_e::set_repeat),
-            _ => Err(()),
-        }
-    }
 }
 
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
@@ -294,13 +272,13 @@ fn ZSTD_decodeLiteralsBlock(
 
     let blockSizeMax = dctx.block_size_max();
 
-    let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
+    let litEncType = SymbolEncodingType::try_from(src[0] & 0b11).unwrap();
     match litEncType {
-        SymbolEncodingType_e::set_repeat if !dctx.litEntropy => {
+        SymbolEncodingType::Repeat if !dctx.litEntropy => {
             return Err(Error::dictionary_corrupted);
         }
-        SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
-        SymbolEncodingType_e::set_basic => {
+        SymbolEncodingType::Repeat | SymbolEncodingType::Compressed => {}
+        SymbolEncodingType::Basic => {
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
                 1 => (2usize, (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize),
                 3 => {
@@ -362,7 +340,7 @@ fn ZSTD_decodeLiteralsBlock(
 
             return Ok(lhSize.wrapping_add(litSize));
         }
-        SymbolEncodingType_e::set_rle => {
+        SymbolEncodingType::Rle => {
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
                 1 => {
                     let [a, b, _, ..] = *src else {
@@ -483,7 +461,7 @@ fn ZSTD_decodeLiteralsBlock(
     let writer = unsafe { Writer::from_raw_parts(dctx.litBuffer, litSize as _) };
     let huf_src = &src[lhSize..][..litCSize];
 
-    let hufSuccess = if let SymbolEncodingType_e::set_repeat = litEncType {
+    let hufSuccess = if let SymbolEncodingType::Repeat = litEncType {
         let dtable = match dctx.HUFptr {
             None => &dctx.entropy.hufTable,
             Some(ptr) => unsafe { ptr.as_ref() },
@@ -540,7 +518,7 @@ fn ZSTD_decodeLiteralsBlock(
     dctx.litSize = litSize;
     dctx.litEntropy = true;
 
-    if let SymbolEncodingType_e::set_compressed = litEncType {
+    if let SymbolEncodingType::Compressed = litEncType {
         dctx.HUFptr = None;
     }
 
@@ -856,7 +834,7 @@ pub fn ZSTD_buildFSETable<const N: usize>(
 fn ZSTD_buildSeqTableNew<const N: usize>(
     DTableSpace: &mut SymbolTable<N>,
     DTablePtr: &mut Option<NonNull<SymbolTable<N>>>,
-    type_0: SymbolEncodingType_e,
+    type_0: SymbolEncodingType,
     mut max: core::ffi::c_uint,
     maxLog: u32,
     src: &[u8],
@@ -869,7 +847,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     bmi2: bool,
 ) -> Result<size_t, Error> {
     match type_0 {
-        SymbolEncodingType_e::set_rle => {
+        SymbolEncodingType::Rle => {
             let [symbol, ..] = *src else {
                 return Err(Error::srcSize_wrong);
             };
@@ -885,11 +863,11 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
             *DTablePtr = NonNull::new(DTableSpace);
             Ok(1)
         }
-        SymbolEncodingType_e::set_basic => {
+        SymbolEncodingType::Basic => {
             *DTablePtr = None;
             Ok(0)
         }
-        SymbolEncodingType_e::set_repeat => {
+        SymbolEncodingType::Repeat => {
             if !flagRepeatTable {
                 return Err(Error::corruption_detected);
             }
@@ -901,7 +879,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
             }
             Ok(0)
         }
-        SymbolEncodingType_e::set_compressed => {
+        SymbolEncodingType::Compressed => {
             let mut tableLog: core::ffi::c_uint = 0;
             let mut norm: [i16; 53] = [0; 53];
             let Ok(headerSize) = FSE_readNCount_slice(&mut norm, &mut max, &mut tableLog, src)
@@ -973,9 +951,9 @@ fn ZSTD_decodeSeqHeaders(
     }
 
     let byte = src[ip];
-    let LLtype = SymbolEncodingType_e::try_from(byte >> 6).unwrap();
-    let OFtype = SymbolEncodingType_e::try_from(byte >> 4 & 0b11).unwrap();
-    let MLtype = SymbolEncodingType_e::try_from(byte >> 2 & 0b11).unwrap();
+    let LLtype = SymbolEncodingType::try_from(byte >> 6).unwrap();
+    let OFtype = SymbolEncodingType::try_from(byte >> 4 & 0b11).unwrap();
+    let MLtype = SymbolEncodingType::try_from(byte >> 2 & 0b11).unwrap();
 
     /* Build DTables */
 

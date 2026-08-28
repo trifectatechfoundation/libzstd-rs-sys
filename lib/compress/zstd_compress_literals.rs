@@ -7,9 +7,7 @@ use crate::lib::common::huf::{
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
-use crate::lib::common::zstd_internal::{
-    set_basic, set_compressed, set_repeat, set_rle, LitHufLog,
-};
+use crate::lib::common::zstd_internal::{LitHufLog, SymbolEncodingType};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hufCTables_t;
 use crate::lib::zstd::{ZSTD_btultra, ZSTD_lazy, ZSTD_strategy};
@@ -59,14 +57,14 @@ pub unsafe fn ZSTD_noCompressLiterals(
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart =
-                (set_basic as core::ffi::c_int as u32 as size_t).wrapping_add(srcSize << 3) as u8;
+            *ostart = (SymbolEncodingType::Basic as size_t).wrapping_add(srcSize << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                ((set_basic as core::ffi::c_int as u32).wrapping_add((1 << 2) as u32) as size_t)
+                (SymbolEncodingType::Basic as size_t)
+                    .wrapping_add(1 << 2)
                     .wrapping_add(srcSize << 4) as u16,
             );
         }
@@ -74,7 +72,8 @@ pub unsafe fn ZSTD_noCompressLiterals(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                ((set_basic as core::ffi::c_int as u32).wrapping_add((3 << 2) as u32) as size_t)
+                (SymbolEncodingType::Basic as size_t)
+                    .wrapping_add(3 << 2)
                     .wrapping_add(srcSize << 4) as u32,
             );
         }
@@ -115,14 +114,14 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart =
-                (set_rle as core::ffi::c_int as u32 as size_t).wrapping_add(srcSize << 3) as u8;
+            *ostart = (SymbolEncodingType::Rle as size_t).wrapping_add(srcSize << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                ((set_rle as core::ffi::c_int as u32).wrapping_add((1 << 2) as u32) as size_t)
+                (SymbolEncodingType::Rle as size_t)
+                    .wrapping_add(1 << 2)
                     .wrapping_add(srcSize << 4) as u16,
             );
         }
@@ -130,7 +129,8 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                ((set_rle as core::ffi::c_int as u32).wrapping_add((3 << 2) as u32) as size_t)
+                (SymbolEncodingType::Rle as size_t)
+                    .wrapping_add(3 << 2)
                     .wrapping_add(srcSize << 4) as u32,
             );
         }
@@ -177,7 +177,7 @@ pub unsafe fn ZSTD_compressLiterals(
         + (srcSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
     let ostart = dst as *mut u8;
     let mut singleStream = srcSize < 256;
-    let mut hType = set_compressed;
+    let mut hType = SymbolEncodingType::Compressed;
     let mut cLitSize: size_t = 0;
 
     // Prepare nextEntropy assuming reusing the existing table
@@ -268,7 +268,7 @@ pub unsafe fn ZSTD_compressLiterals(
     );
     if repeat != HUF_repeat_none {
         // reused the existing table
-        hType = set_repeat;
+        hType = SymbolEncodingType::Repeat;
     }
 
     let minGain = ZSTD_minGain(srcSize, strategy);
@@ -287,7 +287,7 @@ pub unsafe fn ZSTD_compressLiterals(
         return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
     }
 
-    if hType == set_compressed {
+    if hType == SymbolEncodingType::Compressed {
         // using a newly constructed table
         nextHuf.repeatMode = HUF_repeat_check;
     }
