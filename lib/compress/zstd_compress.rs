@@ -334,8 +334,13 @@ pub enum DefaultPolicy {
     Allowed = 1,
 }
 
-pub const ZSTDbss_noCompress: C2RustUnnamed_2 = 1;
-pub const ZSTDbss_compress: C2RustUnnamed_2 = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum BuildSeqStore {
+    #[default]
+    Compress = 0,
+    NoCompress = 1,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -401,7 +406,6 @@ pub struct BlockSummary {
     pub litSize: size_t,
 }
 
-pub type C2RustUnnamed_2 = core::ffi::c_uint;
 pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
@@ -5395,7 +5399,7 @@ unsafe fn ZSTD_buildSeqStore(
             );
         }
         // don't even attempt compression below a certain srcSize
-        return ZSTDbss_noCompress as core::ffi::c_int as size_t;
+        return BuildSeqStore::NoCompress as size_t;
     }
     ZSTD_resetSeqStore(&mut (*zc).seqStore);
     // required for optimal parser to read stats from dictionary
@@ -5515,7 +5519,7 @@ unsafe fn ZSTD_buildSeqStore(
                 return err_code_0;
             }
             ms.ldmSeqStore = core::ptr::null();
-            return ZSTDbss_compress as core::ffi::c_int as size_t;
+            return BuildSeqStore::Compress as size_t;
         }
 
         // Propagate the error if fallback is disabled
@@ -5558,7 +5562,7 @@ unsafe fn ZSTD_buildSeqStore(
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
 
     ZSTD_validateSeqStore(&(*zc).seqStore, &(*zc).appliedParams.cParams);
-    ZSTDbss_compress as core::ffi::c_int as size_t
+    BuildSeqStore::Compress as size_t
 }
 
 unsafe fn ZSTD_copyBlockSequences(
@@ -6773,7 +6777,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         return err_code;
     }
 
-    if bss == ZSTDbss_noCompress as core::ffi::c_int as size_t {
+    if bss == BuildSeqStore::NoCompress as size_t {
         if (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
@@ -6835,7 +6839,7 @@ unsafe fn ZSTD_compressBlock_internal(
     if ERR_isError(err_code) {
         return err_code;
     }
-    if bss == ZSTDbss_noCompress as core::ffi::c_int as size_t {
+    if bss == BuildSeqStore::NoCompress as size_t {
         if (*zc).seqCollector.collectSequences != 0 {
             return Error::sequenceProducer_failed.to_error_code();
         }
@@ -6901,7 +6905,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     bss: size_t,
     lastBlock: u32,
 ) -> size_t {
-    if bss == ZSTDbss_compress as core::ffi::c_int as size_t {
+    if bss == BuildSeqStore::Compress as size_t {
         if (*zc).isFirstBlock == 0
             && ZSTD_maybeRLE(&(*zc).seqStore)
             && ZSTD_isRLE(src as *const u8, srcSize)
