@@ -257,12 +257,16 @@ pub struct ZSTD_cwksp {
     pub allocFailed: u8,
     pub workspaceOversizedDuration: core::ffi::c_int,
     pub phase: CwkspAllocPhase,
-    pub isStatic: ZSTD_cwksp_static_alloc_e,
+    pub isStatic: CwkspAllocKind,
 }
 
-pub type ZSTD_cwksp_static_alloc_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_static_alloc: ZSTD_cwksp_static_alloc_e = 1;
-pub const ZSTD_cwksp_dynamic_alloc: ZSTD_cwksp_static_alloc_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum CwkspAllocKind {
+    #[default]
+    Dynamic = 0,
+    Static = 1,
+}
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -1094,7 +1098,7 @@ unsafe fn ZSTD_cwksp_init(
     ws: *mut ZSTD_cwksp,
     start: *mut core::ffi::c_void,
     size: size_t,
-    isStatic: ZSTD_cwksp_static_alloc_e,
+    isStatic: CwkspAllocKind,
 ) {
     (*ws).workspace = start;
     (*ws).workspaceEnd = start.byte_add(size);
@@ -1118,7 +1122,7 @@ unsafe fn ZSTD_cwksp_create(
     if workspace.is_null() {
         return Error::memory_allocation.to_error_code();
     }
-    ZSTD_cwksp_init(ws, workspace, size, ZSTD_cwksp_dynamic_alloc);
+    ZSTD_cwksp_init(ws, workspace, size, CwkspAllocKind::Dynamic);
     0
 }
 
@@ -1528,7 +1532,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         allocFailed: 0,
         workspaceOversizedDuration: 0,
         phase: CwkspAllocPhase::Objects,
-        isStatic: ZSTD_cwksp_dynamic_alloc,
+        isStatic: CwkspAllocKind::Dynamic,
     };
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
     if workspaceSize <= size_of::<ZSTD_CCtx>() {
@@ -1539,7 +1543,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         // must be 8-aligned
         return core::ptr::null_mut();
     }
-    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_static_alloc);
+    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
 
     cctx = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CCtx>()) as *mut ZSTD_CCtx;
     if cctx.is_null() {
@@ -8638,7 +8642,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             allocFailed: 0,
             workspaceOversizedDuration: 0,
             phase: CwkspAllocPhase::Objects,
-            isStatic: ZSTD_cwksp_dynamic_alloc,
+            isStatic: CwkspAllocKind::Dynamic,
         },
         blockSizeMax: 0,
         pledgedSrcSizePlusOne: 0,
@@ -9060,14 +9064,14 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         allocFailed: 0,
         workspaceOversizedDuration: 0,
         phase: CwkspAllocPhase::Objects,
-        isStatic: ZSTD_cwksp_dynamic_alloc,
+        isStatic: CwkspAllocKind::Dynamic,
     };
 
     if workspace.is_null() {
         return core::ptr::null_mut();
     }
 
-    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_dynamic_alloc);
+    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Dynamic);
 
     let cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
     ZSTD_cwksp_move(&mut (*cdict).workspace, &mut ws);
@@ -9413,9 +9417,9 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         allocFailed: 0,
         workspaceOversizedDuration: 0,
         phase: CwkspAllocPhase::Objects,
-        isStatic: ZSTD_cwksp_dynamic_alloc,
+        isStatic: CwkspAllocKind::Dynamic,
     };
-    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_static_alloc);
+    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
     cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
     if cdict.is_null() {
         return core::ptr::null();
