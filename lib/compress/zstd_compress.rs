@@ -317,9 +317,13 @@ pub struct ZSTD_symbolEncodingTypeStats_t {
     pub longOffsets: bool,
 }
 
-pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
-pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
-pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum DefaultPolicy {
+    #[default]
+    Disallowed = 0,
+    Allowed = 1,
+}
 
 pub const ZSTDbss_noCompress: C2RustUnnamed_2 = 1;
 pub const ZSTDbss_compress: C2RustUnnamed_2 = 0;
@@ -4747,7 +4751,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.litlengthCTable,
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        ZSTD_defaultAllowed,
+        DefaultPolicy::Allowed,
         strategy,
     );
     let countSize = ZSTD_buildCTable(
@@ -4787,11 +4791,11 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWkspSize,
     );
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
-    let defaultPolicy = (if max_0 <= DefaultMaxOff {
-        ZSTD_defaultAllowed as core::ffi::c_int
+    let defaultPolicy = if max_0 <= DefaultMaxOff {
+        DefaultPolicy::Allowed
     } else {
-        ZSTD_defaultDisallowed as core::ffi::c_int
-    }) as ZSTD_DefaultPolicy_e;
+        DefaultPolicy::Disallowed
+    };
     nextEntropy.offcode_repeatMode = prevEntropy.offcode_repeatMode;
     stats.Offtype = ZSTD_selectEncodingType(
         &mut nextEntropy.offcode_repeatMode,
@@ -4853,7 +4857,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.matchlengthCTable,
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        ZSTD_defaultAllowed,
+        DefaultPolicy::Allowed,
         strategy,
     );
     let countSize_1 = ZSTD_buildCTable(

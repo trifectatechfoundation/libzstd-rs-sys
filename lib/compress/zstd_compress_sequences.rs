@@ -16,13 +16,10 @@ use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_writeNCount,
 };
-use crate::lib::compress::zstd_compress::SeqDef;
+use crate::lib::compress::zstd_compress::{DefaultPolicy, SeqDef};
 use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 use crate::ZSTD_isError;
 
-pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
-pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
-pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_BuildCTableWksp {
@@ -185,12 +182,12 @@ pub unsafe fn ZSTD_selectEncodingType(
     prevCTable: &[FSE_CTable],
     defaultNorm: *const core::ffi::c_short,
     defaultNormLog: u32,
-    isDefaultAllowed: ZSTD_DefaultPolicy_e,
+    isDefaultAllowed: DefaultPolicy,
     strategy: ZSTD_strategy,
 ) -> SymbolEncodingType {
     if mostFrequent == nbSeq {
         *repeatMode = FSE_repeat_none;
-        if isDefaultAllowed != 0 && nbSeq <= 2 {
+        if isDefaultAllowed == DefaultPolicy::Allowed && nbSeq <= 2 {
             // Prefer SymbolEncodingType::Basic over SymbolEncodingType::Rle when there are 2 or fewer symbols,
             // since RLE uses 1 byte, but SymbolEncodingType::Basic uses 5-6 bits per symbol.
             // If basic encoding isn't possible, always choose RLE.
@@ -199,7 +196,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         return SymbolEncodingType::Rle;
     }
     if (strategy as core::ffi::c_uint) < ZSTD_lazy {
-        if isDefaultAllowed as u64 != 0 {
+        if isDefaultAllowed == DefaultPolicy::Allowed {
             let staticFse_nbSeq_max = 1000;
             let mult =
                 (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
@@ -221,7 +218,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             }
         }
     } else {
-        let basicCost = if isDefaultAllowed != 0 {
+        let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         } else {
             Error::GENERIC.to_error_code()
@@ -234,7 +231,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
-        if isDefaultAllowed != 0 {
+        if isDefaultAllowed == DefaultPolicy::Allowed {
             assert!(ZSTD_isError(basicCost) == 0);
             assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
         }
