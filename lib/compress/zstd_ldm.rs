@@ -41,7 +41,7 @@ pub struct ldmEntry_t {
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ldmParams_t {
-    pub enableLdm: ZSTD_ParamSwitch_e,
+    pub enableLdm: ParamSwitch,
     pub hashLog: u32,
     pub bucketSizeLog: u32,
     pub minMatchLength: u32,
@@ -70,7 +70,7 @@ use crate::lib::compress::zstd_compress_internal::{
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
-use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters};
+use crate::lib::zstd::{ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters};
 
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
@@ -641,7 +641,7 @@ pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
     ));
-    if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.enableLdm == ParamSwitch::Enable {
         totalSize
     } else {
         0
@@ -649,7 +649,7 @@ pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
 }
 
 pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
-    if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.enableLdm == ParamSwitch::Enable {
         maxChunkSize / params.minMatchLength as size_t
     } else {
         0
@@ -1295,7 +1295,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut [u32; ZSTD_REP_NUM as usize],
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {

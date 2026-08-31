@@ -9,7 +9,7 @@ use libc::{
 use libzstd_rs_sys::internal::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
 };
-use libzstd_rs_sys::ZSTD_ParamSwitch_e;
+use libzstd_rs_sys::ParamSwitch;
 
 use crate::fileio::g_display_prefs;
 
@@ -56,7 +56,7 @@ pub struct FIO_prefs_s {
     pub targetCBlockSize: size_t,
     pub srcSizeHint: core::ffi::c_int,
     pub testMode: core::ffi::c_int,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub removeSrcFile: core::ffi::c_int,
     pub overwrite: core::ffi::c_int,
     pub asyncIO: core::ffi::c_int,
@@ -67,7 +67,7 @@ pub struct FIO_prefs_s {
     pub contentSize: core::ffi::c_int,
     pub allowBlockDevices: core::ffi::c_int,
     pub passThrough: core::ffi::c_int,
-    pub mmapDict: ZSTD_ParamSwitch_e,
+    pub mmapDict: ParamSwitch,
 }
 pub type FIO_prefs_t = FIO_prefs_s;
 #[derive(Copy, Clone)]

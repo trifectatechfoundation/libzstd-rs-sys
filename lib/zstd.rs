@@ -617,30 +617,30 @@ impl TryFrom<i32> for ZSTD_dictAttachPref_e {
 /// Zstd can take a decision on whether or not to enable the feature (`ZSTD_ps_auto`),
 /// or set the switch to `ZSTD_ps_enable` or `ZSTD_ps_disable` force enable/disable the feature.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ZSTD_ParamSwitch_e {
+pub enum ParamSwitch {
     /// Let the library automatically determine whether the feature shall be enabled
     #[default]
-    ZSTD_ps_auto = 0,
+    Auto = 0,
     /// Force-enable the feature
-    ZSTD_ps_enable = 1,
+    Enable = 1,
     /// Force-disable the feature
-    ZSTD_ps_disable = 2,
+    Disable = 2,
 }
 
-impl ZSTD_ParamSwitch_e {
+impl ParamSwitch {
     pub fn to_i32(self) -> i32 {
         self as i32
     }
 }
 
-impl TryFrom<i32> for ZSTD_ParamSwitch_e {
+impl TryFrom<i32> for ParamSwitch {
     type Error = ();
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::ZSTD_ps_auto),
-            1 => Ok(Self::ZSTD_ps_enable),
-            2 => Ok(Self::ZSTD_ps_disable),
+            0 => Ok(Self::Auto),
+            1 => Ok(Self::Enable),
+            2 => Ok(Self::Disable),
             _ => Err(()),
         }
     }

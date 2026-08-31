@@ -131,29 +131,7 @@ pub struct ZSTD_CDict_s {
     /// Indicates whether the CDict was created with params that would use
     /// row-based matchfinder. Unless the CDict is reloaded, we will use
     /// the same greedy/lazy matchfinder at compression time.
-    pub useRowMatchFinder: ZSTD_ParamSwitch_e,
-}
-
-#[repr(u32)]
-#[derive(Copy, Clone, PartialEq, Eq, Default)]
-pub enum ParamSwitch {
-    #[default]
-    Auto = 0,
-    Enable = 1,
-    Disable = 2,
-}
-
-impl TryFrom<i32> for ParamSwitch {
-    type Error = ();
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::Auto),
-            1 => Ok(Self::Enable),
-            2 => Ok(Self::Disable),
-            _ => Err(()),
-        }
-    }
+    pub useRowMatchFinder: ParamSwitch,
 }
 
 #[derive(Copy, Clone)]
@@ -302,17 +280,17 @@ pub struct ZSTD_CCtx_params_s {
     pub outBufferMode: ZSTD_bufferMode_e,
     pub blockDelimiters: ZSTD_SequenceFormat_e,
     pub validateSequences: core::ffi::c_int,
-    pub postBlockSplitter: ZSTD_ParamSwitch_e,
+    pub postBlockSplitter: ParamSwitch,
     pub preBlockSplitter_level: core::ffi::c_int,
     pub maxBlockSize: size_t,
-    pub useRowMatchFinder: ZSTD_ParamSwitch_e,
+    pub useRowMatchFinder: ParamSwitch,
     pub deterministicRefPrefix: core::ffi::c_int,
     pub customMem: ZSTD_customMem,
-    pub prefetchCDictTables: ZSTD_ParamSwitch_e,
+    pub prefetchCDictTables: ParamSwitch,
     pub enableMatchFinderFallback: core::ffi::c_int,
     pub extSeqProdState: *mut core::ffi::c_void,
     pub extSeqProdFunc: ZSTD_sequenceProducer_F,
-    pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
+    pub searchForExternalRepcodes: ParamSwitch,
 }
 
 #[derive(Copy, Clone, Default)]
@@ -394,7 +372,7 @@ pub type ZSTD_SequenceCopier_f = Option<
         size_t,
         *const core::ffi::c_void,
         size_t,
-        ZSTD_ParamSwitch_e,
+        ParamSwitch,
     ) -> size_t,
 >;
 
@@ -773,7 +751,7 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::{
-    Format, ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_Sequence,
+    Format, ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_Sequence,
     ZSTD_SequenceFormat_e, ZSTD_bm_buffered, ZSTD_bm_stable, ZSTD_btlazy2, ZSTD_btopt,
     ZSTD_btultra, ZSTD_btultra2, ZSTD_bufferMode_e, ZSTD_cParameter, ZSTD_compressionParameters,
     ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dfast,
@@ -1688,43 +1666,43 @@ fn ZSTD_rowMatchFinderSupported(strategy: ZSTD_strategy) -> bool {
 
 /// Returns true if the strategy and useRowMatchFinder mode indicate that we will use the row based
 /// matchfinder for this compression.
-fn ZSTD_rowMatchFinderUsed(strategy: ZSTD_strategy, mode: ZSTD_ParamSwitch_e) -> bool {
-    ZSTD_rowMatchFinderSupported(strategy) && mode == ZSTD_ParamSwitch_e::ZSTD_ps_enable
+fn ZSTD_rowMatchFinderUsed(strategy: ZSTD_strategy, mode: ParamSwitch) -> bool {
+    ZSTD_rowMatchFinderSupported(strategy) && mode == ParamSwitch::Enable
 }
 
 /// Returns row matchfinder usage given an initial mode and cParams
 fn ZSTD_resolveRowMatchFinderMode(
-    mut mode: ZSTD_ParamSwitch_e,
+    mut mode: ParamSwitch,
     cParams: &ZSTD_compressionParameters,
-) -> ZSTD_ParamSwitch_e {
+) -> ParamSwitch {
     let kWindowLogLowerBound = 14;
-    if mode != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
+    if mode != ParamSwitch::Auto {
         // if requested enabled, but no SIMD, we still will use row matchfinder
         return mode;
     }
-    mode = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+    mode = ParamSwitch::Disable;
     if !ZSTD_rowMatchFinderSupported(cParams.strategy) {
         return mode;
     }
     if cParams.windowLog > kWindowLogLowerBound {
-        mode = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+        mode = ParamSwitch::Enable;
     }
     mode
 }
 
 /// Returns block splitter usage (generally speaking, when using slower/stronger compression modes)
 fn ZSTD_resolveBlockSplitterMode(
-    mode: ZSTD_ParamSwitch_e,
+    mode: ParamSwitch,
     cParams: &ZSTD_compressionParameters,
-) -> ZSTD_ParamSwitch_e {
-    if mode != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
+) -> ParamSwitch {
+    if mode != ParamSwitch::Auto {
         return mode;
     }
 
     if cParams.strategy >= ZSTD_btopt && cParams.windowLog >= 17 {
-        ZSTD_ParamSwitch_e::ZSTD_ps_enable
+        ParamSwitch::Enable
     } else {
-        ZSTD_ParamSwitch_e::ZSTD_ps_disable
+        ParamSwitch::Disable
     }
 }
 
@@ -1735,27 +1713,24 @@ fn ZSTD_resolveBlockSplitterMode(
 /// row-based matchfinder.
 fn ZSTD_allocateChainTable(
     strategy: ZSTD_strategy,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     forDDSDict: bool,
 ) -> bool {
     forDDSDict || strategy != ZSTD_fast && !ZSTD_rowMatchFinderUsed(strategy, useRowMatchFinder)
 }
 
-/// Returns ZSTD_ps_enable if compression parameters are such that we should
+/// Returns Enable if compression parameters are such that we should
 /// enable long distance matching (wlog >= 27, strategy >= btopt).
-/// Returns ZSTD_ps_disable otherwise.
-fn ZSTD_resolveEnableLdm(
-    mode: ZSTD_ParamSwitch_e,
-    cParams: &ZSTD_compressionParameters,
-) -> ZSTD_ParamSwitch_e {
-    if mode != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
+/// Returns Disable otherwise.
+fn ZSTD_resolveEnableLdm(mode: ParamSwitch, cParams: &ZSTD_compressionParameters) -> ParamSwitch {
+    if mode != ParamSwitch::Auto {
         return mode;
     }
 
     if cParams.strategy >= ZSTD_btopt && cParams.windowLog >= 27 {
-        ZSTD_ParamSwitch_e::ZSTD_ps_enable
+        ParamSwitch::Enable
     } else {
-        ZSTD_ParamSwitch_e::ZSTD_ps_disable
+        ParamSwitch::Disable
     }
 }
 
@@ -1772,18 +1747,15 @@ fn ZSTD_resolveMaxBlockSize(maxBlockSize: size_t) -> size_t {
     }
 }
 
-fn ZSTD_resolveExternalRepcodeSearch(
-    value: ZSTD_ParamSwitch_e,
-    cLevel: core::ffi::c_int,
-) -> ZSTD_ParamSwitch_e {
-    if value != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
+fn ZSTD_resolveExternalRepcodeSearch(value: ParamSwitch, cLevel: core::ffi::c_int) -> ParamSwitch {
+    if value != ParamSwitch::Auto {
         return value;
     }
 
     if cLevel < 10 {
-        ZSTD_ParamSwitch_e::ZSTD_ps_disable
+        ParamSwitch::Disable
     } else {
-        ZSTD_ParamSwitch_e::ZSTD_ps_enable
+        ParamSwitch::Enable
     }
 }
 
@@ -1821,7 +1793,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -1833,17 +1805,17 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
 
     // should not matter, as all cParams are presumed properly defined
@@ -1853,7 +1825,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
     // Adjust advanced params according to cParams
     cctxParams.ldmParams.enableLdm =
         ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
-    if cctxParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
     }
     cctxParams.postBlockSplitter =
@@ -2096,8 +2068,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         160 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         161 => {
@@ -2158,8 +2130,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         1002 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         130 => {
@@ -2188,8 +2160,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         1010 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         1017 => {
@@ -2198,8 +2170,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         1011 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         1012 => {
@@ -2208,8 +2180,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         1013 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         1014 => {
@@ -2223,8 +2195,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
             bounds
         }
         1016 => {
-            bounds.lowerBound = ZSTD_ParamSwitch_e::ZSTD_ps_auto as core::ffi::c_int;
-            bounds.upperBound = ZSTD_ParamSwitch_e::ZSTD_ps_disable as core::ffi::c_int;
+            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
+            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
             bounds
         }
         _ => {
@@ -2486,10 +2458,10 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).enableDedicatedDictSearch as size_t
         }
         160 => {
-            let Ok(value) = ZSTD_ParamSwitch_e::try_from(value) else {
+            let Ok(value) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
-            (*CCtxParams).ldmParams.enableLdm = value as ZSTD_ParamSwitch_e;
+            (*CCtxParams).ldmParams.enableLdm = value;
             (*CCtxParams).ldmParams.enableLdm as size_t
         }
         161 => {
@@ -2572,10 +2544,10 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).validateSequences as size_t
         }
         1010 => {
-            let Ok(value) = ZSTD_ParamSwitch_e::try_from(value) else {
+            let Ok(value) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
-            (*CCtxParams).postBlockSplitter = value as ZSTD_ParamSwitch_e;
+            (*CCtxParams).postBlockSplitter = value;
             (*CCtxParams).postBlockSplitter as size_t
         }
         1017 => {
@@ -2586,10 +2558,10 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).preBlockSplitter_level as size_t
         }
         1011 => {
-            let Ok(value) = ZSTD_ParamSwitch_e::try_from(value) else {
+            let Ok(value) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
-            (*CCtxParams).useRowMatchFinder = value as ZSTD_ParamSwitch_e;
+            (*CCtxParams).useRowMatchFinder = value;
             (*CCtxParams).useRowMatchFinder as size_t
         }
         1012 => {
@@ -2600,10 +2572,10 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).deterministicRefPrefix as size_t
         }
         1013 => {
-            let Ok(value) = ZSTD_ParamSwitch_e::try_from(value) else {
+            let Ok(value) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
-            (*CCtxParams).prefetchCDictTables = value as ZSTD_ParamSwitch_e;
+            (*CCtxParams).prefetchCDictTables = value;
             (*CCtxParams).prefetchCDictTables as size_t
         }
         1014 => {
@@ -2623,7 +2595,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).maxBlockSize
         }
         1016 => {
-            let Ok(value) = ZSTD_ParamSwitch_e::try_from(value) else {
+            let Ok(value) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
             (*CCtxParams).searchForExternalRepcodes = value;
@@ -3260,7 +3232,7 @@ fn ZSTD_adjustCParams_internal(
     mut srcSize: core::ffi::c_ulonglong,
     mut dictSize: size_t,
     mode: CParamMode,
-    mut useRowMatchFinder: ZSTD_ParamSwitch_e,
+    mut useRowMatchFinder: ParamSwitch,
 ) -> ZSTD_compressionParameters {
     let minSrcSize = 513; // (1<<9) + 1
     let maxWindowResize = (1
@@ -3336,8 +3308,8 @@ fn ZSTD_adjustCParams_internal(
     // Unless it is explicitly disabled, conservatively assume that it is enabled.
     // In this case it will only be disabled for small sources, so shrinking the
     // hash log a little bit shouldn't result in any ratio loss.
-    if useRowMatchFinder == ZSTD_ParamSwitch_e::ZSTD_ps_auto {
-        useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+    if useRowMatchFinder == ParamSwitch::Auto {
+        useRowMatchFinder = ParamSwitch::Enable;
     }
 
     // We can't hash more than 32-bits in total. So that means that we require:
@@ -3371,7 +3343,7 @@ pub extern "C" fn ZSTD_adjustCParams(
         srcSize,
         dictSize,
         CParamMode::Unknown,
-        ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        ParamSwitch::Auto,
     )
 }
 
@@ -3440,7 +3412,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
         dictSize,
         mode,
     );
-    if CCtxParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if CCtxParams.ldmParams.enableLdm == ParamSwitch::Enable {
         cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG as core::ffi::c_uint;
     }
     ZSTD_overrideCParams(&mut cParams, &CCtxParams.cParams);
@@ -3457,7 +3429,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
 
 fn ZSTD_sizeof_matchState(
     cParams: &ZSTD_compressionParameters,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     enableDedicatedDictSearch: core::ffi::c_int,
     forCCtx: u32,
 ) -> size_t {
@@ -3543,7 +3515,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     cParams: &ZSTD_compressionParameters,
     ldmParams: &ldmParams_t,
     isStatic: core::ffi::c_int,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     buffInSize: size_t,
     buffOutSize: size_t,
     pledgedSrcSize: u64,
@@ -3570,7 +3542,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 
     let ldmSpace = ZSTD_ldm_getTableSize(*ldmParams);
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
-    let ldmSeqSpace = if ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    let ldmSeqSpace = if ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_cwksp_aligned64_alloc_size(maxNbLdmSeq.wrapping_mul(size_of::<rawSeq>()))
     } else {
         0
@@ -3643,9 +3615,9 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         let mut noRowCCtxSize: size_t = 0;
         let mut rowCCtxSize: size_t = 0;
-        initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+        initialParams.useRowMatchFinder = ParamSwitch::Disable;
         noRowCCtxSize = ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams);
-        initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+        initialParams.useRowMatchFinder = ParamSwitch::Enable;
         rowCCtxSize = ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams);
         noRowCCtxSize.max(rowCCtxSize)
     } else {
@@ -3735,9 +3707,9 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         let mut noRowCCtxSize: size_t = 0;
         let mut rowCCtxSize: size_t = 0;
-        initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+        initialParams.useRowMatchFinder = ParamSwitch::Disable;
         noRowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
-        initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+        initialParams.useRowMatchFinder = ParamSwitch::Enable;
         rowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
         noRowCCtxSize.max(rowCCtxSize)
     } else {
@@ -3869,7 +3841,7 @@ unsafe fn ZSTD_reset_matchState(
     ms: &mut ZSTD_MatchState_t,
     ws: *mut ZSTD_cwksp,
     cParams: &ZSTD_compressionParameters,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     crp: ZSTD_compResetPolicy_e,
     forceResetIndex: ZSTD_indexResetPolicy_e,
     forWho: ZSTD_resetTarget_e,
@@ -4033,7 +4005,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).appliedParams = *params;
     params = &mut (*zc).appliedParams;
 
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // Adjust long distance matching parameters
         ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &params.cParams);
     }
@@ -4140,7 +4112,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     // init params
     (*zc).blockState.matchState.cParams = params.cParams;
     (*zc).blockState.matchState.prefetchCDictTables =
-        (params.prefetchCDictTables == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+        (params.prefetchCDictTables == ParamSwitch::Enable) as core::ffi::c_int;
     (*zc).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1) as core::ffi::c_ulonglong;
     (*zc).consumedSrcSize = 0;
     (*zc).producedCSize = 0;
@@ -4174,7 +4146,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         ZSTD_cwksp_reserve_aligned64(ws, maxNbSeq.wrapping_mul(size_of::<SeqDef>())) as *mut SeqDef;
 
     // ldm hash table
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // TODO: avoid memset?
         let ldmHSize = (1 as size_t) << params.ldmParams.hashLog;
         (*zc).ldmState.hashTable =
@@ -4218,7 +4190,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).outBuff = ZSTD_cwksp_reserve_buffer(ws, buffOutSize);
 
     // ldm bucketOffsets table
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // TODO: avoid memset?
         let numBuckets =
             1 << (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
@@ -4705,7 +4677,7 @@ fn ZSTD_useTargetCBlockSize(cctxParams: &ZSTD_CCtx_params) -> bool {
 /// If used, compression will do best effort to split a block in order to improve compression ratio.
 /// At the time this function is called, the parameter must be finalized.
 fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
-    cctxParams.postBlockSplitter == ZSTD_ParamSwitch_e::ZSTD_ps_enable
+    cctxParams.postBlockSplitter == ParamSwitch::Enable
 }
 
 /// Returns a ZSTD_symbolEncodingTypeStats_t, or a zstd error code in the `size` field.
@@ -5135,7 +5107,7 @@ unsafe fn ZSTD_entropyCompressSeqStore(
 /// Assumption: strat is a valid strategy
 pub fn ZSTD_selectBlockCompressor(
     strat: ZSTD_strategy,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     dictMode: DictMode,
 ) -> ZSTD_BlockCompressor_f {
     static blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = [
@@ -5443,7 +5415,7 @@ unsafe fn ZSTD_buildSeqStore(
             src,
             srcSize,
         );
-    } else if (*zc).appliedParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore_t::new();
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
             return Error::parameter_combination_unsupported.to_error_code();
@@ -7420,7 +7392,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         ms.forceNonContiguous = 0;
         ms.nextToUpdate = ms.window.dictLimit;
     }
-    if (*cctx).appliedParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if (*cctx).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_window_update(&mut (*cctx).ldmState.window, src, srcSize, false);
     }
 
@@ -7534,8 +7506,8 @@ unsafe fn ZSTD_loadDictionaryContent(
 ) -> size_t {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
-    let loadLdmDict = (params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
-        && !ls.is_null()) as core::ffi::c_int;
+    let loadLdmDict =
+        (params.ldmParams.enableLdm == ParamSwitch::Enable && !ls.is_null()) as core::ffi::c_int;
 
     // Assert that the ms params match the params we're being given
     ZSTD_assertEqualCParams(params.cParams, ms.cParams);
@@ -7642,7 +7614,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         3..=5 => {
             if ms.dedicatedDictSearch != 0 {
                 ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms, iend.sub(HASH_READ_SIZE as usize));
-            } else if params.useRowMatchFinder == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+            } else if params.useRowMatchFinder == ParamSwitch::Enable {
                 let tagTableSize = 1 << params.cParams.hashLog;
                 ptr::write_bytes(ms.tagTable, 0, tagTableSize as usize);
                 ZSTD_row_update(ms, iend.sub(HASH_READ_SIZE as usize));
@@ -8089,7 +8061,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -8101,17 +8073,17 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
     ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, ZSTD_NO_CLEVEL);
     ZSTD_compressBegin_advanced_internal(
@@ -8159,7 +8131,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -8171,17 +8143,17 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
 
     let params = ZSTD_getParams_internal(
@@ -8507,7 +8479,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             overlapLog: 0,
             rsyncable: 0,
             ldmParams: ldmParams_t {
-                enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+                enableLdm: ParamSwitch::Auto,
                 hashLog: 0,
                 bucketSizeLog: 0,
                 minMatchLength: 0,
@@ -8519,17 +8491,17 @@ pub unsafe extern "C" fn ZSTD_compress(
             outBufferMode: ZSTD_bm_buffered,
             blockDelimiters: ZSTD_sf_noBlockDelimiters,
             validateSequences: 0,
-            postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            postBlockSplitter: ParamSwitch::Auto,
             preBlockSplitter_level: 0,
             maxBlockSize: 0,
-            useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            useRowMatchFinder: ParamSwitch::Auto,
             deterministicRefPrefix: 0,
             customMem: ZSTD_customMem::default(),
-            prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            prefetchCDictTables: ParamSwitch::Auto,
             enableMatchFinderFallback: 0,
             extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
             extSeqProdFunc: None,
-            searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            searchForExternalRepcodes: ParamSwitch::Auto,
         },
         appliedParams: ZSTD_CCtx_params_s {
             format: Format::ZSTD_f_zstd1,
@@ -8558,7 +8530,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             overlapLog: 0,
             rsyncable: 0,
             ldmParams: ldmParams_t {
-                enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+                enableLdm: ParamSwitch::Auto,
                 hashLog: 0,
                 bucketSizeLog: 0,
                 minMatchLength: 0,
@@ -8570,17 +8542,17 @@ pub unsafe extern "C" fn ZSTD_compress(
             outBufferMode: ZSTD_bm_buffered,
             blockDelimiters: ZSTD_sf_noBlockDelimiters,
             validateSequences: 0,
-            postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            postBlockSplitter: ParamSwitch::Auto,
             preBlockSplitter_level: 0,
             maxBlockSize: 0,
-            useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            useRowMatchFinder: ParamSwitch::Auto,
             deterministicRefPrefix: 0,
             customMem: ZSTD_customMem::default(),
-            prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            prefetchCDictTables: ParamSwitch::Auto,
             enableMatchFinderFallback: 0,
             extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
             extSeqProdFunc: None,
-            searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            searchForExternalRepcodes: ParamSwitch::Auto,
         },
         simpleApiParams: ZSTD_CCtx_params_s {
             format: Format::ZSTD_f_zstd1,
@@ -8609,7 +8581,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             overlapLog: 0,
             rsyncable: 0,
             ldmParams: ldmParams_t {
-                enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+                enableLdm: ParamSwitch::Auto,
                 hashLog: 0,
                 bucketSizeLog: 0,
                 minMatchLength: 0,
@@ -8621,17 +8593,17 @@ pub unsafe extern "C" fn ZSTD_compress(
             outBufferMode: ZSTD_bm_buffered,
             blockDelimiters: ZSTD_sf_noBlockDelimiters,
             validateSequences: 0,
-            postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            postBlockSplitter: ParamSwitch::Auto,
             preBlockSplitter_level: 0,
             maxBlockSize: 0,
-            useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            useRowMatchFinder: ParamSwitch::Auto,
             deterministicRefPrefix: 0,
             customMem: ZSTD_customMem::default(),
-            prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            prefetchCDictTables: ParamSwitch::Auto,
             enableMatchFinderFallback: 0,
             extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
             extSeqProdFunc: None,
-            searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            searchForExternalRepcodes: ParamSwitch::Auto,
         },
         dictID: 0,
         dictContentSize: 0,
@@ -8915,7 +8887,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
         // in case we are using DDS with row-hash.
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
-            ZSTD_resolveRowMatchFinderMode(ZSTD_ParamSwitch_e::ZSTD_ps_auto, &cParams),
+            ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &cParams),
             1,
             0,
         ))
@@ -9036,7 +9008,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     dictSize: size_t,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     cParams: ZSTD_compressionParameters,
-    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    useRowMatchFinder: ParamSwitch,
     enableDedicatedDictSearch: core::ffi::c_int,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
@@ -9121,7 +9093,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -9133,17 +9105,17 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
     ZSTD_CCtxParams_init(&mut cctxParams, 0);
     cctxParams.cParams = cParams;
@@ -9337,8 +9309,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     dictContentType: ZSTD_dictContentType_e,
     cParams: ZSTD_compressionParameters,
 ) -> *const ZSTD_CDict {
-    let useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode(ZSTD_ParamSwitch_e::ZSTD_ps_auto, &cParams);
+    let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &cParams);
     // enableDedicatedDictSearch == 1 ensures matchstate is not too small in case this CDict will be used for DDS + row hash
     let matchStateSize = ZSTD_sizeof_matchState(&cParams, useRowMatchFinder, 1, 0);
     let neededSize = (ZSTD_cwksp_alloc_size(size_of::<ZSTD_CDict>()))
@@ -9380,7 +9351,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -9392,17 +9363,17 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
 
     // 8-aligned
@@ -9509,7 +9480,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         overlapLog: 0,
         rsyncable: 0,
         ldmParams: ldmParams_t {
-            enableLdm: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            enableLdm: ParamSwitch::Auto,
             hashLog: 0,
             bucketSizeLog: 0,
             minMatchLength: 0,
@@ -9521,17 +9492,17 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         outBufferMode: ZSTD_bm_buffered,
         blockDelimiters: ZSTD_sf_noBlockDelimiters,
         validateSequences: 0,
-        postBlockSplitter: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        postBlockSplitter: ParamSwitch::Auto,
         preBlockSplitter_level: 0,
         maxBlockSize: 0,
-        useRowMatchFinder: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        useRowMatchFinder: ParamSwitch::Auto,
         deterministicRefPrefix: 0,
         customMem: ZSTD_customMem::default(),
-        prefetchCDictTables: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        prefetchCDictTables: ParamSwitch::Auto,
         enableMatchFinderFallback: 0,
         extSeqProdState: core::ptr::null_mut::<core::ffi::c_void>(),
         extSeqProdFunc: None,
-        searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+        searchForExternalRepcodes: ParamSwitch::Auto,
     };
     if cdict.is_null() {
         return Error::dictionary_wrong.to_error_code();
@@ -10761,7 +10732,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     inSeqsSize: size_t,
     src: *const core::ffi::c_void,
     blockSize: size_t,
-    externalRepSearch: ZSTD_ParamSwitch_e,
+    externalRepSearch: ParamSwitch,
 ) -> size_t {
     let mut idx = (*seqPos).idx;
     let startIdx = idx;
@@ -10787,7 +10758,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         let matchLength = (*inSeqs.offset(idx as isize)).matchLength;
         let mut offBase: u32 = 0;
 
-        if externalRepSearch == ZSTD_ParamSwitch_e::ZSTD_ps_disable {
+        if externalRepSearch == ParamSwitch::Disable {
             offBase = ((*inSeqs.offset(idx as isize)).offset)
                 .wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
         } else {
@@ -10836,7 +10807,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     }
 
     // If we skipped repcode search while parsing, we need to update repcodes now
-    if externalRepSearch == ZSTD_ParamSwitch_e::ZSTD_ps_disable && idx != startIdx {
+    if externalRepSearch == ParamSwitch::Disable && idx != startIdx {
         let rep = &mut updatedRepcodes.rep;
         let lastSeqIdx = idx.wrapping_sub(1); // index of last non-block-delimiter sequence
 
@@ -10894,7 +10865,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     inSeqsSize: size_t,
     src: *const core::ffi::c_void,
     blockSize: size_t,
-    externalRepSearch: ZSTD_ParamSwitch_e,
+    externalRepSearch: ParamSwitch,
 ) -> size_t {
     let mut idx = (*seqPos).idx;
     let mut startPosInSequence = (*seqPos).posInSequence;
@@ -11060,7 +11031,7 @@ fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier
                     size_t,
                     *const core::ffi::c_void,
                     size_t,
-                    ZSTD_ParamSwitch_e,
+                    ParamSwitch,
                 ) -> size_t,
         );
     }
@@ -11073,7 +11044,7 @@ fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier
                 size_t,
                 *const core::ffi::c_void,
                 size_t,
-                ZSTD_ParamSwitch_e,
+                ParamSwitch,
             ) -> size_t,
     )
 }
@@ -11675,8 +11646,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     let mut remaining = srcSize;
     let mut cSize = 0usize;
     let mut op = dst as *mut u8;
-    let repcodeResolution =
-        (*cctx).appliedParams.searchForExternalRepcodes == ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+    let repcodeResolution = (*cctx).appliedParams.searchForExternalRepcodes == ParamSwitch::Enable;
 
     if nbSequences == 0 {
         return Error::externalSequences_invalid.to_error_code();
@@ -13103,13 +13073,7 @@ fn ZSTD_getCParams_internal(
     }
 
     // refine parameters based on srcSize & dictSize
-    ZSTD_adjustCParams_internal(
-        cp,
-        srcSizeHint,
-        dictSize,
-        mode,
-        ZSTD_ParamSwitch_e::ZSTD_ps_auto,
-    )
+    ZSTD_adjustCParams_internal(cp, srcSizeHint, dictSize, mode, ParamSwitch::Auto)
 }
 
 /// Same idea as ZSTD_getCParams().

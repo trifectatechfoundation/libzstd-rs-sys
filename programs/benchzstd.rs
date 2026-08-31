@@ -18,7 +18,7 @@ use libzstd_rs_sys::lib::decompress::zstd_decompress::{
 };
 use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
 use libzstd_rs_sys::lib::zstd::{
-    ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_compressionParameters,
+    ParamSwitch, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_compressionParameters,
     ZSTD_error_dstSize_tooSmall, ZSTD_inBuffer_s, ZSTD_outBuffer_s, ZSTD_CONTENTSIZE_ERROR,
     ZSTD_CONTENTSIZE_UNKNOWN,
 };
@@ -65,7 +65,7 @@ pub struct BMK_advancedParams_t {
     pub ldmHashLog: core::ffi::c_int,
     pub ldmBucketSizeLog: core::ffi::c_int,
     pub ldmHashRateLog: core::ffi::c_int,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub useRowMatchFinder: core::ffi::c_int,
 }
 pub type BMK_mode_t = core::ffi::c_uint;
@@ -187,7 +187,7 @@ pub unsafe fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
             ldmHashLog: 0,
             ldmBucketSizeLog: 0,
             ldmHashRateLog: 0,
-            literalCompressionMode: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             useRowMatchFinder: 0,
         }
     }
