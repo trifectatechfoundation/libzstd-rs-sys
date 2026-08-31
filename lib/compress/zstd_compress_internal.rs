@@ -248,15 +248,13 @@ impl From<i32> for CParamMode {
     }
 }
 
-pub type ZSTD_BlockCompressor_f = Option<
-    unsafe fn(
-        &mut ZSTD_MatchState_t,
-        &mut SeqStore_t,
-        *mut u32,
-        *const core::ffi::c_void,
-        size_t,
-    ) -> size_t,
->;
+pub type ZSTD_BlockCompressor_f = unsafe fn(
+    &mut ZSTD_MatchState_t,
+    &mut SeqStore_t,
+    *mut u32,
+    *const core::ffi::c_void,
+    size_t,
+) -> size_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
