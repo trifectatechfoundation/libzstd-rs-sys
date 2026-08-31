@@ -69,10 +69,24 @@ mod compress2_strats {
         }};
     }
 
+    // The full cross product of (useRowMatchFinder, dictSetup), in a fixed order
+    const COMBOS: [(i32, DictSetup); 6] = [
+        (1, DictSetup::None),
+        (1, DictSetup::Prefix),
+        (1, DictSetup::CDict),
+        (2, DictSetup::None),
+        (2, DictSetup::Prefix),
+        (2, DictSetup::CDict),
+    ];
+
     #[track_caller]
     fn check_strategy(strategy: i32) {
-        for use_row_match_finder in 1..=2 {
-            for dict_setup in [DictSetup::None, DictSetup::Prefix, DictSetup::CDict] {
+        if cfg!(miri) {
+            // Pick just one combination to save time
+            let (use_row_match_finder, dict_setup) = COMBOS[(strategy as usize - 1) % COMBOS.len()];
+            assert_eq_rs_c!({ compress!(strategy, use_row_match_finder, dict_setup) });
+        } else {
+            for (use_row_match_finder, dict_setup) in COMBOS {
                 assert_eq_rs_c!({ compress!(strategy, use_row_match_finder, dict_setup) });
             }
         }
@@ -94,25 +108,21 @@ mod compress2_strats {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "slow")]
     fn lazy() {
         check_strategy(4);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "slow")]
     fn lazy2() {
         check_strategy(5);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "slow")]
     fn btlazy2() {
         check_strategy(6);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "slow")]
     fn btopt() {
         check_strategy(7);
     }
