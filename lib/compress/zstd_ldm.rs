@@ -1360,7 +1360,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         ZSTD_storeSeq(
             seqStore,
             newLitLength,
-            ip.sub(newLitLength as usize),
+            ip.sub(newLitLength),
             iend,
             (sequence.offset).wrapping_add(ZSTD_REP_NUM as u32),
             sequence.matchLength as size_t,
