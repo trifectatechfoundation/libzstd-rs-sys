@@ -139,6 +139,7 @@ pub enum OptPrice {
 }
 
 #[repr(C)]
+#[derive(Default)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
     pub litLengthFreq: *mut core::ffi::c_uint,
@@ -160,6 +161,7 @@ pub struct optState_t {
 }
 
 #[repr(C)]
+#[derive(Default)]
 pub struct ZSTD_blockState_t {
     pub prevCBlock: *mut ZSTD_compressedBlockState_t,
     pub nextCBlock: *mut ZSTD_compressedBlockState_t,
