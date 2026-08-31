@@ -5109,142 +5109,90 @@ pub fn ZSTD_selectBlockCompressor(
     strat: ZSTD_strategy,
     useRowMatchFinder: ParamSwitch,
     dictMode: DictMode,
-) -> ZSTD_BlockCompressor_f {
-    static blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = [
-        [
-            Some(
-                ZSTD_compressBlock_fast
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(
-                ZSTD_compressBlock_fast
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST),
-            Some(ZSTD_COMPRESSBLOCK_GREEDY),
-            Some(ZSTD_COMPRESSBLOCK_LAZY),
-            Some(ZSTD_COMPRESSBLOCK_LAZY2),
-            Some(ZSTD_COMPRESSBLOCK_BTLAZY2),
-            Some(ZSTD_COMPRESSBLOCK_BTOPT),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA2),
-        ],
-        [
-            Some(
-                ZSTD_compressBlock_fast_extDict
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(
-                ZSTD_compressBlock_fast_extDict
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_BTLAZY2_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_BTOPT_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA_EXTDICT),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA_EXTDICT),
-        ],
-        [
-            Some(
-                ZSTD_compressBlock_fast_dictMatchState
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(
-                ZSTD_compressBlock_fast_dictMatchState
-                    as unsafe fn(
-                        &mut ZSTD_MatchState_t,
-                        &mut SeqStore_t,
-                        *mut u32,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA_DICTMATCHSTATE),
-            Some(ZSTD_COMPRESSBLOCK_BTULTRA_DICTMATCHSTATE),
-        ],
-        [
-            None,
-            None,
-            None,
-            Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH),
-            Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH),
-            Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH),
-            None,
-            None,
-            None,
-            None,
-        ],
-    ];
-    let mut selectedCompressor: ZSTD_BlockCompressor_f = None;
-
+) -> Option<ZSTD_BlockCompressor_f> {
     if ZSTD_rowMatchFinderUsed(strat, useRowMatchFinder) {
-        static rowBasedBlockCompressors: [[ZSTD_BlockCompressor_f; 3]; 4] = [
-            [
-                Some(ZSTD_COMPRESSBLOCK_GREEDY_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY2_ROW),
-            ],
-            [
-                Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT_ROW),
-            ],
-            [
-                Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE_ROW),
-            ],
-            [
-                Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH_ROW),
-                Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW),
-            ],
-        ];
-        selectedCompressor = rowBasedBlockCompressors[dictMode as usize]
-            [(strat as core::ffi::c_int - ZSTD_greedy as core::ffi::c_int) as usize];
+        match dictMode {
+            DictMode::NoDict => match strat {
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_ROW),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_ROW),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_ROW),
+                _ => unreachable!(),
+            },
+            DictMode::ExtDict => match strat {
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT_ROW),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT_ROW),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT_ROW),
+                _ => unreachable!(),
+            },
+            DictMode::DictMatchState => match strat {
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE_ROW),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE_ROW),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE_ROW),
+                _ => unreachable!(),
+            },
+            DictMode::DedicatedDictSearch => match strat {
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH_ROW),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH_ROW),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW),
+                _ => unreachable!(),
+            },
+        }
     } else {
-        selectedCompressor = blockCompressor[dictMode as usize][strat as usize];
+        match dictMode {
+            DictMode::NoDict => match strat {
+                0 => Some(ZSTD_compressBlock_fast as ZSTD_BlockCompressor_f),
+                ZSTD_fast => Some(ZSTD_compressBlock_fast as ZSTD_BlockCompressor_f),
+                ZSTD_dfast => Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST),
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2),
+                ZSTD_btlazy2 => Some(ZSTD_COMPRESSBLOCK_BTLAZY2),
+                ZSTD_btopt => Some(ZSTD_COMPRESSBLOCK_BTOPT),
+                ZSTD_btultra => Some(ZSTD_COMPRESSBLOCK_BTULTRA),
+                ZSTD_btultra2 => Some(ZSTD_COMPRESSBLOCK_BTULTRA2),
+                _ => unreachable!(),
+            },
+            DictMode::ExtDict => match strat {
+                0 => Some(ZSTD_compressBlock_fast_extDict as ZSTD_BlockCompressor_f),
+                ZSTD_fast => Some(ZSTD_compressBlock_fast_extDict as ZSTD_BlockCompressor_f),
+                ZSTD_dfast => Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST_EXTDICT),
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT),
+                ZSTD_btlazy2 => Some(ZSTD_COMPRESSBLOCK_BTLAZY2_EXTDICT),
+                ZSTD_btopt => Some(ZSTD_COMPRESSBLOCK_BTOPT_EXTDICT),
+                ZSTD_btultra => Some(ZSTD_COMPRESSBLOCK_BTULTRA_EXTDICT),
+                ZSTD_btultra2 => Some(ZSTD_COMPRESSBLOCK_BTULTRA_EXTDICT),
+                _ => unreachable!(),
+            },
+            DictMode::DictMatchState => match strat {
+                0 => Some(ZSTD_compressBlock_fast_dictMatchState as ZSTD_BlockCompressor_f),
+                ZSTD_fast => Some(ZSTD_compressBlock_fast_dictMatchState as ZSTD_BlockCompressor_f),
+                ZSTD_dfast => Some(ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE),
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE),
+                ZSTD_btlazy2 => Some(ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE),
+                ZSTD_btopt => Some(ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE),
+                ZSTD_btultra => Some(ZSTD_COMPRESSBLOCK_BTULTRA_DICTMATCHSTATE),
+                ZSTD_btultra2 => Some(ZSTD_COMPRESSBLOCK_BTULTRA_DICTMATCHSTATE),
+                _ => unreachable!(),
+            },
+            DictMode::DedicatedDictSearch => match strat {
+                0 => None,
+                ZSTD_fast => None,
+                ZSTD_dfast => None,
+                ZSTD_greedy => Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH),
+                ZSTD_lazy => Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH),
+                ZSTD_lazy2 => Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH),
+                ZSTD_btlazy2 => None,
+                ZSTD_btopt => None,
+                ZSTD_btultra => None,
+                ZSTD_btultra2 => None,
+                _ => unreachable!(),
+            },
+        }
     }
-    selectedCompressor
 }
 
 unsafe fn ZSTD_storeLastLiterals(
