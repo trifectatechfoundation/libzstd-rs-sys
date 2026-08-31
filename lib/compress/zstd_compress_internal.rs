@@ -8,13 +8,13 @@ use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
-    ParamSwitch, SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
+    SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
     ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, HASH_READ_SIZE,
     ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
-use crate::lib::zstd::{ZSTD_Sequence, ZSTD_dictContentType_e};
+use crate::lib::zstd::{ParamSwitch, ZSTD_Sequence, ZSTD_dictContentType_e};
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]

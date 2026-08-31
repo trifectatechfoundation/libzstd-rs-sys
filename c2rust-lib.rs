@@ -103,7 +103,7 @@ pub mod lib {
 } // mod lib
 
 pub use crate::lib::zstd::{
-    ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_dParameter,
+    ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_dParameter,
     ZSTD_dictAttachPref_e, ZSTD_format_e, ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer,
     ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN,
     ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,

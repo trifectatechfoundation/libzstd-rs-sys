@@ -27,7 +27,7 @@ use libzstd_rs_sys::lib::decompress::zstd_decompress::{
 };
 use libzstd_rs_sys::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 use libzstd_rs_sys::lib::zstd::{
-    Format, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_cParameter,
+    Format, ParamSwitch, ZSTD_ResetDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_cParameter,
     ZSTD_compressionParameters, ZSTD_dParameter, ZSTD_error_frameParameter_windowTooLarge,
     ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_outBuffer, ZSTD_outBuffer_s,
     ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
@@ -437,7 +437,7 @@ pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     (*ret).targetCBlockSize = 0;
     (*ret).srcSizeHint = 0;
     (*ret).testMode = 0;
-    (*ret).literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
+    (*ret).literalCompressionMode = ParamSwitch::Auto;
     (*ret).excludeCompressedFiles = 0;
     (*ret).allowBlockDevices = 0;
     (*ret).asyncIO = AIO_supported();
@@ -627,7 +627,7 @@ pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: size_t) {
 pub unsafe fn FIO_setTestMode(prefs: *mut FIO_prefs_t, testMode: core::ffi::c_int) {
     (*prefs).testMode = (testMode != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mode: ZSTD_ParamSwitch_e) {
+pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mode: ParamSwitch) {
     (*prefs).literalCompressionMode = mode;
 }
 pub unsafe fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, minCLevel: core::ffi::c_int) {
@@ -664,7 +664,7 @@ pub unsafe fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_in
 pub unsafe fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).passThrough = (value != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, value: ZSTD_ParamSwitch_e) {
+pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, value: ParamSwitch) {
     (*prefs).mmapDict = value;
 }
 pub unsafe fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, value: core::ffi::c_int) {
@@ -1742,9 +1742,8 @@ unsafe fn FIO_createCResources(
     cLevel: core::ffi::c_int,
     mut comprParams: ZSTD_compressionParameters,
 ) -> cRess_t {
-    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
-    let forceNoUseMMap =
-        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
+    let mut useMMap = ((*prefs).mmapDict == ParamSwitch::Enable) as core::ffi::c_int;
+    let forceNoUseMMap = ((*prefs).mmapDict == ParamSwitch::Disable) as core::ffi::c_int;
     let mut dictBufferType = FIO_mallocDict;
     let mut ress = cRess_t {
         dict: FIO_Dict_t {
@@ -4865,9 +4864,8 @@ unsafe fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
     dictFileName: *const core::ffi::c_char,
 ) -> dRess_t {
-    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
-    let forceNoUseMMap =
-        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
+    let mut useMMap = ((*prefs).mmapDict == ParamSwitch::Enable) as core::ffi::c_int;
+    let forceNoUseMMap = ((*prefs).mmapDict == ParamSwitch::Disable) as core::ffi::c_int;
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,

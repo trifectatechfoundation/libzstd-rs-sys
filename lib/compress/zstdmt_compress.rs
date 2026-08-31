@@ -30,7 +30,7 @@ use crate::lib::compress::zstd_ldm::{
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::{
-    ZSTD_EndDirective, ZSTD_ParamSwitch_e, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
+    ParamSwitch, ZSTD_EndDirective, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
     ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
     ZSTD_e_end, ZSTD_e_flush, ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer_s,
     ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_UNKNOWN,
@@ -623,7 +623,7 @@ unsafe fn ZSTDMT_serialState_reset(
     dictContentType: ZSTD_dictContentType_e,
 ) -> core::ffi::c_int {
     // Adjust parameters
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
     } else {
         ptr::write_bytes(
@@ -636,7 +636,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.fParams.checksumFlag != 0 {
         ZSTD_XXH64_reset(&mut serialState.xxhState, 0);
     }
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
         let hashSize = ((1 as size_t) << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
@@ -743,7 +743,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
     // A future job may error and skip our job
     if (*serialState).nextJobID == jobID {
         // It is now our turn, do any processing necessary
-        if (*serialState).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+        if (*serialState).params.ldmParams.enableLdm == ParamSwitch::Enable {
             ZSTD_window_update(
                 &mut (*serialState).ldmState.window,
                 src.start,
@@ -845,7 +845,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
         match current_block {
             17100290475540901977 => {}
             _ => {
-                if jobParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
+                if jobParams.ldmParams.enableLdm == ParamSwitch::Enable
                     && (rawSeqStore.seq).is_null()
                 {
                     let guard = (*job).job_mutex.lock().unwrap();
@@ -859,7 +859,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                     }
 
                     // Don't run LDM for the chunks, since we handle it externally
-                    jobParams.ldmParams.enableLdm = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+                    jobParams.ldmParams.enableLdm = ParamSwitch::Disable;
                     // Correct nbWorkers to 0.
                     jobParams.nbWorkers = 0;
 
@@ -1544,7 +1544,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
 
 unsafe fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
     let mut jobLog: core::ffi::c_uint = 0;
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on cycleLog instead.
@@ -1581,7 +1581,7 @@ unsafe fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
     } else {
         (params.cParams.windowLog).wrapping_sub(overlapRLog as core::ffi::c_uint)
     }) as core::ffi::c_int;
-    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on chainLog instead.
@@ -1686,7 +1686,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     );
 
     // If ldm is enabled we need windowSize space.
-    let windowSize = (if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    let windowSize = (if (*mtctx).params.ldmParams.enableLdm == ParamSwitch::Enable {
         1 << (*mtctx).params.cParams.windowLog
     } else {
         0
@@ -2076,7 +2076,7 @@ unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> boo
 }
 
 unsafe fn ZSTDMT_waitForLdmComplete(mtctx: *mut ZSTDMT_CCtx, buffer: Buffer) {
-    if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if (*mtctx).params.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut guard = (*mtctx).serial.ldmWindowMutex.lock().unwrap();
         while ZSTDMT_doesOverlapWindow(buffer, (*mtctx).serial.ldmWindow) {
             guard = (*mtctx).serial.ldmWindowCond.wait(guard).unwrap();

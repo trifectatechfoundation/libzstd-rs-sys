@@ -11,7 +11,7 @@ use libzstd_rs_sys::lib::zdict::experimental::{
 };
 use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
 use libzstd_rs_sys::lib::zstd::{
-    ZSTD_ParamSwitch_e, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
+    ParamSwitch, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
     ZSTD_BLOCKSIZELOG_MAX, ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
 };
 
@@ -94,7 +94,7 @@ pub struct FIO_prefs_s {
     pub targetCBlockSize: size_t,
     pub srcSizeHint: core::ffi::c_int,
     pub testMode: core::ffi::c_int,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub removeSrcFile: core::ffi::c_int,
     pub overwrite: core::ffi::c_int,
     pub asyncIO: core::ffi::c_int,
@@ -105,7 +105,7 @@ pub struct FIO_prefs_s {
     pub contentSize: core::ffi::c_int,
     pub allowBlockDevices: core::ffi::c_int,
     pub passThrough: core::ffi::c_int,
-    pub mmapDict: ZSTD_ParamSwitch_e,
+    pub mmapDict: ParamSwitch,
 }
 pub type FIO_prefs_t = FIO_prefs_s;
 pub type BMK_mode_t = core::ffi::c_uint;
@@ -127,7 +127,7 @@ pub struct BMK_advancedParams_t {
     pub ldmHashLog: core::ffi::c_int,
     pub ldmBucketSizeLog: core::ffi::c_int,
     pub ldmHashRateLog: core::ffi::c_int,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub useRowMatchFinder: core::ffi::c_int,
 }
 pub type dictType = core::ffi::c_uint;
@@ -1432,8 +1432,8 @@ unsafe fn main_0(
     let mut cLevelLast = MINCLEVEL - 1;
     let mut setThreads_non1 = 0;
     let mut nbWorkers = init_nbWorkers();
-    let mut mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
-    let mut useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
+    let mut mmapDict = ParamSwitch::Auto;
+    let mut useRowMatchFinder = ParamSwitch::Auto;
     let mut cType = FIO_zstdCompression;
     let mut compressibility = -1.0f64;
     let mut bench_nbSeconds = 3;
@@ -1474,7 +1474,7 @@ unsafe fn main_0(
     let mut fastCoverParams = defaultFastCoverParams();
     let mut dict = fastCover;
     let mut benchParams = BMK_initAdvancedParams();
-    let mut literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
+    let mut literalCompressionMode = ParamSwitch::Auto;
     checkLibVersion();
     assert!(argCount >= 1);
     if filenames.is_null() || file_of_names.is_null() {
@@ -1714,9 +1714,9 @@ unsafe fn main_0(
                         } else if strcmp(argument, c"--adapt".as_ptr()) == 0 {
                             adapt = 1;
                         } else if strcmp(argument, c"--no-row-match-finder".as_ptr()) == 0 {
-                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+                            useRowMatchFinder = ParamSwitch::Disable;
                         } else if strcmp(argument, c"--row-match-finder".as_ptr()) == 0 {
-                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+                            useRowMatchFinder = ParamSwitch::Enable;
                         } else if longCommandWArg(&mut argument, c"--adapt=".as_ptr()) != 0 {
                             adapt = 1;
                             if parseAdaptParameters(argument, &mut adaptMin, &mut adaptMax) == 0 {
@@ -1731,9 +1731,9 @@ unsafe fn main_0(
                             suffix = ZSTD_EXTENSION.as_ptr();
                             cType = FIO_zstdCompression;
                         } else if strcmp(argument, c"--mmap-dict".as_ptr()) == 0 {
-                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+                            mmapDict = ParamSwitch::Enable;
                         } else if strcmp(argument, c"--no-mmap-dict".as_ptr()) == 0 {
-                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+                            mmapDict = ParamSwitch::Disable;
                         } else if strcmp(argument, c"--format=gzip".as_ptr()) == 0 {
                             suffix = GZ_EXTENSION.as_ptr();
                             cType = FIO_gzipCompression;
@@ -1756,9 +1756,9 @@ unsafe fn main_0(
                             } else if strcmp(argument, c"--rsyncable".as_ptr()) == 0 {
                                 rsyncable = 1;
                             } else if strcmp(argument, c"--compress-literals".as_ptr()) == 0 {
-                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
+                                literalCompressionMode = ParamSwitch::Enable;
                             } else if strcmp(argument, c"--no-compress-literals".as_ptr()) == 0 {
-                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
+                                literalCompressionMode = ParamSwitch::Disable;
                             } else if strcmp(argument, c"--no-progress".as_ptr()) == 0 {
                                 progress = FIO_ps_never;
                             } else if strcmp(argument, c"--progress".as_ptr()) == 0 {
