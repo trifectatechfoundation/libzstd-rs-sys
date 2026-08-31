@@ -42,6 +42,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
     ZSTD_storeSeq, ZSTD_updateRep,
 };
+use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
 #[inline]
@@ -597,10 +598,10 @@ unsafe fn ZSTD_insertBt1(
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
     let dictLimit = ms.window.dictLimit;
-    let dictEnd = dictBase.offset(dictLimit as isize);
-    let prefixStart = base.offset(dictLimit as isize);
+    let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
+    let prefixStart = base.wrapping_offset(dictLimit as isize);
     let mut match_0 = core::ptr::null::<u8>();
-    let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let btLow = if btMask >= curr {
         0
     } else {
@@ -624,14 +625,14 @@ unsafe fn ZSTD_insertBt1(
         let mut matchLength = commonLengthSmaller.min(commonLengthLarger);
 
         if !extDict || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
-            match_0 = base.offset(matchIndex as isize);
+            match_0 = base.wrapping_offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count(
                 ip.add(matchLength),
                 match_0.add(matchLength),
                 iend,
             ));
         } else {
-            match_0 = dictBase.offset(matchIndex as isize);
+            match_0 = dictBase.wrapping_offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count_2segments(
                 ip.add(matchLength),
                 match_0.add(matchLength),
@@ -641,7 +642,7 @@ unsafe fn ZSTD_insertBt1(
             ));
             if (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
                 // to prepare for next usage of match[matchLength]
-                match_0 = base.offset(matchIndex as isize);
+                match_0 = base.wrapping_offset(matchIndex as isize);
             }
         }
 
@@ -705,13 +706,13 @@ unsafe fn ZSTD_updateTree_internal(
     dictMode: DictMode,
 ) {
     let base = ms.window.base;
-    let target = ip.offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let mut idx = ms.nextToUpdate;
 
     while idx < target {
         let forward = ZSTD_insertBt1(
             ms,
-            base.offset(idx as isize),
+            base.wrapping_offset(idx as isize),
             iend,
             target,
             mls,
@@ -745,7 +746,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         .targetLength
         .min(((1 << 12) - 1) as core::ffi::c_uint);
     let base = ms.window.base;
-    let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let hashLog = cParams.hashLog;
     let minMatch = (if mls == 3 { 3 } else { 4 }) as u32;
     let hashTable = ms.hashTable;
@@ -758,8 +759,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut commonLengthLarger = 0;
     let dictBase = ms.window.dictBase;
     let dictLimit = ms.window.dictLimit;
-    let dictEnd = dictBase.offset(dictLimit as isize);
-    let prefixStart = base.offset(dictLimit as isize);
+    let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
+    let prefixStart = base.wrapping_offset(dictLimit as isize);
     let btLow = if btMask >= curr {
         0
     } else {
@@ -871,7 +872,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     .offset(repIndex as isize)
                     .sub(dmsIndexDelta as usize)
             } else {
-                dictBase.offset(repIndex as isize)
+                dictBase.wrapping_offset(repIndex as isize)
             };
 
             // intentional overflow, equivalent to `curr > repIndex >= windowLow`
@@ -978,7 +979,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             || dictMode == DictMode::DictMatchState
             || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t
         {
-            match_2 = base.offset(matchIndex as isize);
+            match_2 = base.wrapping_offset(matchIndex as isize);
             if matchIndex >= dictLimit {
                 // ensure early section of match is equal as expected
                 debug_assert!(libc::memcmp(match_2.cast(), ip.cast(), matchLength) == 0);
@@ -989,7 +990,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 iLimit,
             ));
         } else {
-            match_2 = dictBase.offset(matchIndex as isize);
+            match_2 = dictBase.wrapping_offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count_2segments(
                 ip.add(matchLength),
                 match_2.add(matchLength),
@@ -1135,7 +1136,7 @@ unsafe fn ZSTD_btGetAllMatches_internal(
     dictMode: DictMode,
     mls: u32,
 ) -> u32 {
-    if ip < (ms.window.base).offset(ms.nextToUpdate as isize) {
+    if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
         return 0; // skipped area
     }
     ZSTD_updateTree_internal(ms, ip, iHighLimit, mls, dictMode);
@@ -1772,14 +1773,14 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     dictMode: DictMode,
 ) -> size_t {
     let mut current_block: u64;
-    let optStatePtr: *mut optState_t = &mut ms.opt;
+    let optStatePtr: *mut optState_t = core::ptr::addr_of_mut!(ms.opt); // held across later calls
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(8);
     let base = ms.window.base;
-    let prefixStart = base.offset(ms.window.dictLimit as isize);
+    let prefixStart = base.wrapping_offset(ms.window.dictLimit as isize);
     let cParams: *const ZSTD_compressionParameters = &ms.cParams;
 
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
@@ -1869,6 +1870,8 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             // initialize opt[0]
             (*opt).mlen = 0; // there are only literals so far
             (*opt).litlen = litlen;
+            (*opt).off = 0; // initialized to prevent UB
+
             // No need to include the actual price of the literals before the first match
             // because it is static for the duration of the forward pass, and is included
             // in every subsequent price. But, we include the literal length because
@@ -2289,7 +2292,7 @@ unsafe fn ZSTD_initStats_ultra(
 
     // invalidate first scan from history, only keep entropy stats
     ZSTD_resetSeqStore(seqStore);
-    ms.window.base = (ms.window.base).sub(srcSize);
+    ms.window.base = (ms.window.base).wrapping_sub(srcSize);
     ms.window.dictLimit = (ms.window.dictLimit).wrapping_add(srcSize as u32);
     ms.window.lowLimit = ms.window.dictLimit;
     ms.nextToUpdate = ms.window.dictLimit;
@@ -2312,7 +2315,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let curr = (src as *const u8).offset_from(ms.window.base) as core::ffi::c_long as u32;
+    let curr = (src as *const u8).wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
 
     // 2-passes strategy:
     // this strategy makes a first pass over first block to collect statistics

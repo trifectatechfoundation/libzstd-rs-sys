@@ -7532,11 +7532,11 @@ unsafe fn ZSTD_loadDictionaryContent(
         srcSize = maxDictSize_0 as size_t;
     }
 
-    ms.nextToUpdate = ip.offset_from(ms.window.base) as core::ffi::c_long as u32;
+    ms.nextToUpdate = ip.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
     ms.loadedDictEnd = if params.forceWindow != 0 {
         0
     } else {
-        iend.offset_from(ms.window.base) as core::ffi::c_long as u32
+        iend.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32
     };
     ms.forceNonContiguous = params.deterministicRefPrefix;
 
@@ -7576,7 +7576,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         _ => {}
     }
 
-    ms.nextToUpdate = iend.offset_from(ms.window.base) as core::ffi::c_long as u32;
+    ms.nextToUpdate = iend.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
 
     0
 }

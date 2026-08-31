@@ -79,55 +79,52 @@ mod compress2_strats {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
     fn fast() {
         check_strategy(1);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
     fn dfast() {
         check_strategy(2);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
     fn greedy() {
         check_strategy(3);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn lazy() {
         check_strategy(4);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn lazy2() {
         check_strategy(5);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn btlazy2() {
         check_strategy(6);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn btopt() {
         check_strategy(7);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn btultra() {
         check_strategy(8);
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "ub")]
+    #[cfg_attr(miri, ignore = "slow")]
     fn btultra2() {
         check_strategy(9);
     }
