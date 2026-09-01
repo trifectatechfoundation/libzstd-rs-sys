@@ -907,7 +907,7 @@ unsafe fn analyze_entropy_internal(
 
     let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
     let errorCode = FSE_normalizeCount(
-        offcodeNCount.as_mut_ptr(),
+        &mut offcodeNCount,
         OffFSELog,
         offcodeCount.as_mut_ptr(),
         total as size_t,
@@ -924,7 +924,7 @@ unsafe fn analyze_entropy_internal(
 
     let total: u32 = matchLengthCount.iter().sum();
     let errorCode = FSE_normalizeCount(
-        matchLengthNCount.as_mut_ptr(),
+        &mut matchLengthNCount,
         MLFSELog,
         matchLengthCount.as_mut_ptr(),
         total as size_t,
@@ -941,7 +941,7 @@ unsafe fn analyze_entropy_internal(
 
     let total: u32 = litLengthCount.iter().sum();
     let errorCode = FSE_normalizeCount(
-        litLengthNCount.as_mut_ptr(),
+        &mut litLengthNCount,
         LLFSELog,
         litLengthCount.as_mut_ptr(),
         total as size_t,
