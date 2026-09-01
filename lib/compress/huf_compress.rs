@@ -388,14 +388,12 @@ pub unsafe fn HUF_readCTable(
 
     /* fill nbBits */
     {
-        let mut n_0: u32 = 0;
-        while n_0 < nbSymbols {
+        for n_0 in 0..nbSymbols {
             let w = huffWeight[n_0 as usize] as u32;
             HUF_setNbBits(
                 &mut ct[n_0 as usize],
                 ((tableLog + 1 - w) as u8 as c_int & -((w != 0) as c_int) as c_int) as size_t,
             );
-            n_0 += 1;
         }
     }
 
