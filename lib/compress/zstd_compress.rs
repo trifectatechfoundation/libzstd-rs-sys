@@ -5182,7 +5182,7 @@ unsafe fn ZSTD_buildSeqStore(
         lastLLSize = blockCompressor.unwrap_unchecked()(
             ms,
             &mut (*zc).seqStore,
-            ((*(*zc).blockState.nextCBlock).rep).as_mut_ptr(),
+            &mut (*(*zc).blockState.nextCBlock).rep,
             src,
             srcSize,
         );
@@ -5197,7 +5197,7 @@ unsafe fn ZSTD_buildSeqStore(
         lastLLSize = blockCompressor_0.unwrap_unchecked()(
             ms,
             &mut (*zc).seqStore,
-            ((*(*zc).blockState.nextCBlock).rep).as_mut_ptr(),
+            &mut (*(*zc).blockState.nextCBlock).rep,
             src,
             srcSize,
         );

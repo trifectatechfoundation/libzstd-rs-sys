@@ -1765,7 +1765,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
 unsafe fn ZSTD_compressBlock_opt_generic(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     optLevel: core::ffi::c_int,
@@ -1844,7 +1844,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             &mut nextToUpdate3,
             ip,
             iend,
-            rep as *const u32,
+            rep.as_ptr(),
             ll0,
             minMatch,
         );
@@ -1876,7 +1876,11 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             // in every subsequent price. But, we include the literal length because
             // the cost variation of litlen depends on the value of litlen.
             (*opt).price = ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
-            core::ptr::copy_nonoverlapping(rep, (*opt).rep.as_mut_ptr(), ZSTD_REP_NUM as usize);
+            core::ptr::copy_nonoverlapping(
+                rep.as_ptr(),
+                (*opt).rep.as_mut_ptr(),
+                ZSTD_REP_NUM as usize,
+            );
 
             // large match -> immediate encoding
             let maxML = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
@@ -2152,11 +2156,15 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                         lastStretch.off,
                         ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
                     );
-                    core::ptr::copy_nonoverlapping(reps.rep.as_ptr(), rep, ZSTD_REP_NUM as usize);
+                    core::ptr::copy_nonoverlapping(
+                        reps.rep.as_ptr(),
+                        rep.as_mut_ptr(),
+                        ZSTD_REP_NUM as usize,
+                    );
                 } else {
                     core::ptr::copy_nonoverlapping(
                         lastStretch.rep.as_ptr(),
-                        rep,
+                        rep.as_mut_ptr(),
                         ZSTD_REP_NUM as usize,
                     );
                     cur = cur.wrapping_sub(lastStretch.litlen);
@@ -2237,7 +2245,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
 unsafe fn ZSTD_compressBlock_opt0(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     dictMode: DictMode,
@@ -2248,7 +2256,7 @@ unsafe fn ZSTD_compressBlock_opt0(
 unsafe fn ZSTD_compressBlock_opt2(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     dictMode: DictMode,
@@ -2259,7 +2267,7 @@ unsafe fn ZSTD_compressBlock_opt2(
 pub unsafe fn ZSTD_compressBlock_btopt(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2272,22 +2280,15 @@ pub unsafe fn ZSTD_compressBlock_btopt(
 unsafe fn ZSTD_initStats_ultra(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) {
     let mut tmpRep: [u32; 3] = [0; 3]; // updated rep codes will sink here
-    core::ptr::copy_nonoverlapping(rep, tmpRep.as_mut_ptr(), ZSTD_REP_NUM as usize);
+    core::ptr::copy_nonoverlapping(rep.as_ptr(), tmpRep.as_mut_ptr(), ZSTD_REP_NUM as usize);
 
     // generate stats into ms->opt
-    ZSTD_compressBlock_opt2(
-        ms,
-        seqStore,
-        tmpRep.as_mut_ptr(),
-        src,
-        srcSize,
-        DictMode::NoDict,
-    );
+    ZSTD_compressBlock_opt2(ms, seqStore, &mut tmpRep, src, srcSize, DictMode::NoDict);
 
     // invalidate first scan from history, only keep entropy stats
     ZSTD_resetSeqStore(seqStore);
@@ -2300,7 +2301,7 @@ unsafe fn ZSTD_initStats_ultra(
 pub unsafe fn ZSTD_compressBlock_btultra(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2310,7 +2311,7 @@ pub unsafe fn ZSTD_compressBlock_btultra(
 pub unsafe fn ZSTD_compressBlock_btultra2(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2339,7 +2340,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
 pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2349,7 +2350,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_btopt_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2359,7 +2360,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_extDict(
 pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2369,7 +2370,7 @@ pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_btultra_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {

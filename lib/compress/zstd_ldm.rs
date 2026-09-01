@@ -1318,8 +1318,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     if cParams.strategy >= ZSTD_btopt {
         let mut lastLLSize: size_t = 0;
         ms.ldmSeqStore = rawSeqStore;
-        lastLLSize =
-            blockCompressor.unwrap_unchecked()(ms, seqStore, rep.as_mut_ptr(), src, srcSize);
+        lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
         return lastLLSize;
     }
@@ -1346,7 +1345,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         let newLitLength = blockCompressor.unwrap_unchecked()(
             ms,
             seqStore,
-            rep.as_mut_ptr(),
+            rep,
             ip as *const core::ffi::c_void,
             sequence.litLength as size_t,
         );
@@ -1376,7 +1375,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     blockCompressor.unwrap_unchecked()(
         ms,
         seqStore,
-        rep.as_mut_ptr(),
+        rep,
         ip as *const core::ffi::c_void,
         iend.offset_from_unsigned(ip),
     )
