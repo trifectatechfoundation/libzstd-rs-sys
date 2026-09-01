@@ -87,16 +87,17 @@ unsafe fn HIST_count_parallel_wksp(
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     check: HIST_checkInput_e,
-    workSpace: *mut u32,
+    workSpace: &mut [u32; 1024],
 ) -> size_t {
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
     let countSize = (usize::from(*maxSymbolValuePtr) + 1) * size_of::<core::ffi::c_uint>();
     let mut max = 0;
-    let Counting1 = workSpace;
-    let Counting2 = Counting1.add(256);
-    let Counting3 = Counting2.add(256);
-    let Counting4 = Counting3.add(256);
+
+    let ([Counting1, Counting2, Counting3, Counting4], &mut []) = workSpace.as_chunks_mut::<256>()
+    else {
+        unreachable!()
+    };
 
     // safety checks
     if sourceSize == 0 {
@@ -104,13 +105,6 @@ unsafe fn HIST_count_parallel_wksp(
         *maxSymbolValuePtr = 0;
         return 0;
     }
-    ptr::write_bytes(
-        workSpace as *mut u8,
-        0,
-        ((4 * 256) as core::ffi::c_ulong)
-            .wrapping_mul(size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
-            as libc::size_t,
-    );
 
     // by stripes of 16 bytes
     let mut cached = MEM_read32(ip as *const core::ffi::c_void);
@@ -119,62 +113,60 @@ unsafe fn HIST_count_parallel_wksp(
         let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c3 as isize) += 1;
-        *Counting2.offset(c2 as isize) += 1;
-        *Counting3.offset(c1 as isize) += 1;
-        *Counting4.offset(c0 as isize) += 1;
+        Counting1[usize::from(c3)] += 1;
+        Counting2[usize::from(c2)] += 1;
+        Counting3[usize::from(c1)] += 1;
+        Counting4[usize::from(c0)] += 1;
 
         let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c3 as isize) += 1;
-        *Counting2.offset(c2 as isize) += 1;
-        *Counting3.offset(c1 as isize) += 1;
-        *Counting4.offset(c0 as isize) += 1;
+        Counting1[usize::from(c3)] += 1;
+        Counting2[usize::from(c2)] += 1;
+        Counting3[usize::from(c1)] += 1;
+        Counting4[usize::from(c0)] += 1;
 
         let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c3 as isize) += 1;
-        *Counting2.offset(c2 as isize) += 1;
-        *Counting3.offset(c1 as isize) += 1;
-        *Counting4.offset(c0 as isize) += 1;
+        Counting1[usize::from(c3)] += 1;
+        Counting2[usize::from(c2)] += 1;
+        Counting3[usize::from(c1)] += 1;
+        Counting4[usize::from(c0)] += 1;
 
         let [c3, c2, c1, c0] = cached.to_le_bytes();
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        *Counting1.offset(c3 as isize) += 1;
-        *Counting2.offset(c2 as isize) += 1;
-        *Counting3.offset(c1 as isize) += 1;
-        *Counting4.offset(c0 as isize) += 1;
+        Counting1[usize::from(c3)] += 1;
+        Counting2[usize::from(c2)] += 1;
+        Counting3[usize::from(c1)] += 1;
+        Counting4[usize::from(c0)] += 1;
     }
     ip = ip.sub(4);
 
     // finish last symbols
     while ip < iend {
-        *Counting1.offset(*ip as isize) += 1;
+        Counting1[usize::from(*ip)] += 1;
         ip = ip.add(1);
     }
 
-    for s in 0u32..256 {
-        *Counting1.offset(s as isize) += *Counting2.offset(s as isize)
-            + *Counting3.offset(s as isize)
-            + *Counting4.offset(s as isize);
-        if *Counting1.offset(s as isize) > max {
-            max = *Counting1.offset(s as isize);
-        }
+    for s in 0..256 {
+        Counting1[s] += Counting2[s] + Counting3[s] + Counting4[s];
+        max = Ord::max(max, Counting1[s]);
     }
 
     // `sourceSize` is non-zero, so at least one symbol has a non-zero count
     let mut maxSymbolValue = u8::MAX;
-    while *Counting1.add(usize::from(maxSymbolValue)) == 0 {
+    let mut it = Counting1.iter().rev();
+    while let Some(0) = it.next() {
         maxSymbolValue -= 1;
     }
+
     if check != 0 && maxSymbolValue > *maxSymbolValuePtr {
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    core::ptr::copy(Counting1 as *const u8, count as *mut u8, countSize);
+    core::ptr::copy(workSpace.as_ptr().cast::<u8>(), count as *mut u8, countSize);
 
     max as size_t
 }
@@ -200,13 +192,18 @@ pub unsafe fn HIST_countFast_wksp(
     if workSpaceSize < HIST_WKSP_SIZE {
         return Error::workSpace_tooSmall.to_error_code();
     }
+
+    // SAFETY: we've validated the length, and the memory is initialized.
+    unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
+    let workspace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
+
     HIST_count_parallel_wksp(
         count,
         maxSymbolValuePtr,
         source,
         sourceSize,
         trustInput,
-        workSpace as *mut u32,
+        workspace,
     )
 }
 
@@ -227,14 +224,19 @@ pub unsafe fn HIST_count_wksp(
     if workSpaceSize < HIST_WKSP_SIZE {
         return Error::workSpace_tooSmall.to_error_code();
     }
+
     if *maxSymbolValuePtr < u8::MAX {
+        // SAFETY: we've validated the length, and the memory is initialized.
+        unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
+        let workspace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
+
         return HIST_count_parallel_wksp(
             count,
             maxSymbolValuePtr,
             source,
             sourceSize,
             checkMaxSymbolValue,
-            workSpace as *mut u32,
+            workspace,
         );
     }
     *maxSymbolValuePtr = u8::MAX;
