@@ -940,7 +940,6 @@ pub(super) fn COVER_checkTotalCompressedSize(
     nbTrainSamples: size_t,
     nbSamples: size_t,
     dict: &[u8],
-    dictBufferCapacity: size_t,
 ) -> size_t {
     let mut totalCompressedSize = Error::GENERIC.to_error_code();
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
@@ -967,12 +966,12 @@ pub(super) fn COVER_checkTotalCompressedSize(
     cdict = unsafe {
         ZSTD_createCDict(
             dict.as_ptr() as *const core::ffi::c_void,
-            dictBufferCapacity,
+            dict.len(),
             parameters.zParams.compressionLevel,
         )
     };
     if !(cctx.is_null() || cdict.is_null()) {
-        totalCompressedSize = dictBufferCapacity;
+        totalCompressedSize = dict.len();
         i = if parameters.splitPoint < 1.0f64 {
             nbTrainSamples
         } else {
@@ -1113,7 +1112,6 @@ pub(super) fn COVER_selectDict(
         nbCheckSamples,
         nbSamples,
         &largestDictbuffer[..dictContentSize],
-        dictContentSize,
     );
     if ERR_isError(totalCompressedSize) {
         drop(largestDictbuffer);
@@ -1156,7 +1154,6 @@ pub(super) fn COVER_selectDict(
             nbCheckSamples,
             nbSamples,
             &candidateDictBuffer[..dictContentSize],
-            dictContentSize,
         );
         if ERR_isError(totalCompressedSize) {
             drop(largestDictbuffer);
