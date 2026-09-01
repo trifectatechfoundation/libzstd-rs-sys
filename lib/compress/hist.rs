@@ -245,19 +245,14 @@ pub unsafe fn HIST_count_wksp(
     }
 
     if *maxSymbolValuePtr < u8::MAX {
-        // SAFETY: we've validated the length, and the memory is initialized.
+        // SAFETY: we've validated the length and the alignment, and initialized the memory.
         unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
-        let workspace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
+        let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
-        return HIST_count_parallel_wksp(
-            count,
-            maxSymbolValuePtr,
-            source,
-            sourceSize,
-            CheckInput::CheckMaxSymbolValue,
-            workspace,
-        );
+        return HIST_count_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace);
     }
+
+    // this path may not touch the workspace at all, so leave the zeroing to it
     *maxSymbolValuePtr = u8::MAX;
     HIST_countFast_wksp(
         count,
@@ -267,6 +262,32 @@ pub unsafe fn HIST_count_wksp(
         workSpace,
         workSpaceSize,
     )
+}
+
+/// Same as [`HIST_count_wksp`], but taking the scratch buffer as an array.
+///
+/// `workSpace` must be zeroed.
+pub unsafe fn HIST_count_wksp_array(
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
+    workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
+) -> size_t {
+    if *maxSymbolValuePtr < u8::MAX {
+        HIST_count_parallel_wksp(
+            count,
+            maxSymbolValuePtr,
+            source,
+            sourceSize,
+            CheckInput::CheckMaxSymbolValue,
+            workSpace,
+        )
+    } else {
+        *maxSymbolValuePtr = u8::MAX;
+
+        HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace)
+    }
 }
 
 /// fast variant (unsafe : won't check if src contains values beyond count[] limit)
