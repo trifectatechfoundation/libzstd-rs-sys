@@ -830,13 +830,11 @@ unsafe fn HUFv06_readStats(
                 return Error::corruption_detected.to_error_code();
             }
             ip = ip.add(1);
-            let mut n: u32 = 0;
-            while (n as size_t) < oSize {
+            for n in (0..oSize).step_by(2) {
                 *huffWeight.offset(n as isize) =
                     (*ip.offset((n / 2) as isize) as core::ffi::c_int >> 4) as u8;
                 *huffWeight.offset(n.wrapping_add(1) as isize) =
                     (*ip.offset((n / 2) as isize) as core::ffi::c_int & 15) as u8;
-                n = n.wrapping_add(2);
             }
         }
     } else {
