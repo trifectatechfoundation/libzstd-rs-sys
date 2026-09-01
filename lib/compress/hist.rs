@@ -74,7 +74,8 @@ pub unsafe fn HIST_count_simple(
 /// this design makes better use of OoO cpus,
 /// and is noticeably faster when some values are heavily repeated.
 /// But it needs some additional workspace for intermediate tables.
-/// `workSpace` must be a U32 table of size >= HIST_WKSP_SIZE_U32.
+/// `workSpace` must be a U32 table of size >= HIST_WKSP_SIZE_U32,
+/// and must be zeroed: the counts below accumulate into it.
 ///
 /// # Returns
 ///
@@ -181,7 +182,9 @@ pub unsafe fn HIST_countFast_wksp(
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
 ) -> size_t {
+    // checked before the workspace, which this path does not touch
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
+        // heuristic threshold
         return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
     }
     if workSpace as size_t & 3 != 0 {
@@ -192,9 +195,26 @@ pub unsafe fn HIST_countFast_wksp(
         return Error::workSpace_tooSmall.to_error_code();
     }
 
-    // SAFETY: we've validated the length, and the memory is initialized.
     unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
-    let workspace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
+    let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
+
+    HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace)
+}
+
+/// Same as [`HIST_countFast_wksp`], but taking the scratch buffer as an array.
+///
+/// `workSpace` must be zeroed.
+pub unsafe fn HIST_countFast_wksp_array(
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: &mut u8,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
+    workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
+) -> size_t {
+    if sourceSize < HIST_FAST_THRESHOLD as size_t {
+        // heuristic threshold
+        return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
+    }
 
     HIST_count_parallel_wksp(
         count,
@@ -202,7 +222,7 @@ pub unsafe fn HIST_countFast_wksp(
         source,
         sourceSize,
         CheckInput::Trust,
-        workspace,
+        workSpace,
     )
 }
 
