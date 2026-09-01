@@ -452,25 +452,23 @@ unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
 }
 
 fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
-    let mut seq = RawSeqStore_t::new();
-    seq.seq = buffer.start as *mut rawSeq;
-    seq.capacity = (buffer.capacity).wrapping_div(size_of::<rawSeq>());
-    seq
+    RawSeqStore_t {
+        seq: buffer.start as *mut rawSeq,
+        capacity: (buffer.capacity).wrapping_div(size_of::<rawSeq>()),
+        ..Default::default()
+    }
 }
 
 fn seqToBuffer(seq: RawSeqStore_t) -> Buffer {
-    let mut buffer = buffer_s {
-        start: core::ptr::null_mut::<core::ffi::c_void>(),
-        capacity: 0,
-    };
-    buffer.start = seq.seq as *mut core::ffi::c_void;
-    buffer.capacity = (seq.capacity).wrapping_mul(size_of::<rawSeq>());
-    buffer
+    Buffer {
+        start: seq.seq as *mut core::ffi::c_void,
+        capacity: (seq.capacity).wrapping_mul(size_of::<rawSeq>()),
+    }
 }
 
 unsafe fn ZSTDMT_getSeq(seqPool: *mut ZSTDMT_seqPool) -> RawSeqStore_t {
     if (*seqPool).bufferSize == 0 {
-        return RawSeqStore_t::new();
+        return RawSeqStore_t::default();
     }
     bufferToSeq(ZSTDMT_getBuffer(seqPool))
 }

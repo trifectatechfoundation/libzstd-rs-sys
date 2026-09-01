@@ -85,7 +85,7 @@ pub struct ZSTD_hufCTablesMetadata_t {
     pub hufDesSize: size_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct SeqStore_t {
     pub sequencesStart: *mut SeqDef,
@@ -166,7 +166,7 @@ pub struct ZSTD_MatchState_t {
     pub lazySkipping: core::ffi::c_int,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct RawSeqStore_t {
     pub seq: *mut rawSeq,
@@ -174,24 +174,6 @@ pub struct RawSeqStore_t {
     pub posInSequence: size_t,
     pub size: size_t,
     pub capacity: size_t,
-}
-
-impl RawSeqStore_t {
-    pub const fn new() -> Self {
-        Self {
-            seq: core::ptr::null_mut(),
-            pos: 0,
-            posInSequence: 0,
-            size: 0,
-            capacity: 0,
-        }
-    }
-}
-
-impl Default for RawSeqStore_t {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 #[derive(Copy, Clone)]
@@ -4934,7 +4916,7 @@ unsafe fn ZSTD_buildSeqStore(
             srcSize,
         );
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        let mut ldmSeqStore = RawSeqStore_t::new();
+        let mut ldmSeqStore = RawSeqStore_t::default();
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
             return Error::parameter_combination_unsupported.to_error_code();
         }
@@ -7886,19 +7868,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         },
         isFirstBlock: 0,
         initialized: 0,
-        seqStore: SeqStore_t {
-            sequencesStart: core::ptr::null_mut::<SeqDef>(),
-            sequences: core::ptr::null_mut::<SeqDef>(),
-            litStart: core::ptr::null_mut::<u8>(),
-            lit: core::ptr::null_mut::<u8>(),
-            llCode: core::ptr::null_mut::<u8>(),
-            mlCode: core::ptr::null_mut::<u8>(),
-            ofCode: core::ptr::null_mut::<u8>(),
-            maxNbSeq: 0,
-            maxNbLit: 0,
-            longLengthType: LongLengthType::None,
-            longLengthPos: 0,
-        },
+        seqStore: SeqStore_t::default(),
         ldmState: ldmState_t {
             window: ZSTD_window_t {
                 nextSrc: core::ptr::null::<u8>(),
@@ -7921,13 +7891,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         },
         ldmSequences: core::ptr::null_mut::<rawSeq>(),
         maxNbLdmSequences: 0,
-        externSeqStore: RawSeqStore_t {
-            seq: core::ptr::null_mut::<rawSeq>(),
-            pos: 0,
-            posInSequence: 0,
-            size: 0,
-            capacity: 0,
-        },
+        externSeqStore: RawSeqStore_t::default(),
         blockState: ZSTD_blockState_t::default(),
         tmpWorkspace: core::ptr::null_mut::<core::ffi::c_void>(),
         tmpWkspSize: 0,
@@ -7966,71 +7930,11 @@ pub unsafe extern "C" fn ZSTD_compress(
         mtctx: core::ptr::null_mut::<ZSTDMT_CCtx>(),
         traceCtx: 0,
         blockSplitCtx: ZSTD_blockSplitCtx {
-            fullSeqStoreChunk: SeqStore_t {
-                sequencesStart: core::ptr::null_mut::<SeqDef>(),
-                sequences: core::ptr::null_mut::<SeqDef>(),
-                litStart: core::ptr::null_mut::<u8>(),
-                lit: core::ptr::null_mut::<u8>(),
-                llCode: core::ptr::null_mut::<u8>(),
-                mlCode: core::ptr::null_mut::<u8>(),
-                ofCode: core::ptr::null_mut::<u8>(),
-                maxNbSeq: 0,
-                maxNbLit: 0,
-                longLengthType: LongLengthType::None,
-                longLengthPos: 0,
-            },
-            firstHalfSeqStore: SeqStore_t {
-                sequencesStart: core::ptr::null_mut::<SeqDef>(),
-                sequences: core::ptr::null_mut::<SeqDef>(),
-                litStart: core::ptr::null_mut::<u8>(),
-                lit: core::ptr::null_mut::<u8>(),
-                llCode: core::ptr::null_mut::<u8>(),
-                mlCode: core::ptr::null_mut::<u8>(),
-                ofCode: core::ptr::null_mut::<u8>(),
-                maxNbSeq: 0,
-                maxNbLit: 0,
-                longLengthType: LongLengthType::None,
-                longLengthPos: 0,
-            },
-            secondHalfSeqStore: SeqStore_t {
-                sequencesStart: core::ptr::null_mut::<SeqDef>(),
-                sequences: core::ptr::null_mut::<SeqDef>(),
-                litStart: core::ptr::null_mut::<u8>(),
-                lit: core::ptr::null_mut::<u8>(),
-                llCode: core::ptr::null_mut::<u8>(),
-                mlCode: core::ptr::null_mut::<u8>(),
-                ofCode: core::ptr::null_mut::<u8>(),
-                maxNbSeq: 0,
-                maxNbLit: 0,
-                longLengthType: LongLengthType::None,
-                longLengthPos: 0,
-            },
-            currSeqStore: SeqStore_t {
-                sequencesStart: core::ptr::null_mut::<SeqDef>(),
-                sequences: core::ptr::null_mut::<SeqDef>(),
-                litStart: core::ptr::null_mut::<u8>(),
-                lit: core::ptr::null_mut::<u8>(),
-                llCode: core::ptr::null_mut::<u8>(),
-                mlCode: core::ptr::null_mut::<u8>(),
-                ofCode: core::ptr::null_mut::<u8>(),
-                maxNbSeq: 0,
-                maxNbLit: 0,
-                longLengthType: LongLengthType::None,
-                longLengthPos: 0,
-            },
-            nextSeqStore: SeqStore_t {
-                sequencesStart: core::ptr::null_mut::<SeqDef>(),
-                sequences: core::ptr::null_mut::<SeqDef>(),
-                litStart: core::ptr::null_mut::<u8>(),
-                lit: core::ptr::null_mut::<u8>(),
-                llCode: core::ptr::null_mut::<u8>(),
-                mlCode: core::ptr::null_mut::<u8>(),
-                ofCode: core::ptr::null_mut::<u8>(),
-                maxNbSeq: 0,
-                maxNbLit: 0,
-                longLengthType: LongLengthType::None,
-                longLengthPos: 0,
-            },
+            fullSeqStoreChunk: SeqStore_t::default(),
+            firstHalfSeqStore: SeqStore_t::default(),
+            secondHalfSeqStore: SeqStore_t::default(),
+            currSeqStore: SeqStore_t::default(),
+            nextSeqStore: SeqStore_t::default(),
             partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS],
             entropyMetadata: ZSTD_entropyCTablesMetadata_t {
                 hufMetadata: ZSTD_hufCTablesMetadata_t {
