@@ -199,7 +199,7 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
 unsafe fn FSE_writeNCount_generic(
     header: *mut core::ffi::c_void,
     headerBufferSize: size_t,
-    normalizedCounter: *const core::ffi::c_short,
+    normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
     writeIsSafe: bool,
@@ -231,7 +231,7 @@ unsafe fn FSE_writeNCount_generic(
     while symbol < alphabetSize && remaining > 1 {
         if previousIs0 {
             let mut start = symbol;
-            while symbol < alphabetSize && *normalizedCounter.offset(symbol as isize) == 0 {
+            while symbol < alphabetSize && normalizedCounter[symbol as usize] == 0 {
                 symbol = symbol.wrapping_add(1);
             }
             if symbol == alphabetSize {
@@ -269,7 +269,7 @@ unsafe fn FSE_writeNCount_generic(
             }
         }
 
-        let mut count = *normalizedCounter.offset(symbol as isize) as core::ffi::c_int;
+        let mut count = normalizedCounter[symbol as usize] as core::ffi::c_int;
         symbol = symbol.wrapping_add(1);
         let max = 2 * threshold - 1 - remaining;
         remaining -= if count < 0 { -count } else { count };
@@ -332,7 +332,7 @@ pub(crate) unsafe fn FSE_writeNCount(
     FSE_writeNCount_generic(
         buffer,
         bufferSize,
-        normalizedCounter.as_ptr(),
+        normalizedCounter,
         maxSymbolValue,
         tableLog,
         // write in buffer is safe
