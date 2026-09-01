@@ -1428,15 +1428,13 @@ unsafe fn HUFv06_readDTableX4(
     }
     *rankStart = nextRankStart;
     sizeOfSort = nextRankStart;
-    let mut s: u32 = 0;
-    while s < nbSymbols {
+    for s in 0..nbSymbols {
         let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
         let fresh37 = &mut (*rankStart.offset(w_0 as isize));
         let r = *fresh37;
         *fresh37 = (*fresh37).wrapping_add(1);
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).symbol = s as u8;
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).weight = w_0 as u8;
-        s = s.wrapping_add(1);
     }
     *rankStart = 0;
     let rankVal0 = (*rankVal.as_mut_ptr()).as_mut_ptr();
