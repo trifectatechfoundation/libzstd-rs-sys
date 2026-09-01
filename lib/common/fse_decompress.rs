@@ -147,7 +147,7 @@ fn FSE_buildDTable_internal(
         while s_1 < tableSize as size_t {
             for u in 0..unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                elements[uPosition as usize].symbol = spread[(s_1 + u) as usize];
+                elements[uPosition].symbol = spread[s_1 + u];
             }
             position = position.wrapping_add(unroll * step) & tableMask;
             s_1 = s_1.wrapping_add(unroll);
