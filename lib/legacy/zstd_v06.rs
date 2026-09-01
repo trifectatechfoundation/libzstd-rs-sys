@@ -595,8 +595,7 @@ unsafe fn FSEv06_buildDTable(
     if position != 0 {
         return Error::GENERIC.to_error_code();
     }
-    let mut u: u32 = 0;
-    while u < tableSize {
+    for u in 0..tableSize {
         let symbol = (*tableDecode.offset(u as isize)).symbol;
         let fresh3 = &mut (*symbolNext.as_mut_ptr().offset(symbol as isize));
         let nextState = *fresh3;
@@ -607,7 +606,6 @@ unsafe fn FSEv06_buildDTable(
             << (*tableDecode.offset(u as isize)).nbBits as core::ffi::c_int)
             as u32)
             .wrapping_sub(tableSize) as u16;
-        u = u.wrapping_add(1);
     }
     0
 }
