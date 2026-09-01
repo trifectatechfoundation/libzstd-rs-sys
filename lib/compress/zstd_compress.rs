@@ -1119,9 +1119,8 @@ unsafe fn ZSTD_cwksp_free(ws: *mut ZSTD_cwksp, customMem: ZSTD_customMem) {
 /// Moves the management of a workspace from one cwksp to another. The src cwksp is left in an
 /// invalid state (src must be re-init()'ed before it's used again).
 #[inline]
-unsafe fn ZSTD_cwksp_move(dst: &mut ZSTD_cwksp, src: &mut ZSTD_cwksp) {
-    *dst = *src;
-    ptr::write_bytes(ptr::from_mut(src).cast::<u8>(), 0, size_of::<ZSTD_cwksp>());
+fn ZSTD_cwksp_move(dst: &mut ZSTD_cwksp, src: &mut ZSTD_cwksp) {
+    *dst = core::mem::take(src);
 }
 
 #[inline]
@@ -1241,19 +1240,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     workspace: *mut core::ffi::c_void,
     workspaceSize: size_t,
 ) -> *mut ZSTD_CCtx {
-    let mut ws = ZSTD_cwksp {
-        workspace: core::ptr::null_mut::<core::ffi::c_void>(),
-        workspaceEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        objectEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableValidEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocFailed: 0,
-        workspaceOversizedDuration: 0,
-        phase: CwkspAllocPhase::Objects,
-        isStatic: CwkspAllocKind::Dynamic,
-    };
+    let mut ws = ZSTD_cwksp::default();
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
     if workspaceSize <= size_of::<ZSTD_CCtx>() {
         // minimum size
@@ -8291,19 +8278,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         },
         dictID: 0,
         dictContentSize: 0,
-        workspace: ZSTD_cwksp {
-            workspace: core::ptr::null_mut::<core::ffi::c_void>(),
-            workspaceEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-            objectEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-            tableEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-            tableValidEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-            allocStart: core::ptr::null_mut::<core::ffi::c_void>(),
-            initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
-            allocFailed: 0,
-            workspaceOversizedDuration: 0,
-            phase: CwkspAllocPhase::Objects,
-            isStatic: CwkspAllocKind::Dynamic,
-        },
+        workspace: ZSTD_cwksp::default(),
         blockSizeMax: 0,
         pledgedSrcSizePlusOne: 0,
         consumedSrcSize: 0,
@@ -8713,19 +8688,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
             ))
         });
     let workspace = ZSTD_customMalloc(workspaceSize, customMem);
-    let mut ws = ZSTD_cwksp {
-        workspace: core::ptr::null_mut::<core::ffi::c_void>(),
-        workspaceEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        objectEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableValidEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocFailed: 0,
-        workspaceOversizedDuration: 0,
-        phase: CwkspAllocPhase::Objects,
-        isStatic: CwkspAllocKind::Dynamic,
-    };
+    let mut ws = ZSTD_cwksp::default();
 
     if workspace.is_null() {
         return core::ptr::null_mut();
@@ -9065,19 +9028,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         return core::ptr::null();
     }
 
-    let mut ws = ZSTD_cwksp {
-        workspace: core::ptr::null_mut::<core::ffi::c_void>(),
-        workspaceEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        objectEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        tableValidEnd: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        initOnceStart: core::ptr::null_mut::<core::ffi::c_void>(),
-        allocFailed: 0,
-        workspaceOversizedDuration: 0,
-        phase: CwkspAllocPhase::Objects,
-        isStatic: CwkspAllocKind::Dynamic,
-    };
+    let mut ws = ZSTD_cwksp::default();
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
     cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
     if cdict.is_null() {
