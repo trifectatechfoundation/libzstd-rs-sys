@@ -332,10 +332,8 @@ unsafe fn ZSTD_rescaleFreqs(
             );
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), usize::from(MaxLL) + 1);
 
-            let mut ml_0: u8 = 0;
-            while ml_0 <= MaxML {
+            for ml_0 in 0..MaxML + 1 {
                 *((*optPtr).matchLengthFreq).offset(ml_0 as isize) = 1;
-                ml_0 = ml_0.wrapping_add(1);
             }
             (*optPtr).matchLengthSum = u32::from(MaxML) + 1;
 
