@@ -396,38 +396,40 @@ pub(crate) fn FSE_optimalTableLog(
 /// Secondary normalization method.
 /// To be used when primary method fails.
 unsafe fn FSE_normalizeM2(
-    norm: *mut core::ffi::c_short,
+    norm: &mut [core::ffi::c_short],
     tableLog: u32,
     count: *const core::ffi::c_uint,
     mut total: size_t,
     maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
 ) -> size_t {
-    let maxSV1 = u32::from(maxSymbolValue) + 1;
-    let NOT_YET_ASSIGNED = -2 as core::ffi::c_short;
-    let mut s: u32 = 0;
-    let mut distributed = 0u32;
-    let mut ToDistribute: u32 = 0;
+    let maxSV1 = usize::from(maxSymbolValue) + 1;
+    const NOT_YET_ASSIGNED: i16 = -2;
+    let mut s = 0;
+    let mut distributed = 0usize;
+    let mut ToDistribute = 0;
 
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
 
     for s in 0..maxSV1 {
-        if *count.offset(s as isize) == 0 {
-            *norm.offset(s as isize) = 0;
+        norm[s] = if *count.offset(s as isize) == 0 {
+            0
         } else if *count.offset(s as isize) <= lowThreshold {
-            *norm.offset(s as isize) = lowProbCount;
             distributed = distributed.wrapping_add(1);
             total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+
+            lowProbCount
         } else if *count.offset(s as isize) <= lowOne {
-            *norm.offset(s as isize) = 1;
             distributed = distributed.wrapping_add(1);
             total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+
+            1
         } else {
-            *norm.offset(s as isize) = NOT_YET_ASSIGNED;
+            NOT_YET_ASSIGNED
         }
     }
-    ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
+    ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
 
     if ToDistribute == 0 {
         return 0;
@@ -437,15 +439,15 @@ unsafe fn FSE_normalizeM2(
         // risk of rounding to zero
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
         for s in 0..maxSV1 {
-            if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
+            if norm[s] as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
                 && *count.offset(s as isize) <= lowOne
             {
-                *norm.offset(s as isize) = 1;
+                norm[s] = 1;
                 distributed = distributed.wrapping_add(1);
                 total = total.wrapping_sub(*count.offset(s as isize) as size_t);
             }
         }
-        ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
+        ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
     }
 
     if distributed == maxSV1 {
@@ -460,10 +462,7 @@ unsafe fn FSE_normalizeM2(
                 maxC = *count.offset(s as isize);
             }
         }
-        let fresh4 = &mut (*norm.offset(maxV as isize));
-        *fresh4 = (*fresh4 as core::ffi::c_int
-            + ToDistribute as core::ffi::c_short as core::ffi::c_int)
-            as core::ffi::c_short;
+        norm[maxV] += ToDistribute as i16;
         return 0;
     }
 
@@ -471,9 +470,9 @@ unsafe fn FSE_normalizeM2(
         // all of the symbols were low enough for the lowOne or lowThreshold
         s = 0;
         while ToDistribute > 0 {
-            if *norm.offset(s as isize) as core::ffi::c_int > 0 {
+            if norm[s] as core::ffi::c_int > 0 {
                 ToDistribute = ToDistribute.wrapping_sub(1);
-                *norm.offset(s as isize) += 1;
+                norm[s] += 1;
             }
             s = s.wrapping_add(1) % maxSV1;
         }
@@ -485,7 +484,7 @@ unsafe fn FSE_normalizeM2(
     let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
     for s in 0..maxSV1 {
-        if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int {
+        if norm[s] == NOT_YET_ASSIGNED {
             let end = tmpTotal.wrapping_add(*count.offset(s as isize) as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
             let sEnd = (end >> vStepLog) as u32;
@@ -493,7 +492,7 @@ unsafe fn FSE_normalizeM2(
             if weight < 1 {
                 return Error::GENERIC.to_error_code();
             }
-            *norm.offset(s as isize) = weight as core::ffi::c_short;
+            norm[s] = weight as core::ffi::c_short;
             tmpTotal = end;
         }
     }
@@ -566,7 +565,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     if -stillToDistribute >= normalizedCounter[largest] as core::ffi::c_int >> 1 {
         // corner case, need another normalization method
         let errorCode = FSE_normalizeM2(
-            normalizedCounter.as_mut_ptr(),
+            normalizedCounter,
             tableLog,
             count,
             total,
