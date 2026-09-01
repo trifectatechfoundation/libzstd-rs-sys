@@ -142,7 +142,7 @@ unsafe fn HUF_compressWeights(
         let hSize = FSE_writeNCount(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            ((*wksp).norm).as_mut_ptr(),
+            &(*wksp).norm,
             maxSymbolValue,
             tableLog,
         );
