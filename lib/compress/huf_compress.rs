@@ -155,7 +155,7 @@ unsafe fn HUF_compressWeights(
     /* Compress */
     let _var_err___0 = FSE_buildCTable_wksp(
         ((*wksp).CTable).as_mut_ptr(),
-        ((*wksp).norm).as_mut_ptr(),
+        &(*wksp).norm,
         maxSymbolValue,
         tableLog,
         ((*wksp).scratchBuffer).as_mut_ptr() as *mut c_void,

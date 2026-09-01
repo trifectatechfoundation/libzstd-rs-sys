@@ -18,7 +18,7 @@ use crate::lib::common::mem::MEM_write64;
 /// workSpace must also be properly aligned with FSE_FUNCTION_TYPE requirements
 pub(crate) unsafe fn FSE_buildCTable_wksp(
     ct: *mut FSE_CTable,
-    normalizedCounter: *const core::ffi::c_short,
+    normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
     workSpace: *mut core::ffi::c_void,
@@ -67,7 +67,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     // symbol start positions
     *cumul = 0;
     for u in 1..maxSV1 + 1 {
-        if *normalizedCounter.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int == -1 {
+        if normalizedCounter[u.wrapping_sub(1) as usize] as core::ffi::c_int == -1 {
             // Low proba symbol
             *cumul.offset(u as isize) =
                 (*cumul.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int + 1) as u16;
@@ -76,7 +76,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         } else {
             *cumul.offset(u as isize) = (*cumul.offset(u.wrapping_sub(1) as isize)
                 as core::ffi::c_int
-                + *normalizedCounter.offset(u.wrapping_sub(1) as isize) as u16 as core::ffi::c_int)
+                + normalizedCounter[u.wrapping_sub(1) as usize] as u16 as core::ffi::c_int)
                 as u16;
         }
     }
@@ -92,7 +92,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let mut sv = 0u64;
         for s in 0..maxSV1 {
             let mut i: core::ffi::c_int = 0;
-            let n = *normalizedCounter.offset(s as isize) as core::ffi::c_int;
+            let n = normalizedCounter[s as usize] as core::ffi::c_int;
             MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
             i = 8;
             while i < n {
@@ -125,7 +125,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let mut position_0 = 0u32;
         for symbol in 0..maxSV1 {
             let mut nbOccurrences: core::ffi::c_int = 0;
-            let freq = *normalizedCounter.offset(symbol as isize) as core::ffi::c_int;
+            let freq = normalizedCounter[symbol as usize] as core::ffi::c_int;
             nbOccurrences = 0;
             while nbOccurrences < freq {
                 *tableSymbol.offset(position_0 as isize) = symbol as u8;
@@ -149,7 +149,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     // Build Symbol Transformation Table
     let mut total = 0u32;
     for s_2 in 0..maxSV1 {
-        match *normalizedCounter.offset(s_2 as isize) as core::ffi::c_int {
+        match normalizedCounter[s_2 as usize] as core::ffi::c_int {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
                 (*symbolTT.offset(s_2 as isize)).deltaNbBits = (tableLog.wrapping_add(1) << 16)
@@ -164,16 +164,15 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
             }
             _ => {
                 let maxBitsOut = tableLog.wrapping_sub(ZSTD_highbit32(
-                    (*normalizedCounter.offset(s_2 as isize) as u32).wrapping_sub(1),
+                    (normalizedCounter[s_2 as usize] as u32).wrapping_sub(1),
                 ));
-                let minStatePlus = (*normalizedCounter.offset(s_2 as isize) as u32) << maxBitsOut;
+                let minStatePlus = (normalizedCounter[s_2 as usize] as u32) << maxBitsOut;
                 (*symbolTT.offset(s_2 as isize)).deltaNbBits =
                     (maxBitsOut << 16).wrapping_sub(minStatePlus);
                 (*symbolTT.offset(s_2 as isize)).deltaFindState = total
-                    .wrapping_sub(*normalizedCounter.offset(s_2 as isize) as core::ffi::c_uint)
+                    .wrapping_sub(normalizedCounter[s_2 as usize] as core::ffi::c_uint)
                     as core::ffi::c_int;
-                total = total
-                    .wrapping_add(*normalizedCounter.offset(s_2 as isize) as core::ffi::c_uint);
+                total = total.wrapping_add(normalizedCounter[s_2 as usize] as core::ffi::c_uint);
             }
         }
     }
