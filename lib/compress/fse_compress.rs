@@ -310,7 +310,7 @@ unsafe fn FSE_writeNCount_generic(
     }
     *out = bitStream as u8;
     *out.add(1) = (bitStream >> 8) as u8;
-    out = out.add(((bitCount + 7) / 8) as usize);
+    out = out.add(bitCount.div_ceil(8) as usize);
 
     out.offset_from_unsigned(ostart)
 }
