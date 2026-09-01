@@ -2193,8 +2193,7 @@ unsafe fn HUFv06_decompress(
     }
     let Q = (cSrcSize * 16 / dstSize) as u32;
     let D256 = (dstSize >> 8) as u32;
-    let mut n: u32 = 0;
-    while n < 3 {
+    for n in 0..3 {
         *Dtime.as_mut_ptr().offset(n as isize) = ((*(*algoTime.as_ptr().offset(Q as isize))
             .as_ptr()
             .offset(n as isize))
@@ -2206,7 +2205,6 @@ unsafe fn HUFv06_decompress(
                 .decode256Time
                     * D256,
             );
-        n = n.wrapping_add(1);
     }
     let fresh39 = &mut (*Dtime.as_mut_ptr().add(1));
     *fresh39 = (*fresh39).wrapping_add(*Dtime.as_mut_ptr().add(1) >> 4);
