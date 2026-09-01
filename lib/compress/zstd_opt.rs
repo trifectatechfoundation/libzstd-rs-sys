@@ -1888,7 +1888,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                             let previousPrice = (*opt.offset(cur as isize)).price;
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, optStatePtr, optLevel) as core::ffi::c_int;
-                            let mut nbMatches_0 = getAllMatches.unwrap_unchecked()(
+                            let mut nbMatches_0 = getAllMatches(
                                 matches,
                                 ms,
                                 &mut nextToUpdate3,
