@@ -490,15 +490,13 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
             };
 
             // save reps for next block
-            rep[0] = if offset_1 != 0 {
-                offset_1
-            } else {
-                offsetSaved1
+            rep[0] = match offset_1 {
+                0 => offsetSaved1,
+                _ => offset_1,
             };
-            rep[1] = if offset_2 != 0 {
-                offset_2
-            } else {
-                offsetSaved2
+            rep[1] = match offset_2 {
+                0 => offsetSaved2,
+                _ => offset_2,
             };
 
             // Return the last literals size
