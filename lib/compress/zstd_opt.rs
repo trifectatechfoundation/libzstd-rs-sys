@@ -1876,11 +1876,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             // in every subsequent price. But, we include the literal length because
             // the cost variation of litlen depends on the value of litlen.
             (*opt).price = ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
-            core::ptr::copy_nonoverlapping(
-                rep.as_ptr(),
-                (*opt).rep.as_mut_ptr(),
-                ZSTD_REP_NUM as usize,
-            );
+            (*opt).rep = *rep;
 
             // large match -> immediate encoding
             let maxML = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
@@ -2156,17 +2152,9 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                         lastStretch.off,
                         ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
                     );
-                    core::ptr::copy_nonoverlapping(
-                        reps.rep.as_ptr(),
-                        rep.as_mut_ptr(),
-                        ZSTD_REP_NUM as usize,
-                    );
+                    *rep = reps.rep;
                 } else {
-                    core::ptr::copy_nonoverlapping(
-                        lastStretch.rep.as_ptr(),
-                        rep.as_mut_ptr(),
-                        ZSTD_REP_NUM as usize,
-                    );
+                    *rep = lastStretch.rep;
                     cur = cur.wrapping_sub(lastStretch.litlen);
                 }
 
