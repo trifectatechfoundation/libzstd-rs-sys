@@ -222,7 +222,7 @@ pub struct ZSTD_window_t {
     pub nbOverflowCorrections: u32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_cwksp {
     pub workspace: *mut core::ffi::c_void,
@@ -853,11 +853,11 @@ fn ZSTD_cwksp_initialAllocStart(ws: &mut ZSTD_cwksp) -> *mut core::ffi::c_void {
 ///
 /// A pointer to the beginning of that space.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
+fn ZSTD_cwksp_reserve_internal_buffer_space(
     ws: &mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
-    let alloc = ws.allocStart.byte_sub(bytes);
+    let alloc = ws.allocStart.wrapping_byte_sub(bytes);
     let bottom = ws.tableEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if alloc < bottom {
@@ -878,7 +878,7 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
 ///
 /// 0 on success, or zstd error
 #[inline]
-unsafe fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
+fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
     if phase > ws.phase {
         if ws.phase < CwkspAllocPhase::AlignedInitOnce && phase >= CwkspAllocPhase::AlignedInitOnce
         {
@@ -887,7 +887,7 @@ unsafe fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAll
             let alloc = ws.objectEnd;
             let bytesToAlign =
                 ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
-            let objectEnd = alloc.byte_add(bytesToAlign);
+            let objectEnd = alloc.wrapping_byte_add(bytesToAlign);
             if objectEnd > ws.workspaceEnd {
                 return Error::memory_allocation.to_error_code();
             }
@@ -913,7 +913,7 @@ fn ZSTD_cwksp_owns_buffer(ws: &ZSTD_cwksp, ptr: *const core::ffi::c_void) -> boo
 
 /// Internal function. Do not use directly.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_internal(
+fn ZSTD_cwksp_reserve_internal(
     ws: &mut ZSTD_cwksp,
     bytes: size_t,
     phase: CwkspAllocPhase,
@@ -928,7 +928,7 @@ unsafe fn ZSTD_cwksp_reserve_internal(
 
 /// Reserves and returns unaligned memory.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_buffer(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
+fn ZSTD_cwksp_reserve_buffer(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
     ZSTD_cwksp_reserve_internal(ws, bytes, CwkspAllocPhase::Buffers) as *mut u8
 }
 
@@ -980,7 +980,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned64(
 /// Aligned on 64 bytes. These buffers have the special property that their values remain
 /// constrained, allowing us to reuse them without memset()-ing them.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
+fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let phase = CwkspAllocPhase::AlignedInitOnce;
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     let mut end = core::ptr::null_mut::<core::ffi::c_void>();
@@ -989,7 +989,7 @@ unsafe fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut c
         return core::ptr::null_mut();
     }
     alloc = ws.tableEnd;
-    end = alloc.byte_add(bytes);
+    end = alloc.wrapping_byte_add(bytes);
     top = ws.allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
@@ -1003,10 +1003,10 @@ unsafe fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut c
 /// Aligned on sizeof(void*).
 /// Note: should happen only once, at workspace first initialization
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
+fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let roundedBytes = ZSTD_cwksp_align(bytes, size_of::<*mut core::ffi::c_void>());
     let alloc = ws.objectEnd;
-    let end = alloc.byte_add(roundedBytes);
+    let end = alloc.wrapping_byte_add(roundedBytes);
     ZSTD_cwksp_assert_internal_consistency(ws);
     if ws.phase != CwkspAllocPhase::Objects || end > ws.workspaceEnd {
         ws.allocFailed = 1;
