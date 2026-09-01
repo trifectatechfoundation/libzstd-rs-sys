@@ -660,8 +660,7 @@ fn FSEv07_buildDTable<const N: usize>(
     if position != 0 {
         return Err(Error::GENERIC);
     }
-    let mut u: u32 = 0;
-    while u < tableSize {
+    for u in 0..tableSize {
         let symbol = tableDecode[u as usize].symbol;
         let nextState = symbolNext[usize::from(symbol)];
         symbolNext[usize::from(symbol)] += 1;
@@ -671,7 +670,6 @@ fn FSEv07_buildDTable<const N: usize>(
             << tableDecode[u as usize].nbBits as core::ffi::c_int)
             as u32)
             .wrapping_sub(tableSize) as u16;
-        u = u.wrapping_add(1);
     }
     Ok(())
 }
