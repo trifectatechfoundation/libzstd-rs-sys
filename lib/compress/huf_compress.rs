@@ -427,12 +427,10 @@ pub unsafe fn HUF_readCTable(
 
         /* assign value within rank, symbol order */
         {
-            let mut n_3: u32 = 0;
-            while n_3 < nbSymbols {
+            for n_3 in 0..nbSymbols {
                 let fresh1 = &mut valPerRank[HUF_getNbBits(ct[n_3 as usize])];
                 HUF_setValue(&mut ct[n_3 as usize], *fresh1 as size_t);
                 *fresh1 += 1;
-                n_3 += 1;
             }
         }
     }
