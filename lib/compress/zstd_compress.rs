@@ -774,15 +774,15 @@ pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 
 #[inline]
-unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: *mut ZSTD_cwksp) {
-    assert!((*ws).workspace <= (*ws).objectEnd);
-    assert!((*ws).objectEnd <= (*ws).tableEnd);
-    assert!((*ws).objectEnd <= (*ws).tableValidEnd);
-    assert!((*ws).tableEnd <= (*ws).allocStart);
-    assert!((*ws).tableValidEnd <= (*ws).allocStart);
-    assert!((*ws).allocStart <= (*ws).workspaceEnd);
-    assert!((*ws).initOnceStart <= ZSTD_cwksp_initialAllocStart(ws));
-    assert!((*ws).workspace <= (*ws).initOnceStart);
+unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: &mut ZSTD_cwksp) {
+    assert!(ws.workspace <= ws.objectEnd);
+    assert!(ws.objectEnd <= ws.tableEnd);
+    assert!(ws.objectEnd <= ws.tableValidEnd);
+    assert!(ws.tableEnd <= ws.allocStart);
+    assert!(ws.tableValidEnd <= ws.allocStart);
+    assert!(ws.allocStart <= ws.workspaceEnd);
+    assert!(ws.initOnceStart <= ZSTD_cwksp_initialAllocStart(ws));
+    assert!(ws.workspace <= ws.initOnceStart);
 }
 
 /// Align must be a power of 2.
@@ -839,9 +839,9 @@ fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: size_t
 /// Returns the initial value for allocStart which is used to determine the position from which
 /// we can allocate from the end of the workspace.
 #[inline]
-unsafe fn ZSTD_cwksp_initialAllocStart(ws: *mut ZSTD_cwksp) -> *mut core::ffi::c_void {
-    let mut endPtr = (*ws).workspaceEnd as *mut core::ffi::c_char;
-    endPtr = endPtr.sub(endPtr as size_t % ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
+fn ZSTD_cwksp_initialAllocStart(ws: &mut ZSTD_cwksp) -> *mut core::ffi::c_void {
+    let mut endPtr = ws.workspaceEnd as *mut core::ffi::c_char;
+    endPtr = endPtr.wrapping_sub(endPtr as size_t % ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
     endPtr as *mut core::ffi::c_void
 }
 
@@ -854,20 +854,20 @@ unsafe fn ZSTD_cwksp_initialAllocStart(ws: *mut ZSTD_cwksp) -> *mut core::ffi::c
 /// A pointer to the beginning of that space.
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
-    let alloc = (*ws).allocStart.byte_sub(bytes);
-    let bottom = (*ws).tableEnd;
+    let alloc = ws.allocStart.byte_sub(bytes);
+    let bottom = ws.tableEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if alloc < bottom {
-        (*ws).allocFailed = 1;
+        ws.allocFailed = 1;
         return core::ptr::null_mut();
     }
-    if alloc < (*ws).tableValidEnd {
-        (*ws).tableValidEnd = alloc;
+    if alloc < ws.tableValidEnd {
+        ws.tableValidEnd = alloc;
     }
-    (*ws).allocStart = alloc;
+    ws.allocStart = alloc;
     alloc
 }
 
@@ -878,27 +878,26 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
 ///
 /// 0 on success, or zstd error
 #[inline]
-unsafe fn ZSTD_cwksp_internal_advance_phase(ws: *mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
-    if phase > (*ws).phase {
-        if (*ws).phase < CwkspAllocPhase::AlignedInitOnce
-            && phase >= CwkspAllocPhase::AlignedInitOnce
+unsafe fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
+    if phase > ws.phase {
+        if ws.phase < CwkspAllocPhase::AlignedInitOnce && phase >= CwkspAllocPhase::AlignedInitOnce
         {
-            (*ws).tableValidEnd = (*ws).objectEnd;
-            (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
-            let alloc = (*ws).objectEnd;
+            ws.tableValidEnd = ws.objectEnd;
+            ws.initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
+            let alloc = ws.objectEnd;
             let bytesToAlign =
                 ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
             let objectEnd = alloc.byte_add(bytesToAlign);
-            if objectEnd > (*ws).workspaceEnd {
+            if objectEnd > ws.workspaceEnd {
                 return Error::memory_allocation.to_error_code();
             }
-            (*ws).objectEnd = objectEnd;
-            (*ws).tableEnd = objectEnd;
-            if (*ws).tableValidEnd < (*ws).tableEnd {
-                (*ws).tableValidEnd = (*ws).tableEnd;
+            ws.objectEnd = objectEnd;
+            ws.tableEnd = objectEnd;
+            if ws.tableValidEnd < ws.tableEnd {
+                ws.tableValidEnd = ws.tableEnd;
             }
         }
-        (*ws).phase = phase;
+        ws.phase = phase;
         ZSTD_cwksp_assert_internal_consistency(ws);
     }
     0
@@ -915,7 +914,7 @@ fn ZSTD_cwksp_owns_buffer(ws: &ZSTD_cwksp, ptr: *const core::ffi::c_void) -> boo
 /// Internal function. Do not use directly.
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_internal(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     bytes: size_t,
     phase: CwkspAllocPhase,
 ) -> *mut core::ffi::c_void {
@@ -929,7 +928,7 @@ unsafe fn ZSTD_cwksp_reserve_internal(
 
 /// Reserves and returns unaligned memory.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_buffer(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
+unsafe fn ZSTD_cwksp_reserve_buffer(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
     ZSTD_cwksp_reserve_internal(ws, bytes, CwkspAllocPhase::Buffers) as *mut u8
 }
 
@@ -941,26 +940,26 @@ unsafe fn ZSTD_cwksp_reserve_buffer(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut 
 /// any of the past data (directly or in side channels).
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
     let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
     let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, CwkspAllocPhase::AlignedInitOnce);
-    if !ptr.is_null() && ptr < (*ws).initOnceStart {
+    if !ptr.is_null() && ptr < ws.initOnceStart {
         ptr::write_bytes(
             ptr as *mut u8,
             0,
-            (if (((*ws).initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
+            (if ((ws.initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
                 as size_t)
                 < alignedBytes
             {
-                ((*ws).initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
+                (ws.initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
                     as size_t
             } else {
                 alignedBytes
             }) as libc::size_t,
         );
-        (*ws).initOnceStart = ptr;
+        ws.initOnceStart = ptr;
     }
     ptr
 }
@@ -968,7 +967,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
 /// Reserves and returns memory sized on and aligned on ZSTD_CWKSP_ALIGNMENT_BYTES (64 bytes).
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_aligned64(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
     ZSTD_cwksp_reserve_internal(
@@ -981,66 +980,66 @@ unsafe fn ZSTD_cwksp_reserve_aligned64(
 /// Aligned on 64 bytes. These buffers have the special property that their values remain
 /// constrained, allowing us to reuse them without memset()-ing them.
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let phase = CwkspAllocPhase::AlignedInitOnce;
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     let mut end = core::ptr::null_mut::<core::ffi::c_void>();
     let mut top = core::ptr::null_mut::<core::ffi::c_void>();
-    if (*ws).phase < phase && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) {
+    if ws.phase < phase && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) {
         return core::ptr::null_mut();
     }
-    alloc = (*ws).tableEnd;
+    alloc = ws.tableEnd;
     end = alloc.byte_add(bytes);
-    top = (*ws).allocStart;
+    top = ws.allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
-        (*ws).allocFailed = 1;
+        ws.allocFailed = 1;
         return core::ptr::null_mut();
     }
-    (*ws).tableEnd = end;
+    ws.tableEnd = end;
     alloc
 }
 
 /// Aligned on sizeof(void*).
 /// Note: should happen only once, at workspace first initialization
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_object(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let roundedBytes = ZSTD_cwksp_align(bytes, size_of::<*mut core::ffi::c_void>());
-    let alloc = (*ws).objectEnd;
+    let alloc = ws.objectEnd;
     let end = alloc.byte_add(roundedBytes);
     ZSTD_cwksp_assert_internal_consistency(ws);
-    if (*ws).phase != CwkspAllocPhase::Objects || end > (*ws).workspaceEnd {
-        (*ws).allocFailed = 1;
+    if ws.phase != CwkspAllocPhase::Objects || end > ws.workspaceEnd {
+        ws.allocFailed = 1;
         return core::ptr::null_mut();
     }
-    (*ws).objectEnd = end;
-    (*ws).tableEnd = end;
-    (*ws).tableValidEnd = end;
+    ws.objectEnd = end;
+    ws.tableEnd = end;
+    ws.tableValidEnd = end;
     alloc
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_dirty(ws: *mut ZSTD_cwksp) {
-    (*ws).tableValidEnd = (*ws).objectEnd;
+unsafe fn ZSTD_cwksp_mark_tables_dirty(ws: &mut ZSTD_cwksp) {
+    ws.tableValidEnd = ws.objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_clean(ws: *mut ZSTD_cwksp) {
-    if (*ws).tableValidEnd < (*ws).tableEnd {
-        (*ws).tableValidEnd = (*ws).tableEnd;
+unsafe fn ZSTD_cwksp_mark_tables_clean(ws: &mut ZSTD_cwksp) {
+    if ws.tableValidEnd < ws.tableEnd {
+        ws.tableValidEnd = ws.tableEnd;
     }
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 /// Zero the part of the allocated tables not already marked clean.
 #[inline]
-unsafe fn ZSTD_cwksp_clean_tables(ws: *mut ZSTD_cwksp) {
-    if (*ws).tableValidEnd < (*ws).tableEnd {
+unsafe fn ZSTD_cwksp_clean_tables(ws: &mut ZSTD_cwksp) {
+    if ws.tableValidEnd < ws.tableEnd {
         ptr::write_bytes(
-            (*ws).tableValidEnd,
+            ws.tableValidEnd,
             0,
-            ((*ws).tableEnd as *mut u8).offset_from((*ws).tableValidEnd as *mut u8) as usize,
+            (ws.tableEnd as *mut u8).offset_from(ws.tableValidEnd as *mut u8) as usize,
         );
     }
     ZSTD_cwksp_mark_tables_clean(ws);
@@ -1048,28 +1047,27 @@ unsafe fn ZSTD_cwksp_clean_tables(ws: *mut ZSTD_cwksp) {
 
 /// Invalidates table allocations. All other allocations remain valid.
 #[inline]
-unsafe fn ZSTD_cwksp_clear_tables(ws: *mut ZSTD_cwksp) {
-    (*ws).tableEnd = (*ws).objectEnd;
+unsafe fn ZSTD_cwksp_clear_tables(ws: &mut ZSTD_cwksp) {
+    ws.tableEnd = ws.objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 /// Invalidates all buffer, aligned, and table allocations.
 /// Object allocations remain valid.
 #[inline]
-unsafe fn ZSTD_cwksp_clear(ws: *mut ZSTD_cwksp) {
-    (*ws).tableEnd = (*ws).objectEnd;
-    (*ws).allocStart = ZSTD_cwksp_initialAllocStart(ws);
-    (*ws).allocFailed = 0;
-    if (*ws).phase > CwkspAllocPhase::AlignedInitOnce {
-        (*ws).phase = CwkspAllocPhase::AlignedInitOnce;
+unsafe fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
+    ws.tableEnd = ws.objectEnd;
+    ws.allocStart = ZSTD_cwksp_initialAllocStart(ws);
+    ws.allocFailed = 0;
+    if ws.phase > CwkspAllocPhase::AlignedInitOnce {
+        ws.phase = CwkspAllocPhase::AlignedInitOnce;
     }
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_sizeof(ws: *const ZSTD_cwksp) -> size_t {
-    ((*ws).workspaceEnd as *mut u8).offset_from((*ws).workspace as *mut u8) as core::ffi::c_long
-        as size_t
+unsafe fn ZSTD_cwksp_sizeof(ws: &ZSTD_cwksp) -> size_t {
+    (ws.workspaceEnd as *mut u8).offset_from(ws.workspace as *mut u8) as core::ffi::c_long as size_t
 }
 
 /// The provided workspace takes ownership of the buffer [start, start+size).
@@ -1077,26 +1075,26 @@ unsafe fn ZSTD_cwksp_sizeof(ws: *const ZSTD_cwksp) -> size_t {
 /// if present, must be separately freed).
 #[inline]
 unsafe fn ZSTD_cwksp_init(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     start: *mut core::ffi::c_void,
     size: size_t,
     isStatic: CwkspAllocKind,
 ) {
-    (*ws).workspace = start;
-    (*ws).workspaceEnd = start.byte_add(size);
-    (*ws).objectEnd = (*ws).workspace;
-    (*ws).tableValidEnd = (*ws).objectEnd;
-    (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
-    (*ws).phase = CwkspAllocPhase::Objects;
-    (*ws).isStatic = isStatic;
+    ws.workspace = start;
+    ws.workspaceEnd = start.byte_add(size);
+    ws.objectEnd = ws.workspace;
+    ws.tableValidEnd = ws.objectEnd;
+    ws.initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
+    ws.phase = CwkspAllocPhase::Objects;
+    ws.isStatic = isStatic;
     ZSTD_cwksp_clear(ws);
-    (*ws).workspaceOversizedDuration = 0;
+    ws.workspaceOversizedDuration = 0;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 #[inline]
 unsafe fn ZSTD_cwksp_create(
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     size: size_t,
     customMem: ZSTD_customMem,
 ) -> size_t {
@@ -3580,7 +3578,7 @@ fn ZSTD_advanceHashSalt(ms: &mut ZSTD_MatchState_t) {
 
 unsafe fn ZSTD_reset_matchState(
     ms: &mut ZSTD_MatchState_t,
-    ws: *mut ZSTD_cwksp,
+    ws: &mut ZSTD_cwksp,
     cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ParamSwitch,
     crp: ZSTD_compResetPolicy_e,
@@ -3737,7 +3735,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     crp: ZSTD_compResetPolicy_e,
     zbuff: BufferedPolicy,
 ) -> size_t {
-    let ws: *mut ZSTD_cwksp = &mut (*zc).workspace;
+    let ws = &mut (*zc).workspace;
 
     (*zc).isFirstBlock = 1;
 
