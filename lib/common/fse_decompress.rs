@@ -103,8 +103,7 @@ fn FSE_buildDTable_internal(
     };
 
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
-    let mut s: u32 = 0;
-    while s < maxSV1 {
+    for s in 0..maxSV1 {
         if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
             elements[highThreshold as usize].symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
@@ -115,7 +114,6 @@ fn FSE_buildDTable_internal(
             }
             symbols[s as usize] = normalizedCounter[s as usize] as u16;
         }
-        s = s.wrapping_add(1);
     }
 
     *header = DTableH;
