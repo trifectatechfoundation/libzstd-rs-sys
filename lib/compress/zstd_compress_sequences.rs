@@ -175,7 +175,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
     prevCTable: &[FSE_CTable],
-    defaultNorm: *const core::ffi::c_short,
+    defaultNorm: &[core::ffi::c_short],
     defaultNormLog: u32,
     isDefaultAllowed: DefaultPolicy,
     strategy: ZSTD_strategy,
@@ -214,7 +214,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
+            ZSTD_crossEntropyCost(defaultNorm.as_ptr(), defaultNormLog, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };
