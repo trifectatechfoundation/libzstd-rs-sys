@@ -2272,8 +2272,7 @@ unsafe fn ZSTD_initStats_ultra(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) {
-    let mut tmpRep: [u32; 3] = [0; 3]; // updated rep codes will sink here
-    core::ptr::copy_nonoverlapping(rep.as_ptr(), tmpRep.as_mut_ptr(), ZSTD_REP_NUM as usize);
+    let mut tmpRep = *rep; // updated rep codes will sink here
 
     // generate stats into ms->opt
     ZSTD_compressBlock_opt2(ms, seqStore, &mut tmpRep, src, srcSize, DictMode::NoDict);
