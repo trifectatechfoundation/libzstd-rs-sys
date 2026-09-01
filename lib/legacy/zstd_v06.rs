@@ -583,14 +583,12 @@ unsafe fn FSEv06_buildDTable(
     let mut position = 0u32;
     s_0 = 0;
     while s_0 < maxSV1 {
-        let mut i: core::ffi::c_int = 0;
-        while i < *normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
+        for _ in 0..*normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
             (*tableDecode.offset(position as isize)).symbol = s_0 as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
                 position = position.wrapping_add(step) & tableMask;
             }
-            i += 1;
         }
         s_0 = s_0.wrapping_add(1);
     }
