@@ -704,7 +704,6 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
         let _ptr = dictHashTable as *const core::ffi::c_char;
         let _size = hashTableBytes;
         let mut _pos: size_t = 0;
-        _pos = 0;
         while _pos < _size {
             _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
         }

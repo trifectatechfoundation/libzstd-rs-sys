@@ -556,7 +556,6 @@ unsafe fn FSEv06_buildDTable(
     DTableH.fastMode = 1;
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
-    s = 0;
     while s < maxSV1 {
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
             (*tableDecode.offset(highThreshold as isize)).symbol = s as u8;
@@ -587,7 +586,6 @@ unsafe fn FSEv06_buildDTable(
     s_0 = 0;
     while s_0 < maxSV1 {
         let mut i: core::ffi::c_int = 0;
-        i = 0;
         while i < *normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
             (*tableDecode.offset(position as isize)).symbol = s_0 as u8;
             position = position.wrapping_add(step) & tableMask;
@@ -602,7 +600,6 @@ unsafe fn FSEv06_buildDTable(
         return Error::GENERIC.to_error_code();
     }
     let mut u: u32 = 0;
-    u = 0;
     while u < tableSize {
         let symbol = (*tableDecode.offset(u as isize)).symbol;
         let fresh3 = &mut (*symbolNext.as_mut_ptr().offset(symbol as isize));
@@ -840,7 +837,6 @@ unsafe fn HUFv06_readStats(
             }
             ip = ip.add(1);
             let mut n: u32 = 0;
-            n = 0;
             while (n as size_t) < oSize {
                 *huffWeight.offset(n as isize) =
                     (*ip.offset((n / 2) as isize) as core::ffi::c_int >> 4) as u8;
@@ -866,7 +862,6 @@ unsafe fn HUFv06_readStats(
     core::ptr::write_bytes(rankStats, 0, (HUFv06_ABSOLUTEMAX_TABLELOG + 1) as size_t);
     weightTotal = 0;
     let mut n_0: u32 = 0;
-    n_0 = 0;
     while (n_0 as size_t) < oSize {
         if *huffWeight.offset(n_0 as isize) as core::ffi::c_int >= HUFv06_ABSOLUTEMAX_TABLELOG {
             return Error::corruption_detected.to_error_code();
@@ -1291,7 +1286,6 @@ unsafe fn HUFv06_fillDTableX4Level2(
         }
     }
     let mut s: u32 = 0;
-    s = 0;
     while s < sortedListSize {
         let symbol = (*sortedSymbols.offset(s as isize)).symbol as u32;
         let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
@@ -1443,7 +1437,6 @@ unsafe fn HUFv06_readDTableX4(
     *rankStart = nextRankStart;
     sizeOfSort = nextRankStart;
     let mut s: u32 = 0;
-    s = 0;
     while s < nbSymbols {
         let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
         let fresh37 = &mut (*rankStart.offset(w_0 as isize));
@@ -2211,7 +2204,6 @@ unsafe fn HUFv06_decompress(
     let Q = (cSrcSize * 16 / dstSize) as u32;
     let D256 = (dstSize >> 8) as u32;
     let mut n: u32 = 0;
-    n = 0;
     while n < 3 {
         *Dtime.as_mut_ptr().offset(n as isize) = ((*(*algoTime.as_ptr().offset(Q as isize))
             .as_ptr()
@@ -3090,7 +3082,6 @@ unsafe fn ZSTDv06_decompressSequences(
         );
         sequence.offset = REPCODE_STARTVALUE as size_t;
         let mut i: u32 = 0;
-        i = 0;
         while i < ZSTDv06_REP_INIT as u32 {
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) = REPCODE_STARTVALUE as size_t;
             i = i.wrapping_add(1);

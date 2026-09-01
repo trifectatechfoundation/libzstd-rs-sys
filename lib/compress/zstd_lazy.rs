@@ -599,7 +599,6 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         let bucketIdx = hashIdx << ZSTD_LAZY_DDSS_BUCKET_LOG;
         let chainPackedPointer = *tmpHashTable.offset(hashIdx as isize);
         let mut i_0: u32 = 0;
-        i_0 = 0;
         while i_0 < cacheSize {
             *hashTable.offset(bucketIdx.wrapping_add(i_0) as isize) = 0;
             i_0 = i_0.wrapping_add(1);

@@ -204,7 +204,6 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     let skip = ctx.accelParams.skip;
     let readLength = if d > 8 { d } else { 8 };
     let mut i: size_t = 0;
-    i = 0;
     while i < ctx.nbTrainSamples {
         let mut start = ctx.offsets[i];
         let currSampleEnd = ctx.offsets[i + 1];

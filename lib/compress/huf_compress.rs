@@ -389,7 +389,6 @@ pub unsafe fn HUF_readCTable(
     /* fill nbBits */
     {
         let mut n_0: u32 = 0;
-        n_0 = 0;
         while n_0 < nbSymbols {
             let w = huffWeight[n_0 as usize] as u32;
             HUF_setNbBits(
@@ -431,7 +430,6 @@ pub unsafe fn HUF_readCTable(
         /* assign value within rank, symbol order */
         {
             let mut n_3: u32 = 0;
-            n_3 = 0;
             while n_3 < nbSymbols {
                 let fresh1 = &mut valPerRank[HUF_getNbBits(ct[n_3 as usize])];
                 HUF_setValue(&mut ct[n_3 as usize], *fresh1 as size_t);

@@ -115,7 +115,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         s_0 = 0;
         while s_0 < tableSize as size_t {
             let mut u_0: size_t = 0;
-            u_0 = 0;
             while u_0 < unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
                 *tableSymbol.add(uPosition) = *spread.add(s_0.wrapping_add(u_0));
@@ -143,7 +142,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 
     // Build table
     let mut u_1: u32 = 0;
-    u_1 = 0;
     while u_1 < tableSize {
         let s_1 = *tableSymbol.offset(u_1 as isize);
         let fresh1 = &mut (*cumul.offset(s_1 as isize));
@@ -155,7 +153,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     // Build Symbol Transformation Table
     let mut total = 0u32;
     let mut s_2: core::ffi::c_uint = 0;
-    while s_2 < maxSV1 {
+    while s_2 <= u32::from(maxSymbolValue) {
         match *normalizedCounter.offset(s_2 as isize) as core::ffi::c_int {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()

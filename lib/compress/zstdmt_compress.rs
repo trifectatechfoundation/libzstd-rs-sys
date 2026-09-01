@@ -1305,7 +1305,6 @@ pub unsafe fn ZSTDMT_createCCtx_advanced(
 /// Note: ensure all workers are killed first!
 unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
     let mut jobID: core::ffi::c_uint = 0;
-    jobID = 0;
     while jobID <= (*mtctx).jobIDMask {
         // Copy the mutex/cond out
         let mutex = core::ptr::read(core::ptr::addr_of!(
