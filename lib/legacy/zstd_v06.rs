@@ -831,10 +831,8 @@ unsafe fn HUFv06_readStats(
             }
             ip = ip.add(1);
             for n in (0..oSize).step_by(2) {
-                *huffWeight.offset(n as isize) =
-                    (*ip.offset((n / 2) as isize) as core::ffi::c_int >> 4) as u8;
-                *huffWeight.offset(n.wrapping_add(1) as isize) =
-                    (*ip.offset((n / 2) as isize) as core::ffi::c_int & 15) as u8;
+                *huffWeight.add(n) = (*ip.add(n / 2) as core::ffi::c_int >> 4) as u8;
+                *huffWeight.add(n + 1) = (*ip.add(n / 2) as core::ffi::c_int & 15) as u8;
             }
         }
     } else {
