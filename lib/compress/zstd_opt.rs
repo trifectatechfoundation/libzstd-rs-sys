@@ -4,7 +4,7 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
     *mut u32,
     *const u8,
     *const u8,
-    *const u32,
+    &[u32; 3],
     u32,
     u32,
 ) -> u32;
@@ -733,7 +733,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     ip: *const u8,
     iLimit: *const u8,
     dictMode: DictMode,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
     mls: u32,
@@ -838,9 +838,9 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     repCode = ll0;
     while repCode < lastR {
         let repOffset = if repCode == ZSTD_REP_NUM as u32 {
-            (*rep).wrapping_sub(1)
+            rep[0].wrapping_sub(1)
         } else {
-            *rep.offset(repCode as isize)
+            rep[repCode as usize]
         };
         let repIndex = curr.wrapping_sub(repOffset);
         let mut repLen = 0;
@@ -1127,7 +1127,7 @@ unsafe fn ZSTD_btGetAllMatches_internal(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
     dictMode: DictMode,
@@ -1157,7 +1157,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_5(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1181,7 +1181,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_6(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1205,7 +1205,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_4(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1229,7 +1229,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_3(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1253,7 +1253,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_5(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1277,7 +1277,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_6(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1301,7 +1301,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_4(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1325,7 +1325,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_3(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1349,7 +1349,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_5(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1373,7 +1373,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_6(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1397,7 +1397,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_3(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1421,7 +1421,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_4(
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: *const u32,
+    rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
@@ -1695,7 +1695,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             &mut nextToUpdate3,
             ip,
             iend,
-            rep.as_ptr(),
+            rep,
             ll0,
             minMatch,
         );
@@ -1894,7 +1894,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                 &mut nextToUpdate3,
                                 inr,
                                 iend,
-                                ((*opt.offset(cur as isize)).rep).as_mut_ptr() as *const u32,
+                                &(*opt.offset(cur as isize)).rep,
                                 ll0_0,
                                 minMatch,
                             );
