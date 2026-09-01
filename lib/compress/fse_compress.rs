@@ -202,7 +202,7 @@ unsafe fn FSE_writeNCount_generic(
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
-    writeIsSafe: core::ffi::c_uint,
+    writeIsSafe: bool,
 ) -> size_t {
     let ostart = header as *mut u8;
     let mut out = ostart;
@@ -241,7 +241,7 @@ unsafe fn FSE_writeNCount_generic(
                 start = start.wrapping_add(24);
                 bitStream = (bitStream as core::ffi::c_uint)
                     .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
-                if writeIsSafe == 0 && out > oend.sub(2) {
+                if !writeIsSafe && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -258,7 +258,7 @@ unsafe fn FSE_writeNCount_generic(
                 .wrapping_add(symbol.wrapping_sub(start) << bitCount);
             bitCount += 2;
             if bitCount > 16 {
-                if writeIsSafe == 0 && out > oend.sub(2) {
+                if !writeIsSafe && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -289,7 +289,7 @@ unsafe fn FSE_writeNCount_generic(
             threshold >>= 1;
         }
         if bitCount > 16 {
-            if writeIsSafe == 0 && out > oend.sub(2) {
+            if !writeIsSafe && out > oend.sub(2) {
                 return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
             }
             *out = bitStream as u8;
@@ -305,7 +305,7 @@ unsafe fn FSE_writeNCount_generic(
     }
 
     // flush remaining bitStream
-    if writeIsSafe == 0 && out > oend.sub(2) {
+    if !writeIsSafe && out > oend.sub(2) {
         return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
     }
     *out = bitStream as u8;
@@ -329,24 +329,14 @@ pub(crate) unsafe fn FSE_writeNCount(
         return Error::GENERIC.to_error_code(); // Unsupported
     }
 
-    if bufferSize < FSE_NCountWriteBound(maxSymbolValue, tableLog) {
-        return FSE_writeNCount_generic(
-            buffer,
-            bufferSize,
-            normalizedCounter,
-            maxSymbolValue,
-            tableLog,
-            0,
-        );
-    }
-
     FSE_writeNCount_generic(
         buffer,
         bufferSize,
         normalizedCounter,
         maxSymbolValue,
         tableLog,
-        1, // write in buffer is safe
+        // write in buffer is safe
+        bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog),
     )
 }
 
