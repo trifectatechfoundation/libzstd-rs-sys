@@ -524,8 +524,8 @@ pub(crate) unsafe fn FSE_normalizeCount(
     }
 
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
-    let lowProbCount = (if useLowProbCount { -1 } else { 1 }) as core::ffi::c_short;
-    let scale = (62 as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
+    let lowProbCount = if useLowProbCount { -1 } else { 1 };
+    let scale = 62u32.wrapping_sub(tableLog) as u64;
     let step = (1 << 62) / total as u32 as u64;
     let vStep = 1u64.wrapping_shl(scale.wrapping_sub(20) as u32);
     let mut stillToDistribute = 1 << tableLog;
@@ -546,11 +546,11 @@ pub(crate) unsafe fn FSE_normalizeCount(
 
             lowProbCount
         } else {
-            let mut proba = ((*count.add(s) as u64 * step) >> scale) as core::ffi::c_short;
-            if (proba as core::ffi::c_int) < 8 {
+            let mut proba = ((u64::from(*count.add(s)) * step) >> scale) as i16;
+            if proba < 8 {
                 let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
-                    + ((*count.add(s) as u64 * step).wrapping_sub((proba as u64) << scale)
+                    + ((u64::from(*count.add(s)) * step).wrapping_sub((proba as u64) << scale)
                         > restToBeat) as core::ffi::c_int)
                     as core::ffi::c_short;
             }
