@@ -21,7 +21,7 @@ use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
-use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp, HIST_WKSP_SIZE_U32};
+use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp_array, HIST_WKSP_SIZE_U32};
 
 #[cfg(doc)]
 use crate::lib::common::bitstream::BIT_CStream_t;
@@ -1808,13 +1808,13 @@ unsafe fn HUF_compress_internal(
     }
 
     /* Scan input and build symbol stats */
-    let largest = HIST_count_wksp(
+    (*table).wksps.hist_wksp.fill(0);
+    let largest = HIST_count_wksp_array(
         ((*table).count).as_mut_ptr(),
         &mut maxSymbolValue,
         src as *const u8 as *const c_void,
         srcSize,
-        ((*table).wksps.hist_wksp).as_mut_ptr() as *mut c_void,
-        size_of::<[u32; HIST_WKSP_SIZE_U32]>(),
+        &mut (*table).wksps.hist_wksp,
     );
     if ERR_isError(largest) {
         return largest;

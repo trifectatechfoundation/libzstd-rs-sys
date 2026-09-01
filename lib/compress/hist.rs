@@ -195,6 +195,7 @@ pub unsafe fn HIST_countFast_wksp(
         return Error::workSpace_tooSmall.to_error_code();
     }
 
+    // SAFETY: we've validated the length and the alignment, and initialized the memory.
     unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
     let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
