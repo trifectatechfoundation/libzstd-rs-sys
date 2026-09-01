@@ -7372,7 +7372,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     }
     // fill all offset symbols to avoid garbage at end of table
     if ERR_isError(FSE_buildCTable_wksp(
-        ((*bs).entropy.fse.offcodeCTable).as_mut_ptr(),
+        &mut (*bs).entropy.fse.offcodeCTable,
         &offcodeNCount,
         31,
         offcodeLog,
@@ -7401,7 +7401,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     if ERR_isError(FSE_buildCTable_wksp(
-        ((*bs).entropy.fse.matchlengthCTable).as_mut_ptr(),
+        &mut (*bs).entropy.fse.matchlengthCTable,
         &matchlengthNCount,
         matchlengthMaxValue,
         matchlengthLog,
@@ -7431,7 +7431,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     if ERR_isError(FSE_buildCTable_wksp(
-        ((*bs).entropy.fse.litlengthCTable).as_mut_ptr(),
+        &mut (*bs).entropy.fse.litlengthCTable,
         &litlengthNCount,
         litlengthMaxValue,
         litlengthLog,

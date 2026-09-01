@@ -285,7 +285,7 @@ pub unsafe fn ZSTD_buildCTable(
         }
         SymbolEncodingType::Basic => {
             let err_code_0 = FSE_buildCTable_wksp(
-                nextCTable.as_mut_ptr(),
+                nextCTable,
                 defaultNorm,
                 defaultMax,
                 defaultNormLog,
@@ -329,7 +329,7 @@ pub unsafe fn ZSTD_buildCTable(
                 return err_code_2;
             }
             let err_code_3 = FSE_buildCTable_wksp(
-                nextCTable.as_mut_ptr(),
+                nextCTable,
                 &(*wksp).norm,
                 max,
                 tableLog,

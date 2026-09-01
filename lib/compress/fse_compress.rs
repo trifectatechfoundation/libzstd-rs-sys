@@ -17,7 +17,7 @@ use crate::lib::common::mem::MEM_write64;
 /// wkspSize should be sized to handle worst case situation, which is `1<<max_tableLog * sizeof(FSE_FUNCTION_TYPE)`
 /// workSpace must also be properly aligned with FSE_FUNCTION_TYPE requirements
 pub(crate) unsafe fn FSE_buildCTable_wksp(
-    ct: *mut FSE_CTable,
+    ct: &mut [FSE_CTable],
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
@@ -26,7 +26,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 ) -> size_t {
     let tableSize = (1 << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
-    let ptr = ct as *mut core::ffi::c_void;
+    let ptr = ct.as_mut_ptr() as *mut core::ffi::c_void;
     let tableU16 = (ptr as *mut u16).add(2);
     let FSCT = (ptr as *mut u32)
         .add(1) // header
