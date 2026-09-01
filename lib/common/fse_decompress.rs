@@ -104,7 +104,6 @@ fn FSE_buildDTable_internal(
 
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
-    s = 0;
     while s < maxSV1 {
         if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
             elements[highThreshold as usize].symbol = s as u8;
@@ -149,7 +148,6 @@ fn FSE_buildDTable_internal(
         s_1 = 0;
         while s_1 < tableSize as size_t {
             let mut u: size_t = 0;
-            u = 0;
             while u < unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
                 elements[uPosition as usize].symbol = spread[(s_1 + u) as usize];

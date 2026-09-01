@@ -661,7 +661,6 @@ fn FSEv07_buildDTable<const N: usize>(
         return Err(Error::GENERIC);
     }
     let mut u: u32 = 0;
-    u = 0;
     while u < tableSize {
         let symbol = tableDecode[u as usize].symbol;
         let nextState = symbolNext[usize::from(symbol)];

@@ -560,14 +560,12 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         let _ptr = dictHashLong as *const core::ffi::c_char;
         let _size = hashTableBytes;
         let mut _pos: size_t = 0;
-        _pos = 0;
         while _pos < _size {
             _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
         }
         let _ptr_0 = dictHashSmall as *const core::ffi::c_char;
         let _size_0 = chainTableBytes;
         let mut _pos_0: size_t = 0;
-        _pos_0 = 0;
         while _pos_0 < _size_0 {
             _pos_0 = _pos_0.wrapping_add(CACHELINE_SIZE as size_t);
         }
