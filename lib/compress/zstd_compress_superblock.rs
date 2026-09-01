@@ -545,7 +545,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     nbSeq: size_t,
     fseCTable: &[FSE_CTable],
     additionalBits: *const u8,
-    defaultNorm: *const core::ffi::c_short,
+    defaultNorm: &[core::ffi::c_short],
     defaultNormLog: u32,
     defaultMax: u8,
     workspace: *mut core::ffi::c_void,
@@ -569,7 +569,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
+            ZSTD_crossEntropyCost(defaultNorm.as_ptr(), defaultNormLog, countWksp, max)
         } else {
             Error::GENERIC.to_error_code()
         };
@@ -618,7 +618,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         nbSeq,
         &fseTables.offcodeCTable,
         core::ptr::null(),
-        OF_defaultNorm.as_ptr(),
+        &OF_defaultNorm,
         OF_defaultNormLog,
         DefaultMaxOff,
         workspace,
@@ -631,7 +631,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         nbSeq,
         &fseTables.litlengthCTable,
         LL_bits.as_ptr(),
-        LL_defaultNorm.as_ptr(),
+        &LL_defaultNorm,
         LL_defaultNormLog,
         MaxLL,
         workspace,
@@ -644,7 +644,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         nbSeq,
         &fseTables.matchlengthCTable,
         ML_bits.as_ptr(),
-        ML_defaultNorm.as_ptr(),
+        &ML_defaultNorm,
         ML_defaultNormLog,
         MaxML,
         workspace,
