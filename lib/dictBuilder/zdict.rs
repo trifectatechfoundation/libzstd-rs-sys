@@ -979,7 +979,7 @@ unsafe fn analyze_entropy_internal(
     let ohSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
-        offcodeNCount.as_mut_ptr(),
+        &offcodeNCount,
         OFFCODE_MAX,
         offLog,
     );
@@ -996,7 +996,7 @@ unsafe fn analyze_entropy_internal(
     let mhSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
-        matchLengthNCount.as_mut_ptr(),
+        &matchLengthNCount,
         MaxML,
         mlLog,
     );
@@ -1013,7 +1013,7 @@ unsafe fn analyze_entropy_internal(
     let lhSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
-        litLengthNCount.as_mut_ptr(),
+        &litLengthNCount,
         MaxLL,
         llLog,
     );

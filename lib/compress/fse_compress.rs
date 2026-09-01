@@ -318,7 +318,7 @@ unsafe fn FSE_writeNCount_generic(
 pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
     bufferSize: size_t,
-    normalizedCounter: *const core::ffi::c_short,
+    normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
 ) -> size_t {
@@ -332,7 +332,7 @@ pub(crate) unsafe fn FSE_writeNCount(
     FSE_writeNCount_generic(
         buffer,
         bufferSize,
-        normalizedCounter,
+        normalizedCounter.as_ptr(),
         maxSymbolValue,
         tableLog,
         // write in buffer is safe
