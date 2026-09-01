@@ -114,11 +114,9 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let unroll = 2; // Experimentally determined optimal unroll
         s_0 = 0;
         while s_0 < tableSize as size_t {
-            let mut u_0: size_t = 0;
-            while u_0 < unroll {
+            for u_0 in 0..unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
                 *tableSymbol.add(uPosition) = *spread.add(s_0.wrapping_add(u_0));
-                u_0 = u_0.wrapping_add(1);
             }
             position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
             s_0 = s_0.wrapping_add(unroll);
