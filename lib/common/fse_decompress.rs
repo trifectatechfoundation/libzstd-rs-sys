@@ -322,7 +322,7 @@ fn FSE_decompress_wksp_body(
     let mut wkspSize = size_of::<Workspace>();
 
     let mut tableLog: core::ffi::c_uint = 0;
-    let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as u8;
+    let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE;
     if wkspSize < size_of::<FSE_DecompressWksp>() {
         return Err(Error::GENERIC);
     }

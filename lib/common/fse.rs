@@ -41,7 +41,7 @@ pub(crate) const fn FSE_DECOMPRESS_WKSP_SIZE_U32(
     FSE_DTABLE_SIZE_U32(maxTableLog)
         + 1
         + FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog, maxSymbolValue).div_ceil(size_of::<u32>())
-        + FSE_MAX_SYMBOL_VALUE.div_ceil(2)
+        + (FSE_MAX_SYMBOL_VALUE as usize).div_ceil(2)
         + 1
 }
 
@@ -214,7 +214,7 @@ const _: () = assert!(
 );
 
 /// Maximum symbol value authorized.
-pub(crate) const FSE_MAX_SYMBOL_VALUE: usize = 255;
+pub(crate) const FSE_MAX_SYMBOL_VALUE: u8 = 255;
 
 pub(crate) const FSE_MAX_TABLELOG: core::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2;
 pub(crate) const FSE_DEFAULT_TABLELOG: core::ffi::c_int = FSE_DEFAULT_MEMORY_USAGE - 2;
