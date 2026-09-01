@@ -1279,8 +1279,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
             i = i.wrapping_add(1);
         }
     }
-    let mut s: u32 = 0;
-    while s < sortedListSize {
+    for s in 0..sortedListSize {
         let symbol = (*sortedSymbols.offset(s as isize)).symbol as u32;
         let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
@@ -1303,7 +1302,6 @@ unsafe fn HUFv06_fillDTableX4Level2(
         }
         let fresh35 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
         *fresh35 = (*fresh35).wrapping_add(length);
-        s = s.wrapping_add(1);
     }
 }
 unsafe fn HUFv06_fillDTableX4(
