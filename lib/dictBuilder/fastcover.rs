@@ -203,8 +203,7 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     let d = ctx.d;
     let skip = ctx.accelParams.skip;
     let readLength = if d > 8 { d } else { 8 };
-    let mut i: size_t = 0;
-    while i < ctx.nbTrainSamples {
+    for i in 0..ctx.nbTrainSamples {
         let mut start = ctx.offsets[i];
         let currSampleEnd = ctx.offsets[i + 1];
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
@@ -213,7 +212,6 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
             ctx.freqs[dmerIndex] += 1;
             start = start.wrapping_add(skip as size_t).wrapping_add(1);
         }
-        i = i.wrapping_add(1);
     }
 }
 
