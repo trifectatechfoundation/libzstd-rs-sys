@@ -1125,23 +1125,23 @@ unsafe fn ZSTD_cwksp_move(dst: &mut ZSTD_cwksp, src: &mut ZSTD_cwksp) {
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_failed(ws: *const ZSTD_cwksp) -> bool {
-    (*ws).allocFailed != 0
+unsafe fn ZSTD_cwksp_reserve_failed(ws: &ZSTD_cwksp) -> bool {
+    ws.allocFailed != 0
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_available_space(ws: *mut ZSTD_cwksp) -> size_t {
-    ((*ws).allocStart as *mut u8).offset_from((*ws).tableEnd as *mut u8) as core::ffi::c_long
+unsafe fn ZSTD_cwksp_available_space(ws: &mut ZSTD_cwksp) -> size_t {
+    (ws.allocStart as *mut u8).offset_from(ws.tableEnd as *mut u8) as core::ffi::c_long
         as size_t
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_check_available(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
+unsafe fn ZSTD_cwksp_check_available(ws: &mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
     ZSTD_cwksp_available_space(ws) >= additionalNeededSpace
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_check_too_large(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
+unsafe fn ZSTD_cwksp_check_too_large(ws: &mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
     ZSTD_cwksp_check_available(
         ws,
         additionalNeededSpace * ZSTD_WORKSPACETOOLARGE_FACTOR as size_t,
@@ -1149,17 +1149,17 @@ unsafe fn ZSTD_cwksp_check_too_large(ws: *mut ZSTD_cwksp, additionalNeededSpace:
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_check_wasteful(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
+unsafe fn ZSTD_cwksp_check_wasteful(ws: &mut ZSTD_cwksp, additionalNeededSpace: size_t) -> bool {
     ZSTD_cwksp_check_too_large(ws, additionalNeededSpace)
-        && (*ws).workspaceOversizedDuration > ZSTD_WORKSPACETOOLARGE_MAXDURATION
+        && ws.workspaceOversizedDuration > ZSTD_WORKSPACETOOLARGE_MAXDURATION
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) {
+unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace: size_t) {
     if ZSTD_cwksp_check_too_large(ws, additionalNeededSpace) {
-        (*ws).workspaceOversizedDuration += 1;
+        ws.workspaceOversizedDuration += 1;
     } else {
-        (*ws).workspaceOversizedDuration = 0;
+        ws.workspaceOversizedDuration = 0;
     }
 }
 
