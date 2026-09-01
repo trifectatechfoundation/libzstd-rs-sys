@@ -72,7 +72,7 @@ unsafe fn ZSTD_NCountCost(
     let mut norm: [i16; 53] = [0; 53];
     let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
     let err_code = FSE_normalizeCount(
-        norm.as_mut_ptr(),
+        &mut norm,
         tableLog,
         count,
         nbSeq,
@@ -307,7 +307,7 @@ pub unsafe fn ZSTD_buildCTable(
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
             let err_code_1 = FSE_normalizeCount(
-                ((*wksp).norm).as_mut_ptr(),
+                &mut (*wksp).norm,
                 tableLog,
                 count,
                 nbSeq_1,

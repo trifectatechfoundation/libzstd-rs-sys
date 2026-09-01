@@ -126,7 +126,7 @@ unsafe fn HUF_compressWeights(
     }
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
     let _var_err__ = FSE_normalizeCount(
-        ((*wksp).norm).as_mut_ptr(),
+        &mut (*wksp).norm,
         tableLog,
         ((*wksp).count).as_mut_ptr(),
         wtSize,

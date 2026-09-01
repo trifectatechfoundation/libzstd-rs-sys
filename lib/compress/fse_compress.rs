@@ -502,7 +502,7 @@ unsafe fn FSE_normalizeM2(
 }
 
 pub(crate) unsafe fn FSE_normalizeCount(
-    normalizedCounter: *mut core::ffi::c_short,
+    normalizedCounter: &mut [core::ffi::c_short],
     mut tableLog: core::ffi::c_uint,
     count: *const core::ffi::c_uint,
     total: size_t,
@@ -533,38 +533,36 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let mut largestP = 0;
     let lowThreshold = (total >> tableLog) as u32;
 
-    for s in 0..u32::from(maxSymbolValue) + 1 {
-        if *count.offset(s as isize) as size_t == total {
+    for s in 0..usize::from(maxSymbolValue) + 1 {
+        if *count.add(s) as size_t == total {
             return 0; // rle special case
         }
-        if *count.offset(s as isize) == 0 {
-            *normalizedCounter.offset(s as isize) = 0;
-        } else if *count.offset(s as isize) <= lowThreshold {
-            *normalizedCounter.offset(s as isize) = lowProbCount;
+        if *count.add(s) == 0 {
+            normalizedCounter[s] = 0;
+        } else if *count.add(s) <= lowThreshold {
+            normalizedCounter[s] = lowProbCount;
             stillToDistribute -= 1;
         } else {
-            let mut proba =
-                ((*count.offset(s as isize) as u64 * step) >> scale) as core::ffi::c_short;
+            let mut proba = ((*count.add(s) as u64 * step) >> scale) as core::ffi::c_short;
             if (proba as core::ffi::c_int) < 8 {
                 let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
-                    + ((*count.offset(s as isize) as u64 * step)
-                        .wrapping_sub((proba as u64) << scale)
+                    + ((*count.add(s) as u64 * step).wrapping_sub((proba as u64) << scale)
                         > restToBeat) as core::ffi::c_int)
                     as core::ffi::c_short;
             }
-            if proba as core::ffi::c_int > largestP as core::ffi::c_int {
+            if proba > largestP {
                 largestP = proba;
                 largest = s;
             }
-            *normalizedCounter.offset(s as isize) = proba;
+            normalizedCounter[s] = proba;
             stillToDistribute -= proba as core::ffi::c_int;
         }
     }
-    if -stillToDistribute >= *normalizedCounter.offset(largest as isize) as core::ffi::c_int >> 1 {
+    if -stillToDistribute >= normalizedCounter[largest] as core::ffi::c_int >> 1 {
         // corner case, need another normalization method
         let errorCode = FSE_normalizeM2(
-            normalizedCounter,
+            normalizedCounter.as_mut_ptr(),
             tableLog,
             count,
             total,
@@ -575,10 +573,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
             return errorCode;
         }
     } else {
-        let fresh6 = &mut (*normalizedCounter.offset(largest as isize));
-        *fresh6 = (*fresh6 as core::ffi::c_int
-            + stillToDistribute as core::ffi::c_short as core::ffi::c_int)
-            as core::ffi::c_short;
+        normalizedCounter[largest] += stillToDistribute as core::ffi::c_short
     }
 
     tableLog as size_t
