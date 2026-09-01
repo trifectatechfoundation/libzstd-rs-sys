@@ -2,7 +2,7 @@ use core::ptr;
 
 use libc::size_t;
 
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::MEM_read32;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
 pub const HIST_WKSP_SIZE: size_t =
@@ -13,10 +13,6 @@ pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 enum CheckInput {
     Trust,
     CheckMaxSymbolValue,
-}
-
-pub fn HIST_isError(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code) as _
 }
 
 pub unsafe fn HIST_add(
