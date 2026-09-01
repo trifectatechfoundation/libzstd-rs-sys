@@ -533,15 +533,18 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let mut largestP = 0;
     let lowThreshold = (total >> tableLog) as u32;
 
-    for s in 0..usize::from(maxSymbolValue) + 1 {
+    let slice = &mut normalizedCounter[0..=usize::from(maxSymbolValue)];
+    for (s, current) in slice.iter_mut().enumerate() {
         if *count.add(s) as size_t == total {
             return 0; // rle special case
         }
-        if *count.add(s) == 0 {
-            normalizedCounter[s] = 0;
+
+        *current = if *count.add(s) == 0 {
+            0
         } else if *count.add(s) <= lowThreshold {
-            normalizedCounter[s] = lowProbCount;
             stillToDistribute -= 1;
+
+            lowProbCount
         } else {
             let mut proba = ((*count.add(s) as u64 * step) >> scale) as core::ffi::c_short;
             if (proba as core::ffi::c_int) < 8 {
@@ -555,8 +558,9 @@ pub(crate) unsafe fn FSE_normalizeCount(
                 largestP = proba;
                 largest = s;
             }
-            normalizedCounter[s] = proba;
             stillToDistribute -= proba as core::ffi::c_int;
+
+            proba
         }
     }
     if -stillToDistribute >= normalizedCounter[largest] as core::ffi::c_int >> 1 {
