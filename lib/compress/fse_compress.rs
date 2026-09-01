@@ -148,8 +148,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 
     // Build Symbol Transformation Table
     let mut total = 0u32;
-    let mut s_2: core::ffi::c_uint = 0;
-    while s_2 <= u32::from(maxSymbolValue) {
+    for s_2 in 0..maxSV1 {
         match *normalizedCounter.offset(s_2 as isize) as core::ffi::c_int {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
@@ -177,7 +176,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
                     .wrapping_add(*normalizedCounter.offset(s_2 as isize) as core::ffi::c_uint);
             }
         }
-        s_2 = s_2.wrapping_add(1);
     }
     0
 }
