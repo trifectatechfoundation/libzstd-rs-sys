@@ -7314,8 +7314,8 @@ unsafe fn ZSTD_dictNCountRepeat(
     if dictMaxSymbolValue < maxSymbolValue {
         return FSE_repeat_check;
     }
-    for s in 0..usize::from(maxSymbolValue) + 1 {
-        if normalizedCounter[s] as core::ffi::c_int == 0 {
+    for &count in &normalizedCounter[..usize::from(maxSymbolValue) + 1] {
+        if count as core::ffi::c_int == 0 {
             return FSE_repeat_check;
         }
     }
