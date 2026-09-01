@@ -7307,7 +7307,7 @@ unsafe fn ZSTD_loadDictionaryContent(
 /// encoding. Mark dictionaries with zero probability symbols as FSE_repeat_check and only
 /// dictionaries with 100% valid symbols can be assumed valid.
 unsafe fn ZSTD_dictNCountRepeat(
-    normalizedCounter: *mut core::ffi::c_short,
+    normalizedCounter: &[core::ffi::c_short],
     dictMaxSymbolValue: u8,
     maxSymbolValue: u8,
 ) -> FSE_repeat {
@@ -7315,7 +7315,7 @@ unsafe fn ZSTD_dictNCountRepeat(
         return FSE_repeat_check;
     }
     for s in 0..usize::from(maxSymbolValue) + 1 {
-        if *normalizedCounter.add(s) as core::ffi::c_int == 0 {
+        if normalizedCounter[s] as core::ffi::c_int == 0 {
             return FSE_repeat_check;
         }
     }
@@ -7411,7 +7411,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.matchlength_repeatMode =
-        ZSTD_dictNCountRepeat(matchlengthNCount.as_mut_ptr(), matchlengthMaxValue, MaxML);
+        ZSTD_dictNCountRepeat(&matchlengthNCount, matchlengthMaxValue, MaxML);
     dictPtr = dictPtr.add(matchlengthHeaderSize);
 
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
@@ -7441,7 +7441,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.litlength_repeatMode =
-        ZSTD_dictNCountRepeat(litlengthNCount.as_mut_ptr(), litlengthMaxValue, MaxLL);
+        ZSTD_dictNCountRepeat(&litlengthNCount, litlengthMaxValue, MaxLL);
     dictPtr = dictPtr.add(litlengthHeaderSize);
 
     if dictPtr.add(12) > dictEnd {
@@ -7464,11 +7464,8 @@ pub unsafe fn ZSTD_loadCEntropy(
         offcodeMax = ZSTD_highbit32(maxOffset) as u8;
     }
     // All offset values <= dictContentSize + 128 KB must be representable for a valid table
-    (*bs).entropy.fse.offcode_repeatMode = ZSTD_dictNCountRepeat(
-        offcodeNCount.as_mut_ptr(),
-        offcodeMaxValue,
-        offcodeMax.min(31),
-    );
+    (*bs).entropy.fse.offcode_repeatMode =
+        ZSTD_dictNCountRepeat(&offcodeNCount, offcodeMaxValue, offcodeMax.min(31));
 
     // All repCodes must be <= dictContentSize and != 0
     for size in (*bs).rep {
