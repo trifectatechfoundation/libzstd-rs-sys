@@ -412,17 +412,18 @@ unsafe fn FSE_normalizeM2(
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
 
-    for s in 0..maxSV1 {
-        norm[s] = if *count.offset(s as isize) == 0 {
+    let slice = &mut norm[0..=usize::from(maxSymbolValue)];
+    for (s, current) in slice.iter_mut().enumerate() {
+        *current = if *count.add(s) == 0 {
             0
-        } else if *count.offset(s as isize) <= lowThreshold {
+        } else if *count.add(s) <= lowThreshold {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+            total = total.wrapping_sub(*count.add(s) as size_t);
 
             lowProbCount
-        } else if *count.offset(s as isize) <= lowOne {
+        } else if *count.add(s) <= lowOne {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+            total = total.wrapping_sub(*count.add(s) as size_t);
 
             1
         } else {
@@ -438,13 +439,11 @@ unsafe fn FSE_normalizeM2(
     if total / ToDistribute as size_t > lowOne as size_t {
         // risk of rounding to zero
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
-        for s in 0..maxSV1 {
-            if norm[s] as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
-                && *count.offset(s as isize) <= lowOne
-            {
-                norm[s] = 1;
+        for (s, current) in slice.iter_mut().enumerate() {
+            if *current == NOT_YET_ASSIGNED && *count.add(s) <= lowOne {
+                *current = 1;
                 distributed = distributed.wrapping_add(1);
-                total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+                total = total.wrapping_sub(*count.add(s) as size_t);
             }
         }
         ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
@@ -457,9 +456,9 @@ unsafe fn FSE_normalizeM2(
         let mut maxV = 0;
         let mut maxC = 0;
         for s in 0..maxSV1 {
-            if *count.offset(s as isize) > maxC {
+            if *count.add(s) > maxC {
                 maxV = s;
-                maxC = *count.offset(s as isize);
+                maxC = *count.add(s);
             }
         }
         norm[maxV] += ToDistribute as i16;
@@ -470,7 +469,7 @@ unsafe fn FSE_normalizeM2(
         // all of the symbols were low enough for the lowOne or lowThreshold
         s = 0;
         while ToDistribute > 0 {
-            if norm[s] as core::ffi::c_int > 0 {
+            if norm[s] > 0 {
                 ToDistribute = ToDistribute.wrapping_sub(1);
                 norm[s] += 1;
             }
@@ -483,17 +482,17 @@ unsafe fn FSE_normalizeM2(
     let mid = (1u64 << vStepLog.wrapping_sub(1)).wrapping_sub(1);
     let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
-    for s in 0..maxSV1 {
-        if norm[s] == NOT_YET_ASSIGNED {
-            let end = tmpTotal.wrapping_add(*count.offset(s as isize) as u64 * rStep);
+    for (s, current) in slice.iter_mut().enumerate() {
+        if *current == NOT_YET_ASSIGNED {
+            let end = tmpTotal.wrapping_add(*count.add(s) as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
             let sEnd = (end >> vStepLog) as u32;
             let weight = sEnd.wrapping_sub(sStart);
             if weight < 1 {
                 return Error::GENERIC.to_error_code();
             }
-            norm[s] = weight as core::ffi::c_short;
             tmpTotal = end;
+            *current = weight as core::ffi::c_short;
         }
     }
 
