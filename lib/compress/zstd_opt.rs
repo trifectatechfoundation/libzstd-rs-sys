@@ -1414,26 +1414,16 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
         rep: [0; 3],
     };
     let mut optLdm = ZSTD_optLdm_t {
-        seqStore: RawSeqStore_t {
-            seq: core::ptr::null_mut::<rawSeq>(),
-            pos: 0,
-            posInSequence: 0,
-            size: 0,
-            capacity: 0,
+        seqStore: if !(ms.ldmSeqStore).is_null() {
+            *ms.ldmSeqStore
+        } else {
+            RawSeqStore_t::default()
         },
         startPosInBlock: 0,
         endPosInBlock: 0,
         offset: 0,
     };
 
-    optLdm.seqStore = if !(ms.ldmSeqStore).is_null() {
-        *ms.ldmSeqStore
-    } else {
-        RawSeqStore_t::new()
-    };
-    optLdm.offset = 0;
-    optLdm.startPosInBlock = optLdm.offset;
-    optLdm.endPosInBlock = optLdm.startPosInBlock;
     ZSTD_opt_getNextMatchAndUpdateSeqStore(
         &mut optLdm,
         ip.offset_from(istart) as core::ffi::c_long as u32,
