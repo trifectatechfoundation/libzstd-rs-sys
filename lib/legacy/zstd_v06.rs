@@ -555,8 +555,7 @@ unsafe fn FSEv06_buildDTable(
     DTableH.tableLog = tableLog as u16;
     DTableH.fastMode = 1;
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
-    let mut s: u32 = 0;
-    while s < maxSV1 {
+    for s in 0..maxSV1 {
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
             (*tableDecode.offset(highThreshold as isize)).symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
@@ -570,7 +569,6 @@ unsafe fn FSEv06_buildDTable(
             *symbolNext.as_mut_ptr().offset(s as isize) =
                 *normalizedCounter.offset(s as isize) as u16;
         }
-        s = s.wrapping_add(1);
     }
     memcpy(
         dt as *mut core::ffi::c_void,
