@@ -458,14 +458,12 @@ fn FSEv05_buildDTable<const N: usize>(
         }
     }
     for s in 0..maxSymbolValue + 1 {
-        let mut i: core::ffi::c_int = 0;
-        while i < normalizedCounter[s as usize] as core::ffi::c_int {
+        for _ in 0..normalizedCounter[s as usize] as core::ffi::c_int {
             tableDecode[position as usize].symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
                 position = position.wrapping_add(step) & tableMask;
             }
-            i += 1;
         }
     }
     if position != 0 {
