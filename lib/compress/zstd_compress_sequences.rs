@@ -276,11 +276,7 @@ pub unsafe fn ZSTD_buildCTable(
             1
         }
         SymbolEncodingType::Repeat => {
-            core::ptr::copy_nonoverlapping(
-                prevCTable.as_ptr().cast::<u8>(),
-                nextCTable.as_mut_ptr().cast::<u8>(),
-                size_of_val(prevCTable),
-            );
+            nextCTable[..prevCTable.len()].copy_from_slice(prevCTable);
             0
         }
         SymbolEncodingType::Basic => {
