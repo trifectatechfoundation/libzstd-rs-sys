@@ -139,13 +139,11 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
 
     // Build table
-    let mut u_1: u32 = 0;
-    while u_1 < tableSize {
+    for u_1 in 0..tableSize {
         let s_1 = *tableSymbol.offset(u_1 as isize);
         let fresh1 = &mut (*cumul.offset(s_1 as isize));
         *tableU16.offset(*fresh1 as isize) = tableSize.wrapping_add(u_1) as u16;
         *fresh1 = (*fresh1).wrapping_add(1);
-        u_1 = u_1.wrapping_add(1);
     }
 
     // Build Symbol Transformation Table
