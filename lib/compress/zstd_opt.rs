@@ -1,15 +1,13 @@
-pub type ZSTD_getAllMatchesFn = Option<
-    unsafe fn(
-        *mut ZSTD_match_t,
-        &mut ZSTD_MatchState_t,
-        *mut u32,
-        *const u8,
-        *const u8,
-        *const u32,
-        u32,
-        u32,
-    ) -> u32,
->;
+pub type ZSTD_getAllMatchesFn = unsafe fn(
+    *mut ZSTD_match_t,
+    &mut ZSTD_MatchState_t,
+    *mut u32,
+    *const u8,
+    *const u8,
+    *const u32,
+    u32,
+    u32,
+) -> u32;
 
 #[repr(C)]
 pub struct ZSTD_optLdm_t {
@@ -1441,172 +1439,25 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_4(
     )
 }
 
-unsafe fn ZSTD_selectBtGetAllMatches(
-    ms: &ZSTD_MatchState_t,
-    dictMode: DictMode,
-) -> ZSTD_getAllMatchesFn {
+fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZSTD_getAllMatchesFn {
     let getAllMatchesFns: [[ZSTD_getAllMatchesFn; 4]; 3] = [
         [
-            Some(
-                ZSTD_btGetAllMatches_noDict_3
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_noDict_4
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_noDict_5
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_noDict_6
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
+            ZSTD_btGetAllMatches_noDict_3,
+            ZSTD_btGetAllMatches_noDict_4,
+            ZSTD_btGetAllMatches_noDict_5,
+            ZSTD_btGetAllMatches_noDict_6,
         ],
         [
-            Some(
-                ZSTD_btGetAllMatches_extDict_3
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_extDict_4
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_extDict_5
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_extDict_6
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
+            ZSTD_btGetAllMatches_extDict_3,
+            ZSTD_btGetAllMatches_extDict_4,
+            ZSTD_btGetAllMatches_extDict_5,
+            ZSTD_btGetAllMatches_extDict_6,
         ],
         [
-            Some(
-                ZSTD_btGetAllMatches_dictMatchState_3
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_dictMatchState_4
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_dictMatchState_5
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
-            Some(
-                ZSTD_btGetAllMatches_dictMatchState_6
-                    as unsafe fn(
-                        *mut ZSTD_match_t,
-                        &mut ZSTD_MatchState_t,
-                        *mut u32,
-                        *const u8,
-                        *const u8,
-                        *const u32,
-                        u32,
-                        u32,
-                    ) -> u32,
-            ),
+            ZSTD_btGetAllMatches_dictMatchState_3,
+            ZSTD_btGetAllMatches_dictMatchState_4,
+            ZSTD_btGetAllMatches_dictMatchState_5,
+            ZSTD_btGetAllMatches_dictMatchState_6,
         ],
     ];
     let mls = ms.cParams.minMatch.clamp(3, 6);
@@ -1838,7 +1689,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
         // find first match
         let litlen = ip.offset_from(anchor) as core::ffi::c_long as u32;
         let ll0 = (litlen == 0) as core::ffi::c_int as u32;
-        let mut nbMatches = getAllMatches.unwrap_unchecked()(
+        let mut nbMatches = getAllMatches(
             matches,
             ms,
             &mut nextToUpdate3,
