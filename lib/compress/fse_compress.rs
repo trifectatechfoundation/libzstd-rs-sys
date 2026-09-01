@@ -212,7 +212,7 @@ unsafe fn FSE_writeNCount_generic(
     let mut remaining: core::ffi::c_int = 0;
     let mut threshold: core::ffi::c_int = 0;
     let mut bitStream = 0;
-    let mut bitCount = 0;
+    let mut bitCount: core::ffi::c_uint = 0;
     let mut symbol = 0;
     let alphabetSize = u32::from(maxSymbolValue) + 1;
     let mut previousIs0 = false;
@@ -278,8 +278,8 @@ unsafe fn FSE_writeNCount_generic(
             count += max;
         }
         bitStream = bitStream.wrapping_add((count as u32) << bitCount);
-        bitCount += nbBits;
-        bitCount -= (count < max) as core::ffi::c_int;
+        bitCount += nbBits as core::ffi::c_uint;
+        bitCount -= (count < max) as core::ffi::c_uint;
         previousIs0 = count == 1;
         if remaining < 1 {
             return Error::GENERIC.to_error_code();
@@ -310,7 +310,7 @@ unsafe fn FSE_writeNCount_generic(
     }
     *out = bitStream as u8;
     *out.add(1) = (bitStream >> 8) as u8;
-    out = out.offset(((bitCount + 7) / 8) as isize);
+    out = out.add(((bitCount + 7) / 8) as usize);
 
     out.offset_from_unsigned(ostart)
 }
