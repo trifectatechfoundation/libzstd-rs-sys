@@ -1,6 +1,3 @@
-pub type HIST_checkInput_e = core::ffi::c_uint;
-pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
-pub const trustInput: HIST_checkInput_e = 0;
 use core::ptr;
 
 use libc::size_t;
@@ -11,6 +8,12 @@ pub const HIST_WKSP_SIZE_U32: usize = 1024;
 pub const HIST_WKSP_SIZE: size_t =
     (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CheckInput {
+    Trust,
+    CheckMaxSymbolValue,
+}
 
 pub fn HIST_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code) as _
@@ -86,7 +89,7 @@ unsafe fn HIST_count_parallel_wksp(
     maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
-    check: HIST_checkInput_e,
+    check: CheckInput,
     workSpace: &mut [u32; 1024],
 ) -> size_t {
     let mut ip = source as *const u8;
@@ -162,7 +165,7 @@ unsafe fn HIST_count_parallel_wksp(
         maxSymbolValue -= 1;
     }
 
-    if check != 0 && maxSymbolValue > *maxSymbolValuePtr {
+    if check != CheckInput::Trust && maxSymbolValue > *maxSymbolValuePtr {
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
@@ -202,7 +205,7 @@ pub unsafe fn HIST_countFast_wksp(
         maxSymbolValuePtr,
         source,
         sourceSize,
-        trustInput,
+        CheckInput::Trust,
         workspace,
     )
 }
@@ -235,7 +238,7 @@ pub unsafe fn HIST_count_wksp(
             maxSymbolValuePtr,
             source,
             sourceSize,
-            checkMaxSymbolValue,
+            CheckInput::CheckMaxSymbolValue,
             workspace,
         );
     }
