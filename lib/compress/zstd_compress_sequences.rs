@@ -253,7 +253,7 @@ pub unsafe fn ZSTD_buildCTable(
     max: u8,
     codeTable: *const u8,
     nbSeq: size_t,
-    defaultNorm: *const i16,
+    defaultNorm: &[i16],
     defaultNormLog: u32,
     defaultMax: u8,
     prevCTable: &[FSE_CTable],
@@ -286,7 +286,7 @@ pub unsafe fn ZSTD_buildCTable(
         SymbolEncodingType::Basic => {
             let err_code_0 = FSE_buildCTable_wksp(
                 nextCTable.as_mut_ptr(),
-                defaultNorm,
+                defaultNorm.as_ptr(),
                 defaultMax,
                 defaultNormLog,
                 entropyWorkspace,
