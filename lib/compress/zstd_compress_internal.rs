@@ -251,7 +251,7 @@ impl From<i32> for CParamMode {
 pub type ZSTD_BlockCompressor_f = unsafe fn(
     &mut ZSTD_MatchState_t,
     &mut SeqStore_t,
-    *mut u32,
+    &mut [u32; 3],
     *const core::ffi::c_void,
     size_t,
 ) -> size_t;

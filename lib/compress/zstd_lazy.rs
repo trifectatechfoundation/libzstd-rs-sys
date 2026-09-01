@@ -2606,7 +2606,7 @@ unsafe fn ZSTD_searchMax(
 unsafe fn ZSTD_compressBlock_lazy_generic(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     searchMethod: searchMethod_e,
@@ -2629,8 +2629,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let mls = ms.cParams.minMatch.clamp(4, 6);
     let rowLog = ms.cParams.searchLog.clamp(4, 6);
 
-    let mut offset_1 = *rep;
-    let mut offset_2 = *rep.add(1);
+    let mut offset_1 = rep[0];
+    let mut offset_2 = rep[1];
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
 
@@ -3163,12 +3163,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     };
 
     // save reps for next block
-    *rep = if offset_1 != 0 {
+    rep[0] = if offset_1 != 0 {
         offset_1
     } else {
         offsetSaved1
     };
-    *rep.add(1) = if offset_2 != 0 {
+    rep[1] = if offset_2 != 0 {
         offset_2
     } else {
         offsetSaved2
@@ -3181,7 +3181,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
 pub unsafe fn ZSTD_compressBlock_greedy(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3200,7 +3200,7 @@ pub unsafe fn ZSTD_compressBlock_greedy(
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3219,7 +3219,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3238,7 +3238,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
 pub unsafe fn ZSTD_compressBlock_greedy_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3257,7 +3257,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_row(
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3276,7 +3276,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3295,7 +3295,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
 pub unsafe fn ZSTD_compressBlock_lazy(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3314,7 +3314,7 @@ pub unsafe fn ZSTD_compressBlock_lazy(
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3333,7 +3333,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3352,7 +3352,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
 pub unsafe fn ZSTD_compressBlock_lazy_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3371,7 +3371,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_row(
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3390,7 +3390,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3409,7 +3409,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
 pub unsafe fn ZSTD_compressBlock_lazy2(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3428,7 +3428,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2(
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3447,7 +3447,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3466,7 +3466,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
 pub unsafe fn ZSTD_compressBlock_lazy2_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3485,7 +3485,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_row(
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3504,7 +3504,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3523,7 +3523,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
 pub unsafe fn ZSTD_compressBlock_btlazy2(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3542,7 +3542,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2(
 pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3562,7 +3562,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
 unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     searchMethod: searchMethod_e,
@@ -3587,8 +3587,8 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     let mls = ms.cParams.minMatch.clamp(4, 6);
     let rowLog = ms.cParams.searchLog.clamp(4, 6);
 
-    let mut offset_1 = *rep;
-    let mut offset_2 = *rep.add(1);
+    let mut offset_1 = rep[0];
+    let mut offset_2 = rep[1];
 
     // Reset the lazy skipping state
     ms.lazySkipping = 0;
@@ -3922,8 +3922,8 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     }
 
     // Save reps for next block
-    *rep = offset_1;
-    *rep.add(1) = offset_2;
+    rep[0] = offset_1;
+    rep[1] = offset_2;
 
     // Return the last literals size
     iend.offset_from_unsigned(anchor)
@@ -3932,7 +3932,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
 pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3942,7 +3942,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict(
 pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3952,7 +3952,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
 pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3962,7 +3962,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict(
 pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3972,7 +3972,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3981,7 +3981,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -3991,7 +3991,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
 pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: *mut u32,
+    rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
