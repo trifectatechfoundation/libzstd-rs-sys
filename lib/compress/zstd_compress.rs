@@ -774,7 +774,7 @@ pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 
 #[inline]
-unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: &mut ZSTD_cwksp) {
+fn ZSTD_cwksp_assert_internal_consistency(ws: &mut ZSTD_cwksp) {
     assert!(ws.workspace <= ws.objectEnd);
     assert!(ws.objectEnd <= ws.tableEnd);
     assert!(ws.objectEnd <= ws.tableValidEnd);
@@ -1019,13 +1019,13 @@ unsafe fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut 
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_dirty(ws: &mut ZSTD_cwksp) {
+fn ZSTD_cwksp_mark_tables_dirty(ws: &mut ZSTD_cwksp) {
     ws.tableValidEnd = ws.objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_clean(ws: &mut ZSTD_cwksp) {
+fn ZSTD_cwksp_mark_tables_clean(ws: &mut ZSTD_cwksp) {
     if ws.tableValidEnd < ws.tableEnd {
         ws.tableValidEnd = ws.tableEnd;
     }
@@ -1047,7 +1047,7 @@ unsafe fn ZSTD_cwksp_clean_tables(ws: &mut ZSTD_cwksp) {
 
 /// Invalidates table allocations. All other allocations remain valid.
 #[inline]
-unsafe fn ZSTD_cwksp_clear_tables(ws: &mut ZSTD_cwksp) {
+fn ZSTD_cwksp_clear_tables(ws: &mut ZSTD_cwksp) {
     ws.tableEnd = ws.objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
@@ -1055,7 +1055,7 @@ unsafe fn ZSTD_cwksp_clear_tables(ws: &mut ZSTD_cwksp) {
 /// Invalidates all buffer, aligned, and table allocations.
 /// Object allocations remain valid.
 #[inline]
-unsafe fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
+fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
     ws.tableEnd = ws.objectEnd;
     ws.allocStart = ZSTD_cwksp_initialAllocStart(ws);
     ws.allocFailed = 0;
@@ -1066,22 +1066,22 @@ unsafe fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_sizeof(ws: &ZSTD_cwksp) -> size_t {
-    (ws.workspaceEnd as *mut u8).offset_from(ws.workspace as *mut u8) as core::ffi::c_long as size_t
+fn ZSTD_cwksp_sizeof(ws: &ZSTD_cwksp) -> size_t {
+    (ws.workspaceEnd as *mut u8).wrapping_offset_from(ws.workspace as *mut u8) as size_t
 }
 
 /// The provided workspace takes ownership of the buffer [start, start+size).
 /// Any existing values in the workspace are ignored (the previously managed buffer,
 /// if present, must be separately freed).
 #[inline]
-unsafe fn ZSTD_cwksp_init(
+fn ZSTD_cwksp_init(
     ws: &mut ZSTD_cwksp,
     start: *mut core::ffi::c_void,
     size: size_t,
     isStatic: CwkspAllocKind,
 ) {
     ws.workspace = start;
-    ws.workspaceEnd = start.byte_add(size);
+    ws.workspaceEnd = start.wrapping_byte_add(size);
     ws.objectEnd = ws.workspace;
     ws.tableValidEnd = ws.objectEnd;
     ws.initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
