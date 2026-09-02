@@ -10,7 +10,7 @@ use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
     ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq,
+    ZSTD_storeSeq, ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -18,7 +18,6 @@ pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
-pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
 
