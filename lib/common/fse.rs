@@ -54,6 +54,7 @@ pub(crate) const FSE_repeat_check: FSE_repeat = 1;
 pub(crate) const FSE_repeat_valid: FSE_repeat = 2;
 
 #[repr(C)]
+#[derive(Default)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,
     pub stateTable: *const core::ffi::c_void,

@@ -599,18 +599,8 @@ unsafe fn FSE_compress_usingCTable_generic(
     let mut ip = iend;
 
     let mut bitC = BIT_CStream_t::default();
-    let mut CState1 = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
-    let mut CState2 = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
+    let mut CState1 = FSE_CState_t::default();
+    let mut CState2 = FSE_CState_t::default();
 
     // init
     if srcSize <= 2 {

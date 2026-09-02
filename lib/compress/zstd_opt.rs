@@ -239,12 +239,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 }
             }
 
-            let mut llstate = FSE_CState_t {
-                value: 0,
-                stateTable: core::ptr::null::<core::ffi::c_void>(),
-                symbolTT: core::ptr::null::<core::ffi::c_void>(),
-                stateLog: 0,
-            };
+            let mut llstate = FSE_CState_t::default();
             FSE_initCState(&mut llstate, &(*(*optPtr).symbolCosts).fse.litlengthCTable);
             (*optPtr).litLengthSum = 0;
             for ll in 0..=MaxLL {
@@ -260,12 +255,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     .wrapping_add(*((*optPtr).litLengthFreq).offset(ll as isize));
             }
 
-            let mut mlstate = FSE_CState_t {
-                value: 0,
-                stateTable: core::ptr::null::<core::ffi::c_void>(),
-                symbolTT: core::ptr::null::<core::ffi::c_void>(),
-                stateLog: 0,
-            };
+            let mut mlstate = FSE_CState_t::default();
             FSE_initCState(
                 &mut mlstate,
                 &(*(*optPtr).symbolCosts).fse.matchlengthCTable,
@@ -284,12 +274,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     .wrapping_add(*((*optPtr).matchLengthFreq).offset(ml as isize));
             }
 
-            let mut ofstate = FSE_CState_t {
-                value: 0,
-                stateTable: core::ptr::null::<core::ffi::c_void>(),
-                symbolTT: core::ptr::null::<core::ffi::c_void>(),
-                stateLog: 0,
-            };
+            let mut ofstate = FSE_CState_t::default();
             FSE_initCState(&mut ofstate, &(*(*optPtr).symbolCosts).fse.offcodeCTable);
             (*optPtr).offCodeSum = 0;
             for of in 0..=MaxOff {
