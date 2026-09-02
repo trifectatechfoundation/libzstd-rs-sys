@@ -29,6 +29,7 @@ use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
+use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
     ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
@@ -264,9 +265,8 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
 
 /// Clears the window containing the history by simply setting it to empty.
 #[inline]
-unsafe fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
-    let endT = (window.nextSrc).offset_from(window.base) as size_t;
-    let end = endT as u32;
+fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
+    let end = window.nextSrc.wrapping_offset_from(window.base) as u32;
 
     window.lowLimit = end;
     window.dictLimit = end;
