@@ -37,6 +37,26 @@ pub(crate) fn ZSTD_LLcode(litLength: u32) -> u32 {
     }
 }
 
+/// Note: mlBase = matchLength - MINMATCH;
+/// because it's the format it's stored in seqStore->sequences
+#[inline]
+pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
+    static ML_Code: [u8; 128] = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
+        38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
+        40, 40, 40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+        41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+        42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+    ];
+    static ML_deltaCode: u32 = 36;
+    if mlBase > 127 {
+        (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
+    } else {
+        ML_Code[mlBase as usize] as core::ffi::c_uint
+    }
+}
+
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);

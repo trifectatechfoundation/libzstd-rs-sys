@@ -36,30 +36,12 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, DictMode, OptPrice, ZSTD_LLcode, ZSTD_count, ZSTD_count_2segments,
+    optState_t, DictMode, OptPrice, ZSTD_LLcode, ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments,
     ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
     ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
-
-#[inline]
-fn ZSTD_MLcode(mlBase: u32) -> u32 {
-    static ML_Code: [u8; 128] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
-        38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
-        40, 40, 40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
-        41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-        42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-    ];
-    static ML_deltaCode: u32 = 36;
-    if mlBase > 127 {
-        (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
-    } else {
-        ML_Code[mlBase as usize] as core::ffi::c_uint
-    }
-}
 
 #[inline]
 fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: u32) -> RepCodes {
