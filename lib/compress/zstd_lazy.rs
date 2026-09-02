@@ -1056,7 +1056,7 @@ unsafe fn ZSTD_row_fillHashCache(
 /// base + idx + ZSTD_ROW_HASH_CACHE_SIZE. Also prefetches the appropriate rows from hashTable and tagTable.
 #[inline(always)]
 unsafe fn ZSTD_row_nextCachedHash(
-    cache: *mut u32,
+    cache: &mut [u32; 8],
     hashTable: *const u32,
     tagTable: *const u8,
     base: *const u8,
@@ -1076,9 +1076,10 @@ unsafe fn ZSTD_row_nextCachedHash(
     let row = newHash >> ZSTD_ROW_HASH_TAG_BITS << rowLog;
     ZSTD_row_prefetch(hashTable, tagTable, row, rowLog);
 
-    let hash = *cache.wrapping_offset((idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as isize);
-    *cache.offset((idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as isize) = newHash;
-    hash
+    core::mem::replace(
+        &mut cache[(idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as usize],
+        newHash,
+    )
 }
 
 /// Updates the hash table with positions starting from updateStartIdx until updateEndIdx.
@@ -1100,7 +1101,7 @@ unsafe fn ZSTD_row_update_internalImpl(
     while updateStartIdx < updateEndIdx {
         let hash = if useCache {
             ZSTD_row_nextCachedHash(
-                core::ptr::addr_of_mut!(ms.hashCache).cast::<u32>(), // held across later calls
+                &mut ms.hashCache,
                 hashTable,
                 tagTable,
                 base,
@@ -1323,7 +1324,6 @@ unsafe fn ZSTD_RowFindBestMatch<const MLS: u32, const ROW_LOG: u32>(
 ) -> size_t {
     let hashTable = ms.hashTable;
     let tagTable = ms.tagTable;
-    let hashCache = core::ptr::addr_of_mut!(ms.hashCache).cast::<u32>(); // held across later calls
     let hashLog = ms.rowHashLog;
     let cParams = &ms.cParams;
     let base = ms.window.base;
@@ -1400,7 +1400,15 @@ unsafe fn ZSTD_RowFindBestMatch<const MLS: u32, const ROW_LOG: u32>(
     if ms.lazySkipping == 0 {
         ZSTD_row_update_internal(ms, ip, MLS, ROW_LOG, rowMask, true);
         hash = ZSTD_row_nextCachedHash(
-            hashCache, hashTable, tagTable, base, curr, hashLog, ROW_LOG, MLS, hashSalt,
+            &mut ms.hashCache,
+            hashTable,
+            tagTable,
+            base,
+            curr,
+            hashLog,
+            ROW_LOG,
+            MLS,
+            hashSalt,
         );
     } else {
         // Stop inserting every position when in the lazy skipping mode.
