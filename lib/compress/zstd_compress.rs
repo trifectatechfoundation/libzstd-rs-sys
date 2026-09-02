@@ -1058,12 +1058,10 @@ unsafe fn ZSTD_cwksp_create(
 }
 
 #[inline]
-unsafe fn ZSTD_cwksp_free(ws: *mut ZSTD_cwksp, customMem: ZSTD_customMem) {
-    let ptr = (*ws).workspace;
-    let size = (*ws)
-        .workspaceEnd
-        .byte_offset_from_unsigned((*ws).workspace);
-    ptr::write_bytes(ws as *mut u8, 0, size_of::<ZSTD_cwksp>());
+unsafe fn ZSTD_cwksp_free(ws: &mut ZSTD_cwksp, customMem: ZSTD_customMem) {
+    let ptr = ws.workspace;
+    let size = ws.workspaceEnd.byte_offset_from_unsigned(ws.workspace);
+    ptr::write_bytes(ws as *mut ZSTD_cwksp as *mut u8, 0, size_of::<ZSTD_cwksp>());
     ZSTD_customFree(ptr, size, customMem);
 }
 
