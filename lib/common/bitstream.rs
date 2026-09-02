@@ -8,6 +8,14 @@ use crate::lib::polyfill::unlikely;
 
 pub(crate) type BitContainerType = usize;
 
+pub(crate) const STREAM_ACCUMULATOR_MIN_32: u32 = 25;
+pub(crate) const STREAM_ACCUMULATOR_MIN_64: u32 = 57;
+pub(crate) const STREAM_ACCUMULATOR_MIN: u32 = match size_of::<usize>() {
+    4 => STREAM_ACCUMULATOR_MIN_32,
+    8 => STREAM_ACCUMULATOR_MIN_64,
+    _ => unreachable!(),
+};
+
 #[repr(C)]
 #[derive(Default)]
 pub(crate) struct BIT_CStream_t {

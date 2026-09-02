@@ -634,6 +634,7 @@ use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::bits::ZSTD_highbit32;
+use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -1136,8 +1137,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
 
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
-pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
-pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
@@ -4344,14 +4343,7 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
         *llCodeTable.offset(u as isize) = ZSTD_LLcode(llv) as u8;
         *ofCodeTable.offset(u as isize) = ofCode as u8;
         *mlCodeTable.offset(u as isize) = ZSTD_MLcode(mlv) as u8;
-        if MEM_32bits()
-            && ofCode
-                >= (if MEM_32bits() {
-                    STREAM_ACCUMULATOR_MIN_32
-                } else {
-                    STREAM_ACCUMULATOR_MIN_64
-                }) as u32
-        {
+        if MEM_32bits() && ofCode >= STREAM_ACCUMULATOR_MIN {
             longOffsets = true;
         }
     }
