@@ -13,7 +13,7 @@ use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
 use libzstd_rs_sys::lib::zstd::{
     ParamSwitch, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
     ZSTD_BLOCKSIZELOG_MAX, ZSTD_CHAINLOG_MAX, ZSTD_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MAX,
-    ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_WINDOWLOG_MAX,
 };
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
@@ -1087,18 +1087,10 @@ unsafe fn parseCompressionParameters(
     1
 }
 unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
-    (*params).windowLog = (if size_of::<size_t>() == 4 {
-        ZSTD_WINDOWLOG_MAX_32
-    } else {
-        ZSTD_WINDOWLOG_MAX_64
-    }) as core::ffi::c_uint;
+    (*params).windowLog = ZSTD_WINDOWLOG_MAX as core::ffi::c_uint;
     (*params).chainLog = ZSTD_CHAINLOG_MAX as core::ffi::c_uint;
     (*params).hashLog = ZSTD_HASHLOG_MAX as core::ffi::c_uint;
-    (*params).searchLog = ((if size_of::<size_t>() == 4 {
-        ZSTD_WINDOWLOG_MAX_32
-    } else {
-        ZSTD_WINDOWLOG_MAX_64
-    }) - 1) as core::ffi::c_uint;
+    (*params).searchLog = (ZSTD_WINDOWLOG_MAX - 1) as core::ffi::c_uint;
     (*params).minMatch = ZSTD_MINMATCH_MIN as core::ffi::c_uint;
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as core::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
@@ -1916,12 +1908,7 @@ unsafe fn main_0(
                             {
                                 operation = zom_decompress;
                                 NEXT_FIELD!(patchFromDictFileName);
-                                memLimit = (1)
-                                    << (if size_of::<size_t>() == 4 {
-                                        ZSTD_WINDOWLOG_MAX_32
-                                    } else {
-                                        ZSTD_WINDOWLOG_MAX_64
-                                    });
+                                memLimit = 1 << ZSTD_WINDOWLOG_MAX;
                             } else if longCommandWArg(&mut argument, c"--long".as_ptr()) != 0 {
                                 let mut ldmWindowLog = 0;
                                 ldmFlag = 1;

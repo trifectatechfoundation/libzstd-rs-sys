@@ -33,7 +33,7 @@ use libzstd_rs_sys::lib::zstd::{
     ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_CHAINLOG_MAX, ZSTD_CONTENTSIZE_ERROR,
     ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_FRAMEHEADERSIZE_MAX, ZSTD_LDM_HASHLOG_MAX, ZSTD_MAGICNUMBER,
     ZSTD_MAGIC_SKIPPABLE_MASK, ZSTD_MAGIC_SKIPPABLE_START, ZSTD_WINDOWLOG_LIMIT_DEFAULT,
-    ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MIN,
 };
 
 use crate::fileio_asyncio::{
@@ -1422,12 +1422,7 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
     } else {
         maxSrcFileSize
     };
-    let maxWindowSize = (1 as core::ffi::c_uint)
-        << (if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        });
+    let maxWindowSize = (1 as core::ffi::c_uint) << ZSTD_WINDOWLOG_MAX as core::ffi::c_uint;
     if maxSize == UTIL_FILESIZE_UNKNOWN as core::ffi::c_ulonglong {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, c"zstd: ".as_ptr());
@@ -1649,35 +1644,17 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
         dictSize as size_t,
     );
     FIO_adjustMemLimitForPatchFromMode(prefs, dictSize, maxSrcFileSize);
-    if fileWindowLog
-        > (if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        }) as core::ffi::c_uint
-        && g_display_prefs.displayLevel >= 1
+    if fileWindowLog > ZSTD_WINDOWLOG_MAX as core::ffi::c_uint && g_display_prefs.displayLevel >= 1
     {
         fprintf(
             stderr,
             c"Max window log exceeded by file (compression ratio will suffer)\n".as_ptr(),
         );
     }
-    (*comprParams).windowLog = if 10
-        > (if ((if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint)
-            < fileWindowLog
-        {
-            (if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint
-        } else {
-            fileWindowLog
-        }) {
-        10
-    } else if ((if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint)
-        < fileWindowLog
-    {
-        (if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint
-    } else {
-        fileWindowLog
-    };
+    (*comprParams).windowLog = fileWindowLog.clamp(
+        ZSTD_WINDOWLOG_MIN as core::ffi::c_uint,
+        ZSTD_WINDOWLOG_MAX as core::ffi::c_uint,
+    );
     if fileWindowLog > ZSTD_cycleLog(cParams.chainLog, cParams.strategy) {
         if (*prefs).ldmFlag == 0 && g_display_prefs.displayLevel >= 2 {
             fprintf(stderr, c"long mode automatically triggered\n".as_ptr());
@@ -5242,13 +5219,7 @@ unsafe fn FIO_zstdErrorHelp(
                 (*prefs).memLimit,
             );
         }
-        if windowLog
-            <= (if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            }) as core::ffi::c_uint
-        {
+        if windowLog <= ZSTD_WINDOWLOG_MAX as core::ffi::c_uint {
             let windowMB = (windowSize >> 20).wrapping_add(
                 (windowSize & ((1 << 20) - 1) as core::ffi::c_ulonglong != 0) as core::ffi::c_int
                     as core::ffi::c_ulonglong,
@@ -5271,7 +5242,7 @@ unsafe fn FIO_zstdErrorHelp(
             stderr,
             c"%s : Window log larger than ZSTD_WINDOWLOG_MAX=%u; not supported \n".as_ptr(),
             srcFileName,
-            if size_of::<size_t>() == 4 { 30 } else { 31 },
+            ZSTD_WINDOWLOG_MAX,
         );
     }
 }
