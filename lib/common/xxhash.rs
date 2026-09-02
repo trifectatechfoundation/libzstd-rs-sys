@@ -311,14 +311,7 @@ mod tests {
         fn prop_xxh64_state_matches_chunked(input: Vec<Vec<u8>>, seed: u64) -> bool {
             let mut expected = xxhash_rust::xxh64::Xxh64::new( seed);
             let mut actual = {
-                let mut state = XXH64_state_t {
-                    total_len: 0,
-                    v: [0; 4],
-                    mem64: [0; 4],
-                    memsize: 0,
-                    reserved32: 0,
-                    reserved64: 0,
-                };
+                let mut state = XXH64_state_t::default();
                 ZSTD_XXH64_reset(&mut state, seed);
                 state
             };
