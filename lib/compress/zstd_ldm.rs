@@ -68,6 +68,7 @@ use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
     ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
     ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -77,7 +78,6 @@ use crate::lib::zstd::{
 };
 
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
-pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: usize = 64;
 
 /// Reduces the indices to protect from index overflow.
