@@ -207,9 +207,11 @@ pub struct ZSTD_localDict {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
+    pub CTable: CTable,
     pub repeatMode: HUF_repeat,
 }
+
+pub type CTable = [HUF_CElt; HUF_CTABLE_SIZE_ST(255)];
 
 #[derive(Copy, Clone)]
 #[repr(C)]
