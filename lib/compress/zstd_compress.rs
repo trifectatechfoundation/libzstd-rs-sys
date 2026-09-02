@@ -391,26 +391,6 @@ pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
-/// Note: mlBase = matchLength - MINMATCH;
-/// because it's the format it's stored in seqStore->sequences
-#[inline]
-fn ZSTD_MLcode(mlBase: u32) -> u32 {
-    static ML_Code: [u8; 128] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
-        38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
-        40, 40, 40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
-        41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-        42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-    ];
-    static ML_deltaCode: u32 = 36;
-    if mlBase > 127 {
-        (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
-    } else {
-        ML_Code[mlBase as usize] as core::ffi::c_uint
-    }
-}
-
 /// # Returns
 ///
 /// `true` if value is within cParam bounds
@@ -612,9 +592,9 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
-    ZSTD_LLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_entropyCTables_t,
-    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
+    ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
+    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
     ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
     ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
