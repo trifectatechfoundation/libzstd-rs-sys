@@ -9,9 +9,9 @@ use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_writeTaggedIndex, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_SHORT_CACHE_TAG_MASK,
+    DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
+    ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
+    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
@@ -20,15 +20,6 @@ pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
-
-/// Helper function for short cache matchfinders.
-/// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
-#[inline]
-fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
-    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    tag1 == tag2
-}
 
 unsafe fn ZSTD_fillHashTableForCDict(
     ms: &mut ZSTD_MatchState_t,
