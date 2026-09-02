@@ -1106,7 +1106,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_btGetAllMatches_internal(
+unsafe fn ZSTD_btGetAllMatches_internal<const MLS: u32>(
     matches: *mut ZSTD_match_t,
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
@@ -1116,12 +1116,11 @@ unsafe fn ZSTD_btGetAllMatches_internal(
     ll0: u32,
     lengthToBeat: u32,
     dictMode: DictMode,
-    mls: u32,
 ) -> u32 {
     if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
         return 0; // skipped area
     }
-    ZSTD_updateTree_internal(ms, ip, iHighLimit, mls, dictMode);
+    ZSTD_updateTree_internal(ms, ip, iHighLimit, MLS, dictMode);
     ZSTD_insertBtAndGetAllMatches(
         matches,
         ms,
@@ -1132,11 +1131,11 @@ unsafe fn ZSTD_btGetAllMatches_internal(
         rep,
         ll0,
         lengthToBeat,
-        mls,
+        MLS,
     )
 }
 
-unsafe fn ZSTD_btGetAllMatches_noDict_5(
+unsafe fn ZSTD_btGetAllMatches_noDict<const MLS: u32>(
     matches: *mut ZSTD_match_t,
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
@@ -1146,7 +1145,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_5(
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
-    ZSTD_btGetAllMatches_internal(
+    ZSTD_btGetAllMatches_internal::<MLS>(
         matches,
         ms,
         nextToUpdate3,
@@ -1156,11 +1155,10 @@ unsafe fn ZSTD_btGetAllMatches_noDict_5(
         ll0,
         lengthToBeat,
         DictMode::NoDict,
-        5,
     )
 }
 
-unsafe fn ZSTD_btGetAllMatches_noDict_6(
+unsafe fn ZSTD_btGetAllMatches_extDict<const MLS: u32>(
     matches: *mut ZSTD_match_t,
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
@@ -1170,79 +1168,7 @@ unsafe fn ZSTD_btGetAllMatches_noDict_6(
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::NoDict,
-        6,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_noDict_4(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::NoDict,
-        4,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_noDict_3(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::NoDict,
-        3,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_extDict_5(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
+    ZSTD_btGetAllMatches_internal::<MLS>(
         matches,
         ms,
         nextToUpdate3,
@@ -1252,11 +1178,10 @@ unsafe fn ZSTD_btGetAllMatches_extDict_5(
         ll0,
         lengthToBeat,
         DictMode::ExtDict,
-        5,
     )
 }
 
-unsafe fn ZSTD_btGetAllMatches_extDict_6(
+unsafe fn ZSTD_btGetAllMatches_dictMatchState<const MLS: u32>(
     matches: *mut ZSTD_match_t,
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
@@ -1266,79 +1191,7 @@ unsafe fn ZSTD_btGetAllMatches_extDict_6(
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::ExtDict,
-        6,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_extDict_4(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::ExtDict,
-        4,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_extDict_3(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::ExtDict,
-        3,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_dictMatchState_5(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
+    ZSTD_btGetAllMatches_internal::<MLS>(
         matches,
         ms,
         nextToUpdate3,
@@ -1348,101 +1201,28 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_5(
         ll0,
         lengthToBeat,
         DictMode::DictMatchState,
-        5,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_dictMatchState_6(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::DictMatchState,
-        6,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_dictMatchState_3(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::DictMatchState,
-        3,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_dictMatchState_4(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::DictMatchState,
-        4,
     )
 }
 
 fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZSTD_getAllMatchesFn {
     let getAllMatchesFns: [[ZSTD_getAllMatchesFn; 4]; 3] = [
         [
-            ZSTD_btGetAllMatches_noDict_3,
-            ZSTD_btGetAllMatches_noDict_4,
-            ZSTD_btGetAllMatches_noDict_5,
-            ZSTD_btGetAllMatches_noDict_6,
+            ZSTD_btGetAllMatches_noDict::<3>,
+            ZSTD_btGetAllMatches_noDict::<4>,
+            ZSTD_btGetAllMatches_noDict::<5>,
+            ZSTD_btGetAllMatches_noDict::<6>,
         ],
         [
-            ZSTD_btGetAllMatches_extDict_3,
-            ZSTD_btGetAllMatches_extDict_4,
-            ZSTD_btGetAllMatches_extDict_5,
-            ZSTD_btGetAllMatches_extDict_6,
+            ZSTD_btGetAllMatches_extDict::<3>,
+            ZSTD_btGetAllMatches_extDict::<4>,
+            ZSTD_btGetAllMatches_extDict::<5>,
+            ZSTD_btGetAllMatches_extDict::<6>,
         ],
         [
-            ZSTD_btGetAllMatches_dictMatchState_3,
-            ZSTD_btGetAllMatches_dictMatchState_4,
-            ZSTD_btGetAllMatches_dictMatchState_5,
-            ZSTD_btGetAllMatches_dictMatchState_6,
+            ZSTD_btGetAllMatches_dictMatchState::<3>,
+            ZSTD_btGetAllMatches_dictMatchState::<4>,
+            ZSTD_btGetAllMatches_dictMatchState::<5>,
+            ZSTD_btGetAllMatches_dictMatchState::<6>,
         ],
     ];
     let mls = ms.cParams.minMatch.clamp(3, 6);
