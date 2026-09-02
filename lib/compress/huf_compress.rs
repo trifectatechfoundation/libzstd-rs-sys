@@ -1183,7 +1183,7 @@ unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
 }
 
 #[inline(always)]
-unsafe fn HUF_encodeSymbol(
+fn HUF_encodeSymbol(
     bitCPtr: &mut HUF_CStream_t,
     symbol: u32,
     CTable: &SymbolTable,
