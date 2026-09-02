@@ -4311,7 +4311,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     dstCapacity: size_t,
     literals: *const core::ffi::c_void,
     litSize: size_t,
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
     nextEntropy: &mut ZSTD_entropyCTables_t,
     cctxParams: &ZSTD_CCtx_params,
@@ -4321,11 +4321,13 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
 ) -> size_t {
     let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
-    let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
-    let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
-    let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
-    let llCodeTable: *const u8 = (*seqStorePtr).llCode;
-    let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
+    let sequences: *const SeqDef = seqStorePtr.sequencesStart;
+    let nbSeq = seqStorePtr
+        .sequences
+        .offset_from(seqStorePtr.sequencesStart) as size_t;
+    let ofCodeTable: *const u8 = seqStorePtr.ofCode;
+    let llCodeTable: *const u8 = seqStorePtr.llCode;
+    let mlCodeTable: *const u8 = seqStorePtr.mlCode;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
@@ -4337,8 +4339,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         .wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
 
     // Compress literals
-    let numSequences =
-        ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
+    let numSequences = seqStorePtr
+        .sequences
+        .offset_from(seqStorePtr.sequencesStart) as size_t;
     // Base suspicion of uncompressibility on ratio of literals to sequences
     let suspectUncompressible = (numSequences == 0
         || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t)
