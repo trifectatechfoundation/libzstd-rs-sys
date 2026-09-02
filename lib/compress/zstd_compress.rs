@@ -5929,7 +5929,7 @@ pub const MIN_SEQUENCES_BLOCK_SPLITTING: usize = 300;
 ///
 /// Furthermore, the number of splits is capped by ZSTD_MAX_NB_BLOCK_SPLITS.
 unsafe fn ZSTD_deriveBlockSplitsHelper(
-    splits: *mut seqStoreSplits,
+    splits: &mut seqStoreSplits,
     startIdx: size_t,
     endIdx: size_t,
     zc: *mut ZSTD_CCtx,
@@ -5944,7 +5944,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     let midIdx = startIdx.wrapping_add(endIdx) / 2;
 
     if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING
-        || (*splits).idx >= ZSTD_MAX_NB_BLOCK_SPLITS
+        || splits.idx >= ZSTD_MAX_NB_BLOCK_SPLITS
     {
         return;
     }
@@ -5965,8 +5965,8 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     }
     if estimatedFirstHalfSize.wrapping_add(estimatedSecondHalfSize) < estimatedOriginalSize {
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
-        *((*splits).splitLocations).add((*splits).idx) = midIdx as u32;
-        (*splits).idx = ((*splits).idx).wrapping_add(1);
+        *splits.splitLocations.add(splits.idx) = midIdx as u32;
+        splits.idx = splits.idx.wrapping_add(1);
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
     }
 }
