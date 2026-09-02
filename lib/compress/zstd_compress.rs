@@ -5781,7 +5781,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
 /// Returns literals bytes represented in a seqStore
 unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: &SeqStore_t) -> size_t {
     let mut literalsBytes = 0usize;
-    let nbSeqs = (seqStore.sequences).offset_from(seqStore.sequencesStart) as size_t;
+    let nbSeqs = seqStore.sequences.offset_from(seqStore.sequencesStart) as size_t;
     for i in 0..nbSeqs {
         let seq = *(seqStore.sequencesStart).add(i);
         literalsBytes = literalsBytes.wrapping_add(seq.litLength as size_t);
