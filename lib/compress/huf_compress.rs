@@ -879,7 +879,7 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
 /// * `nonNullRank` - The last and smallest node in the Huffman tree.
 /// * `maxSymbolValue` - The maximum symbol value.
 /// * `maxNbBits` - The exact maximum number of bits used in the Huffman tree.
-unsafe fn HUF_buildCTableFromTree(
+fn HUF_buildCTableFromTree(
     CTable: &mut CTable,
     huffNode: &[nodeElt],
     nonNullRank: c_int,
