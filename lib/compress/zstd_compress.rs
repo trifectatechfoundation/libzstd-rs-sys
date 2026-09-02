@@ -740,8 +740,7 @@ use crate::lib::zstd::{
     ZSTD_sf_explicitBlockDelimiters, ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
     ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER,
     ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE,
-    ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32,
-    ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX,
 };
 
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
@@ -1663,26 +1662,13 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
         }
         101 => {
             bounds.lowerBound = ZSTD_WINDOWLOG_MIN;
-            bounds.upperBound = if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            };
+            bounds.upperBound = ZSTD_WINDOWLOG_MAX;
             bounds
         }
         102 => {
             bounds.lowerBound = ZSTD_HASHLOG_MIN;
-            bounds.upperBound = if (if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            }) < 30
-            {
-                if size_of::<size_t>() == 4 {
-                    ZSTD_WINDOWLOG_MAX_32
-                } else {
-                    ZSTD_WINDOWLOG_MAX_64
-                }
+            bounds.upperBound = if ZSTD_WINDOWLOG_MAX < 30 {
+                ZSTD_WINDOWLOG_MAX
             } else {
                 30
             };
@@ -1699,11 +1685,7 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
         }
         104 => {
             bounds.lowerBound = ZSTD_SEARCHLOG_MIN;
-            bounds.upperBound = (if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            }) - 1;
+            bounds.upperBound = ZSTD_WINDOWLOG_MAX - 1;
             bounds
         }
         105 => {
@@ -1771,17 +1753,8 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
         }
         161 => {
             bounds.lowerBound = ZSTD_LDM_HASHLOG_MIN;
-            bounds.upperBound = if (if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            }) < 30
-            {
-                if size_of::<size_t>() == 4 {
-                    ZSTD_WINDOWLOG_MAX_32
-                } else {
-                    ZSTD_WINDOWLOG_MAX_64
-                }
+            bounds.upperBound = if ZSTD_WINDOWLOG_MAX < 30 {
+                ZSTD_WINDOWLOG_MAX
             } else {
                 30
             };
@@ -1799,11 +1772,7 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
         }
         164 => {
             bounds.lowerBound = ZSTD_LDM_HASHRATELOG_MIN;
-            bounds.upperBound = (if size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            }) - ZSTD_HASHLOG_MIN;
+            bounds.upperBound = ZSTD_WINDOWLOG_MAX - ZSTD_HASHLOG_MIN;
             bounds
         }
         500 => {
@@ -2906,11 +2875,7 @@ fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
         windowLog
     } else if dictAndWindowSize >= maxWindowSize {
         // Larger than max window log
-        (if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        }) as u32
+        ZSTD_WINDOWLOG_MAX as u32
     } else {
         (ZSTD_highbit32((dictAndWindowSize as u32).wrapping_sub(1))).wrapping_add(1)
     }
@@ -2932,12 +2897,7 @@ fn ZSTD_adjustCParams_internal(
     mut useRowMatchFinder: ParamSwitch,
 ) -> ZSTD_compressionParameters {
     let minSrcSize = 513; // (1<<9) + 1
-    let maxWindowResize = (1
-        << ((if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        }) - 1)) as u64;
+    let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
 
     match mode as core::ffi::c_uint {
         2 => {
