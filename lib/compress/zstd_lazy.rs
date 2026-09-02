@@ -1726,324 +1726,376 @@ unsafe fn ZSTD_searchMax(
     searchMethod: SearchMethod,
     dictMode: DictMode,
 ) -> size_t {
-    if dictMode == DictMode::NoDict {
-        match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => return ZSTD_HcFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_HcFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_HcFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
-                _ => {}
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => return ZSTD_BtFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_BtFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_BtFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
-                _ => {}
-            },
-            SearchMethod::RowHash => match mls {
-                4 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_noDict::<4, 4>(ms, ip, iend, offsetPtr);
+    match dictMode {
+        DictMode::NoDict => {
+            match searchMethod {
+                SearchMethod::HashChain => match mls {
+                    4 => return ZSTD_HcFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
+                    5 => return ZSTD_HcFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
+                    6 => return ZSTD_HcFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
+                    _ => {}
+                },
+                SearchMethod::BinaryTree => match mls {
+                    4 => return ZSTD_BtFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
+                    5 => return ZSTD_BtFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
+                    6 => return ZSTD_BtFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
+                    _ => {}
+                },
+                SearchMethod::RowHash => match mls {
+                    4 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_noDict::<4, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_noDict::<4, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_noDict::<4, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_noDict::<4, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_noDict::<4, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                5 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_noDict::<5, 4>(ms, ip, iend, offsetPtr);
+                    5 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_noDict::<5, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_noDict::<5, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_noDict::<5, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_noDict::<5, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_noDict::<5, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                6 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_noDict::<6, 4>(ms, ip, iend, offsetPtr);
+                    6 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_noDict::<6, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_noDict::<6, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_noDict::<6, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_noDict::<6, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_noDict::<6, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                _ => {}
-            },
+                    _ => {}
+                },
+            }
+            unreachable!();
         }
-        unreachable!();
-    } else if dictMode == DictMode::ExtDict {
-        match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => return ZSTD_HcFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_HcFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_HcFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
-                _ => {}
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => return ZSTD_BtFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_BtFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_BtFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
-                _ => {}
-            },
-            SearchMethod::RowHash => match mls {
-                4 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_extDict::<4, 4>(ms, ip, iend, offsetPtr);
+        DictMode::ExtDict => {
+            match searchMethod {
+                SearchMethod::HashChain => match mls {
+                    4 => return ZSTD_HcFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
+                    5 => return ZSTD_HcFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
+                    6 => return ZSTD_HcFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
+                    _ => {}
+                },
+                SearchMethod::BinaryTree => match mls {
+                    4 => return ZSTD_BtFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
+                    5 => return ZSTD_BtFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
+                    6 => return ZSTD_BtFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
+                    _ => {}
+                },
+                SearchMethod::RowHash => match mls {
+                    4 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_extDict::<4, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_extDict::<4, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_extDict::<4, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_extDict::<4, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_extDict::<4, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                5 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_extDict::<5, 4>(ms, ip, iend, offsetPtr);
+                    5 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_extDict::<5, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_extDict::<5, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_extDict::<5, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_extDict::<5, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_extDict::<5, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                6 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_extDict::<6, 4>(ms, ip, iend, offsetPtr);
+                    6 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_extDict::<6, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_extDict::<6, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_extDict::<6, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
                         }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_extDict::<6, 5>(ms, ip, iend, offsetPtr);
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_extDict::<6, 6>(ms, ip, iend, offsetPtr);
-                        }
-                        _ => {}
+                        unreachable!();
                     }
-                    unreachable!();
-                }
-                _ => {}
-            },
+                    _ => {}
+                },
+            }
+            unreachable!();
         }
-        unreachable!();
-    } else if dictMode == DictMode::DictMatchState {
-        match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
-                }
-                5 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr);
-                }
-                6 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr);
-                }
-                _ => {}
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => {
-                    return ZSTD_BtFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
-                }
-                5 => {
-                    return ZSTD_BtFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr);
-                }
-                6 => {
-                    return ZSTD_BtFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr);
-                }
-                _ => {}
-            },
-            SearchMethod::RowHash => match mls {
-                4 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<4, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<4, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<4, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+        DictMode::DictMatchState => {
+            match searchMethod {
+                SearchMethod::HashChain => match mls {
+                    4 => {
+                        return ZSTD_HcFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
                     }
-                    unreachable!();
-                }
-                5 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<5, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<5, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<5, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+                    5 => {
+                        return ZSTD_HcFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr);
                     }
-                    unreachable!();
-                }
-                6 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<6, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<6, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dictMatchState::<6, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+                    6 => {
+                        return ZSTD_HcFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr);
                     }
-                    unreachable!();
-                }
-                _ => {}
-            },
+                    _ => {}
+                },
+                SearchMethod::BinaryTree => match mls {
+                    4 => {
+                        return ZSTD_BtFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
+                    }
+                    5 => {
+                        return ZSTD_BtFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr);
+                    }
+                    6 => {
+                        return ZSTD_BtFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr);
+                    }
+                    _ => {}
+                },
+                SearchMethod::RowHash => match mls {
+                    4 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<4, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<4, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<4, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    5 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<5, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<5, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<5, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    6 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<6, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<6, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dictMatchState::<6, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    _ => {}
+                },
+            }
+            unreachable!();
         }
-        unreachable!();
-    } else if dictMode == DictMode::DedicatedDictSearch {
-        match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr);
-                }
-                5 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<5>(ms, ip, iend, offsetPtr);
-                }
-                6 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<6>(ms, ip, iend, offsetPtr);
-                }
-                _ => {}
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => {
-                    return ZSTD_BtFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr);
-                }
-                5 => {
-                    return ZSTD_BtFindBestMatch_dedicatedDictSearch::<5>(ms, ip, iend, offsetPtr);
-                }
-                6 => {
-                    return ZSTD_BtFindBestMatch_dedicatedDictSearch::<6>(ms, ip, iend, offsetPtr);
-                }
-                _ => {}
-            },
-            SearchMethod::RowHash => match mls {
-                4 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+        DictMode::DedicatedDictSearch => {
+            match searchMethod {
+                SearchMethod::HashChain => match mls {
+                    4 => {
+                        return ZSTD_HcFindBestMatch_dedicatedDictSearch::<4>(
+                            ms, ip, iend, offsetPtr,
+                        );
                     }
-                    unreachable!();
-                }
-                5 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+                    5 => {
+                        return ZSTD_HcFindBestMatch_dedicatedDictSearch::<5>(
+                            ms, ip, iend, offsetPtr,
+                        );
                     }
-                    unreachable!();
-                }
-                6 => {
-                    match rowLog {
-                        4 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 4>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        5 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 5>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        6 => {
-                            return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 6>(
-                                ms, ip, iend, offsetPtr,
-                            );
-                        }
-                        _ => {}
+                    6 => {
+                        return ZSTD_HcFindBestMatch_dedicatedDictSearch::<6>(
+                            ms, ip, iend, offsetPtr,
+                        );
                     }
-                    unreachable!();
-                }
-                _ => {}
-            },
+                    _ => {}
+                },
+                SearchMethod::BinaryTree => match mls {
+                    4 => {
+                        return ZSTD_BtFindBestMatch_dedicatedDictSearch::<4>(
+                            ms, ip, iend, offsetPtr,
+                        );
+                    }
+                    5 => {
+                        return ZSTD_BtFindBestMatch_dedicatedDictSearch::<5>(
+                            ms, ip, iend, offsetPtr,
+                        );
+                    }
+                    6 => {
+                        return ZSTD_BtFindBestMatch_dedicatedDictSearch::<6>(
+                            ms, ip, iend, offsetPtr,
+                        );
+                    }
+                    _ => {}
+                },
+                SearchMethod::RowHash => match mls {
+                    4 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<4, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    5 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<5, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    6 => {
+                        match rowLog {
+                            4 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 4>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            5 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 5>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            6 => {
+                                return ZSTD_RowFindBestMatch_dedicatedDictSearch::<6, 6>(
+                                    ms, ip, iend, offsetPtr,
+                                );
+                            }
+                            _ => {}
+                        }
+                        unreachable!();
+                    }
+                    _ => {}
+                },
+            }
+            unreachable!();
         }
-        unreachable!();
     }
-    unreachable!();
 }
 
 #[inline(always)]
