@@ -2,7 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{
-    HUF_CElt, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
+    HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
