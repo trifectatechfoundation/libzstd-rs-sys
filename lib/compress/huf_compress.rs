@@ -1939,7 +1939,7 @@ unsafe fn HUF_compress_internal(
     )
 }
 
-pub unsafe extern "C" fn HUF_compress1X_repeat(
+pub unsafe fn HUF_compress1X_repeat(
     dst: *mut c_void,
     dstSize: size_t,
     src: *const c_void,
@@ -1971,7 +1971,7 @@ pub unsafe extern "C" fn HUF_compress1X_repeat(
 /// compress input using 4 streams.
 /// consider skipping quickly
 /// reuse an existing huffman compression table
-pub unsafe extern "C" fn HUF_compress4X_repeat(
+pub unsafe fn HUF_compress4X_repeat(
     dst: *mut c_void,
     dstSize: size_t,
     src: *const c_void,

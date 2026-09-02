@@ -15,7 +15,7 @@ use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 
-pub type huf_compress_f = unsafe extern "C" fn(
+pub type huf_compress_f = unsafe fn(
     *mut core::ffi::c_void,
     size_t,
     *const core::ffi::c_void,
