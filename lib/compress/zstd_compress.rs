@@ -391,21 +391,6 @@ pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
-#[inline]
-fn ZSTD_LLcode(litLength: u32) -> u32 {
-    static LL_Code: [u8; 64] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
-        20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
-        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-    ];
-    static LL_deltaCode: u32 = 19;
-    if litLength > 63 {
-        (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
-    } else {
-        LL_Code[litLength as usize] as core::ffi::c_uint
-    }
-}
-
 /// Note: mlBase = matchLength - MINMATCH;
 /// because it's the format it's stored in seqStore->sequences
 #[inline]
@@ -627,12 +612,12 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
-    ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
-    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_matchState_dictMode,
-    ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
-    ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    ZSTD_LLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
+    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
+    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

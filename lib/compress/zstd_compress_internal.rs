@@ -1,6 +1,7 @@
 use libc::size_t;
 
 use crate::internal::MEM_readLE32;
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
@@ -21,6 +22,21 @@ use crate::lib::zstd::{ParamSwitch, ZSTD_Sequence, ZSTD_dictContentType_e};
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
+#[inline]
+pub(crate) fn ZSTD_LLcode(litLength: u32) -> u32 {
+    static LL_Code: [u8; 64] = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
+        20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
+        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+    ];
+    static LL_deltaCode: u32 = 19;
+    if litLength > 63 {
+        (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
+    } else {
+        LL_Code[litLength as usize] as core::ffi::c_uint
+    }
+}
+
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
