@@ -239,8 +239,8 @@ pub unsafe fn HUF_writeCTable_wksp(
         assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
-    debug_assert!(CTable.header.maxSymbolValue == maxSymbolValue);
-    debug_assert!(CTable.header.tableLog as c_uint == huffLog);
+    debug_assert_eq!(CTable.header.maxSymbolValue, maxSymbolValue);
+    debug_assert_eq!(c_uint::from(CTable.header.tableLog), huffLog);
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
@@ -1186,7 +1186,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         }
         HUF_flushBits(bitC, kFastFlush);
     }
-    debug_assert!(n % kUnroll == 0);
+    debug_assert_eq!(n % kUnroll, 0);
 
     /* Join to 2 * kUnroll */
     if n % (2 * kUnroll) != 0 {
@@ -1203,7 +1203,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         HUF_flushBits(bitC, kFastFlush);
         n -= kUnroll;
     }
-    debug_assert!(n % (2 * kUnroll) == 0);
+    debug_assert_eq!(n % (2 * kUnroll), 0);
 
     while n > 0 {
         /* Encode kUnroll symbols into the bitstream @ index 0. */
@@ -1249,7 +1249,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         HUF_flushBits(bitC, kFastFlush);
         n -= 2 * kUnroll;
     }
-    debug_assert!(n == 0);
+    debug_assert_eq!(n, 0);
 }
 
 /// Returns a tight upper bound on the output space needed by Huffman
