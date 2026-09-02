@@ -5798,7 +5798,7 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
 /// The total size of that block (including header) or a ZSTD error code.
 unsafe fn ZSTD_compressSeqStore_singleBlock(
     zc: *mut ZSTD_CCtx,
-    seqStore: *const SeqStore_t,
+    seqStore: &SeqStore_t,
     dRep: &mut RepCodes,
     cRep: &mut RepCodes,
     dst: *mut core::ffi::c_void,
@@ -5821,8 +5821,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             dRep,
             cRep,
             seqStore,
-            ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as core::ffi::c_long
-                as u32,
+            seqStore.sequences.offset_from(seqStore.sequencesStart) as core::ffi::c_long as u32,
         );
     }
 
