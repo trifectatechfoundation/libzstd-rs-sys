@@ -4112,7 +4112,7 @@ fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
 ///
 /// entropyWkspSize must be of size at least ENTROPY_WORKSPACE_SIZE - (MaxSeq + 1)*sizeof(U32)
 unsafe fn ZSTD_buildSequencesStatistics(
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     nbSeq: size_t,
     prevEntropy: &ZSTD_fseCTables_t,
     nextEntropy: &mut ZSTD_fseCTables_t,
@@ -4126,9 +4126,9 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
-    let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
-    let llCodeTable: *const u8 = (*seqStorePtr).llCode;
-    let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
+    let ofCodeTable: *const u8 = seqStorePtr.ofCode;
+    let llCodeTable: *const u8 = seqStorePtr.llCode;
+    let mlCodeTable: *const u8 = seqStorePtr.mlCode;
 
     // convert length/distances into codes
     let mut stats = ZSTD_symbolEncodingTypeStats_t {
