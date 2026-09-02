@@ -5254,8 +5254,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
     huffLog = maxBits as u32;
     // Build and write the CTable
-    let newCSize =
-        HUF_estimateCompressedSize((nextHuf.CTable).as_mut_ptr(), countWksp, maxSymbolValue);
+    let newCSize = HUF_estimateCompressedSize(&nextHuf.CTable, countWksp, maxSymbolValue);
     let hSize = HUF_writeCTable_wksp(
         (hufMetadata.hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; ZSTD_MAX_HUF_HEADER_SIZE]>(),
@@ -5267,8 +5266,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     );
     // Check against repeating the previous CTable
     if repeat != HUF_repeat_none {
-        let oldCSize =
-            HUF_estimateCompressedSize((prevHuf.CTable).as_ptr(), countWksp, maxSymbolValue);
+        let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, countWksp, maxSymbolValue);
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
@@ -5454,7 +5452,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
             return litSize;
         }
         let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize((huf.CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
         if writeEntropy {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
         }

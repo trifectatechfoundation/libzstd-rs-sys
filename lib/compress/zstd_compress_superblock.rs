@@ -465,7 +465,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             return litSize;
         }
         let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize((huf.CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
         if writeEntropy {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
         }
