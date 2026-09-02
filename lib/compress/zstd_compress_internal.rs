@@ -169,6 +169,7 @@ pub struct ZSTD_blockState_t {
 }
 
 #[repr(C)]
+#[derive(Default)]
 pub struct SeqCollector {
     pub collectSequences: core::ffi::c_int,
     pub seqStart: *mut ZSTD_Sequence,
