@@ -655,8 +655,9 @@ use crate::lib::common::zstd_internal::{
     repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
     LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
     MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType, ZSTD_cpuSupportsBmi2,
-    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
-    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE,
+    ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR,
+    ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -743,7 +744,6 @@ use crate::lib::zstd::{
 };
 
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
-pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 
 #[inline]
