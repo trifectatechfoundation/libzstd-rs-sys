@@ -101,7 +101,7 @@ pub struct ZSTD_SequenceLength {
 
 #[inline]
 pub(crate) unsafe fn ZSTD_getSequenceLength(
-    seqStore: *const SeqStore_t,
+    seqStore: &SeqStore_t,
     seq: *const SeqDef,
 ) -> ZSTD_SequenceLength {
     let mut seqLen = ZSTD_SequenceLength {
@@ -109,11 +109,11 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
         matchLength: u32::from((*seq).mlBase) + MINMATCH as u32,
     };
 
-    if (*seqStore).longLengthPos == seq.offset_from((*seqStore).sequencesStart) as u32 {
-        if (*seqStore).longLengthType == LongLengthType::Literal {
+    if seqStore.longLengthPos == seq.offset_from(seqStore.sequencesStart) as u32 {
+        if seqStore.longLengthType == LongLengthType::Literal {
             seqLen.litLength += 0x10000;
         }
-        if (*seqStore).longLengthType == LongLengthType::Match {
+        if seqStore.longLengthType == LongLengthType::Match {
             seqLen.matchLength += 0x10000;
         }
     }
