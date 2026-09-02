@@ -119,7 +119,7 @@ fn ZSTD_compressedLiterals(optPtr: &optState_t) -> bool {
     optPtr.literalCompressionMode != ParamSwitch::Disable
 }
 
-unsafe fn ZSTD_setBasePrices(optPtr: &mut optState_t, optLevel: core::ffi::c_int) {
+fn ZSTD_setBasePrices(optPtr: &mut optState_t, optLevel: core::ffi::c_int) {
     if ZSTD_compressedLiterals(optPtr) {
         optPtr.litSumBasePrice = if optLevel != 0 {
             ZSTD_fracWeight(optPtr.litSum)
