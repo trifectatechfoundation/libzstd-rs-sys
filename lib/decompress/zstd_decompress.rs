@@ -13,8 +13,8 @@ use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
-    repStartValue, BlockType, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_BLOCKHEADERSIZE,
-    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
+    repStartValue, BlockType, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_cpuSupportsBmi2,
+    ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE, ZSTD_FRAMEIDSIZE,
     ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::decompress::huf_decompress::{

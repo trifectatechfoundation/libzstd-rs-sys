@@ -5,7 +5,9 @@ use core::ptr::{self, NonNull};
 
 use libc::{ptrdiff_t, size_t};
 
-use crate::lib::common::bitstream::BIT_DStream_t;
+use crate::lib::common::bitstream::{
+    BIT_DStream_t, STREAM_ACCUMULATOR_MIN, STREAM_ACCUMULATOR_MIN_32, STREAM_ACCUMULATOR_MIN_64,
+};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
@@ -136,14 +138,6 @@ pub struct ZSTD_OffsetInfo {
 }
 
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
-
-pub const STREAM_ACCUMULATOR_MIN: core::ffi::c_int = match size_of::<usize>() {
-    4 => STREAM_ACCUMULATOR_MIN_32,
-    8 => STREAM_ACCUMULATOR_MIN_64,
-    _ => unreachable!(),
-};
-pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
-pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 
 impl ZSTD_DCtx {
     fn block_size_max(&self) -> usize {
@@ -1534,8 +1528,8 @@ impl ZSTD_fseState<'_> {
 /// offset bits. But we can only read at most [`STREAM_ACCUMULATOR_MIN_32`]
 /// bits before reloading. This value is the maximum number of bytes we read
 /// after reloading when we are decoding long offsets.
-const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
-    ZSTD_WINDOWLOG_MAX_32.saturating_sub(STREAM_ACCUMULATOR_MIN_32);
+const LONG_OFFSETS_MAX_EXTRA_BITS_32: u32 =
+    (ZSTD_WINDOWLOG_MAX_32 as u32).saturating_sub(STREAM_ACCUMULATOR_MIN_32);
 
 #[inline(always)]
 fn ZSTD_decodeSequence(
@@ -1596,15 +1590,15 @@ fn ZSTD_decodeSequence(
         const { assert!(Offset::Long as usize == 1) };
         const { assert!(LONG_OFFSETS_MAX_EXTRA_BITS_32 == 5) };
         const { assert!(STREAM_ACCUMULATOR_MIN_32 > LONG_OFFSETS_MAX_EXTRA_BITS_32) };
-        const { assert!(STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32 >= MaxMLBits as i32) };
+        const { assert!(STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32 >= MaxMLBits as u32) };
 
         if MEM_32bits()
             && longOffsets != Offset::Regular
-            && i32::from(ofBits) >= STREAM_ACCUMULATOR_MIN_32
+            && u32::from(ofBits) >= STREAM_ACCUMULATOR_MIN_32
         {
             // Always read extra bits, this keeps the logic simple,
             // avoids branches, and avoids accidentally reading 0 bits.
-            let extraBits = LONG_OFFSETS_MAX_EXTRA_BITS_32 as u32;
+            let extraBits = LONG_OFFSETS_MAX_EXTRA_BITS_32;
             offset = (ofBase as size_t).wrapping_add(
                 (seqState
                     .DStream
@@ -1657,7 +1651,7 @@ fn ZSTD_decodeSequence(
     }
 
     if cfg!(target_pointer_width = "32")
-        && (i32::from(mlBits + llBits)
+        && (u32::from(mlBits + llBits)
             >= STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32)
     {
         seqState.DStream.reload();
@@ -1667,7 +1661,7 @@ fn ZSTD_decodeSequence(
     }
 
     // Ensure there are enough bits to read the rest of data in 64-bit mode.
-    const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64 as u32) };
+    const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64) };
 
     if llBits > 0 {
         seq.litLength = (seq.litLength)
@@ -2292,7 +2286,7 @@ const fn ZSTD_maxShortOffset() -> size_t {
             // The maximum offBase is (1 << (STREAM_ACCUMULATOR_MIN + 1)) - 1.
             // This offBase would require STREAM_ACCUMULATOR_MIN extra bits.
             // Then we have to subtract ZSTD_REP_NUM to get the maximum possible offset.
-            let maxOffbase = ((1 as size_t) << (STREAM_ACCUMULATOR_MIN as u32 + 1)).wrapping_sub(1);
+            let maxOffbase = ((1 as size_t) << (STREAM_ACCUMULATOR_MIN + 1)).wrapping_sub(1);
 
             maxOffbase.wrapping_sub(ZSTD_REP_NUM as size_t)
         }
@@ -2350,7 +2344,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
             Some(table) => (unsafe { &*table.as_ptr() }).get_offset_info(nbSeq as usize),
         };
 
-        if offset == Offset::Long && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
+        if offset == Offset::Long && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN {
             offset = Offset::Regular;
         }
 

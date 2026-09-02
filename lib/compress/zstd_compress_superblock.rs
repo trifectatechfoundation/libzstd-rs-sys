@@ -1,9 +1,10 @@
 use libc::size_t;
 
+use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_CTABLE_SIZE_ST};
-use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
+use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
     ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType,
@@ -35,9 +36,6 @@ pub struct EstimatedBlockSize {
     pub estLitSize: size_t,
     pub estBlockSize: size_t,
 }
-
-pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
-pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 
 /// Compresses literals section for a sub-block.
 /// When we have to write the Huffman table we will sometimes choose a header
@@ -249,12 +247,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     writeEntropy: bool,
     entropyWritten: &mut bool,
 ) -> size_t {
-    let longOffsets = cctxParams.cParams.windowLog
-        > (if MEM_32bits() {
-            STREAM_ACCUMULATOR_MIN_32
-        } else {
-            STREAM_ACCUMULATOR_MIN_64
-        }) as u32;
+    let longOffsets = cctxParams.cParams.windowLog > STREAM_ACCUMULATOR_MIN;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;

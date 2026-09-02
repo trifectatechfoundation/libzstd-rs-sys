@@ -2,6 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::bitstream::{
     BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
+    STREAM_ACCUMULATOR_MIN,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -391,9 +392,7 @@ unsafe fn ZSTD_encodeSequences_body(
     }
     if longOffsets {
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
-        let extraBits = ofBits.wrapping_sub(
-            ofBits.min(((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)),
-        );
+        let extraBits = ofBits.wrapping_sub(ofBits.min(STREAM_ACCUMULATOR_MIN - 1));
         if extraBits != 0 {
             BIT_addBits(
                 &mut blockStream,
@@ -466,9 +465,8 @@ unsafe fn ZSTD_encodeSequences_body(
             BIT_flushBits(&mut blockStream);
         }
         if longOffsets {
-            let extraBits_0 = ofBits_0.wrapping_sub(
-                ofBits_0.min(((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)),
-            );
+            let extraBits_0 =
+                ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
                 BIT_addBits(
                     &mut blockStream,
