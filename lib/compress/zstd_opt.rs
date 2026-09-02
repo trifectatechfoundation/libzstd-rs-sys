@@ -352,10 +352,10 @@ unsafe fn ZSTD_rawLiteralsCost(
 /// Cost of literalLength symbol
 unsafe fn ZSTD_litLengthPrice(
     litLength: u32,
-    optPtr: *const optState_t,
+    optPtr: &optState_t,
     optLevel: core::ffi::c_int,
 ) -> u32 {
-    if (*optPtr).priceType == OptPrice::Predef {
+    if optPtr.priceType == OptPrice::Predef {
         return if optLevel != 0 {
             ZSTD_fracWeight(litLength)
         } else {
@@ -378,11 +378,11 @@ unsafe fn ZSTD_litLengthPrice(
     // dynamic statistics
     let llCode = ZSTD_LLcode(litLength);
     ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
-        .wrapping_add((*optPtr).litLengthSumBasePrice)
+        .wrapping_add(optPtr.litLengthSumBasePrice)
         .wrapping_sub(if optLevel != 0 {
-            ZSTD_fracWeight(*((*optPtr).litLengthFreq).offset(llCode as isize))
+            ZSTD_fracWeight(*(optPtr.litLengthFreq).offset(llCode as isize))
         } else {
-            ZSTD_bitWeight(*((*optPtr).litLengthFreq).offset(llCode as isize))
+            ZSTD_bitWeight(*(optPtr.litLengthFreq).offset(llCode as isize))
         })
 }
 
