@@ -17,7 +17,7 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_buildBlockEntropyStats,
     ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t, ZSTD_fseCTablesMetadata_t,
-    ZSTD_hufCTablesMetadata_t, ZSTD_TARGETCBLOCKSIZE_MIN,
+    ZSTD_hufCTablesMetadata_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength,
@@ -29,6 +29,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
+use crate::lib::zstd::ZSTD_TARGETCBLOCKSIZE_MIN;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
