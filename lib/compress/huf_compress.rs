@@ -991,12 +991,12 @@ pub unsafe fn HUF_estimateCompressedSize(
 }
 
 pub unsafe fn HUF_validateCTable(
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
     count: *const c_uint,
     maxSymbolValue: u8,
 ) -> bool {
-    let header = HUF_readCTableHeader(CTable);
-    let ct = CTable.add(1);
+    let header = HUF_readCTableHeader(CTable.as_ptr());
+    let ct = &CTable[1..];
     let mut bad = false;
 
     debug_assert!(header.tableLog as usize <= HUF_TABLELOG_ABSOLUTEMAX);
@@ -1004,9 +1004,9 @@ pub unsafe fn HUF_validateCTable(
     if header.maxSymbolValue < maxSymbolValue {
         return false;
     }
-    for s in 0..usize::from(maxSymbolValue) + 1 {
+    for (s, elt) in ct[..=usize::from(maxSymbolValue)].iter().enumerate() {
         // NOTE: use `&` rather than `&&` to keep the loop branch-free
-        bad |= (*count.add(s) != 0) & (HUF_getNbBits(*ct.add(s)) == 0);
+        bad |= (*count.add(s) != 0) & (HUF_getNbBits(*elt) == 0);
     }
     !bad
 }
@@ -1825,11 +1825,7 @@ unsafe fn HUF_compress_internal(
     /* Check validity of previous table */
     if !repeat.is_null()
         && *repeat as c_uint == HUF_repeat_check as c_int as c_uint
-        && !HUF_validateCTable(
-            oldHufTable.as_ptr(),
-            ((*table).count).as_mut_ptr(),
-            maxSymbolValue,
-        )
+        && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
     {
         *repeat = HUF_repeat_none;
     }

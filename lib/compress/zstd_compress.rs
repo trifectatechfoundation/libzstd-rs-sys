@@ -5222,8 +5222,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // Validate the previous Huffman table
-    if repeat == HUF_repeat_check
-        && !HUF_validateCTable((prevHuf.CTable).as_ptr(), countWksp, maxSymbolValue)
+    if repeat == HUF_repeat_check && !HUF_validateCTable(&prevHuf.CTable, countWksp, maxSymbolValue)
     {
         repeat = HUF_repeat_none;
     }
