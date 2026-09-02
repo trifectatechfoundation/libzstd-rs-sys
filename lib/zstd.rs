@@ -9,7 +9,9 @@ use crate::{
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
+pub const ZSTD_SKIPPABLEHEADERSIZE: c_uint = 8;
 
+// compression parameter bounds
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
@@ -17,6 +19,22 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
     8 => ZSTD_WINDOWLOG_MAX_64,
     _ => panic!(),
 };
+pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
+pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
+pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
+pub const ZSTD_CHAINLOG_MAX_64: core::ffi::c_int = 30;
+pub const ZSTD_CHAINLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
+pub const ZSTD_SEARCHLOG_MIN: core::ffi::c_int = 1;
+pub const ZSTD_MINMATCH_MAX: core::ffi::c_int = 7;
+pub const ZSTD_MINMATCH_MIN: core::ffi::c_int = 3;
+pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
+pub const ZSTD_TARGETLENGTH_MIN: core::ffi::c_int = 0;
+pub const ZSTD_STRATEGY_MIN: core::ffi::c_int = ZSTD_fast as core::ffi::c_int;
+pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
+
+pub const ZSTD_OVERLAPLOG_MIN: core::ffi::c_int = 0;
+pub const ZSTD_OVERLAPLOG_MAX: core::ffi::c_int = 9;
+
 /// By default, the streaming decoder will refuse any frame requiring larger than
 /// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
 /// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
@@ -25,6 +43,20 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
 /// additional memory is allocated.
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
+
+// LDM parameter bounds
+pub const ZSTD_LDM_HASHLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
+pub const ZSTD_LDM_MINMATCH_MIN: core::ffi::c_int = 4;
+pub const ZSTD_LDM_MINMATCH_MAX: core::ffi::c_int = 4096;
+pub const ZSTD_LDM_BUCKETSIZELOG_MIN: core::ffi::c_int = 1;
+pub const ZSTD_LDM_BUCKETSIZELOG_MAX: core::ffi::c_int = 8;
+pub const ZSTD_LDM_HASHRATELOG_MIN: core::ffi::c_int = 0;
+
+// Advanced parameter bounds
+pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
+pub const ZSTD_TARGETCBLOCKSIZE_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
+pub const ZSTD_SRCSIZEHINT_MIN: core::ffi::c_int = 0;
+pub const ZSTD_SRCSIZEHINT_MAX: core::ffi::c_int = core::ffi::c_int::MAX;
 
 pub const ZSTD_BLOCKSIZELOG_MAX: c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
@@ -45,7 +77,6 @@ pub const ZSTD_VERSION_NUMBER: c_uint =
 
 pub const ZSTD_CONTENTSIZE_UNKNOWN: c_ulonglong = (0 as c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: c_ulonglong = (0 as c_ulonglong).wrapping_sub(2);
-pub const ZSTD_SKIPPABLEHEADERSIZE: c_uint = 8;
 
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 

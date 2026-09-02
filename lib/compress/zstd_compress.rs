@@ -384,30 +384,6 @@ pub struct BlockSummary {
     pub litSize: size_t,
 }
 
-pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
-pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
-pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
-pub const ZSTD_CHAINLOG_MAX_64: core::ffi::c_int = 30;
-pub const ZSTD_CHAINLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
-pub const ZSTD_SEARCHLOG_MIN: core::ffi::c_int = 1;
-pub const ZSTD_MINMATCH_MAX: core::ffi::c_int = 7;
-pub const ZSTD_MINMATCH_MIN: core::ffi::c_int = 3;
-pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
-pub const ZSTD_TARGETLENGTH_MIN: core::ffi::c_int = 0;
-pub const ZSTD_STRATEGY_MIN: core::ffi::c_int = ZSTD_fast as core::ffi::c_int;
-pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
-pub const ZSTD_OVERLAPLOG_MIN: core::ffi::c_int = 0;
-pub const ZSTD_OVERLAPLOG_MAX: core::ffi::c_int = 9;
-pub const ZSTD_LDM_HASHLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
-pub const ZSTD_LDM_MINMATCH_MIN: core::ffi::c_int = 4;
-pub const ZSTD_LDM_MINMATCH_MAX: core::ffi::c_int = 4096;
-pub const ZSTD_LDM_BUCKETSIZELOG_MIN: core::ffi::c_int = 1;
-pub const ZSTD_LDM_BUCKETSIZELOG_MAX: core::ffi::c_int = 8;
-pub const ZSTD_LDM_HASHRATELOG_MIN: core::ffi::c_int = 0;
-pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
-pub const ZSTD_TARGETCBLOCKSIZE_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
-pub const ZSTD_SRCSIZEHINT_MIN: core::ffi::c_int = 0;
-pub const ZSTD_SRCSIZEHINT_MAX: core::ffi::c_int = INT_MAX;
 pub const ZSTD_c_rsyncable: core::ffi::c_int = 500;
 pub const ZSTD_c_format: core::ffi::c_int = 10;
 pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = 1000;
@@ -738,9 +714,15 @@ use crate::lib::zstd::{
     ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2,
     ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sequenceProducer_F,
     ZSTD_sf_explicitBlockDelimiters, ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
-    ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER,
-    ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE,
-    ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX,
+    ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CHAINLOG_MAX_32, ZSTD_CHAINLOG_MAX_64, ZSTD_CHAINLOG_MIN,
+    ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_HASHLOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX,
+    ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHRATELOG_MIN,
+    ZSTD_LDM_MINMATCH_MAX, ZSTD_LDM_MINMATCH_MIN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY,
+    ZSTD_MAGIC_SKIPPABLE_START, ZSTD_MINMATCH_MAX, ZSTD_MINMATCH_MIN, ZSTD_OVERLAPLOG_MAX,
+    ZSTD_OVERLAPLOG_MIN, ZSTD_SEARCHLOG_MIN, ZSTD_SKIPPABLEHEADERSIZE, ZSTD_SRCSIZEHINT_MAX,
+    ZSTD_SRCSIZEHINT_MIN, ZSTD_STRATEGY_MAX, ZSTD_STRATEGY_MIN, ZSTD_TARGETCBLOCKSIZE_MAX,
+    ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETLENGTH_MAX, ZSTD_TARGETLENGTH_MIN, ZSTD_VERSION_NUMBER,
+    ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MIN,
 };
 
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
