@@ -20,6 +20,11 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
     _ => panic!(),
 };
 pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
+pub const ZSTD_HASHLOG_MAX: core::ffi::c_int = if ZSTD_WINDOWLOG_MAX < 30 {
+    ZSTD_WINDOWLOG_MAX
+} else {
+    30
+};
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
 pub const ZSTD_CHAINLOG_MAX_64: core::ffi::c_int = 30;
@@ -46,6 +51,7 @@ pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 // LDM parameter bounds
 pub const ZSTD_LDM_HASHLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
+pub const ZSTD_LDM_HASHLOG_MAX: core::ffi::c_int = ZSTD_HASHLOG_MAX;
 pub const ZSTD_LDM_MINMATCH_MIN: core::ffi::c_int = 4;
 pub const ZSTD_LDM_MINMATCH_MAX: core::ffi::c_int = 4096;
 pub const ZSTD_LDM_BUCKETSIZELOG_MIN: core::ffi::c_int = 1;
