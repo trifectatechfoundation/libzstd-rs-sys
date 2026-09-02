@@ -115,32 +115,32 @@ fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     BWeight.wrapping_add(FWeight)
 }
 
-unsafe fn ZSTD_compressedLiterals(optPtr: *const optState_t) -> bool {
-    (*optPtr).literalCompressionMode != ParamSwitch::Disable
+fn ZSTD_compressedLiterals(optPtr: &optState_t) -> bool {
+    optPtr.literalCompressionMode != ParamSwitch::Disable
 }
 
-unsafe fn ZSTD_setBasePrices(optPtr: *mut optState_t, optLevel: core::ffi::c_int) {
+unsafe fn ZSTD_setBasePrices(optPtr: &mut optState_t, optLevel: core::ffi::c_int) {
     if ZSTD_compressedLiterals(optPtr) {
-        (*optPtr).litSumBasePrice = if optLevel != 0 {
-            ZSTD_fracWeight((*optPtr).litSum)
+        optPtr.litSumBasePrice = if optLevel != 0 {
+            ZSTD_fracWeight(optPtr.litSum)
         } else {
-            ZSTD_bitWeight((*optPtr).litSum)
+            ZSTD_bitWeight(optPtr.litSum)
         };
     }
-    (*optPtr).litLengthSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight((*optPtr).litLengthSum)
+    optPtr.litLengthSumBasePrice = if optLevel != 0 {
+        ZSTD_fracWeight(optPtr.litLengthSum)
     } else {
-        ZSTD_bitWeight((*optPtr).litLengthSum)
+        ZSTD_bitWeight(optPtr.litLengthSum)
     };
-    (*optPtr).matchLengthSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight((*optPtr).matchLengthSum)
+    optPtr.matchLengthSumBasePrice = if optLevel != 0 {
+        ZSTD_fracWeight(optPtr.matchLengthSum)
     } else {
-        ZSTD_bitWeight((*optPtr).matchLengthSum)
+        ZSTD_bitWeight(optPtr.matchLengthSum)
     };
-    (*optPtr).offCodeSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight((*optPtr).offCodeSum)
+    optPtr.offCodeSumBasePrice = if optLevel != 0 {
+        ZSTD_fracWeight(optPtr.offCodeSum)
     } else {
-        ZSTD_bitWeight((*optPtr).offCodeSum)
+        ZSTD_bitWeight(optPtr.offCodeSum)
     };
 }
 
@@ -476,7 +476,7 @@ unsafe fn ZSTD_getMatchPrice(
 
 /// assumption: literals + litLength <= iend
 unsafe fn ZSTD_updateStats(
-    optPtr: *mut optState_t,
+    optPtr: &mut optState_t,
     litLength: u32,
     literals: *const u8,
     offBase: u32,
@@ -485,30 +485,30 @@ unsafe fn ZSTD_updateStats(
     // literals
     if ZSTD_compressedLiterals(optPtr) {
         for u in 0..litLength {
-            let fresh2 = &mut (*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize));
+            let fresh2 = &mut (*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize));
             *fresh2 = (*fresh2).wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
         }
-        (*optPtr).litSum = ((*optPtr).litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
+        optPtr.litSum = (optPtr.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
     }
 
     // literal Length
     let llCode = ZSTD_LLcode(litLength);
-    let fresh3 = &mut (*((*optPtr).litLengthFreq).offset(llCode as isize));
+    let fresh3 = &mut (*(optPtr.litLengthFreq).offset(llCode as isize));
     *fresh3 = (*fresh3).wrapping_add(1);
-    (*optPtr).litLengthSum = ((*optPtr).litLengthSum).wrapping_add(1);
+    optPtr.litLengthSum = (optPtr.litLengthSum).wrapping_add(1);
 
     // offset code: follows storeSeq() numeric representation
     let offCode = ZSTD_highbit32(offBase);
-    let fresh4 = &mut (*((*optPtr).offCodeFreq).offset(offCode as isize));
+    let fresh4 = &mut (*(optPtr.offCodeFreq).offset(offCode as isize));
     *fresh4 = (*fresh4).wrapping_add(1);
-    (*optPtr).offCodeSum = ((*optPtr).offCodeSum).wrapping_add(1);
+    optPtr.offCodeSum = (optPtr.offCodeSum).wrapping_add(1);
 
     // match Length
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
     let mlCode = ZSTD_MLcode(mlBase);
-    let fresh5 = &mut (*((*optPtr).matchLengthFreq).offset(mlCode as isize));
+    let fresh5 = &mut (*(optPtr.matchLengthFreq).offset(mlCode as isize));
     *fresh5 = (*fresh5).wrapping_add(1);
-    (*optPtr).matchLengthSum = ((*optPtr).matchLengthSum).wrapping_add(1);
+    optPtr.matchLengthSum = (optPtr.matchLengthSum).wrapping_add(1);
 }
 
 // function safe only for comparisons
