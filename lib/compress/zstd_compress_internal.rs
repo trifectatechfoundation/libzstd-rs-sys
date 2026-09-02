@@ -25,6 +25,15 @@ pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
 
+/// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
+/// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
+#[inline]
+pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: u32) {
+    let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
+    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+    *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
+}
+
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum CompressionStage {
