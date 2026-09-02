@@ -7,7 +7,7 @@ use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writ
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
     ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType,
-    MINMATCH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
+    LONGNBSEQ, MINMATCH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -36,7 +36,6 @@ pub struct EstimatedBlockSize {
     pub estBlockSize: size_t,
 }
 
-pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 

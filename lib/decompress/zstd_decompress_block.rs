@@ -13,9 +13,9 @@ use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
     BlockType, LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits,
-    MaxOff, MaxSeq, OffFSELog, Overlap, SymbolEncodingType, ZSTD_BLOCKHEADERSIZE, ZSTD_copy16,
-    ZSTD_wildcopy, LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH,
-    WILDCOPY_VECLEN, ZSTD_REP_NUM,
+    MaxOff, MaxSeq, OffFSELog, Overlap, SymbolEncodingType, ZSTD_copy16, ZSTD_wildcopy,
+    LL_DEFAULTNORMLOG, LONGNBSEQ, ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH,
+    WILDCOPY_VECLEN, ZSTD_BLOCKHEADERSIZE, ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -144,8 +144,6 @@ pub const STREAM_ACCUMULATOR_MIN: core::ffi::c_int = match size_of::<usize>() {
 };
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
-
-pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 
 impl ZSTD_DCtx {
     fn block_size_max(&self) -> usize {

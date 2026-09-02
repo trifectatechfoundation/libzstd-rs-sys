@@ -67,6 +67,8 @@ impl TryFrom<u8> for SymbolEncodingType {
     }
 }
 
+pub(crate) const LONGNBSEQ: core::ffi::c_int = 0x7f00;
+
 pub(crate) const MINMATCH: core::ffi::c_int = 3;
 
 pub(crate) const Litbits: u32 = 8;
