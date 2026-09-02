@@ -984,8 +984,8 @@ pub unsafe fn HUF_estimateCompressedSize(
 ) -> size_t {
     let ct = &CTable[1..];
     let mut nbBits = 0usize;
-    for s in 0..usize::from(maxSymbolValue) + 1 {
-        nbBits += HUF_getNbBits(ct[s]) * *count.add(s) as size_t;
+    for (s, elt) in ct[..=usize::from(maxSymbolValue)].iter().enumerate() {
+        nbBits += HUF_getNbBits(*elt) * *count.add(s) as size_t;
     }
     nbBits >> 3
 }
