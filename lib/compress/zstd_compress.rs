@@ -8392,38 +8392,24 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     }
 
     // Initialize the cctxParams from the cdict
-    let mut params = ZSTD_parameters {
-        cParams: ZSTD_compressionParameters {
-            windowLog: 0,
-            chainLog: 0,
-            hashLog: 0,
-            searchLog: 0,
-            minMatch: 0,
-            targetLength: 0,
-            strategy: 0,
-        },
-        fParams: ZSTD_frameParameters {
-            contentSizeFlag: 0,
-            checksumFlag: 0,
-            noDictIDFlag: 0,
-        },
-    };
-    params.fParams = fParams;
-    params.cParams = if pledgedSrcSize
+    let useCDictParams = pledgedSrcSize
         < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as core::ffi::c_ulonglong
         || pledgedSrcSize
             < ((*cdict).dictContentSize as core::ffi::c_ulonglong)
                 .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
         || pledgedSrcSize == ZSTD_CONTENTSIZE_UNKNOWN
-        || (*cdict).compressionLevel == 0
-    {
-        ZSTD_getCParamsFromCDict(cdict)
-    } else {
-        ZSTD_getCParams(
-            (*cdict).compressionLevel,
-            pledgedSrcSize,
-            (*cdict).dictContentSize,
-        )
+        || (*cdict).compressionLevel == 0;
+    let params = ZSTD_parameters {
+        cParams: if useCDictParams {
+            ZSTD_getCParamsFromCDict(cdict)
+        } else {
+            ZSTD_getCParams(
+                (*cdict).compressionLevel,
+                pledgedSrcSize,
+                (*cdict).dictContentSize,
+            )
+        },
+        fParams,
     };
     ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, (*cdict).compressionLevel);
 
@@ -11944,26 +11930,15 @@ fn ZSTD_getParams_internal(
     dictSize: size_t,
     mode: CParamMode,
 ) -> ZSTD_parameters {
-    let mut params = ZSTD_parameters {
-        cParams: ZSTD_compressionParameters {
-            windowLog: 0,
-            chainLog: 0,
-            hashLog: 0,
-            searchLog: 0,
-            minMatch: 0,
-            targetLength: 0,
-            strategy: 0,
-        },
+    let cParams = ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, mode);
+    ZSTD_parameters {
+        cParams,
         fParams: ZSTD_frameParameters {
-            contentSizeFlag: 0,
+            contentSizeFlag: 1,
             checksumFlag: 0,
             noDictIDFlag: 0,
         },
-    };
-    let cParams = ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, mode);
-    params.cParams = cParams;
-    params.fParams.contentSizeFlag = 1;
-    params
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_registerSequenceProducer))]
