@@ -942,7 +942,7 @@ fn HUF_fillDTableX2Level2(
     rankVal: &[u32; 13],
     minWeight: core::ffi::c_int,
     maxWeight1: core::ffi::c_int,
-    sortedSymbols: &[sortedSymbol_t],
+    sortedSymbols: &[sortedSymbol_t; 256],
     rankStart: &[u32; 15],
     nbBitsBaseline: u32,
     baseSeq: u16,
