@@ -1286,10 +1286,10 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
 ) -> size_t {
-    let tableLog = (HUF_readCTableHeader(CTable)).tableLog as u32;
-    let ct = CTable.add(1);
+    let tableLog = (HUF_readCTableHeader(CTable.as_ptr())).tableLog as u32;
+    let ct = CTable.as_ptr().add(1);
     let ip = src as *const u8;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
@@ -1368,7 +1368,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
     srcSize: size_t,
     CTable: &CTable,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable.as_ptr())
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal_default(
@@ -1378,7 +1378,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_default(
     srcSize: size_t,
     CTable: &CTable,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable.as_ptr())
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal(
