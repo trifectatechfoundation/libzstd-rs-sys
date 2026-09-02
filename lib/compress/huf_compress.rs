@@ -223,17 +223,15 @@ unsafe fn HUF_writeCTableHeader(
     tableLog: u32,
     maxSymbolValue: u8,
 ) {
-    let mut header = HUF_CTableHeader {
-        tableLog: 0,
-        maxSymbolValue: 0,
-        unused: [0; _],
-    };
     const {
         assert!(size_of::<HUF_CElt>() == size_of::<HUF_CTableHeader>());
     }
     debug_assert!(tableLog < 256);
-    header.tableLog = tableLog as u8;
-    header.maxSymbolValue = maxSymbolValue;
+    let header = HUF_CTableHeader {
+        tableLog: tableLog as u8,
+        maxSymbolValue,
+        unused: [0; _],
+    };
     // the header is stored in the first `HUF_CElt` slot of the table
     ctable.as_mut_ptr().cast::<HUF_CTableHeader>().write(header);
 }
