@@ -11,7 +11,7 @@ use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
     ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_SHORT_CACHE_TAG_MASK,
+    ZSTD_storeSeq, ZSTD_writeTaggedIndex, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_SHORT_CACHE_TAG_MASK,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
@@ -20,15 +20,6 @@ pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
-
-/// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
-/// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
-#[inline]
-unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: u32) {
-    let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
-    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
-}
 
 /// Helper function for short cache matchfinders.
 /// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
