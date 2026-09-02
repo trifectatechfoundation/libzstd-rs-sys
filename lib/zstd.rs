@@ -63,6 +63,7 @@ pub const ZSTD_LDM_MINMATCH_MAX: core::ffi::c_int = 4096;
 pub const ZSTD_LDM_BUCKETSIZELOG_MIN: core::ffi::c_int = 1;
 pub const ZSTD_LDM_BUCKETSIZELOG_MAX: core::ffi::c_int = 8;
 pub const ZSTD_LDM_HASHRATELOG_MIN: core::ffi::c_int = 0;
+pub const ZSTD_LDM_HASHRATELOG_MAX: core::ffi::c_int = ZSTD_WINDOWLOG_MAX - ZSTD_HASHLOG_MIN;
 
 // Advanced parameter bounds
 pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
