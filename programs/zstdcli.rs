@@ -13,7 +13,7 @@ use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
 use libzstd_rs_sys::lib::zstd::{
     ParamSwitch, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
     ZSTD_BLOCKSIZELOG_MAX, ZSTD_CHAINLOG_MAX, ZSTD_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MAX,
-    ZSTD_WINDOWLOG_MAX,
+    ZSTD_SEARCHLOG_MAX, ZSTD_WINDOWLOG_MAX,
 };
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
@@ -1090,7 +1090,7 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     (*params).windowLog = ZSTD_WINDOWLOG_MAX as core::ffi::c_uint;
     (*params).chainLog = ZSTD_CHAINLOG_MAX as core::ffi::c_uint;
     (*params).hashLog = ZSTD_HASHLOG_MAX as core::ffi::c_uint;
-    (*params).searchLog = (ZSTD_WINDOWLOG_MAX - 1) as core::ffi::c_uint;
+    (*params).searchLog = ZSTD_SEARCHLOG_MAX as core::ffi::c_uint;
     (*params).minMatch = ZSTD_MINMATCH_MIN as core::ffi::c_uint;
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as core::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
