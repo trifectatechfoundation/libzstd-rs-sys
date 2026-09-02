@@ -12,7 +12,8 @@ use libzstd_rs_sys::lib::zdict::experimental::{
 use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
 use libzstd_rs_sys::lib::zstd::{
     ParamSwitch, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
-    ZSTD_BLOCKSIZELOG_MAX, ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_BLOCKSIZELOG_MAX, ZSTD_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MAX, ZSTD_WINDOWLOG_MAX_32,
+    ZSTD_WINDOWLOG_MAX_64,
 };
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
@@ -1098,20 +1099,7 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     } else {
         ZSTD_CHAINLOG_MAX_64
     }) as core::ffi::c_uint;
-    (*params).hashLog = (if (if size_of::<size_t>() == 4 {
-        ZSTD_WINDOWLOG_MAX_32
-    } else {
-        ZSTD_WINDOWLOG_MAX_64
-    }) < 30
-    {
-        if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        }
-    } else {
-        30
-    }) as core::ffi::c_uint;
+    (*params).hashLog = ZSTD_HASHLOG_MAX as core::ffi::c_uint;
     (*params).searchLog = ((if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
@@ -1121,20 +1109,7 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as core::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
     g_overlapLog = ZSTD_OVERLAPLOG_MAX as u32;
-    g_ldmHashLog = (if (if size_of::<size_t>() == 4 {
-        ZSTD_WINDOWLOG_MAX_32
-    } else {
-        ZSTD_WINDOWLOG_MAX_64
-    }) < 30
-    {
-        if size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        }
-    } else {
-        30
-    }) as u32;
+    g_ldmHashLog = ZSTD_LDM_HASHLOG_MAX as u32;
     g_ldmHashRateLog = 0;
     g_ldmMinMatch = 16;
     g_ldmBucketSizeLog = ZSTD_LDM_BUCKETSIZELOG_MAX as u32;

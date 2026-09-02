@@ -70,7 +70,10 @@ use crate::lib::compress::zstd_compress_internal::{
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
-use crate::lib::zstd::{ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters};
+use crate::lib::zstd::{
+    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_HASHLOG_MAX,
+    ZSTD_HASHLOG_MIN,
+};
 
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
@@ -612,15 +615,10 @@ pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compre
         }
     }
     if params.hashLog == 0 {
-        params.hashLog = params.windowLog.wrapping_sub(params.hashRateLog).clamp(
-            6,
-            (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                30
-            } else {
-                31
-            })
-            .min(30),
-        );
+        params.hashLog = params
+            .windowLog
+            .wrapping_sub(params.hashRateLog)
+            .clamp(ZSTD_HASHLOG_MIN as u32, ZSTD_HASHLOG_MAX as u32);
     }
     if params.minMatchLength == 0 {
         params.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;

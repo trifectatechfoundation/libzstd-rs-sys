@@ -31,7 +31,7 @@ use libzstd_rs_sys::lib::zstd::{
     ZSTD_compressionParameters, ZSTD_dParameter, ZSTD_error_frameParameter_windowTooLarge,
     ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_outBuffer, ZSTD_outBuffer_s,
     ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
-    ZSTD_FRAMEHEADERSIZE_MAX, ZSTD_MAGICNUMBER, ZSTD_MAGIC_SKIPPABLE_MASK,
+    ZSTD_FRAMEHEADERSIZE_MAX, ZSTD_LDM_HASHLOG_MAX, ZSTD_MAGICNUMBER, ZSTD_MAGIC_SKIPPABLE_MASK,
     ZSTD_MAGIC_SKIPPABLE_START, ZSTD_WINDOWLOG_LIMIT_DEFAULT, ZSTD_WINDOWLOG_MAX_32,
     ZSTD_WINDOWLOG_MAX_64,
 };
@@ -1709,15 +1709,7 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
             fprintf(
                 stderr,
                 c"- Set a larger LDM hashLog (e.g. --zstd=ldmHashLog=%u)\n".as_ptr(),
-                if (if size_of::<size_t>() == 4 { 30 } else { 31 }) < 30 {
-                    if size_of::<size_t>() == 4 {
-                        30
-                    } else {
-                        31
-                    }
-                } else {
-                    30
-                },
+                ZSTD_LDM_HASHLOG_MAX,
             );
         }
         if g_display_prefs.displayLevel >= 4 {
