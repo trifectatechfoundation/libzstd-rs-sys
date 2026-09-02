@@ -1948,7 +1948,7 @@ pub unsafe fn HUF_compress1X_repeat(
     huffLog: c_uint,
     workSpace: *mut c_void,
     wkspSize: size_t,
-    hufTable: *mut HUF_CElt,
+    hufTable: &mut CTable,
     repeat: *mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
@@ -1962,7 +1962,7 @@ pub unsafe fn HUF_compress1X_repeat(
         HUF_singleStream,
         workSpace,
         wkspSize,
-        hufTable,
+        hufTable.as_mut_ptr(),
         repeat,
         flags,
     )
@@ -1980,7 +1980,7 @@ pub unsafe fn HUF_compress4X_repeat(
     huffLog: c_uint,
     workSpace: *mut c_void,
     wkspSize: size_t,
-    hufTable: *mut HUF_CElt,
+    hufTable: &mut CTable,
     repeat: *mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
@@ -1994,7 +1994,7 @@ pub unsafe fn HUF_compress4X_repeat(
         HUF_fourStreams,
         workSpace,
         wkspSize,
-        hufTable,
+        hufTable.as_mut_ptr(),
         repeat,
         flags,
     )
