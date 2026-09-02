@@ -509,11 +509,11 @@ pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
 
 /// Clears the window containing the history by simply setting it to empty.
 #[inline]
-unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
-    let endT = ((*window).nextSrc).wrapping_offset_from((*window).base) as size_t;
+unsafe fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
+    let endT = (window.nextSrc).wrapping_offset_from(window.base) as size_t;
     let end = endT as u32;
-    (*window).lowLimit = end;
-    (*window).dictLimit = end;
+    window.lowLimit = end;
+    window.dictLimit = end;
 }
 
 /// Reduces the indices to protect from index overflow.
