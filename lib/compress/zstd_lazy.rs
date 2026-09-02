@@ -765,15 +765,14 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
 #[inline(always)]
 unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     ms: &mut ZSTD_MatchState_t,
-    cParams: *const ZSTD_compressionParameters,
     ip: *const u8,
     mls: u32,
     lazySkipping: u32,
 ) -> u32 {
     let hashTable = ms.hashTable;
-    let hashLog = (*cParams).hashLog;
+    let hashLog = ms.cParams.hashLog;
     let chainTable = ms.chainTable;
-    let chainMask = ((1 << (*cParams).chainLog) - 1) as u32;
+    let chainMask = ((1 << ms.cParams.chainLog) - 1) as u32;
     let base = ms.window.base;
     let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
 
@@ -796,8 +795,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
 }
 
 pub unsafe fn ZSTD_insertAndFindFirstIndex(ms: &mut ZSTD_MatchState_t, ip: *const u8) -> u32 {
-    let cParams = &ms.cParams;
-    ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, ms.cParams.minMatch, 0)
+    ZSTD_insertAndFindFirstIndex_internal(ms, ip, ms.cParams.minMatch, 0)
 }
 
 /// inlining is important to hardwire a hot branch (template emulation)
@@ -860,8 +858,7 @@ unsafe fn ZSTD_HcFindBestMatch<const MLS: u32>(
     }
 
     // HC4 match finder
-    matchIndex =
-        ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, MLS, ms.lazySkipping as u32);
+    matchIndex = ZSTD_insertAndFindFirstIndex_internal(ms, ip, MLS, ms.lazySkipping as u32);
 
     while (matchIndex >= lowLimit) && (nbAttempts > 0) {
         let mut currentMl = 0;
