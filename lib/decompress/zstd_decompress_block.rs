@@ -1022,16 +1022,18 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t
         *(*op).add(3) = *(*ip).add(3);
 
         static dec32table: [u8; 8] = [0, 1, 2, 1, 4, 4, 4, 4]; // added
-        *ip = (*ip).add(usize::from(dec32table[offset]));
-        core::ptr::copy(*ip, (*op).add(4), 4);
+        core::ptr::copy((*ip).add(usize::from(dec32table[offset])), (*op).add(4), 4);
 
-        static dec64table: [u8; 8] = [8, 8, 8, 7, 8, 9, 10, 11]; // subtracted
-        *ip = (*ip).sub(usize::from(dec64table[offset]));
+        // dec32table[offset] + 8 - dec64table[offset]
+        static advance: [u8; 8] = [0, 1, 2, 2, 4, 3, 2, 1];
+
+        // Advance in one combined step so we never create an out-of-bounds pointer.
+        *ip = (*ip).add(usize::from(advance[offset]));
     } else {
         core::ptr::copy(*ip, *op, 8);
+        *ip = (*ip).add(8);
     }
 
-    *ip = (*ip).add(8);
     *op = (*op).add(8);
 
     debug_assert!(unsafe { (*op).offset_from(*ip) } >= 8);
@@ -2407,12 +2409,36 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
 
 #[cfg(test)]
 mod test {
-    use crate::lib::zstd::*;
+    use crate::{lib::zstd::*, ZSTD_isError};
     use core::ffi::*;
 
     #[test]
     fn basic_decompress() {
         rs(&[40, 181, 47, 253, 48, 21, 44, 0, 0, 0, 253, 49, 0, 21]);
+    }
+
+    /// Trigger what was previously a pointer subtraction in `ZSTD_overlapCopy8`.
+    /// Check that we don't create an OOB pointer.
+    #[test]
+    fn overlap_copy8_near_start_of_output() {
+        use crate::lib::compress::zstd_compress::{ZSTD_compress, ZSTD_compressBound};
+
+        let input = vec![b'a'; 64];
+        let mut compressed = vec![0u8; ZSTD_compressBound(input.len())];
+        let n = unsafe {
+            ZSTD_compress(
+                compressed.as_mut_ptr().cast(),
+                compressed.len(),
+                input.as_ptr().cast(),
+                input.len(),
+                1,
+            )
+        };
+        assert_eq!(ZSTD_isError(n), 0);
+
+        let (len, decompressed) = rs(&compressed[..n]);
+        assert_eq!(len, input.len());
+        assert_eq!(decompressed, input);
     }
 
     fn rs(compressed: &[u8]) -> (usize, Vec<u8>) {
