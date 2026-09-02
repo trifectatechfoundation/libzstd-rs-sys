@@ -4,7 +4,7 @@ use crate::internal::MEM_readLE32;
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
-use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_CTABLE_SIZE_ST};
+use crate::lib::common::huf::{CTable, HUF_repeat};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST, MEM_writeLE24,
 };
@@ -210,8 +210,6 @@ pub struct ZSTD_hufCTables_t {
     pub CTable: CTable,
     pub repeatMode: HUF_repeat,
 }
-
-pub type CTable = [HUF_CElt; HUF_CTABLE_SIZE_ST(255)];
 
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -3,7 +3,7 @@ use libc::size_t;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
-use crate::lib::common::huf::HUF_flags_bmi2;
+use crate::lib::common::huf::{CTable, HUF_flags_bmi2};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
@@ -20,7 +20,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTablesMetadata_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    CTable, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_noCompressBlock, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{

@@ -485,7 +485,7 @@ use crate::lib::common::fse::{
     FSE_CTable, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
 };
 use crate::lib::common::huf::{
-    HUF_flags_optimalDepth, HUF_repeat_check, HUF_repeat_none, HUF_repeat_valid,
+    CTable, HUF_flags_optimalDepth, HUF_repeat_check, HUF_repeat_none, HUF_repeat_valid,
     HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
@@ -5228,7 +5228,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // Build Huffman Tree
-    nextHuf.CTable.fill(0);
+    nextHuf.CTable = CTable::default();
     huffLog = HUF_optimalTableLog(
         huffLog,
         srcSize,
