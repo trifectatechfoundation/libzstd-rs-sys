@@ -523,14 +523,14 @@ unsafe fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
 /// Every index up to maxDist in the past must be valid.
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
-    window: *mut ZSTD_window_t,
+    window: &mut ZSTD_window_t,
     cycleLog: u32,
     maxDist: u32,
     src: *const core::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let cycleMask = cycleSize.wrapping_sub(1);
-    let curr = (src as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
+    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     let currentCycle = curr & cycleMask;
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
         cycleSize.max(2)
@@ -545,19 +545,19 @@ unsafe fn ZSTD_window_correctOverflow(
         // Loose bound, should be around 1<<29 (see above)
         assert!(correction > 1 << 28);
     }
-    (*window).base = ((*window).base).offset(correction as isize);
-    (*window).dictBase = ((*window).dictBase).offset(correction as isize);
-    if (*window).lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        (*window).lowLimit = ZSTD_WINDOW_START_INDEX as u32;
+    window.base = window.base.offset(correction as isize);
+    window.dictBase = window.dictBase.offset(correction as isize);
+    if window.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
+        window.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
     } else {
-        (*window).lowLimit = ((*window).lowLimit).wrapping_sub(correction);
+        window.lowLimit = window.lowLimit.wrapping_sub(correction);
     }
-    if (*window).dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        (*window).dictLimit = ZSTD_WINDOW_START_INDEX as u32;
+    if window.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
+        window.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
     } else {
-        (*window).dictLimit = ((*window).dictLimit).wrapping_sub(correction);
+        window.dictLimit = window.dictLimit.wrapping_sub(correction);
     }
-    (*window).nbOverflowCorrections = ((*window).nbOverflowCorrections).wrapping_add(1);
+    window.nbOverflowCorrections = window.nbOverflowCorrections.wrapping_add(1);
     correction
 }
 
