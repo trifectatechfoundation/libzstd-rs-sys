@@ -5933,7 +5933,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     startIdx: size_t,
     endIdx: size_t,
     zc: *mut ZSTD_CCtx,
-    origSeqStore: *const SeqStore_t,
+    origSeqStore: &SeqStore_t,
 ) {
     let fullSeqStoreChunk: &mut SeqStore_t = &mut (*zc).blockSplitCtx.fullSeqStoreChunk;
     let firstHalfSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.firstHalfSeqStore;
