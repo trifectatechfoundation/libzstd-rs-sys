@@ -6087,11 +6087,9 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
 /// The number of splits made (which equals the size of the partition table - 1).
 unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq: u32) -> size_t {
     let mut splits = seqStoreSplits {
-        splitLocations: core::ptr::null_mut::<u32>(),
+        splitLocations: partitions,
         idx: 0,
     };
-    splits.splitLocations = partitions;
-    splits.idx = 0;
     if nbSeq <= 4 {
         // Refuse to try and split anything with less than 4 sequences
         return 0;
