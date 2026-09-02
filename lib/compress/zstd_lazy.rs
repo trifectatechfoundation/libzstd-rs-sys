@@ -2804,14 +2804,13 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
+unsafe fn ZSTD_compressBlock_lazy_extDict_generic<const DEPTH: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
     searchMethod: SearchMethod,
-    depth: u32,
 ) -> size_t {
     let istart = src as *const u8;
     let mut ip = istart;
@@ -2878,7 +2877,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                     prefixStart,
                 ))
                 .wrapping_add(4);
-                if depth == 0 {
+                if DEPTH == 0 {
                     current_block_61 = 10962704168502628720;
                 } else {
                     current_block_61 = 12147880666119273379;
@@ -2922,7 +2921,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 continue;
             } else {
                 // let's try to find a better solution
-                if depth >= 1 {
+                if DEPTH >= 1 {
                     while ip < ilimit {
                         ip = ip.add(1);
                         curr = curr.wrapping_add(1);
@@ -2994,7 +2993,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                             // search a better one
                         } else {
                             // let's find an even better one
-                            if !(depth == 2 && ip < ilimit) {
+                            if !(DEPTH == 2 && ip < ilimit) {
                                 break;
                             }
                             ip = ip.add(1);
@@ -3181,14 +3180,13 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<0>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::HashChain,
-        0,
     )
 }
 
@@ -3199,14 +3197,13 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<0>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::RowHash,
-        0,
     )
 }
 
@@ -3217,14 +3214,13 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<1>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::HashChain,
-        1,
     )
 }
 
@@ -3235,14 +3231,13 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<1>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::RowHash,
-        1,
     )
 }
 
@@ -3253,14 +3248,13 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<2>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::HashChain,
-        2,
     )
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
@@ -3270,14 +3264,13 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<2>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::RowHash,
-        2,
     )
 }
 
@@ -3288,13 +3281,12 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(
+    ZSTD_compressBlock_lazy_extDict_generic::<2>(
         ms,
         seqStore,
         rep,
         src,
         srcSize,
         SearchMethod::BinaryTree,
-        2,
     )
 }
