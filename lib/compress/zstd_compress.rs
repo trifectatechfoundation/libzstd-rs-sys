@@ -443,51 +443,6 @@ fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
 
-/// Reduces the indices to protect from index overflow.
-/// Returns the correction made to the indices, which must be applied to every stored index.
-///
-/// The least significant cycleLog bits of the indices must remain the same, which may be 0.
-/// Every index up to maxDist in the past must be valid.
-#[inline]
-unsafe fn ZSTD_window_correctOverflow(
-    window: &mut ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    src: *const core::ffi::c_void,
-) -> u32 {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
-    let cycleMask = cycleSize.wrapping_sub(1);
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    let currentCycle = curr & cycleMask;
-    let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        cycleSize.max(2)
-    } else {
-        0
-    };
-    let newCurrent = currentCycle
-        .wrapping_add(currentCycleCorrection)
-        .wrapping_add(maxDist.max(cycleSize));
-    let correction = curr.wrapping_sub(newCurrent);
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
-        // Loose bound, should be around 1<<29 (see above)
-        assert!(correction > 1 << 28);
-    }
-    window.base = window.base.offset(correction as isize);
-    window.dictBase = window.dictBase.offset(correction as isize);
-    if window.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.lowLimit = window.lowLimit.wrapping_sub(correction);
-    }
-    if window.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.dictLimit = window.dictLimit.wrapping_sub(correction);
-    }
-    window.nbOverflowCorrections = window.nbOverflowCorrections.wrapping_add(1);
-    correction
-}
-
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
 /// progresses beyond window size.
 /// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
@@ -565,9 +520,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_clear, ZSTD_window_enforceMaxDist, ZSTD_window_init,
+    ZSTD_window_clear, ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
     ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

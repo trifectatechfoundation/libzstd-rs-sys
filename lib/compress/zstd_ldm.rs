@@ -66,9 +66,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
-    ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_correctOverflow,
+    ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -79,59 +78,6 @@ use crate::lib::zstd::{
 
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const LDM_BATCH_SIZE: usize = 64;
-
-/// Reduces the indices to protect from index overflow.
-///
-/// The least significant cycleLog bits of the indices must remain the same,
-/// which may be 0. Every index up to maxDist in the past must be valid.
-///
-/// # Returns
-///
-/// The correction made to the indices, which must be applied to every stored index.
-#[inline]
-unsafe fn ZSTD_window_correctOverflow(
-    window: &mut ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    src: *const core::ffi::c_void,
-) -> u32 {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
-    let cycleMask = cycleSize.wrapping_sub(1);
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    let currentCycle = curr & cycleMask;
-    // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
-    let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        cycleSize.max(2)
-    } else {
-        0
-    };
-    let newCurrent = currentCycle
-        .wrapping_add(currentCycleCorrection)
-        .wrapping_add(maxDist.max(cycleSize));
-    let correction = curr.wrapping_sub(newCurrent);
-
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
-        // Loose bound, should be around 1<<29 (see above)
-        assert!(correction > 1 << 28);
-    }
-
-    window.base = window.base.offset(correction as isize);
-    window.dictBase = window.dictBase.offset(correction as isize);
-    if window.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.lowLimit = window.lowLimit.wrapping_sub(correction);
-    }
-    if window.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.dictLimit = window.dictLimit.wrapping_sub(correction);
-    }
-
-    window.nbOverflowCorrections = window.nbOverflowCorrections.wrapping_add(1);
-
-    correction
-}
 
 static ZSTD_ldm_gearTab: [u64; 256] = [
     0xf5b8f72c5f77775c,
