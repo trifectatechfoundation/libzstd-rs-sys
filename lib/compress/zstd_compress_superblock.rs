@@ -606,11 +606,7 @@ unsafe fn ZSTD_estimateSubBlockSize(
     writeLitEntropy: bool,
     writeSeqEntropy: bool,
 ) -> EstimatedBlockSize {
-    let mut ebs = EstimatedBlockSize {
-        estLitSize: 0,
-        estBlockSize: 0,
-    };
-    ebs.estLitSize = ZSTD_estimateSubBlockSize_literal(
+    let estLitSize = ZSTD_estimateSubBlockSize_literal(
         literals,
         litSize,
         &entropy.huf,
@@ -619,7 +615,7 @@ unsafe fn ZSTD_estimateSubBlockSize(
         wkspSize,
         writeLitEntropy,
     );
-    ebs.estBlockSize = ZSTD_estimateSubBlockSize_sequences(
+    let estBlockSize = ZSTD_estimateSubBlockSize_sequences(
         ofCodeTable,
         llCodeTable,
         mlCodeTable,
@@ -629,10 +625,13 @@ unsafe fn ZSTD_estimateSubBlockSize(
         workspace,
         wkspSize,
         writeSeqEntropy,
-    );
-    ebs.estBlockSize =
-        (ebs.estBlockSize).wrapping_add((ebs.estLitSize).wrapping_add(ZSTD_BLOCKHEADERSIZE));
-    ebs
+    )
+    .wrapping_add((estLitSize).wrapping_add(ZSTD_BLOCKHEADERSIZE));
+
+    EstimatedBlockSize {
+        estLitSize,
+        estBlockSize,
+    }
 }
 
 fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bool {
