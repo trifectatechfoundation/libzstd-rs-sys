@@ -12,9 +12,9 @@ use crate::lib::common::fse::{
 use crate::lib::common::huf::{
     HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_SIZE_ST,
-    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8,
-    HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
+    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE,
+    HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT,
+    HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{

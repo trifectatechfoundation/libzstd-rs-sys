@@ -5,7 +5,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{
-    HUF_CElt, HUF_CTABLE_SIZE_ST, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
+    HUF_CTABLE_SIZE_ST, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
