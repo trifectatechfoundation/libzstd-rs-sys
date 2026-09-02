@@ -22,6 +22,8 @@ use crate::lib::zstd::{ParamSwitch, ZSTD_Sequence, ZSTD_dictContentType_e};
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
+pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
+    ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
