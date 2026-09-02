@@ -3745,7 +3745,7 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
     dst: *mut u32,
     src: *const u32,
     tableSize: size_t,
-    cParams: *const ZSTD_compressionParameters,
+    cParams: &ZSTD_compressionParameters,
 ) {
     if ZSTD_CDictIndicesAreTagged(cParams) {
         // Remove tags from the CDict table if they are present.
@@ -3767,7 +3767,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
 ) -> size_t {
-    let cdict_cParams: *const ZSTD_compressionParameters = &(*cdict).matchState.cParams;
+    let cdict_cParams = &(*cdict).matchState.cParams;
 
     let windowLog = params.cParams.windowLog;
     params.cParams = *cdict_cParams;
@@ -3783,12 +3783,12 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
 
     // copy tables
     let chainSize =
-        if ZSTD_allocateChainTable((*cdict_cParams).strategy, (*cdict).useRowMatchFinder, false) {
-            1 << (*cdict_cParams).chainLog
+        if ZSTD_allocateChainTable(cdict_cParams.strategy, (*cdict).useRowMatchFinder, false) {
+            1 << cdict_cParams.chainLog
         } else {
             0
         };
-    let hSize = 1 << (*cdict_cParams).hashLog;
+    let hSize = 1 << cdict_cParams.hashLog;
     ZSTD_copyCDictTableIntoCCtx(
         (*cctx).blockState.matchState.hashTable,
         (*cdict).matchState.hashTable,
@@ -3809,7 +3809,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
         );
     }
     // copy tag table
-    if ZSTD_rowMatchFinderUsed((*cdict_cParams).strategy, (*cdict).useRowMatchFinder) {
+    if ZSTD_rowMatchFinderUsed(cdict_cParams.strategy, (*cdict).useRowMatchFinder) {
         let tagTableSize = hSize;
         core::ptr::copy_nonoverlapping(
             (*cdict).matchState.tagTable,
