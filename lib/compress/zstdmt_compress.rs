@@ -23,7 +23,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_update,
+    CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_init, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -204,7 +204,6 @@ struct SyncPoint {
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 
-const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 
 /// Return base^exponent
@@ -270,16 +269,6 @@ fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
 
     window.lowLimit = end;
     window.dictLimit = end;
-}
-
-#[inline]
-fn ZSTD_window_init(window: &mut ZSTD_window_t) {
-    window.base = c" ".as_ptr() as *const u8;
-    window.dictBase = c" ".as_ptr() as *const u8;
-    window.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
-    window.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
-    window.nextSrc = (window.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
-    window.nbOverflowCorrections = 0;
 }
 
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);

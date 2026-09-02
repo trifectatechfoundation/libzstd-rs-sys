@@ -71,6 +71,16 @@ pub(crate) fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
     (srcSize >> minlog).wrapping_add(2)
 }
 
+#[inline]
+pub(crate) fn ZSTD_window_init(window: &mut ZSTD_window_t) {
+    window.base = c" ".as_ptr() as *const u8;
+    window.dictBase = c" ".as_ptr() as *const u8;
+    window.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
+    window.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
+    window.nextSrc = (window.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
+    window.nbOverflowCorrections = 0;
+}
+
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
