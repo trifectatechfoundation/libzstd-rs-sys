@@ -1386,13 +1386,19 @@ unsafe fn HUF_compress1X_usingCTable_internal(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
     flags: c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as c_int != 0 {
-        return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, srcSize, CTable);
+        return HUF_compress1X_usingCTable_internal_bmi2(
+            dst,
+            dstSize,
+            src,
+            srcSize,
+            CTable.as_ptr(),
+        );
     }
-    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable.as_ptr())
 }
 
 pub unsafe fn HUF_compress1X_usingCTable(
@@ -1403,7 +1409,7 @@ pub unsafe fn HUF_compress1X_usingCTable(
     CTable: &CTable,
     flags: c_int,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable.as_ptr(), flags)
+    HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
 
 unsafe fn HUF_compress4X_usingCTable_internal(
@@ -1439,7 +1445,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             oend.offset_from_unsigned(op),
             ip as *const c_void,
             segmentSize,
-            CTable.as_ptr(),
+            CTable,
             flags,
         );
         if ERR_isError(cSize) {
@@ -1460,7 +1466,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             oend.offset_from_unsigned(op),
             ip as *const c_void,
             segmentSize,
-            CTable.as_ptr(),
+            CTable,
             flags,
         );
         if ERR_isError(cSize_0) {
@@ -1481,7 +1487,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             oend.offset_from_unsigned(op),
             ip as *const c_void,
             segmentSize,
-            CTable.as_ptr(),
+            CTable,
             flags,
         );
         if ERR_isError(cSize_1) {
@@ -1503,7 +1509,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             oend.offset_from_unsigned(op),
             ip as *const c_void,
             iend.offset_from_unsigned(ip),
-            CTable.as_ptr(),
+            CTable,
             flags,
         );
         if ERR_isError(cSize_2) {
@@ -1551,7 +1557,7 @@ unsafe fn HUF_compressCTable_internal(
             oend.offset_from_unsigned(op),
             src,
             srcSize,
-            CTable.as_ptr(),
+            CTable,
             flags,
         )
     } else {
