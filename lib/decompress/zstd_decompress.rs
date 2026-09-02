@@ -13,7 +13,7 @@ use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
-    repStartValue, BlockType, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize,
+    repStartValue, BlockType, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_BLOCKHEADERSIZE,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
     ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
@@ -1467,13 +1467,13 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
         loop {
             let mut blockProperties = blockProperties_t::default();
             let cBlockSize = ZSTD_getcBlockSize(&src[ip..], &mut blockProperties)?;
-            if ZSTD_blockHeaderSize.wrapping_add(cBlockSize) > remainingSize {
+            if ZSTD_BLOCKHEADERSIZE.wrapping_add(cBlockSize) > remainingSize {
                 return Err(Error::srcSize_wrong);
             }
 
-            ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize);
+            ip += ZSTD_BLOCKHEADERSIZE.wrapping_add(cBlockSize);
             remainingSize =
-                remainingSize.wrapping_sub(ZSTD_blockHeaderSize.wrapping_add(cBlockSize));
+                remainingSize.wrapping_sub(ZSTD_BLOCKHEADERSIZE.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
 
             if blockProperties.lastBlock {
@@ -1764,13 +1764,13 @@ unsafe fn ZSTD_decompressFrame(
     let oend = op.as_mut_ptr_range().end;
 
     // check
-    if ip.len() < dctx.format.frame_header_size_min() + ZSTD_blockHeaderSize {
+    if ip.len() < dctx.format.frame_header_size_min() + ZSTD_BLOCKHEADERSIZE {
         return Err(Error::srcSize_wrong);
     }
 
     // Frame Header
     let frameHeaderSize = frame_header_size_internal(ip.as_slice(), dctx.format)?;
-    if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
+    if ip.len() < frameHeaderSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
         return Err(Error::srcSize_wrong);
     }
     ZSTD_decodeFrameHeader(dctx, &ip.as_slice()[..frameHeaderSize])?;
@@ -1790,7 +1790,7 @@ unsafe fn ZSTD_decompressFrame(
 
         let (blockProperties, cBlockSize) = getc_block_size(ip.as_slice())?;
 
-        *ip = ip.subslice(ZSTD_blockHeaderSize..);
+        *ip = ip.subslice(ZSTD_BLOCKHEADERSIZE..);
         if cBlockSize > ip.len() {
             return Err(Error::srcSize_wrong);
         }
@@ -2152,7 +2152,7 @@ fn decompress_continue(
             dctx.headerBuffer[(dctx.headerSize) - src.len()..][..src.len()].copy_from_slice(src);
             let header_buffer = dctx.headerBuffer;
             ZSTD_decodeFrameHeader(dctx, &header_buffer[..dctx.headerSize])?;
-            dctx.expected = ZSTD_blockHeaderSize;
+            dctx.expected = ZSTD_BLOCKHEADERSIZE;
             dctx.stage = DecompressStage::DecodeBlockHeader;
             Ok(0)
         }
@@ -2184,7 +2184,7 @@ fn decompress_continue(
                     dctx.stage = DecompressStage::GetFrameHeaderSize;
                 }
             } else {
-                dctx.expected = ZSTD_blockHeaderSize; // jump to next header
+                dctx.expected = ZSTD_BLOCKHEADERSIZE; // jump to next header
                 dctx.stage = DecompressStage::DecodeBlockHeader;
             }
             Ok(0)
@@ -2252,7 +2252,7 @@ fn decompress_continue(
                 }
             } else {
                 dctx.stage = DecompressStage::DecodeBlockHeader;
-                dctx.expected = ZSTD_blockHeaderSize;
+                dctx.expected = ZSTD_BLOCKHEADERSIZE;
             }
             Ok(rSize)
         }
@@ -2665,7 +2665,7 @@ pub unsafe extern "C" fn ZSTD_freeDStream(zds: *mut ZSTD_DStream) -> size_t {
 /// Recommended size for input buffer
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DStreamInSize))]
 pub const extern "C" fn ZSTD_DStreamInSize() -> size_t {
-    (ZSTD_BLOCKSIZE_MAX as size_t).wrapping_add(ZSTD_blockHeaderSize)
+    (ZSTD_BLOCKSIZE_MAX as size_t).wrapping_add(ZSTD_BLOCKHEADERSIZE)
 }
 
 /// Recommended size for output buffer. Guarantees to successfully flush at least one complete
@@ -3661,7 +3661,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     // remaining header bytes + next block header
                     return Ord::max(ZSTD_FRAMEHEADERSIZE_MIN(zds.format), hSize)
                         .wrapping_sub(zds.lhSize)
-                        .wrapping_add(ZSTD_blockHeaderSize);
+                        .wrapping_add(ZSTD_BLOCKHEADERSIZE);
                 }
                 debug_assert!(!ip.is_null());
                 core::ptr::copy_nonoverlapping(
@@ -3740,7 +3740,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     if let Err(err) = ZSTD_decodeFrameHeader(zds, &header_buffer[..zds.lhSize]) {
                         return err.to_error_code();
                     }
-                    zds.expected = ZSTD_blockHeaderSize;
+                    zds.expected = ZSTD_BLOCKHEADERSIZE;
                     zds.stage = DecompressStage::DecodeBlockHeader;
                 }
 
@@ -3943,7 +3943,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
     // preload header of next block
     nextSrcSizeHint = nextSrcSizeHint.wrapping_add(
-        ZSTD_blockHeaderSize * (zds.stage.to_next_input_type() == NextInputType::Block) as size_t,
+        ZSTD_BLOCKHEADERSIZE * (zds.stage.to_next_input_type() == NextInputType::Block) as size_t,
     );
     debug_assert!(zds.inPos <= nextSrcSizeHint);
     // part already loaded

@@ -8,8 +8,8 @@ use crate::lib::common::mem::{
     MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST, MEM_writeLE24,
 };
 use crate::lib::common::zstd_internal::{
-    BlockType, Overlap, ZSTD_blockHeaderSize, ZSTD_copy16, ZSTD_wildcopy, MINMATCH,
-    WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
+    BlockType, Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH,
+    ZSTD_BLOCKHEADERSIZE, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
@@ -280,16 +280,16 @@ pub unsafe fn ZSTD_noCompressBlock(
     let cBlockHeader24 = lastBlock
         .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
-    if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
+    if srcSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) > dstCapacity {
         return Error::dstSize_tooSmall.to_error_code();
     }
     MEM_writeLE24(dst, cBlockHeader24);
     core::ptr::copy_nonoverlapping(
         src.cast::<u8>(),
-        dst.byte_add(ZSTD_blockHeaderSize).cast::<u8>(),
+        dst.byte_add(ZSTD_BLOCKHEADERSIZE).cast::<u8>(),
         srcSize,
     );
-    ZSTD_blockHeaderSize.wrapping_add(srcSize)
+    ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize)
 }
 
 #[derive(Copy, Clone)]

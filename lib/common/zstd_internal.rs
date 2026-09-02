@@ -20,8 +20,7 @@ pub(crate) const ZSTD_FRAMEIDSIZE: usize = 4;
 /// header + <= 127 byte tree description
 pub(crate) const ZSTD_MAX_HUF_HEADER_SIZE: usize = 128;
 
-const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-pub(crate) static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+pub(crate) const ZSTD_BLOCKHEADERSIZE: usize = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum BlockType {
