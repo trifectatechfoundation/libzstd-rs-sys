@@ -502,53 +502,56 @@ unsafe fn ZSTD_hash4PtrS(ptr: *const core::ffi::c_void, h: u32, s: u32) -> usize
 }
 
 const prime5bytes: u64 = 889523592379;
-const fn ZSTD_hash5(u: u64, h: u32, s: u64) -> usize {
-    ((((u << (64 - 40)).wrapping_mul(prime5bytes)) ^ s) >> 64u32.wrapping_sub(h)) as usize
+const prime6bytes: u64 = 227718039650203;
+const prime7bytes: u64 = 58295818150454627;
+const prime8bytes: u64 = 0xcf1bbcdcb7a56463;
+
+/// Hash the first `MLS` bytes of the little-endian value `u`, salted with `s`.
+const fn ZSTD_hash64<const MLS: u32>(u: u64, h: u32, s: u64) -> usize {
+    const { assert!(5 <= MLS && MLS <= 8) }
+
+    let prime = match MLS {
+        5 => prime5bytes,
+        6 => prime6bytes,
+        7 => prime7bytes,
+        _ => prime8bytes,
+    };
+
+    ((((u << (64 - 8 * MLS)).wrapping_mul(prime)) ^ s) >> 64u32.wrapping_sub(h)) as usize
 }
+
 unsafe fn ZSTD_hash5Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash5(MEM_readLE64(p), h, 0)
+    ZSTD_hash64::<5>(MEM_readLE64(p), h, 0)
 }
 unsafe fn ZSTD_hash5PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash5(MEM_readLE64(p), h, s)
+    ZSTD_hash64::<5>(MEM_readLE64(p), h, s)
 }
 
-const prime6bytes: u64 = 227718039650203;
-const fn ZSTD_hash6(u: u64, h: u32, s: u64) -> usize {
-    ((((u << (64 - 48)).wrapping_mul(prime6bytes)) ^ s) >> 64u32.wrapping_sub(h)) as usize
-}
 pub(crate) unsafe fn ZSTD_hash6Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash6(MEM_readLE64(p), h, 0)
+    ZSTD_hash64::<6>(MEM_readLE64(p), h, 0)
 }
 pub(crate) fn ZSTD_hash6Ptr_array(p: &[u8; 8], h: u32) -> usize {
-    ZSTD_hash6(u64::from_le_bytes(*p), h, 0)
+    ZSTD_hash64::<6>(u64::from_le_bytes(*p), h, 0)
 }
 unsafe fn ZSTD_hash6PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash6(MEM_readLE64(p), h, s)
+    ZSTD_hash64::<6>(MEM_readLE64(p), h, s)
 }
 
-const prime7bytes: u64 = 58295818150454627;
-const fn ZSTD_hash7(u: u64, h: u32, s: u64) -> usize {
-    ((((u << (64 - 56)).wrapping_mul(prime7bytes)) ^ s) >> (64u32).wrapping_sub(h)) as usize
-}
 unsafe fn ZSTD_hash7Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash7(MEM_readLE64(p), h, 0)
+    ZSTD_hash64::<7>(MEM_readLE64(p), h, 0)
 }
 unsafe fn ZSTD_hash7PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash7(MEM_readLE64(p), h, s)
+    ZSTD_hash64::<7>(MEM_readLE64(p), h, s)
 }
 
-const prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
-const fn ZSTD_hash8(u: u64, h: u32, s: u64) -> usize {
-    (((u.wrapping_mul(prime8bytes)) ^ s) >> 64u32.wrapping_sub(h)) as usize
-}
 pub(crate) unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash8(MEM_readLE64(p), h, 0)
+    ZSTD_hash64::<8>(MEM_readLE64(p), h, 0)
 }
 pub(crate) fn ZSTD_hash8Ptr_array(p: &[u8; 8], h: u32) -> usize {
-    ZSTD_hash8(u64::from_le_bytes(*p), h, 0)
+    ZSTD_hash64::<8>(u64::from_le_bytes(*p), h, 0)
 }
 unsafe fn ZSTD_hash8PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash8(MEM_readLE64(p), h, s)
+    ZSTD_hash64::<8>(MEM_readLE64(p), h, s)
 }
 
 #[inline(always)]
