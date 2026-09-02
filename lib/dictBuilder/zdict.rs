@@ -20,6 +20,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
     ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
 };
+use crate::lib::compress::zstd_compress_internal::CTable;
 use crate::lib::dictBuilder::divsufsort::divsufsort;
 use crate::lib::dictBuilder::fastcover::ZDICT_optimizeTrainFromBuffer_fastCover;
 #[expect(deprecated)]
@@ -789,7 +790,7 @@ unsafe fn analyze_entropy_internal(
     notificationLevel: core::ffi::c_uint,
     esr: &mut EStats_ress_t,
 ) -> Result<size_t, Error> {
-    let mut hufTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)] = [0; HUF_CTABLE_SIZE_ST(255)];
+    let mut hufTable: CTable = [0; HUF_CTABLE_SIZE_ST(255)];
 
     const KB: usize = 1 << 10;
     let offcodeMax = dictBufferSize.wrapping_add(128 * KB).ilog2() as u8;

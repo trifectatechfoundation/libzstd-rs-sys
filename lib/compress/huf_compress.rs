@@ -22,6 +22,7 @@ use crate::lib::compress::fse_compress::{
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp_array, HIST_WKSP_SIZE_U32};
+use crate::lib::compress::zstd_compress_internal::CTable;
 
 #[cfg(doc)]
 use crate::lib::common::bitstream::BIT_CStream_t;
@@ -218,11 +219,7 @@ pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTable
     ctable.cast::<HUF_CTableHeader>().read()
 }
 
-unsafe fn HUF_writeCTableHeader(
-    ctable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
-    tableLog: u32,
-    maxSymbolValue: u8,
-) {
+unsafe fn HUF_writeCTableHeader(ctable: &mut CTable, tableLog: u32, maxSymbolValue: u8) {
     const {
         assert!(size_of::<HUF_CElt>() == size_of::<HUF_CTableHeader>());
     }
@@ -247,7 +244,7 @@ pub struct HUF_WriteCTableWksp {
 pub unsafe fn HUF_writeCTable_wksp(
     dst: *mut c_void,
     maxDstSize: size_t,
-    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &CTable,
     maxSymbolValue: u8,
     huffLog: c_uint,
     workspace: *mut c_void,
@@ -328,7 +325,7 @@ pub unsafe fn HUF_writeCTable_wksp(
 }
 
 pub unsafe fn HUF_readCTable(
-    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &mut CTable,
     maxSymbolValuePtr: &mut u8,
     src: *const c_void,
     srcSize: size_t,
@@ -435,10 +432,7 @@ pub unsafe fn HUF_readCTable(
     readSize
 }
 
-pub unsafe fn HUF_getNbBitsFromCTable(
-    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
-    symbolValue: u32,
-) -> u32 {
+pub unsafe fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
     debug_assert!(symbolValue <= HUF_SYMBOLVALUE_MAX);
     if symbolValue > (HUF_readCTableHeader(CTable.as_ptr())).maxSymbolValue as u32 {
         return 0;
@@ -883,7 +877,7 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
 /// * `maxSymbolValue` - The maximum symbol value.
 /// * `maxNbBits` - The exact maximum number of bits used in the Huffman tree.
 unsafe fn HUF_buildCTableFromTree(
-    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &mut CTable,
     huffNode: &[nodeElt],
     nonNullRank: c_int,
     maxSymbolValue: u8,
@@ -924,7 +918,7 @@ unsafe fn HUF_buildCTableFromTree(
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
 /// `workSpace` must be aligned on 4-bytes boundaries, and be at least as large as sizeof([`HUF_buildCTable_wksp_tables`]).
 pub unsafe fn HUF_buildCTable_wksp(
-    CTable: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &mut CTable,
     count: *const c_uint,
     maxSymbolValue: u8,
     mut maxNbBits: u32,
@@ -1406,7 +1400,7 @@ pub unsafe fn HUF_compress1X_usingCTable(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &CTable,
     flags: c_int,
 ) -> size_t {
     HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable.as_ptr(), flags)
@@ -1529,7 +1523,7 @@ pub unsafe fn HUF_compress4X_usingCTable(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    CTable: &CTable,
     flags: c_int,
 ) -> size_t {
     HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable.as_ptr(), flags)
@@ -1601,7 +1595,7 @@ pub union workspace_union {
 #[repr(C)]
 pub struct HUF_compress_tables_t {
     pub count: [c_uint; HUF_SYMBOLVALUE_MAX as usize + 1],
-    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    pub CTable: CTable,
     pub wksps: workspace_union,
 }
 
@@ -1628,7 +1622,7 @@ pub unsafe fn HUF_optimalTableLog(
     maxSymbolValue: u8,
     workSpace: *mut c_void,
     wkspSize: size_t,
-    table: &mut [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    table: &mut CTable,
     count: *const c_uint,
     flags: c_int,
 ) -> c_uint {

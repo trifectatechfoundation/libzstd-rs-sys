@@ -20,7 +20,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTablesMetadata_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    CTable, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_noCompressBlock, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
@@ -60,7 +60,7 @@ pub struct EstimatedBlockSize {
 /// - Or 0 if unable to compress
 /// - Or an error code
 unsafe fn ZSTD_compressSubBlock_literal(
-    hufTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(255)],
+    hufTable: &CTable,
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     literals: *const u8,
     litSize: size_t,
