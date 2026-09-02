@@ -1,7 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
+    BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
     STREAM_ACCUMULATOR_MIN,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -349,14 +349,13 @@ unsafe fn ZSTD_encodeSequences_body(
     nbSeq: size_t,
     longOffsets: bool,
 ) -> size_t {
-    let mut blockStream = BIT_CStream_t::default();
+    let Ok(mut blockStream) = BIT_initCStream(dst, dstCapacity) else {
+        return Error::dstSize_tooSmall.to_error_code();
+    };
+
     let mut stateMatchLength = FSE_CState_t::default();
     let mut stateOffsetBits = FSE_CState_t::default();
     let mut stateLitLength = FSE_CState_t::default();
-
-    if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
 
     // first symbols
     FSE_initCState2(
@@ -465,8 +464,7 @@ unsafe fn ZSTD_encodeSequences_body(
             BIT_flushBits(&mut blockStream);
         }
         if longOffsets {
-            let extraBits_0 =
-                ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
+            let extraBits_0 = ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
                 BIT_addBits(
                     &mut blockStream,

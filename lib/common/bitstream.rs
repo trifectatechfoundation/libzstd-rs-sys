@@ -28,23 +28,24 @@ pub(crate) struct BIT_CStream_t {
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_initCStream(
-    bitC: &mut BIT_CStream_t,
+pub(crate) fn BIT_initCStream(
     startPtr: *mut core::ffi::c_void,
     dstCapacity: size_t,
-) -> size_t {
-    bitC.bitContainer = 0;
-    bitC.bitPos = 0;
-    bitC.startPtr = startPtr as *mut core::ffi::c_char;
-    bitC.ptr = bitC.startPtr;
-    bitC.endPtr = bitC
-        .startPtr
-        .add(dstCapacity)
-        .sub(size_of::<BitContainerType>());
+) -> Result<BIT_CStream_t, Error> {
     if dstCapacity <= size_of::<BitContainerType>() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
-    0
+
+    let startPtr = startPtr as *mut core::ffi::c_char;
+    Ok(BIT_CStream_t {
+        bitContainer: 0,
+        bitPos: 0,
+        startPtr,
+        ptr: startPtr,
+        endPtr: startPtr
+            .wrapping_add(dstCapacity)
+            .wrapping_sub(size_of::<BitContainerType>()),
+    })
 }
 
 static BIT_mask: [core::ffi::c_uint; 32] = [
