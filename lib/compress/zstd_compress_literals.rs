@@ -14,21 +14,19 @@ use crate::lib::zstd::{ZSTD_btultra, ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 
-pub type huf_compress_f = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_uint,
-        core::ffi::c_uint,
-        *mut core::ffi::c_void,
-        size_t,
-        *mut HUF_CElt,
-        *mut HUF_repeat,
-        core::ffi::c_int,
-    ) -> size_t,
->;
+pub type huf_compress_f = unsafe extern "C" fn(
+    *mut core::ffi::c_void,
+    size_t,
+    *const core::ffi::c_void,
+    size_t,
+    core::ffi::c_uint,
+    core::ffi::c_uint,
+    *mut core::ffi::c_void,
+    size_t,
+    *mut HUF_CElt,
+    *mut HUF_repeat,
+    core::ffi::c_int,
+) -> size_t;
 
 #[inline]
 fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
@@ -214,46 +212,15 @@ pub unsafe fn ZSTD_compressLiterals(
     } else {
         0
     });
-    let mut huf_compress: huf_compress_f = None;
     if repeat == HUF_repeat_valid && lhSize == 3 {
         singleStream = true;
     }
-    huf_compress = if singleStream {
-        Some(
-            HUF_compress1X_repeat
-                as unsafe extern "C" fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                    core::ffi::c_uint,
-                    core::ffi::c_uint,
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *mut HUF_CElt,
-                    *mut HUF_repeat,
-                    core::ffi::c_int,
-                ) -> size_t,
-        )
+    let huf_compress: huf_compress_f = if singleStream {
+        HUF_compress1X_repeat
     } else {
-        Some(
-            HUF_compress4X_repeat
-                as unsafe extern "C" fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                    core::ffi::c_uint,
-                    core::ffi::c_uint,
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *mut HUF_CElt,
-                    *mut HUF_repeat,
-                    core::ffi::c_int,
-                ) -> size_t,
-        )
+        HUF_compress4X_repeat
     };
-    cLitSize = huf_compress.unwrap_unchecked()(
+    cLitSize = huf_compress(
         ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
         src,
