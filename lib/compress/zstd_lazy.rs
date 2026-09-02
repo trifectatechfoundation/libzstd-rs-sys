@@ -799,12 +799,11 @@ pub unsafe fn ZSTD_insertAndFindFirstIndex(ms: &mut ZSTD_MatchState_t, ip: *cons
 
 /// inlining is important to hardwire a hot branch (template emulation)
 #[inline(always)]
-unsafe fn ZSTD_HcFindBestMatch(
+unsafe fn ZSTD_HcFindBestMatch<const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
     offsetPtr: &mut size_t,
-    mls: u32,
     dictMode: DictMode,
 ) -> size_t {
     let cParams = &ms.cParams;
@@ -845,7 +844,7 @@ unsafe fn ZSTD_HcFindBestMatch(
         0
     };
     let ddsIdx = if dictMode == DictMode::DedicatedDictSearch {
-        ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, mls) << ZSTD_LAZY_DDSS_BUCKET_LOG
+        ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, MLS) << ZSTD_LAZY_DDSS_BUCKET_LOG
     } else {
         0
     };
@@ -859,7 +858,7 @@ unsafe fn ZSTD_HcFindBestMatch(
 
     // HC4 match finder
     matchIndex =
-        ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, mls, ms.lazySkipping as u32);
+        ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, MLS, ms.lazySkipping as u32);
 
     while (matchIndex >= lowLimit) && (nbAttempts > 0) {
         let mut currentMl = 0;
@@ -933,7 +932,7 @@ unsafe fn ZSTD_HcFindBestMatch(
         matchIndex = *((*dms).hashTable).add(ZSTD_hashPtr(
             ip as *const core::ffi::c_void,
             (*dms).cParams.hashLog,
-            mls,
+            MLS,
         ));
 
         while (matchIndex >= dmsLowestIndex) && (nbAttempts > 0) {
@@ -1610,6 +1609,46 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch<const MLS: u32, const ROW_LO
 }
 
 #[inline(never)]
+unsafe fn ZSTD_HcFindBestMatch_noDict<const MLS: u32>(
+    ms: &mut ZSTD_MatchState_t,
+    ip: *const u8,
+    iLimit: *const u8,
+    offsetPtr: &mut size_t,
+) -> size_t {
+    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::NoDict)
+}
+
+#[inline(never)]
+unsafe fn ZSTD_HcFindBestMatch_extDict<const MLS: u32>(
+    ms: &mut ZSTD_MatchState_t,
+    ip: *const u8,
+    iLimit: *const u8,
+    offsetPtr: &mut size_t,
+) -> size_t {
+    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::ExtDict)
+}
+
+#[inline(never)]
+unsafe fn ZSTD_HcFindBestMatch_dictMatchState<const MLS: u32>(
+    ms: &mut ZSTD_MatchState_t,
+    ip: *const u8,
+    iLimit: *const u8,
+    offsetPtr: &mut size_t,
+) -> size_t {
+    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::DictMatchState)
+}
+
+#[inline(never)]
+unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch<const MLS: u32>(
+    ms: &mut ZSTD_MatchState_t,
+    ip: *const u8,
+    iLimit: *const u8,
+    offsetPtr: &mut size_t,
+) -> size_t {
+    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::DedicatedDictSearch)
+}
+
+#[inline(never)]
 unsafe fn ZSTD_BtFindBestMatch_noDict_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
@@ -1729,126 +1768,6 @@ unsafe fn ZSTD_BtFindBestMatch_dictMatchState_5(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, DictMode::DictMatchState)
 }
 
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_noDict_6(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, DictMode::NoDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dictMatchState_5(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, DictMode::DictMatchState)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_6(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, DictMode::DedicatedDictSearch)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dictMatchState_4(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, DictMode::DictMatchState)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_5(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, DictMode::DedicatedDictSearch)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_4(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, DictMode::DedicatedDictSearch)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_noDict_5(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, DictMode::NoDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dictMatchState_6(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, DictMode::DictMatchState)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_noDict_4(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, DictMode::NoDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_extDict_6(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, DictMode::ExtDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_extDict_5(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, DictMode::ExtDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_extDict_4(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, DictMode::ExtDict)
-}
-
 /// Searches for the longest match at @p ip.
 /// Dispatches to the correct implementation function based on the
 /// (searchMethod, dictMode, mls, rowLog). We use switch statements
@@ -1887,9 +1806,9 @@ unsafe fn ZSTD_searchMax(
     if dictMode == DictMode::NoDict {
         match searchMethod as core::ffi::c_uint {
             0 => match mls {
-                4 => return ZSTD_HcFindBestMatch_noDict_4(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_HcFindBestMatch_noDict_5(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_HcFindBestMatch_noDict_6(ms, ip, iend, offsetPtr),
+                4 => return ZSTD_HcFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
+                5 => return ZSTD_HcFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
+                6 => return ZSTD_HcFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
             1 => match mls {
@@ -1952,9 +1871,9 @@ unsafe fn ZSTD_searchMax(
     } else if dictMode == DictMode::ExtDict {
         match searchMethod as core::ffi::c_uint {
             0 => match mls {
-                4 => return ZSTD_HcFindBestMatch_extDict_4(ms, ip, iend, offsetPtr),
-                5 => return ZSTD_HcFindBestMatch_extDict_5(ms, ip, iend, offsetPtr),
-                6 => return ZSTD_HcFindBestMatch_extDict_6(ms, ip, iend, offsetPtr),
+                4 => return ZSTD_HcFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
+                5 => return ZSTD_HcFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
+                6 => return ZSTD_HcFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
             1 => match mls {
@@ -2018,13 +1937,13 @@ unsafe fn ZSTD_searchMax(
         match searchMethod as core::ffi::c_uint {
             0 => match mls {
                 4 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState_4(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
                 }
                 5 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState_5(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr);
                 }
                 6 => {
-                    return ZSTD_HcFindBestMatch_dictMatchState_6(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr);
                 }
                 _ => {}
             },
@@ -2113,13 +2032,13 @@ unsafe fn ZSTD_searchMax(
         match searchMethod as core::ffi::c_uint {
             0 => match mls {
                 4 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch_4(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr);
                 }
                 5 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch_5(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<5>(ms, ip, iend, offsetPtr);
                 }
                 6 => {
-                    return ZSTD_HcFindBestMatch_dedicatedDictSearch_6(ms, ip, iend, offsetPtr);
+                    return ZSTD_HcFindBestMatch_dedicatedDictSearch::<6>(ms, ip, iend, offsetPtr);
                 }
                 _ => {}
             },
