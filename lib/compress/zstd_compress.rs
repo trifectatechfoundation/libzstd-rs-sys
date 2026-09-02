@@ -655,8 +655,8 @@ use crate::lib::common::zstd_internal::{
     repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
     LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
     MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType, ZSTD_cpuSupportsBmi2,
-    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
-    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
+    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -742,8 +742,6 @@ use crate::lib::zstd::{
     ZSTD_WINDOWLOG_MAX_64,
 };
 
-pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
@@ -5005,7 +5003,7 @@ unsafe fn ZSTD_buildSeqStore(
     ZSTD_assertEqualCParams((*zc).appliedParams.cParams, ms.cParams);
     if srcSize
         < (MIN_CBLOCK_SIZE as size_t)
-            .wrapping_add(ZSTD_blockHeaderSize)
+            .wrapping_add(ZSTD_BLOCKHEADERSIZE)
             .wrapping_add(1)
             .wrapping_add(1)
     {
@@ -5905,7 +5903,7 @@ unsafe fn ZSTD_estimateBlockSize(
     );
     seqSize
         .wrapping_add(literalsSize)
-        .wrapping_add(ZSTD_blockHeaderSize)
+        .wrapping_add(ZSTD_BLOCKHEADERSIZE)
 }
 
 /// Builds entropy statistics and uses them for blocksize estimation.
@@ -6107,7 +6105,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         );
     }
 
-    if dstCapacity < ZSTD_blockHeaderSize {
+    if dstCapacity < ZSTD_BLOCKHEADERSIZE {
         return Error::dstSize_tooSmall.to_error_code();
     }
     cSeqsSize = ZSTD_entropyCompressSeqStore(
@@ -6115,8 +6113,8 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
         &(*zc).appliedParams,
-        op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
-        dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
+        op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
+        dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
         srcSize,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
@@ -6177,7 +6175,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     } else {
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
         writeBlockHeader(op as *mut core::ffi::c_void, cSeqsSize, srcSize, lastBlock);
-        cSize = ZSTD_blockHeaderSize.wrapping_add(cSeqsSize);
+        cSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(cSeqsSize);
     }
 
     if (*(*zc).blockState.prevCBlock)
@@ -6543,7 +6541,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
             if ERR_isError(err_code) {
                 return err_code;
             }
-            if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_blockHeaderSize) {
+            if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
                 ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
                 return cSize;
             }
@@ -6713,7 +6711,7 @@ unsafe fn ZSTD_compress_frameChunk(
         let lastBlock = lastFrameChunk & (blockSize == remaining) as core::ffi::c_int as u32;
 
         if dstCapacity
-            < ZSTD_blockHeaderSize
+            < ZSTD_BLOCKHEADERSIZE
                 .wrapping_add((1 + 1) as size_t)
                 .wrapping_add(1)
         {
@@ -6777,8 +6775,8 @@ unsafe fn ZSTD_compress_frameChunk(
         } else {
             cSize = ZSTD_compressBlock_internal(
                 cctx,
-                op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
-                dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
+                op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
+                dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
                 ip as *const core::ffi::c_void,
                 blockSize,
                 1,
@@ -6810,7 +6808,7 @@ unsafe fn ZSTD_compress_frameChunk(
                         .wrapping_add((cSize << 3) as u32)
                 };
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-                cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
+                cSize = cSize.wrapping_add(ZSTD_BLOCKHEADERSIZE);
             }
         }
 
@@ -6976,12 +6974,12 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
 /// Size of data written into `dst` (== ZSTD_blockHeaderSize) or an error code if `dstCapacity`
 /// is too small (<ZSTD_blockHeaderSize)
 pub unsafe fn ZSTD_writeLastEmptyBlock(dst: *mut core::ffi::c_void, dstCapacity: size_t) -> size_t {
-    if dstCapacity < ZSTD_blockHeaderSize {
+    if dstCapacity < ZSTD_BLOCKHEADERSIZE {
         return Error::dstSize_tooSmall.to_error_code();
     }
     let cBlockHeader24 = (1u32).wrapping_add((BlockType::Raw as u32) << 1);
     MEM_writeLE24(dst, cBlockHeader24);
-    ZSTD_blockHeaderSize
+    ZSTD_BLOCKHEADERSIZE
 }
 
 pub unsafe fn ZSTD_referenceExternalSequences(
@@ -7884,8 +7882,8 @@ unsafe fn ZSTD_writeEpilogue(
             return Error::dstSize_tooSmall.to_error_code();
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.add(ZSTD_blockHeaderSize);
-        dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
+        op = op.add(ZSTD_BLOCKHEADERSIZE);
+        dstCapacity = dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE);
     }
 
     if (*cctx).appliedParams.fParams.checksumFlag != 0 {
@@ -9305,7 +9303,7 @@ pub extern "C" fn ZSTD_CStreamInSize() -> size_t {
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CStreamOutSize))]
 pub extern "C" fn ZSTD_CStreamOutSize() -> size_t {
     (ZSTD_compressBound(ZSTD_BLOCKSIZE_MAX as size_t))
-        .wrapping_add(ZSTD_blockHeaderSize)
+        .wrapping_add(ZSTD_BLOCKHEADERSIZE)
         .wrapping_add(4)
 }
 
@@ -10753,9 +10751,9 @@ unsafe fn ZSTD_compressSequences_internal(
             return Error::dstSize_tooSmall.to_error_code();
         }
         MEM_writeLE32(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.add(ZSTD_blockHeaderSize);
-        dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
-        cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
+        op = op.add(ZSTD_BLOCKHEADERSIZE);
+        dstCapacity = dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE);
+        cSize = cSize.wrapping_add(ZSTD_BLOCKHEADERSIZE);
     }
 
     while remaining != 0 {
@@ -10793,7 +10791,7 @@ unsafe fn ZSTD_compressSequences_internal(
         // If blocks are too small, emit as a nocompress block
         if blockSize
             < (MIN_CBLOCK_SIZE as size_t)
-                .wrapping_add(ZSTD_blockHeaderSize)
+                .wrapping_add(ZSTD_BLOCKHEADERSIZE)
                 .wrapping_add(1)
                 .wrapping_add(1)
         {
@@ -10815,7 +10813,7 @@ unsafe fn ZSTD_compressSequences_internal(
             remaining = remaining.wrapping_sub(blockSize);
             dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
         } else {
-            if dstCapacity < ZSTD_blockHeaderSize {
+            if dstCapacity < ZSTD_BLOCKHEADERSIZE {
                 return Error::dstSize_tooSmall.to_error_code();
             }
             compressedSeqsSize = ZSTD_entropyCompressSeqStore(
@@ -10823,8 +10821,8 @@ unsafe fn ZSTD_compressSequences_internal(
                 &(*(*cctx).blockState.prevCBlock).entropy,
                 &mut (*(*cctx).blockState.nextCBlock).entropy,
                 &(*cctx).appliedParams,
-                op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
-                dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
+                op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
+                dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
                 blockSize,
                 (*cctx).tmpWorkspace,
                 (*cctx).tmpWkspSize,
@@ -10891,7 +10889,7 @@ unsafe fn ZSTD_compressSequences_internal(
                     .wrapping_add((BlockType::Compressed as u32) << 1)
                     .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-                cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
+                cBlockSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize);
             }
 
             cSize = cSize.wrapping_add(cBlockSize);
@@ -11266,9 +11264,9 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             return Error::dstSize_tooSmall.to_error_code();
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.add(ZSTD_blockHeaderSize);
-        dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
-        cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
+        op = op.add(ZSTD_BLOCKHEADERSIZE);
+        dstCapacity = dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE);
+        cSize = cSize.wrapping_add(ZSTD_BLOCKHEADERSIZE);
     }
 
     while nbSequences != 0 {
@@ -11301,13 +11299,13 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         // One could imagine in theory reproducing the source from the sequences,
         // but that's complex and costly memory intensive, and goes against the objectives of this variant.
 
-        if dstCapacity < ZSTD_blockHeaderSize {
+        if dstCapacity < ZSTD_BLOCKHEADERSIZE {
             return Error::dstSize_tooSmall.to_error_code();
         }
 
         compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
-            op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
-            dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
+            op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
+            dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
             literals,
             block.litSize,
             &(*cctx).seqStore,
@@ -11360,7 +11358,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
                 .wrapping_add((BlockType::Compressed as u32) << 1)
                 .wrapping_add((compressedSeqsSize << 3) as u32);
             MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-            cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
+            cBlockSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize);
         }
 
         cSize = cSize.wrapping_add(cBlockSize);
@@ -11495,16 +11493,14 @@ pub unsafe extern "C" fn ZSTD_endStream(
     }
 
     // single thread mode: attempt to calculate remaining to flush more precisely
-    let lastBlockSize = (if (*zcs).frameEnded != 0 {
-        0
-    } else {
-        ZSTD_BLOCKHEADERSIZE
-    }) as size_t;
-    let checksumSize = (if (*zcs).frameEnded != 0 {
-        0
-    } else {
-        (*zcs).appliedParams.fParams.checksumFlag * 4
-    }) as size_t;
+    let lastBlockSize = match (*zcs).frameEnded {
+        0 => ZSTD_BLOCKHEADERSIZE,
+        _ => 0,
+    };
+    let checksumSize = match (*zcs).frameEnded {
+        0 => ((*zcs).appliedParams.fParams.checksumFlag as usize) * 4,
+        _ => 0,
+    };
 
     remainingToFlush
         .wrapping_add(lastBlockSize)

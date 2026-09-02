@@ -7,7 +7,7 @@ use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writ
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
     ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType,
-    MINMATCH, ZSTD_MAX_HUF_HEADER_SIZE,
+    MINMATCH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -36,8 +36,6 @@ pub struct EstimatedBlockSize {
     pub estBlockSize: size_t,
 }
 
-pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
@@ -386,7 +384,7 @@ unsafe fn ZSTD_compressSubBlock(
 ) -> size_t {
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
-    let mut op = ostart.add(ZSTD_blockHeaderSize);
+    let mut op = ostart.add(ZSTD_BLOCKHEADERSIZE);
 
     let cLitSize = ZSTD_compressSubBlock_literal(
         &entropy.huf.CTable,
@@ -433,7 +431,7 @@ unsafe fn ZSTD_compressSubBlock(
     op = op.add(cSeqSize);
 
     // Write block header
-    let cSize = (op.offset_from_unsigned(ostart)).wrapping_sub(ZSTD_blockHeaderSize);
+    let cSize = (op.offset_from_unsigned(ostart)).wrapping_sub(ZSTD_BLOCKHEADERSIZE);
     let cBlockHeader24 = lastBlock
         .wrapping_add((BlockType::Compressed as u32) << 1)
         .wrapping_add((cSize << 3) as u32);
@@ -640,7 +638,7 @@ unsafe fn ZSTD_estimateSubBlockSize(
         writeSeqEntropy,
     );
     ebs.estBlockSize =
-        (ebs.estBlockSize).wrapping_add((ebs.estLitSize).wrapping_add(ZSTD_blockHeaderSize));
+        (ebs.estBlockSize).wrapping_add((ebs.estLitSize).wrapping_add(ZSTD_BLOCKHEADERSIZE));
     ebs
 }
 
