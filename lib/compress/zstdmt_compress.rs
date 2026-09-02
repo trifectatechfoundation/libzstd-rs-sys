@@ -264,12 +264,12 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
 
 /// Clears the window containing the history by simply setting it to empty.
 #[inline]
-unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
-    let endT = ((*window).nextSrc).offset_from((*window).base) as size_t;
+unsafe fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
+    let endT = (window.nextSrc).offset_from(window.base) as size_t;
     let end = endT as u32;
 
-    (*window).lowLimit = end;
-    (*window).dictLimit = end;
+    window.lowLimit = end;
+    window.dictLimit = end;
 }
 
 #[inline]
