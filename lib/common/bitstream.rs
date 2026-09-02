@@ -56,7 +56,16 @@ static BIT_mask: [core::ffi::c_uint; 32] = [
 
 #[inline(always)]
 fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
-    bitContainer & BIT_mask[nbBits as usize] as BitContainerType
+    cfg_select! {
+        target_feature = "bmi2" => {
+            // With bmi2 the bzhi instruction can be used.
+            bitContainer & ((1 << nbBits) - 1)
+        }
+        _ => {
+            // At least on x86_64, the lookup table is faster without bmi2.
+            bitContainer & BIT_mask[nbBits as usize] as BitContainerType
+        }
+    }
 }
 
 #[inline]
