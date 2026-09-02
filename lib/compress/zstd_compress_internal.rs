@@ -496,14 +496,14 @@ const fn ZSTD_hash32<const MLS: u32>(u: u32, h: u32, s: u32) -> u32 {
 }
 
 #[inline]
-pub(crate) unsafe fn ZSTD_hash3Ptr(ptr: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash32::<3>(MEM_readLE32(ptr), h, 0) as usize
+pub(crate) unsafe fn ZSTD_hash32Ptr<const MLS: u32>(
+    ptr: *const core::ffi::c_void,
+    h: u32,
+) -> usize {
+    ZSTD_hash32::<MLS>(MEM_readLE32(ptr), h, 0) as usize
 }
-unsafe fn ZSTD_hash4Ptr(ptr: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash32::<4>(MEM_readLE32(ptr), h, 0) as usize
-}
-unsafe fn ZSTD_hash4PtrS(ptr: *const core::ffi::c_void, h: u32, s: u32) -> usize {
-    ZSTD_hash32::<4>(MEM_readLE32(ptr), h, s) as usize
+unsafe fn ZSTD_hash32PtrS<const MLS: u32>(ptr: *const core::ffi::c_void, h: u32, s: u32) -> usize {
+    ZSTD_hash32::<MLS>(MEM_readLE32(ptr), h, s) as usize
 }
 
 const prime5bytes: u64 = 889523592379;
@@ -542,7 +542,7 @@ pub(crate) unsafe fn ZSTD_hashPtr(p: *const core::ffi::c_void, hBits: u32, mls: 
         6 => ZSTD_hash64Ptr::<6>(p, hBits),
         7 => ZSTD_hash64Ptr::<7>(p, hBits),
         8 => ZSTD_hash64Ptr::<8>(p, hBits),
-        _ => ZSTD_hash4Ptr(p, hBits),
+        _ => ZSTD_hash32Ptr::<4>(p, hBits),
     }
 }
 
@@ -558,7 +558,7 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
         6 => ZSTD_hash64PtrS::<6>(p, hBits, hashSalt),
         7 => ZSTD_hash64PtrS::<7>(p, hBits, hashSalt),
         8 => ZSTD_hash64PtrS::<8>(p, hBits, hashSalt),
-        4 | _ => ZSTD_hash4PtrS(p, hBits, hashSalt as u32),
+        4 | _ => ZSTD_hash32PtrS::<4>(p, hBits, hashSalt as u32),
     }
 }
 

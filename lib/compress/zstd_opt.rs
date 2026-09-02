@@ -37,7 +37,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, repcodes_s, DictMode, OptPrice, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
+    ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
     ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::polyfill::PointerExt;
@@ -538,10 +538,10 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     let hashLog3 = ms.hashLog3;
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
-    let hash3 = ZSTD_hash3Ptr(ip as *const core::ffi::c_void, hashLog3);
+    let hash3 = ZSTD_hash32Ptr::<3>(ip as *const core::ffi::c_void, hashLog3);
 
     for idx in *nextToUpdate3..target {
-        *hashTable3.add(ZSTD_hash3Ptr(
+        *hashTable3.add(ZSTD_hash32Ptr::<3>(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog3,
         )) = idx;
