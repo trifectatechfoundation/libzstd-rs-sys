@@ -1464,20 +1464,14 @@ pub unsafe fn ZSTDMT_updateCParams_whileCompressing(
 /// Note: mutex will be acquired during statistics collection inside workers.
 pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameProgression {
     let mut fps = ZSTD_frameProgression {
-        ingested: 0,
-        consumed: 0,
-        produced: 0,
-        flushed: 0,
-        currentJobID: 0,
+        ingested: ((*mtctx).consumed)
+            .wrapping_add((*mtctx).inBuff.filled as core::ffi::c_ulonglong),
+        consumed: (*mtctx).consumed,
+        produced: (*mtctx).produced,
+        flushed: (*mtctx).produced,
+        currentJobID: (*mtctx).nextJobID,
         nbActiveWorkers: 0,
     };
-    fps.ingested =
-        ((*mtctx).consumed).wrapping_add((*mtctx).inBuff.filled as core::ffi::c_ulonglong);
-    fps.consumed = (*mtctx).consumed;
-    fps.flushed = (*mtctx).produced;
-    fps.produced = fps.flushed;
-    fps.currentJobID = (*mtctx).nextJobID;
-    fps.nbActiveWorkers = 0;
 
     let mut jobNb: core::ffi::c_uint = 0;
     let lastJobNb = ((*mtctx).nextJobID).wrapping_add((*mtctx).jobReady as core::ffi::c_uint);

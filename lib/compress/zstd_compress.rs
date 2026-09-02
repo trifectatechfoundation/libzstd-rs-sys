@@ -3298,14 +3298,6 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZST
     if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_getFrameProgression((*cctx).mtctx);
     }
-    let mut fp = ZSTD_frameProgression {
-        ingested: 0,
-        consumed: 0,
-        produced: 0,
-        flushed: 0,
-        currentJobID: 0,
-        nbActiveWorkers: 0,
-    };
     let buffered = if ((*cctx).inBuff).is_null() {
         0
     } else {
@@ -3317,14 +3309,15 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZST
     }
     assert!(buffered <= ZSTD_BLOCKSIZE_MAX as usize);
 
-    fp.ingested = ((*cctx).consumedSrcSize).wrapping_add(buffered as core::ffi::c_ulonglong);
-    fp.consumed = (*cctx).consumedSrcSize;
-    fp.produced = (*cctx).producedCSize;
-    // simplified; some data might still be left within streaming output buffer
-    fp.flushed = (*cctx).producedCSize;
-    fp.currentJobID = 0;
-    fp.nbActiveWorkers = 0;
-    fp
+    ZSTD_frameProgression {
+        ingested: ((*cctx).consumedSrcSize).wrapping_add(buffered as core::ffi::c_ulonglong),
+        consumed: (*cctx).consumedSrcSize,
+        produced: (*cctx).producedCSize,
+        // simplified; some data might still be left within streaming output buffer
+        flushed: (*cctx).producedCSize,
+        currentJobID: 0,
+        nbActiveWorkers: 0,
+    }
 }
 
 /// Only useful for multithreading scenarios currently (nbWorkers >= 1).
