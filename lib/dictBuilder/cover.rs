@@ -1070,7 +1070,6 @@ pub(super) fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
 pub(super) fn COVER_selectDict(
     customDictContent: &[u8],
     dictBufferCapacity: size_t,
-    mut dictContentSize: size_t,
     samplesBuffer: &[u8],
     samplesSizes: &[size_t],
     nbFinalizeSamples: core::ffi::c_uint,
@@ -1082,6 +1081,7 @@ pub(super) fn COVER_selectDict(
 ) -> COVER_dictSelection_t {
     let mut largestDict = 0;
     let mut largestCompressed = 0;
+    let mut dictContentSize = customDictContent.len();
     let mut largestDictbuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let regressionTolerance =
@@ -1195,7 +1195,6 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     selection = COVER_selectDict(
         dict_tail,
         dictBufferCapacity,
-        dict_tail.len(),
         ctx.samples,
         ctx.samplesSizes,
         ctx.nbTrainSamples as core::ffi::c_uint,

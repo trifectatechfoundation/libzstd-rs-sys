@@ -412,7 +412,6 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     selection = COVER_selectDict(
         dict_tail,
         dictBufferCapacity,
-        dict_tail.len(),
         ctx.samples,
         ctx.samplesSizes,
         nbFinalizeSamples,
