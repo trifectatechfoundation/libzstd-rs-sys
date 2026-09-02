@@ -5118,12 +5118,6 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
 ) -> size_t {
     let dstCapacity = ZSTD_compressBound(srcSize);
     let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
-    let mut seqCollector = SeqCollector {
-        collectSequences: 0,
-        seqStart: core::ptr::null_mut::<ZSTD_Sequence>(),
-        seqIndex: 0,
-        maxSequences: 0,
-    };
 
     let mut targetCBlockSize: core::ffi::c_int = 0;
     let err_code = ZSTD_CCtx_getParameter(
@@ -5152,11 +5146,12 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
         return Error::memory_allocation.to_error_code();
     }
 
-    seqCollector.collectSequences = 1;
-    seqCollector.seqStart = outSeqs;
-    seqCollector.seqIndex = 0;
-    seqCollector.maxSequences = outSeqsSize;
-    (*zc).seqCollector = seqCollector;
+    (*zc).seqCollector = SeqCollector {
+        collectSequences: 1,
+        seqStart: outSeqs,
+        seqIndex: 0,
+        maxSequences: outSeqsSize,
+    };
 
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);
     ZSTD_customFree(dst, dstCapacity, ZSTD_customMem::default());
@@ -7840,12 +7835,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         customMem: ZSTD_customMem::default(),
         pool: core::ptr::null_mut::<ZSTD_threadPool>(),
         staticSize: 0,
-        seqCollector: SeqCollector {
-            collectSequences: 0,
-            seqStart: core::ptr::null_mut::<ZSTD_Sequence>(),
-            seqIndex: 0,
-            maxSequences: 0,
-        },
+        seqCollector: SeqCollector::default(),
         isFirstBlock: 0,
         initialized: 0,
         seqStore: SeqStore_t::default(),
