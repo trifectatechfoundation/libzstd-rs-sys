@@ -61,7 +61,8 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t,
+    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
+    ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
@@ -130,24 +131,6 @@ unsafe fn ZSTD_window_correctOverflow(
     window.nbOverflowCorrections = window.nbOverflowCorrections.wrapping_add(1);
 
     correction
-}
-
-/// Use this to determine how much space in the workspace we will consume to
-/// allocate this object. (Normally it should be exactly the size of the object,
-/// but under special conditions, like ASAN, where we pad each object, it might
-/// be larger.)
-///
-/// Since tables aren't currently redzoned, you don't need to call through this
-/// to figure out how much space you need for the matchState tables. Everything
-/// else is though.
-///
-/// Do not use for sizing aligned buffers. Instead, use ZSTD_cwksp_aligned64_alloc_size().
-#[inline]
-fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
-    if size == 0 {
-        return 0;
-    }
-    size
 }
 
 static ZSTD_ldm_gearTab: [u64; 256] = [

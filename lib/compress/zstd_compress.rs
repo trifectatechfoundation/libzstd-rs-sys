@@ -736,7 +736,7 @@ fn ZSTD_cwksp_align(size: size_t, align: size_t) -> size_t {
 ///
 /// Do not use for sizing aligned buffers. Instead, use ZSTD_cwksp_aligned64_alloc_size().
 #[inline]
-fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
+pub(crate) fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
         return 0;
     }
