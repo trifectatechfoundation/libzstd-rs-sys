@@ -3246,7 +3246,7 @@ pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState
 
 /// Invalidate all the matches in the match finder tables.
 /// Requires nextSrc and base to be set (can be NULL).
-unsafe fn ZSTD_invalidateMatchState(ms: &mut ZSTD_MatchState_t) {
+fn ZSTD_invalidateMatchState(ms: &mut ZSTD_MatchState_t) {
     ZSTD_window_clear(&mut ms.window);
     ms.nextToUpdate = ms.window.dictLimit;
     ms.loadedDictEnd = 0;
@@ -7854,7 +7854,7 @@ pub extern "C" fn ZSTD_estimateCDictSize_advanced(
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize))]
-pub unsafe extern "C" fn ZSTD_estimateCDictSize(
+pub extern "C" fn ZSTD_estimateCDictSize(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {

@@ -1544,7 +1544,7 @@ fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi
     ovlog
 }
 
-unsafe fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
+fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
     let overlapRLog = 9 - ZSTDMT_overlapLog(params.overlapLog, params.cParams.strategy);
     let mut ovLog = (if overlapRLog >= 8 {
         0
