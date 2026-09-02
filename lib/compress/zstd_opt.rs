@@ -36,27 +36,12 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, DictMode, OptPrice, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
-    ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq,
-    ZSTD_updateRep,
+    optState_t, DictMode, OptPrice, ZSTD_LLcode, ZSTD_count, ZSTD_count_2segments,
+    ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
+    ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
-
-#[inline]
-fn ZSTD_LLcode(litLength: u32) -> u32 {
-    static LL_Code: [u8; 64] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
-        20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
-        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-    ];
-    static LL_deltaCode: u32 = 19;
-    if litLength > 63 {
-        (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
-    } else {
-        LL_Code[litLength as usize] as core::ffi::c_uint
-    }
-}
 
 #[inline]
 fn ZSTD_MLcode(mlBase: u32) -> u32 {
