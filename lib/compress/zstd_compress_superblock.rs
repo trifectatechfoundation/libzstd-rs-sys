@@ -31,13 +31,6 @@ use crate::lib::compress::zstd_compress_sequences::{
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_SequenceLength {
-    pub litLength: u32,
-    pub matchLength: u32,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct EstimatedBlockSize {
     pub estLitSize: size_t,
     pub estBlockSize: size_t,
