@@ -477,29 +477,29 @@ unsafe fn ZSTD_updateStats(
     // literals
     if ZSTD_compressedLiterals(opt_state) {
         for u in 0..litLength {
-            let fresh2 = &mut (*(opt_state.litFreq).offset(*literals.offset(u as isize) as isize));
-            *fresh2 = (*fresh2).wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
+            let litFreq = &mut *opt_state.litFreq.add(*literals.add(u as usize) as usize);
+            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
         }
         opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
     }
 
     // literal Length
     let llCode = ZSTD_LLcode(litLength);
-    let fresh3 = &mut (*(opt_state.litLengthFreq).offset(llCode as isize));
-    *fresh3 = (*fresh3).wrapping_add(1);
+    let litLengthFreq = &mut *opt_state.litLengthFreq.add(llCode as usize);
+    *litLengthFreq = litLengthFreq.wrapping_add(1);
     opt_state.litLengthSum = (opt_state.litLengthSum).wrapping_add(1);
 
     // offset code: follows storeSeq() numeric representation
     let offCode = ZSTD_highbit32(offBase);
-    let fresh4 = &mut (*(opt_state.offCodeFreq).offset(offCode as isize));
-    *fresh4 = (*fresh4).wrapping_add(1);
+    let offCodeFreq = &mut *opt_state.offCodeFreq.add(offCode as usize);
+    *offCodeFreq = offCodeFreq.wrapping_add(1);
     opt_state.offCodeSum = (opt_state.offCodeSum).wrapping_add(1);
 
     // match Length
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
     let mlCode = ZSTD_MLcode(mlBase);
-    let fresh5 = &mut (*(opt_state.matchLengthFreq).offset(mlCode as isize));
-    *fresh5 = (*fresh5).wrapping_add(1);
+    let matchLengthFreq = &mut *opt_state.matchLengthFreq.add(mlCode as usize);
+    *matchLengthFreq = matchLengthFreq.wrapping_add(1);
     opt_state.matchLengthSum = (opt_state.matchLengthSum).wrapping_add(1);
 }
 
