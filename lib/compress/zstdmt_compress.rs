@@ -208,13 +208,13 @@ static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 
 /// Return base^exponent
 fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
-    let mut power = 1;
+    let mut power = 1u64;
     while exponent != 0 {
         if exponent & 1 != 0 {
-            power *= base;
+            power = power.wrapping_mul(base);
         }
         exponent >>= 1;
-        base = base * base;
+        base = base.wrapping_mul(base);
     }
     power
 }
@@ -229,7 +229,7 @@ unsafe fn ZSTD_rollingHash_append(
 ) -> u64 {
     let istart = buf as *const u8;
     for pos in 0..size {
-        hash *= prime8bytes;
+        hash = hash.wrapping_mul(prime8bytes);
         hash = hash.wrapping_add(
             (*istart.add(pos) as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64,
         );
@@ -254,9 +254,10 @@ fn ZSTD_rollingHash_primePower(length: u32) -> u64 {
 #[inline]
 fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u64) -> u64 {
     hash = hash.wrapping_sub(
-        (toRemove as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64 * primePower,
+        ((toRemove as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64)
+            .wrapping_mul(primePower),
     );
-    hash *= prime8bytes;
+    hash = hash.wrapping_mul(prime8bytes);
     hash = hash.wrapping_add((toAdd as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64);
     hash
 }
