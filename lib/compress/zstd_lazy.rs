@@ -1,9 +1,13 @@
 use core::arch::asm;
 
-pub type searchMethod_e = core::ffi::c_uint;
-pub const search_rowHash: searchMethod_e = 2;
-pub const search_binaryTree: searchMethod_e = 1;
-pub const search_hashChain: searchMethod_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum SearchMethod {
+    RowHash = 2,
+    BinaryTree = 1,
+    HashChain = 0,
+}
+
 pub type ZSTD_VecMask = u64;
 
 use libc::size_t;
@@ -1719,24 +1723,24 @@ unsafe fn ZSTD_searchMax(
     offsetPtr: &mut size_t,
     mls: u32,
     rowLog: u32,
-    searchMethod: searchMethod_e,
+    searchMethod: SearchMethod,
     dictMode: DictMode,
 ) -> size_t {
     if dictMode == DictMode::NoDict {
-        match searchMethod as core::ffi::c_uint {
-            0 => match mls {
+        match searchMethod {
+            SearchMethod::HashChain => match mls {
                 4 => return ZSTD_HcFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
                 5 => return ZSTD_HcFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
                 6 => return ZSTD_HcFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
-            1 => match mls {
+            SearchMethod::BinaryTree => match mls {
                 4 => return ZSTD_BtFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
                 5 => return ZSTD_BtFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
                 6 => return ZSTD_BtFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
-            2 => match mls {
+            SearchMethod::RowHash => match mls {
                 4 => {
                     match rowLog {
                         4 => {
@@ -1784,24 +1788,23 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            _ => {}
         }
         unreachable!();
     } else if dictMode == DictMode::ExtDict {
-        match searchMethod as core::ffi::c_uint {
-            0 => match mls {
+        match searchMethod {
+            SearchMethod::HashChain => match mls {
                 4 => return ZSTD_HcFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
                 5 => return ZSTD_HcFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
                 6 => return ZSTD_HcFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
-            1 => match mls {
+            SearchMethod::BinaryTree => match mls {
                 4 => return ZSTD_BtFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
                 5 => return ZSTD_BtFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
                 6 => return ZSTD_BtFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
                 _ => {}
             },
-            2 => match mls {
+            SearchMethod::RowHash => match mls {
                 4 => {
                     match rowLog {
                         4 => {
@@ -1849,12 +1852,11 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            _ => {}
         }
         unreachable!();
     } else if dictMode == DictMode::DictMatchState {
-        match searchMethod as core::ffi::c_uint {
-            0 => match mls {
+        match searchMethod {
+            SearchMethod::HashChain => match mls {
                 4 => {
                     return ZSTD_HcFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
                 }
@@ -1866,7 +1868,7 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            1 => match mls {
+            SearchMethod::BinaryTree => match mls {
                 4 => {
                     return ZSTD_BtFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr);
                 }
@@ -1878,7 +1880,7 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            2 => match mls {
+            SearchMethod::RowHash => match mls {
                 4 => {
                     match rowLog {
                         4 => {
@@ -1944,12 +1946,11 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            _ => {}
         }
         unreachable!();
     } else if dictMode == DictMode::DedicatedDictSearch {
-        match searchMethod as core::ffi::c_uint {
-            0 => match mls {
+        match searchMethod {
+            SearchMethod::HashChain => match mls {
                 4 => {
                     return ZSTD_HcFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr);
                 }
@@ -1961,7 +1962,7 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            1 => match mls {
+            SearchMethod::BinaryTree => match mls {
                 4 => {
                     return ZSTD_BtFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr);
                 }
@@ -1973,7 +1974,7 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            2 => match mls {
+            SearchMethod::RowHash => match mls {
                 4 => {
                     match rowLog {
                         4 => {
@@ -2039,7 +2040,6 @@ unsafe fn ZSTD_searchMax(
                 }
                 _ => {}
             },
-            _ => {}
         }
         unreachable!();
     }
@@ -2053,7 +2053,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    searchMethod: searchMethod_e,
+    searchMethod: SearchMethod,
     depth: u32,
     dictMode: DictMode,
 ) -> size_t {
@@ -2062,7 +2062,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let mut ip = istart;
     let mut anchor = istart;
     let iend = istart.add(srcSize);
-    let ilimit = if searchMethod == search_rowHash {
+    let ilimit = if searchMethod == SearchMethod::RowHash {
         iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
     } else {
         iend.sub(8)
@@ -2131,7 +2131,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     // Reset the lazy skipping state
     ms.lazySkipping = 0;
 
-    if searchMethod == search_rowHash {
+    if searchMethod == SearchMethod::RowHash {
         ZSTD_row_fillHashCache(ms, base, rowLog, mls, ms.nextToUpdate, ilimit);
     }
 
@@ -2520,7 +2520,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
 
         if ms.lazySkipping != 0 {
             // We've found a match, disable lazy skipping mode, and refill the hash cache.
-            if searchMethod == search_rowHash {
+            if searchMethod == SearchMethod::RowHash {
                 ZSTD_row_fillHashCache(ms, base, rowLog, mls, ms.nextToUpdate, ilimit);
             }
             ms.lazySkipping = 0;
@@ -2633,7 +2633,7 @@ pub unsafe fn ZSTD_compressBlock_greedy(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         0,
         DictMode::NoDict,
     )
@@ -2652,7 +2652,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         0,
         DictMode::DictMatchState,
     )
@@ -2671,7 +2671,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         0,
         DictMode::DedicatedDictSearch,
     )
@@ -2690,7 +2690,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         0,
         DictMode::NoDict,
     )
@@ -2709,7 +2709,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         0,
         DictMode::DictMatchState,
     )
@@ -2728,7 +2728,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         0,
         DictMode::DedicatedDictSearch,
     )
@@ -2747,7 +2747,7 @@ pub unsafe fn ZSTD_compressBlock_lazy(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         1,
         DictMode::NoDict,
     )
@@ -2766,7 +2766,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         1,
         DictMode::DictMatchState,
     )
@@ -2785,7 +2785,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         1,
         DictMode::DedicatedDictSearch,
     )
@@ -2804,7 +2804,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         1,
         DictMode::NoDict,
     )
@@ -2823,7 +2823,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         1,
         DictMode::DictMatchState,
     )
@@ -2842,7 +2842,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         1,
         DictMode::DedicatedDictSearch,
     )
@@ -2861,7 +2861,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         2,
         DictMode::NoDict,
     )
@@ -2880,7 +2880,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         2,
         DictMode::DictMatchState,
     )
@@ -2899,7 +2899,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
         rep,
         src,
         srcSize,
-        search_hashChain,
+        SearchMethod::HashChain,
         2,
         DictMode::DedicatedDictSearch,
     )
@@ -2918,7 +2918,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         2,
         DictMode::NoDict,
     )
@@ -2937,7 +2937,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         2,
         DictMode::DictMatchState,
     )
@@ -2956,7 +2956,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
         rep,
         src,
         srcSize,
-        search_rowHash,
+        SearchMethod::RowHash,
         2,
         DictMode::DedicatedDictSearch,
     )
@@ -2975,7 +2975,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2(
         rep,
         src,
         srcSize,
-        search_binaryTree,
+        SearchMethod::BinaryTree,
         2,
         DictMode::NoDict,
     )
@@ -2994,7 +2994,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
         rep,
         src,
         srcSize,
-        search_binaryTree,
+        SearchMethod::BinaryTree,
         2,
         DictMode::DictMatchState,
     )
@@ -3007,14 +3007,14 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    searchMethod: searchMethod_e,
+    searchMethod: SearchMethod,
     depth: u32,
 ) -> size_t {
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
     let iend = istart.add(srcSize);
-    let ilimit = if searchMethod == search_rowHash {
+    let ilimit = if searchMethod == SearchMethod::RowHash {
         iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
     } else {
         iend.sub(8)
@@ -3037,7 +3037,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
 
     // init
     ip = ip.offset((ip == prefixStart) as core::ffi::c_int as isize);
-    if searchMethod == search_rowHash {
+    if searchMethod == SearchMethod::RowHash {
         ZSTD_row_fillHashCache(ms, base, rowLog, mls, ms.nextToUpdate, ilimit);
     }
 
@@ -3311,7 +3311,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
 
         if ms.lazySkipping != 0 {
             // We've found a match, disable lazy skipping mode, and refill the hash cache.
-            if searchMethod == search_rowHash {
+            if searchMethod == SearchMethod::RowHash {
                 ZSTD_row_fillHashCache(ms, base, rowLog, mls, ms.nextToUpdate, ilimit);
             }
             ms.lazySkipping = 0;
@@ -3378,7 +3378,15 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 0)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::HashChain,
+        0,
+    )
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
@@ -3388,7 +3396,15 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 0)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::RowHash,
+        0,
+    )
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_extDict(
@@ -3398,7 +3414,15 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 1)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::HashChain,
+        1,
+    )
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
@@ -3408,7 +3432,15 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 1)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::RowHash,
+        1,
+    )
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
@@ -3418,7 +3450,15 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 2)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::HashChain,
+        2,
+    )
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     ms: &mut ZSTD_MatchState_t,
@@ -3427,7 +3467,15 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 2)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::RowHash,
+        2,
+    )
 }
 
 pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
@@ -3437,5 +3485,13 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_binaryTree, 2)
+    ZSTD_compressBlock_lazy_extDict_generic(
+        ms,
+        seqStore,
+        rep,
+        src,
+        srcSize,
+        SearchMethod::BinaryTree,
+        2,
+    )
 }
