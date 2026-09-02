@@ -1067,13 +1067,12 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
     }
 }
 
-unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
+unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut [u32; 3],
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    mls: u32,
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
@@ -1105,7 +1104,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
 
     // Search Loop (< instead of <=, because ip+1)
     while ip < ilimit {
-        let hSmall = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls);
+        let hSmall = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, MLS);
         let matchIndex = *hashSmall.add(hSmall);
         let matchBase = if matchIndex < prefixStartIndex {
             dictBase
@@ -1313,12 +1312,12 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             *hashSmall.add(ZSTD_hashPtr(
                 base.wrapping_offset(indexToInsert as isize) as *const core::ffi::c_void,
                 hBitsS,
-                mls,
+                MLS,
             )) = indexToInsert;
             *hashSmall.add(ZSTD_hashPtr(
                 ip.sub(1) as *const core::ffi::c_void,
                 hBitsS,
-                mls,
+                MLS,
             )) = ip.sub(1).wrapping_offset_from(base) as core::ffi::c_long as u32;
 
             // check immediate repcode
@@ -1354,7 +1353,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                     REPCODE1_TO_OFFBASE as u32,
                     repLength2,
                 );
-                *hashSmall.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls)) =
+                *hashSmall.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, MLS)) =
                     current2;
                 *hashLong.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8)) = current2;
                 ip = ip.add(repLength2);
@@ -1371,46 +1370,6 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     iend.offset_from_unsigned(anchor)
 }
 
-unsafe fn ZSTD_compressBlock_doubleFast_extDict_4(
-    ms: &mut ZSTD_MatchState_t,
-    seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 4)
-}
-
-unsafe fn ZSTD_compressBlock_doubleFast_extDict_5(
-    ms: &mut ZSTD_MatchState_t,
-    seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 5)
-}
-
-unsafe fn ZSTD_compressBlock_doubleFast_extDict_6(
-    ms: &mut ZSTD_MatchState_t,
-    seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 6)
-}
-
-unsafe fn ZSTD_compressBlock_doubleFast_extDict_7(
-    ms: &mut ZSTD_MatchState_t,
-    seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 7)
-}
-
 pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
@@ -1420,9 +1379,9 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
 ) -> size_t {
     let mls = ms.cParams.minMatch;
     match mls {
-        5 => ZSTD_compressBlock_doubleFast_extDict_5(ms, seqStore, rep, src, srcSize),
-        6 => ZSTD_compressBlock_doubleFast_extDict_6(ms, seqStore, rep, src, srcSize),
-        7 => ZSTD_compressBlock_doubleFast_extDict_7(ms, seqStore, rep, src, srcSize),
-        _ => ZSTD_compressBlock_doubleFast_extDict_4(ms, seqStore, rep, src, srcSize),
+        5 => ZSTD_compressBlock_doubleFast_extDict_generic::<5>(ms, seqStore, rep, src, srcSize),
+        6 => ZSTD_compressBlock_doubleFast_extDict_generic::<6>(ms, seqStore, rep, src, srcSize),
+        7 => ZSTD_compressBlock_doubleFast_extDict_generic::<7>(ms, seqStore, rep, src, srcSize),
+        _ => ZSTD_compressBlock_doubleFast_extDict_generic::<4>(ms, seqStore, rep, src, srcSize),
     }
 }
