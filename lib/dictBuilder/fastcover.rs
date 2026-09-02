@@ -389,7 +389,7 @@ fn FASTCOVER_buildDictionary<'a>(
     unsafe { super::cover::assume_init_ref(&dict[tail..]) }
 }
 
-unsafe fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
+fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 

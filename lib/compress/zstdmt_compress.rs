@@ -1539,7 +1539,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     toFlush
 }
 
-unsafe fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
+fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
     let mut jobLog: core::ffi::c_uint = 0;
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // In Long Range Mode, the windowLog is typically oversized.

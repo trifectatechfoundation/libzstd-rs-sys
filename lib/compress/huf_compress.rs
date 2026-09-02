@@ -1082,7 +1082,7 @@ unsafe fn HUF_initCStream(
 ///   to have at least 4 unused bits after this call it may be 1,
 ///   otherwise it must be 0. HUF_addBits() is faster when fast is set.
 #[inline(always)]
-unsafe fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
+fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
     debug_assert!(idx <= 1);
     debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
     /* This is efficient on x86-64 with BMI2 because shrx
@@ -1109,7 +1109,7 @@ unsafe fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
 }
 
 #[inline(always)]
-unsafe fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
+fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
     bitC.bitContainer[1] = 0;
     bitC.bitPos[1] = 0;
 }
@@ -1117,7 +1117,7 @@ unsafe fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
 /// Merges the bit container @ index 1 into the bit container @ index 0
 /// and zeros the bit container @ index 1.
 #[inline(always)]
-unsafe fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
+fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
     debug_assert!((bitC.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
     bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xff as c_int as size_t;
     bitC.bitContainer[0] |= bitC.bitContainer[1];
@@ -1162,7 +1162,7 @@ unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
 /// # Returns
 ///
 /// The Huffman stream end mark: A 1-bit value = 1.
-unsafe fn HUF_endMark() -> HUF_CElt {
+fn HUF_endMark() -> HUF_CElt {
     let mut endMark: HUF_CElt = 0;
     HUF_setNbBits(&mut endMark, 1);
     HUF_setValue(&mut endMark, 1);

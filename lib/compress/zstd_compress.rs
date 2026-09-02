@@ -494,7 +494,7 @@ fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
 }
 
 #[inline]
-unsafe fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
+fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
     match cctxParams.literalCompressionMode {
         ParamSwitch::Enable => false,
         ParamSwitch::Disable => true,
@@ -920,10 +920,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
 
 /// Reserves and returns memory sized on and aligned on ZSTD_CWKSP_ALIGNMENT_BYTES (64 bytes).
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_aligned64(
-    ws: &mut ZSTD_cwksp,
-    bytes: size_t,
-) -> *mut core::ffi::c_void {
+fn ZSTD_cwksp_reserve_aligned64(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     ZSTD_cwksp_reserve_internal(
         ws,
         ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t),
@@ -5488,7 +5485,7 @@ pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
 
 /// Returns a [`ZSTD_symbolEncodingTypeStats_t`] with all encoding types as [`SymbolEncodingType::Basic`],
 /// and updates nextEntropy to the appropriate repeatMode.
-unsafe fn ZSTD_buildDummySequencesStatistics(
+fn ZSTD_buildDummySequencesStatistics(
     nextEntropy: &mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
     nextEntropy.litlength_repeatMode = FSE_repeat_none;
@@ -7200,7 +7197,7 @@ unsafe fn ZSTD_loadDictionaryContent(
 /// Dictionaries that assign zero probability to symbols that show up causes problems when FSE
 /// encoding. Mark dictionaries with zero probability symbols as FSE_repeat_check and only
 /// dictionaries with 100% valid symbols can be assumed valid.
-unsafe fn ZSTD_dictNCountRepeat(
+fn ZSTD_dictNCountRepeat(
     normalizedCounter: &[core::ffi::c_short],
     dictMaxSymbolValue: u8,
     maxSymbolValue: u8,
@@ -8426,7 +8423,7 @@ pub unsafe extern "C" fn ZSTD_compress(
 
 /// Estimate amount of memory that will be needed to create a dictionary with following arguments
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize_advanced))]
-pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
+pub extern "C" fn ZSTD_estimateCDictSize_advanced(
     dictSize: size_t,
     cParams: ZSTD_compressionParameters,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
@@ -11482,7 +11479,7 @@ pub extern "C" fn ZSTD_getCParams(
 ///
 /// a `ZSTD_parameters` structure (instead of `ZSTD_compressionParameters`).
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getParams))]
-pub unsafe extern "C" fn ZSTD_getParams(
+pub extern "C" fn ZSTD_getParams(
     compressionLevel: core::ffi::c_int,
     mut srcSizeHint: core::ffi::c_ulonglong,
     dictSize: size_t,
