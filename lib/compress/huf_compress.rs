@@ -978,14 +978,14 @@ pub unsafe fn HUF_buildCTable_wksp(
 }
 
 pub unsafe fn HUF_estimateCompressedSize(
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
     count: *const c_uint,
     maxSymbolValue: u8,
 ) -> size_t {
-    let ct = CTable.add(1);
+    let ct = &CTable[1..];
     let mut nbBits = 0usize;
     for s in 0..usize::from(maxSymbolValue) + 1 {
-        nbBits += HUF_getNbBits(*ct.add(s)) * *count.add(s) as size_t;
+        nbBits += HUF_getNbBits(ct[s]) * *count.add(s) as size_t;
     }
     nbBits >> 3
 }
@@ -1668,8 +1668,7 @@ pub unsafe fn HUF_optimalTableLog(
                 wkspSize,
             );
             if !ERR_isError(hSize) {
-                newSize =
-                    (HUF_estimateCompressedSize(table.as_ptr(), count, maxSymbolValue)) + (hSize);
+                newSize = (HUF_estimateCompressedSize(table, count, maxSymbolValue)) + (hSize);
                 if newSize > optSize + 1 {
                     break;
                 }
@@ -1895,12 +1894,12 @@ unsafe fn HUF_compress_internal(
         /* Check if using previous huffman table is beneficial */
         if !repeat.is_null() && *repeat as c_uint != HUF_repeat_none as c_int as c_uint {
             let oldSize = HUF_estimateCompressedSize(
-                oldHufTable.as_ptr(),
+                oldHufTable,
                 ((*table).count).as_mut_ptr(),
                 maxSymbolValue,
             );
             let newSize = HUF_estimateCompressedSize(
-                ((*table).CTable).as_mut_ptr(),
+                &(*table).CTable,
                 ((*table).count).as_mut_ptr(),
                 maxSymbolValue,
             );
