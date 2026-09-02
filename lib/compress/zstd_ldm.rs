@@ -585,11 +585,11 @@ pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t
 
 /// Returns a pointer to the start of the bucket associated with hash.
 unsafe fn ZSTD_ldm_getBucket(
-    ldmState: *const ldmState_t,
+    ldmState: &ldmState_t,
     hash: size_t,
     bucketSizeLog: u32,
 ) -> *mut ldmEntry_t {
-    ((*ldmState).hashTable).add(hash << bucketSizeLog)
+    ldmState.hashTable.add(hash << bucketSizeLog)
 }
 
 /// Insert the entry with corresponding hash into the hash table
