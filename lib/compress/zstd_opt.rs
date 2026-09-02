@@ -1443,8 +1443,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     ZSTD_rescaleFreqs(&mut ms.opt, src as *const u8, srcSize, OPT_LEVEL);
     ip = ip.offset((ip == prefixStart) as core::ffi::c_int as isize);
 
-    let optStatePtr: *mut optState_t = core::ptr::addr_of_mut!(ms.opt); // held across later calls
-
     // Match Loop
     while ip < ilimit {
         let mut cur: u32 = 0;
@@ -1490,7 +1488,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             // because it is static for the duration of the forward pass, and is included
             // in every subsequent price. But, we include the literal length because
             // the cost variation of litlen depends on the value of litlen.
-            (*opt).price = ZSTD_litLengthPrice(litlen, optStatePtr, OPT_LEVEL) as core::ffi::c_int;
+            (*opt).price = ZSTD_litLengthPrice(litlen, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
             (*opt).rep = *rep;
 
             // large match -> immediate encoding
@@ -1518,14 +1516,14 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     let offBase = (*matches.offset(matchNb as isize)).off;
                     let end = (*matches.offset(matchNb as isize)).len;
                     while pos <= end {
-                        let matchPrice = ZSTD_getMatchPrice(offBase, pos, optStatePtr, OPT_LEVEL)
+                        let matchPrice = ZSTD_getMatchPrice(offBase, pos, &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int;
                         let sequencePrice = (*opt).price + matchPrice;
                         (*opt.offset(pos as isize)).mlen = pos;
                         (*opt.offset(pos as isize)).off = offBase;
                         (*opt.offset(pos as isize)).litlen = 0; // end of match
                         (*opt.offset(pos as isize)).price = sequencePrice
-                            + ZSTD_litLengthPrice(0, optStatePtr, OPT_LEVEL) as core::ffi::c_int;
+                            + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                         pos = pos.wrapping_add(1);
                     }
                     matchNb = matchNb.wrapping_add(1);
@@ -1549,12 +1547,11 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         + ZSTD_rawLiteralsCost(
                             ip.offset(cur as isize).sub(1),
                             1,
-                            optStatePtr,
+                            &ms.opt,
                             OPT_LEVEL,
                         ) as core::ffi::c_int
-                        + (ZSTD_litLengthPrice(litlen_0, optStatePtr, OPT_LEVEL)
-                            as core::ffi::c_int
-                            - ZSTD_litLengthPrice(litlen_0.wrapping_sub(1), optStatePtr, OPT_LEVEL)
+                        + (ZSTD_litLengthPrice(litlen_0, &ms.opt, OPT_LEVEL) as core::ffi::c_int
+                            - ZSTD_litLengthPrice(litlen_0.wrapping_sub(1), &ms.opt, OPT_LEVEL)
                                 as core::ffi::c_int);
                     if price <= (*opt.offset(cur as isize)).price {
                         let prevMatch = *opt.offset(cur as isize);
@@ -1563,8 +1560,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         (*opt.offset(cur as isize)).price = price;
                         if OPT_LEVEL >= 1
                             && prevMatch.litlen == 0
-                            && (ZSTD_litLengthPrice(1, optStatePtr, OPT_LEVEL) as core::ffi::c_int
-                                - ZSTD_litLengthPrice((1 - 1) as u32, optStatePtr, OPT_LEVEL)
+                            && (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
+                                - ZSTD_litLengthPrice((1 - 1) as u32, &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int)
                                 < 0
                             && (ip.offset(cur as isize) < iend) as core::ffi::c_int
@@ -1576,28 +1573,24 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 + ZSTD_rawLiteralsCost(
                                     ip.offset(cur as isize),
                                     1,
-                                    optStatePtr,
+                                    &ms.opt,
                                     OPT_LEVEL,
                                 ) as core::ffi::c_int
-                                + (ZSTD_litLengthPrice(1, optStatePtr, OPT_LEVEL)
-                                    as core::ffi::c_int
-                                    - ZSTD_litLengthPrice((1 - 1) as u32, optStatePtr, OPT_LEVEL)
+                                + (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
+                                    - ZSTD_litLengthPrice((1 - 1) as u32, &ms.opt, OPT_LEVEL)
                                         as core::ffi::c_int);
                             let withMoreLiterals = price
                                 + ZSTD_rawLiteralsCost(
                                     ip.offset(cur as isize),
                                     1,
-                                    optStatePtr,
+                                    &ms.opt,
                                     OPT_LEVEL,
                                 ) as core::ffi::c_int
-                                + (ZSTD_litLengthPrice(
-                                    litlen_0.wrapping_add(1),
-                                    optStatePtr,
-                                    OPT_LEVEL,
-                                ) as core::ffi::c_int
+                                + (ZSTD_litLengthPrice(litlen_0.wrapping_add(1), &ms.opt, OPT_LEVEL)
+                                    as core::ffi::c_int
                                     - ZSTD_litLengthPrice(
                                         litlen_0.wrapping_add(1).wrapping_sub(1),
-                                        optStatePtr,
+                                        &ms.opt,
                                         OPT_LEVEL,
                                     ) as core::ffi::c_int);
                             if with1literal < withMoreLiterals
@@ -1651,8 +1644,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 as core::ffi::c_int as u32;
                             let previousPrice = (*opt.offset(cur as isize)).price;
                             let basePrice = previousPrice
-                                + ZSTD_litLengthPrice(0, optStatePtr, OPT_LEVEL)
-                                    as core::ffi::c_int;
+                                + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                             let mut nbMatches_0 = getAllMatches(
                                 matches,
                                 ms,
@@ -1707,10 +1699,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                             let pos_0 = cur.wrapping_add(mlen);
                                             let price_0 = basePrice
                                                 + ZSTD_getMatchPrice(
-                                                    offset,
-                                                    mlen,
-                                                    optStatePtr,
-                                                    OPT_LEVEL,
+                                                    offset, mlen, &ms.opt, OPT_LEVEL,
                                                 )
                                                     as core::ffi::c_int;
 
@@ -1821,7 +1810,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         // only literals => must be last "sequence", actually starting a new stream of sequences
                         ip = anchor.offset(llen as isize); // last "sequence" is a bunch of literals => don't progress anchor
                     } else {
-                        ZSTD_updateStats(optStatePtr, llen, anchor, offBase_0, mlen_0);
+                        ZSTD_updateStats(&mut ms.opt, llen, anchor, offBase_0, mlen_0);
                         ZSTD_storeSeq(
                             seqStore,
                             llen as size_t,
@@ -1837,7 +1826,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                 }
 
                 // update all costs
-                ZSTD_setBasePrices(optStatePtr, OPT_LEVEL);
+                ZSTD_setBasePrices(&mut ms.opt, OPT_LEVEL);
             }
         }
     }
