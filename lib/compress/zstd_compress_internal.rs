@@ -81,6 +81,15 @@ pub(crate) fn ZSTD_window_init(window: &mut ZSTD_window_t) {
     window.nbOverflowCorrections = 0;
 }
 
+/// Clears the window containing the history by simply setting it to empty.
+#[inline]
+pub(crate) fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
+    let end = window.nextSrc.wrapping_offset_from(window.base) as u32;
+
+    window.lowLimit = end;
+    window.dictLimit = end;
+}
+
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
