@@ -1542,7 +1542,7 @@ unsafe fn HUF_compressCTable_internal(
     src: *const c_void,
     srcSize: size_t,
     nbStreams: HUF_nbStreams_e,
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
     flags: c_int,
 ) -> size_t {
     let cSize = if nbStreams as c_uint == HUF_singleStream as c_int as c_uint {
@@ -1551,7 +1551,7 @@ unsafe fn HUF_compressCTable_internal(
             oend.offset_from_unsigned(op),
             src,
             srcSize,
-            CTable,
+            CTable.as_ptr(),
             flags,
         )
     } else {
@@ -1560,7 +1560,7 @@ unsafe fn HUF_compressCTable_internal(
             oend.offset_from_unsigned(op),
             src,
             srcSize,
-            CTable,
+            CTable.as_ptr(),
             flags,
         )
     };
@@ -1765,7 +1765,7 @@ unsafe fn HUF_compress_internal(
             src,
             srcSize,
             nbStreams,
-            oldHufTable.as_ptr(),
+            oldHufTable,
             flags,
         );
     }
@@ -1847,7 +1847,7 @@ unsafe fn HUF_compress_internal(
             src,
             srcSize,
             nbStreams,
-            oldHufTable.as_ptr(),
+            oldHufTable,
             flags,
         );
     }
@@ -1913,7 +1913,7 @@ unsafe fn HUF_compress_internal(
                     src,
                     srcSize,
                     nbStreams,
-                    oldHufTable.as_ptr(),
+                    oldHufTable,
                     flags,
                 );
             }
@@ -1936,7 +1936,7 @@ unsafe fn HUF_compress_internal(
         src,
         srcSize,
         nbStreams,
-        ((*table).CTable).as_mut_ptr(),
+        &(*table).CTable,
         flags,
     )
 }
