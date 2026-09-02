@@ -1676,7 +1676,7 @@ unsafe fn HUF_compress_internal(
     workSpace: *mut c_void,
     mut wkspSize: size_t,
     oldHufTable: &mut CTable,
-    repeat: *mut HUF_repeat,
+    repeat: &mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
     let table = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<size_t>())
@@ -1733,7 +1733,6 @@ unsafe fn HUF_compress_internal(
 
     /* Heuristic : If old table is valid, use it for small inputs */
     if flags & HUF_flags_preferRepeat as c_int != 0
-        && !repeat.is_null()
         && *repeat as c_uint == HUF_repeat_valid as c_int as c_uint
     {
         return HUF_compressCTable_internal(
@@ -1802,8 +1801,7 @@ unsafe fn HUF_compress_internal(
     }
 
     /* Check validity of previous table */
-    if !repeat.is_null()
-        && *repeat as c_uint == HUF_repeat_check as c_int as c_uint
+    if *repeat as c_uint == HUF_repeat_check as c_int as c_uint
         && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
     {
         *repeat = HUF_repeat_none;
@@ -1811,7 +1809,6 @@ unsafe fn HUF_compress_internal(
 
     /* Heuristic : use existing table for small inputs */
     if flags & HUF_flags_preferRepeat as c_int != 0
-        && !repeat.is_null()
         && *repeat as c_uint != HUF_repeat_none as c_int as c_uint
     {
         return HUF_compressCTable_internal(
@@ -1867,7 +1864,7 @@ unsafe fn HUF_compress_internal(
         }
 
         /* Check if using previous huffman table is beneficial */
-        if !repeat.is_null() && *repeat as c_uint != HUF_repeat_none as c_int as c_uint {
+        if *repeat as c_uint != HUF_repeat_none as c_int as c_uint {
             let oldSize = HUF_estimateCompressedSize(
                 oldHufTable,
                 ((*table).count).as_mut_ptr(),
@@ -1898,9 +1895,7 @@ unsafe fn HUF_compress_internal(
             return 0;
         }
         op = op.add(hSize);
-        if !repeat.is_null() {
-            *repeat = HUF_repeat_none;
-        }
+        *repeat = HUF_repeat_none;
         *oldHufTable = (*table).CTable;
     }
     HUF_compressCTable_internal(
@@ -1925,7 +1920,7 @@ pub unsafe fn HUF_compress1X_repeat(
     workSpace: *mut c_void,
     wkspSize: size_t,
     hufTable: &mut CTable,
-    repeat: *mut HUF_repeat,
+    repeat: &mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
     HUF_compress_internal(
@@ -1957,7 +1952,7 @@ pub unsafe fn HUF_compress4X_repeat(
     workSpace: *mut c_void,
     wkspSize: size_t,
     hufTable: &mut CTable,
-    repeat: *mut HUF_repeat,
+    repeat: &mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
     HUF_compress_internal(

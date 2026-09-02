@@ -25,7 +25,7 @@ pub type huf_compress_f = unsafe fn(
     *mut core::ffi::c_void,
     size_t,
     &mut CTable,
-    *mut HUF_repeat,
+    &mut HUF_repeat,
     core::ffi::c_int,
 ) -> size_t;
 
