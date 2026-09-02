@@ -5706,21 +5706,21 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: &SeqStore_t) -> size_t {
 /// Stores the result in resultSeqStore.
 unsafe fn ZSTD_deriveSeqStoreChunk(
     resultSeqStore: &mut SeqStore_t,
-    originalSeqStore: *const SeqStore_t,
+    originalSeqStore: &SeqStore_t,
     startIdx: size_t,
     endIdx: size_t,
 ) {
     *resultSeqStore = *originalSeqStore;
     if startIdx > 0 {
-        resultSeqStore.sequences = ((*originalSeqStore).sequencesStart).add(startIdx);
+        resultSeqStore.sequences = originalSeqStore.sequencesStart.add(startIdx);
         resultSeqStore.litStart =
             (resultSeqStore.litStart).add(ZSTD_countSeqStoreLiteralsBytes(resultSeqStore));
     }
 
     // Move longLengthPos into the correct position if necessary
-    if (*originalSeqStore).longLengthType != LongLengthType::None {
-        if ((*originalSeqStore).longLengthPos as size_t) < startIdx
-            || (*originalSeqStore).longLengthPos as size_t > endIdx
+    if originalSeqStore.longLengthType != LongLengthType::None {
+        if (originalSeqStore.longLengthPos as size_t) < startIdx
+            || originalSeqStore.longLengthPos as size_t > endIdx
         {
             resultSeqStore.longLengthType = LongLengthType::None;
         } else {
@@ -5728,10 +5728,12 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
                 (resultSeqStore.longLengthPos).wrapping_sub(startIdx as u32);
         }
     }
-    resultSeqStore.sequencesStart = ((*originalSeqStore).sequencesStart).add(startIdx);
-    resultSeqStore.sequences = ((*originalSeqStore).sequencesStart).add(endIdx);
+    resultSeqStore.sequencesStart = originalSeqStore.sequencesStart.add(startIdx);
+    resultSeqStore.sequences = originalSeqStore.sequencesStart.add(endIdx);
     if endIdx
-        != ((*originalSeqStore).sequences).offset_from((*originalSeqStore).sequencesStart) as size_t
+        != originalSeqStore
+            .sequences
+            .offset_from(originalSeqStore.sequencesStart) as size_t
     {
         let literalsBytes = ZSTD_countSeqStoreLiteralsBytes(resultSeqStore);
         resultSeqStore.lit = (resultSeqStore.litStart).add(literalsBytes);
