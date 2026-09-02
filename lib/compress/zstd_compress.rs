@@ -1396,29 +1396,31 @@ pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
 /// If params are derived from a compression level then that compression
 /// level, otherwise ZSTD_NO_CLEVEL.
 unsafe fn ZSTD_CCtxParams_init_internal(
-    cctxParams: *mut ZSTD_CCtx_params,
+    cctxParams: &mut ZSTD_CCtx_params,
     params: &ZSTD_parameters,
     compressionLevel: core::ffi::c_int,
 ) {
-    ptr::write_bytes(cctxParams as *mut u8, 0, size_of::<ZSTD_CCtx_params>());
-    (*cctxParams).cParams = params.cParams;
-    (*cctxParams).fParams = params.fParams;
+    ptr::write_bytes(
+        (cctxParams as *mut ZSTD_CCtx_params).cast::<u8>(),
+        0,
+        size_of::<ZSTD_CCtx_params>(),
+    );
+    cctxParams.cParams = params.cParams;
+    cctxParams.fParams = params.fParams;
     // Should not matter, as all cParams are presumed properly defined.
     // But, set it for tracing anyway.
-    (*cctxParams).compressionLevel = compressionLevel;
-    (*cctxParams).useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode((*cctxParams).useRowMatchFinder, &params.cParams);
-    (*cctxParams).postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode((*cctxParams).postBlockSplitter, &params.cParams);
-    (*cctxParams).ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm((*cctxParams).ldmParams.enableLdm, &params.cParams);
-    (*cctxParams).validateSequences =
-        ZSTD_resolveExternalSequenceValidation((*cctxParams).validateSequences);
-    (*cctxParams).maxBlockSize = ZSTD_resolveMaxBlockSize((*cctxParams).maxBlockSize);
-    (*cctxParams).searchForExternalRepcodes = ZSTD_resolveExternalRepcodeSearch(
-        (*cctxParams).searchForExternalRepcodes,
-        compressionLevel,
-    );
+    cctxParams.compressionLevel = compressionLevel;
+    cctxParams.useRowMatchFinder =
+        ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &params.cParams);
+    cctxParams.postBlockSplitter =
+        ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &params.cParams);
+    cctxParams.ldmParams.enableLdm =
+        ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &params.cParams);
+    cctxParams.validateSequences =
+        ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
+    cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
+    cctxParams.searchForExternalRepcodes =
+        ZSTD_resolveExternalRepcodeSearch(cctxParams.searchForExternalRepcodes, compressionLevel);
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced))]
@@ -1433,7 +1435,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_CCtxParams_init_internal(cctxParams, &params, ZSTD_NO_CLEVEL);
+    ZSTD_CCtxParams_init_internal(&mut *cctxParams, &params, ZSTD_NO_CLEVEL);
 
     0
 }
