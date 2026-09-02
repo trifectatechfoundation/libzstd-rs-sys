@@ -52,7 +52,7 @@ pub(crate) fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_Trace
 }
 
 #[inline]
-pub(crate) fn ZSTD_trace_decompress_end(_ctx: ZSTD_TraceCtx, _trace: *const ZSTD_Trace) {
+pub(crate) fn ZSTD_trace_decompress_end(_ctx: ZSTD_TraceCtx, _trace: &ZSTD_Trace) {
     #[cfg(feature = "trace")]
     unsafe {
         return statics::ZSTD_trace_decompress_end(_ctx, _trace);
