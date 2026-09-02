@@ -121,26 +121,22 @@ fn ZSTD_compressedLiterals(optPtr: &optState_t) -> bool {
 
 fn ZSTD_setBasePrices(optPtr: &mut optState_t, optLevel: core::ffi::c_int) {
     if ZSTD_compressedLiterals(optPtr) {
-        optPtr.litSumBasePrice = if optLevel != 0 {
-            ZSTD_fracWeight(optPtr.litSum)
-        } else {
-            ZSTD_bitWeight(optPtr.litSum)
+        optPtr.litSumBasePrice = match optLevel {
+            0 => ZSTD_bitWeight(optPtr.litSum),
+            _ => ZSTD_fracWeight(optPtr.litSum),
         };
     }
-    optPtr.litLengthSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight(optPtr.litLengthSum)
-    } else {
-        ZSTD_bitWeight(optPtr.litLengthSum)
+    optPtr.litLengthSumBasePrice = match optLevel {
+        0 => ZSTD_bitWeight(optPtr.litLengthSum),
+        _ => ZSTD_fracWeight(optPtr.litLengthSum),
     };
-    optPtr.matchLengthSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight(optPtr.matchLengthSum)
-    } else {
-        ZSTD_bitWeight(optPtr.matchLengthSum)
+    optPtr.matchLengthSumBasePrice = match optLevel {
+        0 => ZSTD_bitWeight(optPtr.matchLengthSum),
+        _ => ZSTD_fracWeight(optPtr.matchLengthSum),
     };
-    optPtr.offCodeSumBasePrice = if optLevel != 0 {
-        ZSTD_fracWeight(optPtr.offCodeSum)
-    } else {
-        ZSTD_bitWeight(optPtr.offCodeSum)
+    optPtr.offCodeSumBasePrice = match optLevel {
+        0 => ZSTD_bitWeight(optPtr.offCodeSum),
+        _ => ZSTD_fracWeight(optPtr.offCodeSum),
     };
 }
 
@@ -368,10 +364,9 @@ unsafe fn ZSTD_rawLiteralsCost(
     let mut price = optPtr.litSumBasePrice * litLength;
     let litPriceMax = (optPtr.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
     for u in 0..litLength {
-        let mut litPrice = if optLevel != 0 {
-            ZSTD_fracWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize))
-        } else {
-            ZSTD_bitWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize))
+        let mut litPrice = match optLevel {
+            0 => ZSTD_bitWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize)),
+            _ => ZSTD_fracWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize)),
         };
         if litPrice > litPriceMax {
             litPrice = litPriceMax;
@@ -389,10 +384,9 @@ unsafe fn ZSTD_litLengthPrice(
     optLevel: core::ffi::c_int,
 ) -> u32 {
     if optPtr.priceType == OptPrice::Predef {
-        return if optLevel != 0 {
-            ZSTD_fracWeight(litLength)
-        } else {
-            ZSTD_bitWeight(litLength)
+        return match optLevel {
+            0 => ZSTD_bitWeight(litLength),
+            _ => ZSTD_fracWeight(litLength),
         };
     }
 
@@ -412,10 +406,9 @@ unsafe fn ZSTD_litLengthPrice(
     let llCode = ZSTD_LLcode(litLength);
     ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
         .wrapping_add(optPtr.litLengthSumBasePrice)
-        .wrapping_sub(if optLevel != 0 {
-            ZSTD_fracWeight(*(optPtr.litLengthFreq).offset(llCode as isize))
-        } else {
-            ZSTD_bitWeight(*(optPtr.litLengthFreq).offset(llCode as isize))
+        .wrapping_sub(match optLevel {
+            0 => ZSTD_bitWeight(*(optPtr.litLengthFreq).offset(llCode as isize)),
+            _ => ZSTD_fracWeight(*(optPtr.litLengthFreq).offset(llCode as isize)),
         })
 }
 
@@ -436,20 +429,18 @@ unsafe fn ZSTD_getMatchPrice(
 
     if optPtr.priceType == OptPrice::Predef {
         // fixed scheme, does not use statistics
-        return (if optLevel != 0 {
-            ZSTD_fracWeight(mlBase)
-        } else {
-            ZSTD_bitWeight(mlBase)
+        return (match optLevel {
+            0 => ZSTD_bitWeight(mlBase),
+            _ => ZSTD_fracWeight(mlBase),
         })
         .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER as u32); // emulated offset cost
     }
 
     // dynamic statistics
     price = (offCode * BITCOST_MULTIPLIER as u32).wrapping_add(
-        (optPtr.offCodeSumBasePrice).wrapping_sub(if optLevel != 0 {
-            ZSTD_fracWeight(*(optPtr.offCodeFreq).offset(offCode as isize))
-        } else {
-            ZSTD_bitWeight(*(optPtr.offCodeFreq).offset(offCode as isize))
+        (optPtr.offCodeSumBasePrice).wrapping_sub(match optLevel {
+            0 => ZSTD_bitWeight(*(optPtr.offCodeFreq).offset(offCode as isize)),
+            _ => ZSTD_fracWeight(*(optPtr.offCodeFreq).offset(offCode as isize)),
         }),
     );
     if optLevel < 2 && offCode >= 20 {
@@ -461,10 +452,9 @@ unsafe fn ZSTD_getMatchPrice(
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
         ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
-            (optPtr.matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {
-                ZSTD_fracWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize))
-            } else {
-                ZSTD_bitWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize))
+            (optPtr.matchLengthSumBasePrice).wrapping_sub(match optLevel {
+                0 => ZSTD_bitWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize)),
+                _ => ZSTD_fracWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize)),
             }),
         ),
     );
