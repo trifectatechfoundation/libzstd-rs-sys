@@ -34,6 +34,15 @@ pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size
     *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
 }
 
+/// Helper function for short cache matchfinders.
+/// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
+#[inline]
+pub(crate) fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
+    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+    tag1 == tag2
+}
+
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum CompressionStage {
