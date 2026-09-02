@@ -6855,7 +6855,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock(
 /// 0, or an error code
 unsafe fn ZSTD_loadDictionaryContent(
     ms: &mut ZSTD_MatchState_t,
-    ls: *mut ldmState_t,
+    ls: Option<&mut ldmState_t>,
     ws: &mut ZSTD_cwksp,
     params: &ZSTD_CCtx_params,
     mut src: *const core::ffi::c_void,
@@ -6865,8 +6865,8 @@ unsafe fn ZSTD_loadDictionaryContent(
 ) -> size_t {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
-    let loadLdmDict =
-        (params.ldmParams.enableLdm == ParamSwitch::Enable && !ls.is_null()) as core::ffi::c_int;
+    // `Some` when the dict must also be loaded into the LDM matchfinders.
+    let loadLdmDict = ls.filter(|_| params.ldmParams.enableLdm == ParamSwitch::Enable);
 
     // Assert that the ms params match the params we're being given
     ZSTD_assertEqualCParams(params.cParams, ms.cParams);
@@ -6905,18 +6905,18 @@ unsafe fn ZSTD_loadDictionaryContent(
         }) as size_t
     {
         // We must have cleared our windows when our source is this large.
-        assert!(loadLdmDict != 0);
+        assert!(loadLdmDict.is_some());
     }
 
     ZSTD_window_update(&mut ms.window, src, srcSize, false);
 
-    if loadLdmDict != 0 {
+    if let Some(ls) = loadLdmDict {
         // Load the entire dict into LDM matchfinders.
-        ZSTD_window_update(&mut (*ls).window, src, srcSize, false);
-        (*ls).loadedDictEnd = if params.forceWindow != 0 {
+        ZSTD_window_update(&mut ls.window, src, srcSize, false);
+        ls.loadedDictEnd = if params.forceWindow != 0 {
             0
         } else {
-            iend.offset_from((*ls).window.base) as core::ffi::c_long as u32
+            iend.offset_from(ls.window.base) as core::ffi::c_long as u32
         };
         ZSTD_ldm_fillHashTable(ls, ip, iend, &params.ldmParams);
     }
@@ -7202,7 +7202,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
     let err_code_0 = ZSTD_loadDictionaryContent(
         ms,
-        core::ptr::null_mut::<ldmState_t>(),
+        None,
         ws,
         params,
         dictPtr as *const core::ffi::c_void,
@@ -7223,7 +7223,7 @@ unsafe fn ZSTD_loadZstdDictionary(
 unsafe fn ZSTD_compress_insertDictionary(
     bs: *mut ZSTD_compressedBlockState_t,
     ms: &mut ZSTD_MatchState_t,
-    ls: *mut ldmState_t,
+    ls: Option<&mut ldmState_t>,
     ws: &mut ZSTD_cwksp,
     params: &ZSTD_CCtx_params,
     dict: *const core::ffi::c_void,
@@ -7316,7 +7316,7 @@ unsafe fn ZSTD_compressBegin_internal(
         ZSTD_compress_insertDictionary(
             (*cctx).blockState.prevCBlock,
             &mut (*cctx).blockState.matchState,
-            &mut (*cctx).ldmState,
+            Some(&mut (*cctx).ldmState),
             &mut (*cctx).workspace,
             &(*cctx).appliedParams,
             (*cdict).dictContent,
@@ -7330,7 +7330,7 @@ unsafe fn ZSTD_compressBegin_internal(
         ZSTD_compress_insertDictionary(
             (*cctx).blockState.prevCBlock,
             &mut (*cctx).blockState.matchState,
-            &mut (*cctx).ldmState,
+            Some(&mut (*cctx).ldmState),
             &mut (*cctx).workspace,
             &(*cctx).appliedParams,
             dict,
@@ -7939,7 +7939,7 @@ unsafe fn ZSTD_initCDict_internal(
     let dictID = ZSTD_compress_insertDictionary(
         &mut (*cdict).cBlockState,
         &mut (*cdict).matchState,
-        core::ptr::null_mut(),
+        None,
         &mut (*cdict).workspace,
         &params,
         (*cdict).dictContent,
