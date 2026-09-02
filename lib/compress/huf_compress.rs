@@ -435,7 +435,7 @@ pub unsafe fn HUF_readCTable(
     readSize
 }
 
-pub unsafe fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
+pub fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
     debug_assert!(symbolValue <= HUF_SYMBOLVALUE_MAX);
     if symbolValue > (HUF_readCTableHeader(CTable)).maxSymbolValue as u32 {
         return 0;
