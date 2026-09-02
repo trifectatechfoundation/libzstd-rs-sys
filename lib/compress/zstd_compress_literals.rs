@@ -2,15 +2,15 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{
-    HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
+    CTable, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{LitHufLog, SymbolEncodingType};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
+use crate::lib::compress::zstd_compress_internal::ZSTD_hufCTables_t;
 use crate::lib::compress::zstd_compress_internal::ZSTD_minGain;
-use crate::lib::compress::zstd_compress_internal::{CTable, ZSTD_hufCTables_t};
 use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;

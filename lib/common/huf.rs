@@ -59,10 +59,46 @@ pub(crate) const HUF_repeat_valid: HUF_repeat = 2;
 pub(crate) const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(crate) struct HUF_CTableHeader {
     pub(crate) tableLog: u8,
     pub(crate) maxSymbolValue: u8,
     pub(crate) unused: [u8; size_of::<usize>() - 2],
+}
+
+impl HUF_CTableHeader {
+    pub(crate) fn new(tableLog: u32, maxSymbolValue: u8) -> Self {
+        debug_assert!(tableLog < 256);
+
+        Self {
+            tableLog: tableLog as u8,
+            maxSymbolValue,
+            unused: [0; _],
+        }
+    }
+}
+
+/// A Huffman compression table: a header, followed by one entry per symbol.
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct CTable {
+    pub(crate) header: HUF_CTableHeader,
+    pub(crate) elements: SymbolTable,
+}
+
+/// The per-symbol part of a [`CTable`]: everything after the header.
+pub(crate) type SymbolTable = [HUF_CElt; HUF_SYMBOLVALUE_MAX as usize + 1];
+
+const _: () = assert!(size_of::<CTable>() == HUF_CTABLE_SIZE_ST(255) * size_of::<HUF_CElt>());
+const _: () = assert!(align_of::<CTable>() == align_of::<HUF_CElt>());
+
+// not derived: `[T; N]: Default` only exists for `N <= 32`, and `elements` is longer
+impl Default for CTable {
+    fn default() -> Self {
+        Self {
+            header: HUF_CTableHeader::default(),
+            elements: [0; _],
+        }
+    }
 }

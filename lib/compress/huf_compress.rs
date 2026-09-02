@@ -10,11 +10,11 @@ use crate::lib::common::fse::{
     FSE_CTable, FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32, FSE_CTABLE_SIZE_U32,
 };
 use crate::lib::common::huf::{
-    HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
-    HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE,
-    HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT,
-    HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
+    CTable, HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth,
+    HUF_flags_preferRepeat, HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check,
+    HUF_repeat_none, HUF_repeat_valid, SymbolTable, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND,
+    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8,
+    HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -22,10 +22,6 @@ use crate::lib::compress::fse_compress::{
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp_array, HIST_WKSP_SIZE_U32};
-use crate::lib::compress::zstd_compress_internal::CTable;
-
-/// The per-symbol part of a [`CTable`]: everything after the header in its first slot.
-type SymbolTable = [HUF_CElt; HUF_SYMBOLVALUE_MAX as usize + 1];
 
 #[cfg(doc)]
 use crate::lib::common::bitstream::BIT_CStream_t;
@@ -217,28 +213,6 @@ fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     }
 }
 
-pub(super) fn HUF_readCTableHeader(ctable: &CTable) -> HUF_CTableHeader {
-    // the header is stored in the first `HUF_CElt` slot of the table
-    let [tableLog, maxSymbolValue, unused @ ..] = ctable[0].to_ne_bytes();
-
-    HUF_CTableHeader {
-        tableLog,
-        maxSymbolValue,
-        unused,
-    }
-}
-
-fn HUF_writeCTableHeader(ctable: &mut CTable, tableLog: u32, maxSymbolValue: u8) {
-    debug_assert!(tableLog < 256);
-
-    let mut bytes = [0; size_of::<HUF_CElt>()];
-    bytes[0] = tableLog as u8;
-    bytes[1] = maxSymbolValue;
-
-    // the header is stored in the first `HUF_CElt` slot of the table
-    ctable[0] = HUF_CElt::from_ne_bytes(bytes);
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_WriteCTableWksp {
@@ -256,7 +230,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     workspace: *mut c_void,
     mut workspaceSize: size_t,
 ) -> size_t {
-    let ct = &CTable[1..];
+    let ct = &CTable.elements;
     let op = dst as *mut u8;
     let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
         as *mut HUF_WriteCTableWksp;
@@ -265,8 +239,8 @@ pub unsafe fn HUF_writeCTable_wksp(
         assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
-    debug_assert!(HUF_readCTableHeader(CTable).maxSymbolValue == maxSymbolValue);
-    debug_assert!(HUF_readCTableHeader(CTable).tableLog as c_uint == huffLog);
+    debug_assert!(CTable.header.maxSymbolValue == maxSymbolValue);
+    debug_assert!(CTable.header.tableLog as c_uint == huffLog);
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
@@ -373,9 +347,9 @@ pub unsafe fn HUF_readCTable(
         Err(_) => return Error::maxSymbolValue_tooSmall.to_error_code(),
     };
 
-    HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
+    CTable.header = HUF_CTableHeader::new(tableLog, *maxSymbolValuePtr);
 
-    let ct = &mut CTable[1..];
+    let ct = &mut CTable.elements;
 
     /* Prepare base value per rank */
     {
@@ -440,11 +414,10 @@ pub unsafe fn HUF_readCTable(
 
 pub fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
     debug_assert!(symbolValue <= HUF_SYMBOLVALUE_MAX);
-    if symbolValue > (HUF_readCTableHeader(CTable)).maxSymbolValue as u32 {
+    if symbolValue > CTable.header.maxSymbolValue as u32 {
         return 0;
     }
-    // the first slot holds the header, so symbol `s` lives at index `s + 1`
-    HUF_getNbBits(CTable[symbolValue as usize + 1]) as u32
+    HUF_getNbBits(CTable.elements[symbolValue as usize]) as u32
 }
 
 /// Try to enforce `targetNbBits` on the Huffman tree described in `huffNode`.
@@ -890,7 +863,7 @@ fn HUF_buildCTableFromTree(
     maxNbBits: u32,
 ) {
     /* fill result into ctable (val, nbBits) */
-    let ct = &mut CTable[1..];
+    let ct = &mut CTable.elements;
     let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = c_int::from(maxSymbolValue) + 1;
@@ -918,7 +891,7 @@ fn HUF_buildCTableFromTree(
         *fresh19 += 1;
     }
 
-    HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
+    CTable.header = HUF_CTableHeader::new(maxNbBits, maxSymbolValue);
 }
 
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
@@ -988,7 +961,7 @@ pub unsafe fn HUF_estimateCompressedSize(
     count: *const c_uint,
     maxSymbolValue: u8,
 ) -> size_t {
-    let ct = &CTable[1..];
+    let ct = &CTable.elements;
     let mut nbBits = 0usize;
     for (s, elt) in ct[..=usize::from(maxSymbolValue)].iter().enumerate() {
         nbBits += HUF_getNbBits(*elt) * *count.add(s) as size_t;
@@ -1001,8 +974,8 @@ pub unsafe fn HUF_validateCTable(
     count: *const c_uint,
     maxSymbolValue: u8,
 ) -> bool {
-    let header = HUF_readCTableHeader(CTable);
-    let ct = &CTable[1..];
+    let header = CTable.header;
+    let ct = &CTable.elements;
     let mut bad = false;
 
     debug_assert!(header.tableLog as usize <= HUF_TABLELOG_ABSOLUTEMAX);
@@ -1294,9 +1267,8 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     srcSize: size_t,
     CTable: &CTable,
 ) -> size_t {
-    let tableLog = (HUF_readCTableHeader(CTable)).tableLog as u32;
-    // the header occupies the first slot; the rest is the symbol table
-    let ct: &SymbolTable = CTable.last_chunk().unwrap();
+    let tableLog = CTable.header.tableLog as u32;
+    let ct = &CTable.elements;
     let ip = src as *const u8;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);

@@ -131,7 +131,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     let mut c_buf = vec![0u8; cbuf_size];
 
     // Compression table size: (maxSymbol + 2) * sizeof(usize)
-    let mut ct = [0usize; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)];
+    let mut ct = CTable::default();
 
     // C code does: dt[0] = tableLog * 0x01000001
     // This initializes the DTable description with the tableLog

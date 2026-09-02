@@ -4,9 +4,7 @@ use std::time::{Duration, Instant};
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
-use crate::lib::common::huf::{
-    HUF_CTABLE_SIZE_ST, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
-};
+use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
@@ -20,7 +18,6 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
     ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
 };
-use crate::lib::compress::zstd_compress_internal::CTable;
 use crate::lib::dictBuilder::divsufsort::divsufsort;
 use crate::lib::dictBuilder::fastcover::ZDICT_optimizeTrainFromBuffer_fastCover;
 #[expect(deprecated)]
@@ -790,7 +787,7 @@ unsafe fn analyze_entropy_internal(
     notificationLevel: core::ffi::c_uint,
     esr: &mut EStats_ress_t,
 ) -> Result<size_t, Error> {
-    let mut hufTable: CTable = [0; HUF_CTABLE_SIZE_ST(255)];
+    let mut hufTable = CTable::default();
 
     const KB: usize = 1 << 10;
     let offcodeMax = dictBufferSize.wrapping_add(128 * KB).ilog2() as u8;
