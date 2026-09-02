@@ -20,7 +20,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     repcodes_s, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength,
-    ZSTD_hufCTables_t, ZSTD_updateRep,
+    ZSTD_hufCTables_t, ZSTD_noCompressBlock, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -34,29 +34,6 @@ use crate::lib::compress::zstd_compress_sequences::{
 pub struct EstimatedBlockSize {
     pub estLitSize: size_t,
     pub estBlockSize: size_t,
-}
-
-#[inline]
-unsafe fn ZSTD_noCompressBlock(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    lastBlock: u32,
-) -> size_t {
-    let cBlockHeader24 = lastBlock
-        .wrapping_add((BlockType::Raw as u32) << 1)
-        .wrapping_add((srcSize << 3) as u32);
-    if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
-    MEM_writeLE24(dst, cBlockHeader24);
-    core::ptr::copy_nonoverlapping(
-        src.cast::<u8>(),
-        dst.byte_add(ZSTD_blockHeaderSize).cast::<u8>(),
-        srcSize,
-    );
-    ZSTD_blockHeaderSize.wrapping_add(srcSize)
 }
 
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;

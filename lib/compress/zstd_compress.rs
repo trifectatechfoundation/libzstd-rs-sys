@@ -487,31 +487,6 @@ fn ZSTD_cParam_withinBounds(cParam: ZSTD_cParameter, value: core::ffi::c_int) ->
     true
 }
 
-/// Writes uncompressed block to dst buffer from given src.
-/// Returns the size of the block
-#[inline]
-unsafe fn ZSTD_noCompressBlock(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    lastBlock: u32,
-) -> size_t {
-    let cBlockHeader24 = lastBlock
-        .wrapping_add((BlockType::Raw as u32) << 1)
-        .wrapping_add((srcSize << 3) as u32);
-    if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
-    MEM_writeLE24(dst, cBlockHeader24);
-    core::ptr::copy_nonoverlapping(
-        src.cast::<u8>(),
-        dst.byte_add(ZSTD_blockHeaderSize).cast::<u8>(),
-        srcSize,
-    );
-    ZSTD_blockHeaderSize.wrapping_add(srcSize)
-}
-
 #[inline]
 unsafe fn ZSTD_rleCompressBlock(
     dst: *mut core::ffi::c_void,
@@ -697,9 +672,9 @@ use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, LongLengthType, OptPrice, Repcodes_t, SeqCollector, StreamStage,
     TableFillPurpose, ZSTD_BlockCompressor_f, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_prefixDict, ZSTD_prefixDict_s,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
+    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
+    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
