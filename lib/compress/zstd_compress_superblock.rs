@@ -19,8 +19,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTablesMetadata_t, ZSTD_TARGETCBLOCKSIZE_MIN,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, LongLengthType, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_hufCTables_t,
-    ZSTD_updateRep,
+    repcodes_s, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength,
+    ZSTD_hufCTables_t, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -41,31 +41,6 @@ pub struct ZSTD_SequenceLength {
 pub struct EstimatedBlockSize {
     pub estLitSize: size_t,
     pub estBlockSize: size_t,
-}
-
-#[inline]
-unsafe fn ZSTD_getSequenceLength(
-    seqStore: *const SeqStore_t,
-    seq: *const SeqDef,
-) -> ZSTD_SequenceLength {
-    let mut seqLen = ZSTD_SequenceLength {
-        litLength: 0,
-        matchLength: 0,
-    };
-    seqLen.litLength = (*seq).litLength as u32;
-    seqLen.matchLength = ((*seq).mlBase as core::ffi::c_int + MINMATCH) as u32;
-    if (*seqStore).longLengthPos
-        == seq.offset_from((*seqStore).sequencesStart) as core::ffi::c_long as u32
-    {
-        if (*seqStore).longLengthType == LongLengthType::Literal {
-            seqLen.litLength = (seqLen.litLength).wrapping_add(0x10000 as core::ffi::c_int as u32);
-        }
-        if (*seqStore).longLengthType == LongLengthType::Match {
-            seqLen.matchLength =
-                (seqLen.matchLength).wrapping_add(0x10000 as core::ffi::c_int as u32);
-        }
-    }
-    seqLen
 }
 
 #[inline]
