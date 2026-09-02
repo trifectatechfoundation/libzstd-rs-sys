@@ -443,15 +443,6 @@ fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
 
-/// Clears the window containing the history by simply setting it to empty.
-#[inline]
-unsafe fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
-    let endT = (window.nextSrc).wrapping_offset_from(window.base) as size_t;
-    let end = endT as u32;
-    window.lowLimit = end;
-    window.dictLimit = end;
-}
-
 /// Reduces the indices to protect from index overflow.
 /// Returns the correction made to the indices, which must be applied to every stored index.
 ///
@@ -574,9 +565,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_init, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_clear, ZSTD_window_enforceMaxDist, ZSTD_window_init,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

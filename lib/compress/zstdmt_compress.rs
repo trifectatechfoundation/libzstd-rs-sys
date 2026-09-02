@@ -23,13 +23,13 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_init, ZSTD_window_update,
+    CParamMode, DictTableLoadMethod, ZSTD_window_clear, ZSTD_window_hasExtDict, ZSTD_window_init,
+    ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
-use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
     ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
@@ -260,15 +260,6 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
     hash = hash.wrapping_mul(prime8bytes);
     hash = hash.wrapping_add((toAdd as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64);
     hash
-}
-
-/// Clears the window containing the history by simply setting it to empty.
-#[inline]
-fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
-    let end = window.nextSrc.wrapping_offset_from(window.base) as u32;
-
-    window.lowLimit = end;
-    window.dictLimit = end;
 }
 
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
