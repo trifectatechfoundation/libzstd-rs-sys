@@ -117,12 +117,7 @@ pub unsafe fn ZSTD_fseBitCost(
 ) -> size_t {
     let kAccuracyLog = 8;
     let mut cost = 0usize;
-    let mut cstate = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
+    let mut cstate = FSE_CState_t::default();
     FSE_initCState(&mut cstate, ctable);
     if ZSTD_getFSEMaxSymbolValue(ctable) < u16::from(max) {
         return Error::GENERIC.to_error_code();
@@ -354,24 +349,9 @@ unsafe fn ZSTD_encodeSequences_body(
     longOffsets: bool,
 ) -> size_t {
     let mut blockStream = BIT_CStream_t::default();
-    let mut stateMatchLength = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
-    let mut stateOffsetBits = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
-    let mut stateLitLength = FSE_CState_t {
-        value: 0,
-        stateTable: core::ptr::null::<core::ffi::c_void>(),
-        symbolTT: core::ptr::null::<core::ffi::c_void>(),
-        stateLog: 0,
-    };
+    let mut stateMatchLength = FSE_CState_t::default();
+    let mut stateOffsetBits = FSE_CState_t::default();
+    let mut stateLitLength = FSE_CState_t::default();
 
     if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) {
         return Error::dstSize_tooSmall.to_error_code();
