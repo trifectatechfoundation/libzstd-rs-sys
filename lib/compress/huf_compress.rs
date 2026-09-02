@@ -24,6 +24,9 @@ use crate::lib::compress::fse_compress::{
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp_array, HIST_WKSP_SIZE_U32};
 use crate::lib::compress::zstd_compress_internal::CTable;
 
+/// The per-symbol part of a [`CTable`]: everything after the header in its first slot.
+type SymbolTable = [HUF_CElt; HUF_SYMBOLVALUE_MAX as usize + 1];
+
 #[cfg(doc)]
 use crate::lib::common::bitstream::BIT_CStream_t;
 
@@ -1183,11 +1186,11 @@ unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
 unsafe fn HUF_encodeSymbol(
     bitCPtr: &mut HUF_CStream_t,
     symbol: u32,
-    CTable: *const HUF_CElt,
+    CTable: &SymbolTable,
     idx: c_int,
     fast: c_int,
 ) {
-    HUF_addBits(bitCPtr, *CTable.offset(symbol as isize), idx, fast);
+    HUF_addBits(bitCPtr, CTable[symbol as usize], idx, fast);
 }
 
 #[inline(always)]
@@ -1195,7 +1198,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     bitC: &mut HUF_CStream_t,
     ip: *const u8,
     srcSize: size_t,
-    ct: *const HUF_CElt,
+    ct: &SymbolTable,
     kUnroll: c_int,
     kFastFlush: c_int,
     kLastFast: c_int,
@@ -1292,7 +1295,8 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     CTable: &CTable,
 ) -> size_t {
     let tableLog = (HUF_readCTableHeader(CTable)).tableLog as u32;
-    let ct = CTable.as_ptr().add(1);
+    // the header occupies the first slot; the rest is the symbol table
+    let ct: &SymbolTable = CTable.last_chunk().unwrap();
     let ip = src as *const u8;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
