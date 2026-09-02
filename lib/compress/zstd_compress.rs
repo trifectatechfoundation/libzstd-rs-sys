@@ -1309,7 +1309,7 @@ fn ZSTD_resolveExternalRepcodeSearch(value: ParamSwitch, cLevel: core::ffi::c_in
 
 /// Returns 1 if compression parameters are such that CDict hashtable and chaintable indices are
 /// tagged. If so, the tags need to be removed in ZSTD_resetCCtx_byCopyingCDict.
-unsafe fn ZSTD_CDictIndicesAreTagged(cParams: &ZSTD_compressionParameters) -> bool {
+fn ZSTD_CDictIndicesAreTagged(cParams: &ZSTD_compressionParameters) -> bool {
     cParams.strategy == ZSTD_fast || cParams.strategy == ZSTD_dfast
 }
 
@@ -2743,7 +2743,7 @@ fn ZSTD_adjustCParams_internal(
 
     // We can't use more than 32 bits of hash in total, so that means that we require:
     // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
-    if mode == CParamMode::CreateCDict && unsafe { ZSTD_CDictIndicesAreTagged(&cPar) } {
+    if mode == CParamMode::CreateCDict && ZSTD_CDictIndicesAreTagged(&cPar) {
         let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
         if cPar.hashLog > maxShortCacheHashLog {
             cPar.hashLog = maxShortCacheHashLog;
