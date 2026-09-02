@@ -364,17 +364,15 @@ pub struct ZSTD_bounds {
 
 pub type ZSTD_CStream = ZSTD_CCtx;
 
-pub type ZSTD_SequenceCopier_f = Option<
-    unsafe fn(
-        *mut ZSTD_CCtx,
-        *mut ZSTD_SequencePosition,
-        *const ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        ParamSwitch,
-    ) -> size_t,
->;
+pub type ZSTD_SequenceCopier_f = unsafe fn(
+    *mut ZSTD_CCtx,
+    *mut ZSTD_SequencePosition,
+    *const ZSTD_Sequence,
+    size_t,
+    *const core::ffi::c_void,
+    size_t,
+    ParamSwitch,
+) -> size_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -10619,31 +10617,10 @@ unsafe fn ZSTD_transferSequences_noDelim(
 /// The number of bytes consumed from @src, necessarily <= @blockSize.
 fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier_f {
     if mode == ZSTD_sf_explicitBlockDelimiters {
-        return Some(
-            ZSTD_transferSequences_wBlockDelim
-                as unsafe fn(
-                    *mut ZSTD_CCtx,
-                    *mut ZSTD_SequencePosition,
-                    *const ZSTD_Sequence,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                    ParamSwitch,
-                ) -> size_t,
-        );
-    }
-    Some(
+        ZSTD_transferSequences_wBlockDelim
+    } else {
         ZSTD_transferSequences_noDelim
-            as unsafe fn(
-                *mut ZSTD_CCtx,
-                *mut ZSTD_SequencePosition,
-                *const ZSTD_Sequence,
-                size_t,
-                *const core::ffi::c_void,
-                size_t,
-                ParamSwitch,
-            ) -> size_t,
-    )
+    }
 }
 
 /// Discover the size of next block by searching for the delimiter.
@@ -10766,7 +10743,7 @@ unsafe fn ZSTD_compressSequences_internal(
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        blockSize = sequenceCopier.unwrap_unchecked()(
+        blockSize = sequenceCopier(
             cctx,
             &mut seqPos,
             inSeqs,
