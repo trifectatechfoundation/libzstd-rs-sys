@@ -413,7 +413,7 @@ pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 
 /// Initializes the rolling hash state such that it will honor the
 /// settings in params.
-unsafe fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: &ldmParams_t) {
+fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: &ldmParams_t) {
     let maxBitsInMask = params.minMatchLength.min(64);
     let hashRateLog = params.hashRateLog;
 

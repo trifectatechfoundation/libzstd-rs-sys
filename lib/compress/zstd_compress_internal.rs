@@ -563,7 +563,7 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
 }
 
 #[inline]
-pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
+pub(crate) fn ZSTD_getLowestMatchIndex(
     ms: &ZSTD_MatchState_t,
     curr: u32,
     windowLog: core::ffi::c_uint,
@@ -585,7 +585,7 @@ pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
 }
 
 #[inline]
-pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
+pub(crate) fn ZSTD_getLowestPrefixIndex(
     ms: &ZSTD_MatchState_t,
     curr: u32,
     windowLog: core::ffi::c_uint,
@@ -700,7 +700,7 @@ pub(crate) unsafe fn ZSTD_window_update(
 /// and the dictionary is below them.
 /// forceWindow and dictMatchState are therefore incompatible.
 #[inline]
-pub(crate) unsafe fn ZSTD_window_enforceMaxDist(
+pub(crate) fn ZSTD_window_enforceMaxDist(
     window: &mut ZSTD_window_t,
     blockEnd: *const core::ffi::c_void,
     maxDist: u32,
