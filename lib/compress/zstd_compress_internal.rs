@@ -12,7 +12,6 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, HASH_READ_SIZE,
     ZSTD_MAX_NB_BLOCK_SPLITS,
 };
-use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_Sequence, ZSTD_dictContentType_e};
 
@@ -87,6 +86,13 @@ pub enum LongLengthType {
     None = 0,
     Literal = 1,
     Match = 2,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_SequenceLength {
+    pub litLength: u32,
+    pub matchLength: u32,
 }
 
 #[inline]
