@@ -12,8 +12,8 @@ use libzstd_rs_sys::lib::zdict::experimental::{
 use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
 use libzstd_rs_sys::lib::zstd::{
     ParamSwitch, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
-    ZSTD_BLOCKSIZELOG_MAX, ZSTD_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MAX, ZSTD_WINDOWLOG_MAX_32,
-    ZSTD_WINDOWLOG_MAX_64,
+    ZSTD_BLOCKSIZELOG_MAX, ZSTD_CHAINLOG_MAX, ZSTD_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MAX,
+    ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
 };
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
@@ -143,8 +143,6 @@ pub const zom_test: zstd_operation_mode = 2;
 pub const zom_decompress: zstd_operation_mode = 1;
 pub const zom_compress: zstd_operation_mode = 0;
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
-pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
-pub const ZSTD_CHAINLOG_MAX_64: core::ffi::c_int = 30;
 pub const ZSTD_MINMATCH_MIN: core::ffi::c_int = 3;
 pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
@@ -1094,11 +1092,7 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) as core::ffi::c_uint;
-    (*params).chainLog = (if size_of::<size_t>() == 4 {
-        ZSTD_CHAINLOG_MAX_32
-    } else {
-        ZSTD_CHAINLOG_MAX_64
-    }) as core::ffi::c_uint;
+    (*params).chainLog = ZSTD_CHAINLOG_MAX as core::ffi::c_uint;
     (*params).hashLog = ZSTD_HASHLOG_MAX as core::ffi::c_uint;
     (*params).searchLog = ((if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32

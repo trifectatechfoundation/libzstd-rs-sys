@@ -28,6 +28,11 @@ pub const ZSTD_HASHLOG_MAX: core::ffi::c_int = if ZSTD_WINDOWLOG_MAX < 30 {
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
 pub const ZSTD_CHAINLOG_MAX_64: core::ffi::c_int = 30;
+pub const ZSTD_CHAINLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
+    4 => ZSTD_CHAINLOG_MAX_32,
+    8 => ZSTD_CHAINLOG_MAX_64,
+    _ => panic!(),
+};
 pub const ZSTD_CHAINLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
 pub const ZSTD_SEARCHLOG_MIN: core::ffi::c_int = 1;
 pub const ZSTD_MINMATCH_MAX: core::ffi::c_int = 7;
