@@ -481,24 +481,29 @@ pub(crate) unsafe fn ZSTD_count_2segments(
 }
 
 const prime3bytes: u32 = 506832829;
-const fn ZSTD_hash3(u: u32, h: u32, s: u32) -> u32 {
-    (((u << (32 as core::ffi::c_int - 24 as core::ffi::c_int)).wrapping_mul(prime3bytes)) ^ s)
-        >> 32u32.wrapping_sub(h)
-}
-#[inline]
-pub(crate) unsafe fn ZSTD_hash3Ptr(ptr: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash3(MEM_readLE32(ptr), h, 0) as usize
+const prime4bytes: u32 = 2654435761;
+
+/// Hash the first `MLS` bytes of the little-endian value `u`, salted with `s`.
+const fn ZSTD_hash32<const MLS: u32>(u: u32, h: u32, s: u32) -> u32 {
+    const { assert!(3 <= MLS && MLS <= 4) }
+
+    let prime = match MLS {
+        3 => prime3bytes,
+        _ => prime4bytes,
+    };
+
+    (((u << (32 - 8 * MLS)).wrapping_mul(prime)) ^ s) >> 32u32.wrapping_sub(h)
 }
 
-const prime4bytes: u32 = 2654435761;
-const fn ZSTD_hash4(u: u32, h: u32, s: u32) -> u32 {
-    ((u.wrapping_mul(prime4bytes)) ^ s) >> 32u32.wrapping_sub(h)
+#[inline]
+pub(crate) unsafe fn ZSTD_hash3Ptr(ptr: *const core::ffi::c_void, h: u32) -> usize {
+    ZSTD_hash32::<3>(MEM_readLE32(ptr), h, 0) as usize
 }
 unsafe fn ZSTD_hash4Ptr(ptr: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash4(MEM_readLE32(ptr), h, 0) as usize
+    ZSTD_hash32::<4>(MEM_readLE32(ptr), h, 0) as usize
 }
 unsafe fn ZSTD_hash4PtrS(ptr: *const core::ffi::c_void, h: u32, s: u32) -> usize {
-    ZSTD_hash4(MEM_readLE32(ptr), h, s) as usize
+    ZSTD_hash32::<4>(MEM_readLE32(ptr), h, s) as usize
 }
 
 const prime5bytes: u64 = 889523592379;
