@@ -9,6 +9,7 @@ use crate::lib::polyfill::unlikely;
 pub(crate) type BitContainerType = usize;
 
 #[repr(C)]
+#[derive(Default)]
 pub(crate) struct BIT_CStream_t {
     // FIXME make all fields private to this module
     pub(crate) bitContainer: BitContainerType,

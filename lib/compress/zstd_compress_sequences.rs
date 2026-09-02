@@ -353,13 +353,7 @@ unsafe fn ZSTD_encodeSequences_body(
     nbSeq: size_t,
     longOffsets: bool,
 ) -> size_t {
-    let mut blockStream = BIT_CStream_t {
-        bitContainer: 0,
-        bitPos: 0,
-        startPtr: core::ptr::null_mut::<core::ffi::c_char>(),
-        ptr: core::ptr::null_mut::<core::ffi::c_char>(),
-        endPtr: core::ptr::null_mut::<core::ffi::c_char>(),
-    };
+    let mut blockStream = BIT_CStream_t::default();
     let mut stateMatchLength = FSE_CState_t {
         value: 0,
         stateTable: core::ptr::null::<core::ffi::c_void>(),
