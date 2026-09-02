@@ -89,6 +89,7 @@ pub enum LongLengthType {
     Match = 2,
 }
 
+#[inline]
 pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqStore: *const SeqStore_t,
     seq: *const SeqDef,
@@ -98,7 +99,7 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
         matchLength: u32::from((*seq).mlBase) + MINMATCH as u32,
     };
 
-    if (*seqStore).longLengthPos == (seq as usize - (*seqStore).sequencesStart as usize) as u32 {
+    if (*seqStore).longLengthPos == seq.offset_from((*seqStore).sequencesStart) as u32 {
         if (*seqStore).longLengthType == LongLengthType::Literal {
             seqLen.litLength += 0x10000;
         }
