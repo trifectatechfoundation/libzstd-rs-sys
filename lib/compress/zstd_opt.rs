@@ -349,7 +349,7 @@ unsafe fn ZSTD_rescaleFreqs(
 unsafe fn ZSTD_rawLiteralsCost(
     literals: *const u8,
     litLength: u32,
-    optPtr: *const optState_t,
+    optPtr: &optState_t,
     optLevel: core::ffi::c_int,
 ) -> u32 {
     if litLength == 0 {
@@ -360,18 +360,18 @@ unsafe fn ZSTD_rawLiteralsCost(
         return (litLength << 3) * BITCOST_MULTIPLIER as u32; // Uncompressed - 8 bytes per literal.
     }
 
-    if (*optPtr).priceType == OptPrice::Predef {
+    if optPtr.priceType == OptPrice::Predef {
         return litLength * 6 * BITCOST_MULTIPLIER as u32; // 6 bit per literal - no statistic used
     }
 
     // dynamic statistics
-    let mut price = (*optPtr).litSumBasePrice * litLength;
-    let litPriceMax = ((*optPtr).litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
+    let mut price = optPtr.litSumBasePrice * litLength;
+    let litPriceMax = (optPtr.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
     for u in 0..litLength {
         let mut litPrice = if optLevel != 0 {
-            ZSTD_fracWeight(*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize))
+            ZSTD_fracWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize))
         } else {
-            ZSTD_bitWeight(*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize))
+            ZSTD_bitWeight(*(optPtr.litFreq).offset(*literals.offset(u as isize) as isize))
         };
         if litPrice > litPriceMax {
             litPrice = litPriceMax;
