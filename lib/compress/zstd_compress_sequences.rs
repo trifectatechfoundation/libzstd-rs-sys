@@ -465,8 +465,7 @@ unsafe fn ZSTD_encodeSequences_body(
             BIT_flushBits(&mut blockStream);
         }
         if longOffsets {
-            let extraBits_0 =
-                ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
+            let extraBits_0 = ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
                 BIT_addBits(
                     &mut blockStream,
