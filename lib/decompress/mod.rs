@@ -3,7 +3,7 @@ use libc::size_t;
 
 use crate::lib::common::xxhash::XXH64_state_t;
 
-use crate::lib::common::zstd_internal::{BlockType, WILDCOPY_OVERLENGTH};
+use crate::lib::common::zstd_internal::{BlockType, RepCodes, WILDCOPY_OVERLENGTH};
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
@@ -60,7 +60,7 @@ pub struct ZSTD_entropyDTables_t {
     pub OFTable: SymbolTable<256>,
     pub MLTable: SymbolTable<512>,
     pub hufTable: DTable,
-    pub rep: [u32; 3],
+    pub rep: RepCodes,
     pub workspace: FseWorkspace,
 }
 

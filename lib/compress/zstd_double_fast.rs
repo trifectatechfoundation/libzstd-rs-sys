@@ -5,7 +5,7 @@ pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 use libc::size_t;
 
 use crate::lib::common::mem::{MEM_read32, MEM_read64};
-use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
+use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
@@ -143,7 +143,7 @@ pub unsafe fn ZSTD_fillDoubleHashTable(
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -506,7 +506,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -954,7 +954,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
 pub unsafe fn ZSTD_compressBlock_doubleFast(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -970,7 +970,7 @@ pub unsafe fn ZSTD_compressBlock_doubleFast(
 pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -994,7 +994,7 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1297,7 +1297,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
 pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
