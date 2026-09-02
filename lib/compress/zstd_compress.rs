@@ -429,18 +429,6 @@ unsafe fn ZSTD_rleCompressBlock(
     4
 }
 
-/// Minimum compression required to generate a compress block or a compressed
-/// literals section. note: use same formula for both situations
-#[inline]
-fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
-    let minlog = if strat >= ZSTD_btultra {
-        strat.wrapping_sub(1)
-    } else {
-        6
-    };
-    (srcSize >> minlog).wrapping_add(2)
-}
-
 #[inline]
 fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
     match cctxParams.literalCompressionMode {
@@ -594,8 +582,8 @@ use crate::lib::compress::zstd_compress_internal::{
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
-    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
+    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
+    ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
     ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };

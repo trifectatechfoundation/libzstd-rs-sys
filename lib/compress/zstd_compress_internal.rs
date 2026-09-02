@@ -18,7 +18,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::polyfill::PointerExt;
-use crate::lib::zstd::{ParamSwitch, ZSTD_Sequence, ZSTD_dictContentType_e};
+use crate::lib::zstd::{
+    ParamSwitch, ZSTD_Sequence, ZSTD_btultra, ZSTD_dictContentType_e, ZSTD_strategy,
+};
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
@@ -55,6 +57,18 @@ pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
     } else {
         ML_Code[mlBase as usize] as core::ffi::c_uint
     }
+}
+
+/// Minimum compression required to generate a compress block or a compressed
+/// literals section. note: use same formula for both situations
+#[inline]
+pub(crate) fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
+    let minlog = if strat >= ZSTD_btultra {
+        strat.wrapping_sub(1)
+    } else {
+        6
+    };
+    (srcSize >> minlog).wrapping_add(2)
 }
 
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
