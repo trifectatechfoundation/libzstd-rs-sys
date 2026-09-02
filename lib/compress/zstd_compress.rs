@@ -579,8 +579,6 @@ fn ZSTD_window_init(window: &mut ZSTD_window_t) {
     window.nbOverflowCorrections = 0;
 }
 
-pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
-
 /// Returns `true` if an external sequence producer is registered.
 #[inline]
 unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> bool {
@@ -633,7 +631,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_matchState_dictMode,
     ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
     ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
