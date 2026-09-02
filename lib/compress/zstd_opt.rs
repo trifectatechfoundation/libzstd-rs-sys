@@ -394,14 +394,14 @@ unsafe fn ZSTD_litLengthPrice(
 unsafe fn ZSTD_getMatchPrice(
     offBase: u32,
     matchLength: u32,
-    optPtr: *const optState_t,
+    optPtr: &optState_t,
     optLevel: core::ffi::c_int,
 ) -> u32 {
     let mut price: u32 = 0;
     let offCode = ZSTD_highbit32(offBase);
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
 
-    if (*optPtr).priceType == OptPrice::Predef {
+    if optPtr.priceType == OptPrice::Predef {
         // fixed scheme, does not use statistics
         return (if optLevel != 0 {
             ZSTD_fracWeight(mlBase)
@@ -413,10 +413,10 @@ unsafe fn ZSTD_getMatchPrice(
 
     // dynamic statistics
     price = (offCode * BITCOST_MULTIPLIER as u32).wrapping_add(
-        ((*optPtr).offCodeSumBasePrice).wrapping_sub(if optLevel != 0 {
-            ZSTD_fracWeight(*((*optPtr).offCodeFreq).offset(offCode as isize))
+        (optPtr.offCodeSumBasePrice).wrapping_sub(if optLevel != 0 {
+            ZSTD_fracWeight(*(optPtr.offCodeFreq).offset(offCode as isize))
         } else {
-            ZSTD_bitWeight(*((*optPtr).offCodeFreq).offset(offCode as isize))
+            ZSTD_bitWeight(*(optPtr.offCodeFreq).offset(offCode as isize))
         }),
     );
     if optLevel < 2 && offCode >= 20 {
@@ -428,10 +428,10 @@ unsafe fn ZSTD_getMatchPrice(
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
         ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
-            ((*optPtr).matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {
-                ZSTD_fracWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
+            (optPtr.matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {
+                ZSTD_fracWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize))
             } else {
-                ZSTD_bitWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
+                ZSTD_bitWeight(*(optPtr.matchLengthFreq).offset(mlCode as isize))
             }),
         ),
     );
