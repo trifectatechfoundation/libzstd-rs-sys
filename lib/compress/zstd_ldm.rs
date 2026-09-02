@@ -594,12 +594,12 @@ unsafe fn ZSTD_ldm_getBucket(
 
 /// Insert the entry with corresponding hash into the hash table
 unsafe fn ZSTD_ldm_insertEntry(
-    ldmState: *mut ldmState_t,
+    ldmState: &mut ldmState_t,
     hash: size_t,
     entry: ldmEntry_t,
     bucketSizeLog: u32,
 ) {
-    let pOffset = ((*ldmState).bucketOffsets).add(hash);
+    let pOffset = ldmState.bucketOffsets.add(hash);
     let offset = *pOffset as core::ffi::c_uint;
 
     *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
