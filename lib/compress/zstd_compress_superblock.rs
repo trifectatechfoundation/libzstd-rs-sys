@@ -20,8 +20,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_hufCTablesMetadata_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    repcodes_s, ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength,
-    ZSTD_hufCTables_t, ZSTD_noCompressBlock, ZSTD_updateRep,
+    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
+    ZSTD_noCompressBlock, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -938,19 +938,18 @@ unsafe fn ZSTD_compressSubBlock_multi(
         // We have to regenerate the repcodes because we've skipped some sequences
         if sp < send {
             let mut seq = core::ptr::null::<SeqDef>();
-            let mut rep = repcodes_s { rep: [0; 3] };
-            rep.rep = (*prevCBlock).rep;
+            let mut rep = (*prevCBlock).rep;
             seq = sstart;
             while seq < sp {
                 ZSTD_updateRep(
-                    &mut rep.rep,
+                    &mut rep,
                     (*seq).offBase,
                     ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0) as core::ffi::c_int
                         as u32,
                 );
                 seq = seq.add(1);
             }
-            (*nextCBlock).rep = rep.rep;
+            (*nextCBlock).rep = rep;
         }
     }
 

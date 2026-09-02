@@ -138,7 +138,7 @@ pub struct ZSTD_CDict_s {
 #[repr(C)]
 pub struct ZSTD_compressedBlockState_t {
     pub entropy: ZSTD_entropyCTables_t,
-    pub rep: [u32; 3],
+    pub rep: RepCodes,
 }
 
 #[repr(C)]
@@ -191,7 +191,7 @@ pub struct ZSTD_optimal_t {
     pub off: u32,
     pub mlen: u32,
     pub litlen: u32,
-    pub rep: [u32; 3],
+    pub rep: RepCodes,
 }
 
 #[derive(Copy, Clone, Default)]
@@ -612,10 +612,10 @@ use crate::lib::common::xxhash::{
 use crate::lib::common::zstd_internal::{
     repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
     LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
-    MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, SymbolEncodingType, ZSTD_cpuSupportsBmi2,
-    ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE,
-    ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR,
-    ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
+    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH,
+    ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM, ZSTD_REP_NUM,
+    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -627,13 +627,13 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, BufferedPolicy, CParamMode, CompressionStage, DictMode,
-    DictTableLoadMethod, LongLengthType, Repcodes_t, SeqCollector, StreamStage, TableFillPurpose,
-    ZSTD_BlockCompressor_f, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict,
-    ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
+    LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
+    ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count, ZSTD_entropyCTables_t, ZSTD_fseCTables_t,
+    ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_matchState_dictMode,
+    ZSTD_match_t, ZSTD_noCompressBlock, ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq,
+    ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
@@ -5044,13 +5044,12 @@ unsafe fn ZSTD_copyBlockSequences(
     };
     let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0usize;
-    let mut repcodes = repcodes_s { rep: [0; 3] };
 
     if nbOutSequences > (seqCollector.maxSequences).wrapping_sub(seqCollector.seqIndex) {
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    repcodes.rep = *prevRepcodes;
+    let mut repcodes = *prevRepcodes;
     for i in 0..nbInSequences {
         let mut rawOffset: u32 = 0;
         (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
@@ -5076,11 +5075,11 @@ unsafe fn ZSTD_copyBlockSequences(
             let repcode = (*inSeqs.add(i)).offBase;
             (*outSeqs.add(i)).rep = repcode;
             if (*outSeqs.add(i)).litLength != 0 {
-                rawOffset = repcodes.rep[repcode.wrapping_sub(1) as usize];
+                rawOffset = repcodes[repcode.wrapping_sub(1) as usize];
             } else if repcode == 3 {
-                rawOffset = repcodes.rep[0].wrapping_sub(1);
+                rawOffset = repcodes[0].wrapping_sub(1);
             } else {
-                rawOffset = repcodes.rep[repcode as usize];
+                rawOffset = repcodes[repcode as usize];
             }
         } else {
             rawOffset = ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
@@ -5089,7 +5088,7 @@ unsafe fn ZSTD_copyBlockSequences(
 
         // Update repcode history for the sequence
         ZSTD_updateRep(
-            &mut repcodes.rep,
+            &mut repcodes,
             (*inSeqs.add(i)).offBase,
             ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int as u32,
         );
@@ -5863,7 +5862,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 
 /// Returns the raw offset represented by the combination of offBase, ll0, and repcode history.
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
-fn ZSTD_resolveRepcodeToRawOffset(rep: &[u32; 3], offBase: u32, ll0: u32) -> u32 {
+fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
         return rep[0].wrapping_sub(1);
@@ -5881,8 +5880,8 @@ fn ZSTD_resolveRepcodeToRawOffset(rep: &[u32; 3], offBase: u32, ll0: u32) -> u32
 /// Note: this function assumes seq->offBase respects the following numbering scheme:
 /// 0: invalid, 1-3: repcode 1-3, 4+: real_offset+3
 unsafe fn ZSTD_seqStore_resolveOffCodes(
-    dRepcodes: &mut Repcodes_t,
-    cRepcodes: &mut Repcodes_t,
+    dRepcodes: &mut RepCodes,
+    cRepcodes: &mut RepCodes,
     seqStore: *const SeqStore_t,
     nbSeq: u32,
 ) {
@@ -5897,8 +5896,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
             as core::ffi::c_int as u32;
         let offBase = (*seq).offBase;
         if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
-            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(&dRepcodes.rep, offBase, ll0);
-            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(&cRepcodes.rep, offBase, ll0);
+            let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
+            let cRawOffset = ZSTD_resolveRepcodeToRawOffset(cRepcodes, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
@@ -5908,8 +5907,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
         // Decompression repcode history may use modified seq->offset value taken from compression repcode history.
-        ZSTD_updateRep(&mut dRepcodes.rep, (*seq).offBase, ll0);
-        ZSTD_updateRep(&mut cRepcodes.rep, offBase, ll0);
+        ZSTD_updateRep(dRepcodes, (*seq).offBase, ll0);
+        ZSTD_updateRep(cRepcodes, offBase, ll0);
     }
 }
 
@@ -5922,8 +5921,8 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
 unsafe fn ZSTD_compressSeqStore_singleBlock(
     zc: *mut ZSTD_CCtx,
     seqStore: *const SeqStore_t,
-    dRep: &mut Repcodes_t,
-    cRep: &mut Repcodes_t,
+    dRep: &mut RepCodes,
+    cRep: &mut RepCodes,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
@@ -5981,10 +5980,9 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     // Sequence collection not supported when block splitting */
     if (*zc).seqCollector.collectSequences != 0 {
-        let err_code_0 =
-            ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal.rep);
-        if ERR_isError(err_code_0) {
-            return err_code_0;
+        let err_code = ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal);
+        if ERR_isError(err_code) {
+            return err_code;
         }
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
         return 0;
@@ -6139,10 +6137,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     let currSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.currSeqStore;
     let numSplits = ZSTD_deriveBlockSplits(zc, partitions, nbSeq);
 
-    let mut dRep = repcodes_s { rep: [0; 3] };
-    let mut cRep = repcodes_s { rep: [0; 3] };
-    dRep.rep = (*(*zc).blockState.prevCBlock).rep;
-    cRep.rep = (*(*zc).blockState.prevCBlock).rep;
+    let mut dRep = (*(*zc).blockState.prevCBlock).rep;
+    let mut cRep = (*(*zc).blockState.prevCBlock).rep;
     ptr::write_bytes(
         nextSeqStore as *mut SeqStore_t as *mut u8,
         0,
@@ -6216,7 +6212,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
 
     // cRep and dRep may have diverged during the compression.
     // If so, we use the dRep repcodes for the next block.
-    (*(*zc).blockState.prevCBlock).rep = dRep.rep;
+    (*(*zc).blockState.prevCBlock).rep = dRep;
     cSize
 }
 
@@ -9607,7 +9603,7 @@ fn ZSTD_validateSequence(
 
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
 /// litLength == 0
-fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &[u32; 3], ll0: u32) -> u32 {
+fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: u32) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
 
     if ll0 == 0 && rawOffset == rep[0] {
@@ -9644,7 +9640,6 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     let startIdx = idx;
     let mut ip = src as *const u8;
     let iend = ip.add(blockSize);
-    let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut dictSize: u32 = 0;
 
     if !((*cctx).cdict).is_null() {
@@ -9655,7 +9650,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         dictSize = 0;
     }
 
-    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
+    let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
     while (idx as size_t) < inSeqsSize
         && ((*inSeqs.offset(idx as isize)).matchLength != 0
             || (*inSeqs.offset(idx as isize)).offset != 0)
@@ -9669,12 +9664,9 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 .wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
         } else {
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-            offBase = ZSTD_finalizeOffBase(
-                (*inSeqs.offset(idx as isize)).offset,
-                &updatedRepcodes.rep,
-                ll0,
-            );
-            ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
+            offBase =
+                ZSTD_finalizeOffBase((*inSeqs.offset(idx as isize)).offset, &updatedRepcodes, ll0);
+            ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
         }
 
         if (*cctx).appliedParams.validateSequences != 0 {
@@ -9715,7 +9707,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 
     // If we skipped repcode search while parsing, we need to update repcodes now
     if externalRepSearch == ParamSwitch::Disable && idx != startIdx {
-        let rep = &mut updatedRepcodes.rep;
+        let rep = &mut updatedRepcodes;
         let lastSeqIdx = idx.wrapping_sub(1); // index of last non-block-delimiter sequence
 
         if lastSeqIdx >= startIdx.wrapping_add(2) {
@@ -9733,7 +9725,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         }
     }
 
-    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes;
 
     if (*inSeqs.offset(idx as isize)).litLength != 0 {
         ZSTD_storeLastLiterals(
@@ -9782,7 +9774,6 @@ unsafe fn ZSTD_transferSequences_noDelim(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut iend = istart.add(blockSize);
-    let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut bytesAdjustment = 0;
     let mut finalMatchSplit = false;
 
@@ -9796,7 +9787,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     } else {
         dictSize = 0;
     }
-    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
+    let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
     while endPosInSequence != 0 && (idx as size_t) < inSeqsSize && !finalMatchSplit {
         let currSeq = *inSeqs.offset(idx as isize);
         let mut litLength = currSeq.litLength;
@@ -9867,8 +9858,8 @@ unsafe fn ZSTD_transferSequences_noDelim(
 
         // Check if this offset can be represented with a repcode
         let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-        offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes.rep, ll0);
-        ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
+        offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes, ll0);
+        ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
 
         if (*cctx).appliedParams.validateSequences != 0 {
             seqPos.posInSrc = seqPos
@@ -9909,7 +9900,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
 
     seqPos.idx = idx;
     seqPos.posInSequence = endPosInSequence;
-    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes;
 
     iend = iend.sub(bytesAdjustment as usize);
     if ip != iend {
@@ -10314,14 +10305,13 @@ pub unsafe fn ZSTD_convertBlockSequences(
     nbSequences: size_t,
     repcodeResolution: bool,
 ) -> size_t {
-    let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut seqNb = 0;
 
     if nbSequences >= (*cctx).seqStore.maxNbSeq {
         return Error::externalSequences_invalid.to_error_code();
     }
 
-    updatedRepcodes.rep = (*(*cctx).blockState.prevCBlock).rep;
+    let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
 
     // Convert Sequences from public format to internal format
     if !repcodeResolution {
@@ -10348,22 +10338,21 @@ pub unsafe fn ZSTD_convertBlockSequences(
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-            let offBase =
-                ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes.rep, ll0);
+            let offBase = ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes, ll0);
             ZSTD_storeSeqOnly(
                 &mut (*cctx).seqStore,
                 litLength as size_t,
                 offBase,
                 matchLength as size_t,
             );
-            ZSTD_updateRep(&mut updatedRepcodes.rep, offBase, ll0);
+            ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
             seqNb = seqNb.wrapping_add(1);
         }
     }
 
     // If we skipped repcode search while parsing, we need to update repcodes now
     if !repcodeResolution && nbSequences > 1 {
-        let rep = &mut updatedRepcodes.rep;
+        let rep = &mut updatedRepcodes;
 
         if nbSequences >= 4 {
             let lastSeqIdx = (nbSequences as u32).wrapping_sub(2); // index of last full sequence
@@ -10381,7 +10370,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         }
     }
 
-    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes.rep;
+    (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes;
 
     0
 }

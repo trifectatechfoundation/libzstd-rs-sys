@@ -8,7 +8,7 @@ use crate::lib::common::mem::{
     MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST, MEM_writeLE24,
 };
 use crate::lib::common::zstd_internal::{
-    BlockType, Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH,
+    BlockType, Overlap, RepCodes, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH,
     ZSTD_BLOCKHEADERSIZE, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
@@ -264,7 +264,7 @@ impl From<i32> for CParamMode {
 pub type ZSTD_BlockCompressor_f = unsafe fn(
     &mut ZSTD_MatchState_t,
     &mut SeqStore_t,
-    &mut [u32; 3],
+    &mut RepCodes,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t;
@@ -293,14 +293,6 @@ pub unsafe fn ZSTD_noCompressBlock(
     );
     ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize)
 }
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub(crate) struct repcodes_s {
-    pub rep: [u32; 3],
-}
-
-pub(crate) type Repcodes_t = repcodes_s;
 
 pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
     3500 * (1 << 20)
@@ -360,7 +352,7 @@ pub(crate) unsafe fn ZSTD_storeSeq(
 }
 
 #[inline]
-pub(crate) fn ZSTD_updateRep(rep: &mut [u32; 3], offBase: u32, ll0: u32) {
+pub(crate) fn ZSTD_updateRep(rep: &mut RepCodes, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
         rep[2] = rep[1];
         rep[1] = rep[0];

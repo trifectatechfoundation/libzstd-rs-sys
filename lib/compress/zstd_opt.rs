@@ -4,7 +4,7 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
     *mut u32,
     *const u8,
     *const u8,
-    &[u32; 3],
+    &RepCodes,
     u32,
     u32,
 ) -> u32;
@@ -28,7 +28,7 @@ use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits, FSE_initCState};
 use crate::lib::common::huf::HUF_repeat_valid;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{
-    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
+    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, RepCodes, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
 };
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
@@ -36,9 +36,9 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, repcodes_s, DictMode, OptPrice, Repcodes_t, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
-    ZSTD_storeSeq, ZSTD_updateRep,
+    optState_t, DictMode, OptPrice, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
+    ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq,
+    ZSTD_updateRep,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
@@ -77,9 +77,9 @@ fn ZSTD_MLcode(mlBase: u32) -> u32 {
 }
 
 #[inline]
-fn ZSTD_newRep(rep: &[u32; 3], offBase: u32, ll0: u32) -> Repcodes_t {
-    let mut newReps = repcodes_s { rep: *rep };
-    ZSTD_updateRep(&mut newReps.rep, offBase, ll0);
+fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: u32) -> RepCodes {
+    let mut newReps = *rep;
+    ZSTD_updateRep(&mut newReps, offBase, ll0);
     newReps
 }
 
@@ -1380,7 +1380,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
 unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
     dictMode: DictMode,
@@ -1601,7 +1601,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                         as u32,
                                 );
                                 *opt.offset(cur.wrapping_add(1) as isize) = prevMatch;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps.rep;
+                                (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
                                 if last_pos < cur.wrapping_add(1) {
@@ -1621,7 +1621,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             (*opt.offset(cur as isize)).off,
                             ((*opt.offset(prev_0 as isize)).litlen == 0) as core::ffi::c_int as u32,
                         );
-                        (*opt.offset(cur as isize)).rep = newReps_0.rep;
+                        (*opt.offset(cur as isize)).rep = newReps_0;
                     }
 
                     // last match must start at a minimum distance of 8 from oend
@@ -1757,7 +1757,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         lastStretch.off,
                         ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
                     );
-                    *rep = reps.rep;
+                    *rep = reps;
                 } else {
                     *rep = lastStretch.rep;
                     cur = cur.wrapping_sub(lastStretch.litlen);
@@ -1838,7 +1838,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 pub unsafe fn ZSTD_compressBlock_btopt(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1851,7 +1851,7 @@ pub unsafe fn ZSTD_compressBlock_btopt(
 unsafe fn ZSTD_initStats_ultra(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) {
@@ -1871,7 +1871,7 @@ unsafe fn ZSTD_initStats_ultra(
 pub unsafe fn ZSTD_compressBlock_btultra(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1881,7 +1881,7 @@ pub unsafe fn ZSTD_compressBlock_btultra(
 pub unsafe fn ZSTD_compressBlock_btultra2(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1910,7 +1910,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
 pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1920,7 +1920,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_btopt_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1930,7 +1930,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_extDict(
 pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -1940,7 +1940,7 @@ pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
 pub unsafe fn ZSTD_compressBlock_btultra_extDict(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; 3],
+    rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
