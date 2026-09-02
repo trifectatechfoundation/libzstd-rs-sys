@@ -4501,7 +4501,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
 }
 
 unsafe fn ZSTD_entropyCompressSeqStore(
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
     nextEntropy: &mut ZSTD_entropyCTables_t,
     cctxParams: &ZSTD_CCtx_params,
@@ -4515,8 +4515,8 @@ unsafe fn ZSTD_entropyCompressSeqStore(
     ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         dst,
         dstCapacity,
-        (*seqStorePtr).litStart as *const core::ffi::c_void,
-        ((*seqStorePtr).lit).offset_from((*seqStorePtr).litStart) as size_t,
+        seqStorePtr.litStart as *const core::ffi::c_void,
+        seqStorePtr.lit.offset_from(seqStorePtr.litStart) as size_t,
         srcSize,
         seqStorePtr,
         prevEntropy,
