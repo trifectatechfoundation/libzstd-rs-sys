@@ -1697,12 +1697,13 @@ unsafe fn HUF_compress_internal(
     nbStreams: HUF_nbStreams_e,
     workSpace: *mut c_void,
     mut wkspSize: size_t,
-    oldHufTable: *mut HUF_CElt,
+    oldHufTable: &mut CTable,
     repeat: *mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
     let table = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<size_t>())
         as *mut HUF_compress_tables_t;
+
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart;
@@ -1717,6 +1718,9 @@ unsafe fn HUF_compress_internal(
     if wkspSize < size_of::<HUF_compress_tables_t>() {
         return Error::workSpace_tooSmall.to_error_code();
     }
+
+    // Initialize the CTable so we can take a (mutable) reference to its contents.
+    core::ptr::write_bytes(&raw mut (*table).CTable, 0, 1);
 
     if srcSize == 0 {
         return 0; /* Uncompressed */
@@ -1761,7 +1765,7 @@ unsafe fn HUF_compress_internal(
             src,
             srcSize,
             nbStreams,
-            oldHufTable,
+            oldHufTable.as_ptr(),
             flags,
         );
     }
@@ -1822,7 +1826,11 @@ unsafe fn HUF_compress_internal(
     /* Check validity of previous table */
     if !repeat.is_null()
         && *repeat as c_uint == HUF_repeat_check as c_int as c_uint
-        && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
+        && !HUF_validateCTable(
+            oldHufTable.as_ptr(),
+            ((*table).count).as_mut_ptr(),
+            maxSymbolValue,
+        )
     {
         *repeat = HUF_repeat_none;
     }
@@ -1839,7 +1847,7 @@ unsafe fn HUF_compress_internal(
             src,
             srcSize,
             nbStreams,
-            oldHufTable,
+            oldHufTable.as_ptr(),
             flags,
         );
     }
@@ -1887,7 +1895,7 @@ unsafe fn HUF_compress_internal(
         /* Check if using previous huffman table is beneficial */
         if !repeat.is_null() && *repeat as c_uint != HUF_repeat_none as c_int as c_uint {
             let oldSize = HUF_estimateCompressedSize(
-                oldHufTable,
+                oldHufTable.as_ptr(),
                 ((*table).count).as_mut_ptr(),
                 maxSymbolValue,
             );
@@ -1905,7 +1913,7 @@ unsafe fn HUF_compress_internal(
                     src,
                     srcSize,
                     nbStreams,
-                    oldHufTable,
+                    oldHufTable.as_ptr(),
                     flags,
                 );
             }
@@ -1919,13 +1927,7 @@ unsafe fn HUF_compress_internal(
         if !repeat.is_null() {
             *repeat = HUF_repeat_none;
         }
-        if !oldHufTable.is_null() {
-            core::ptr::copy_nonoverlapping(
-                (*table).CTable.as_ptr(),
-                oldHufTable,
-                (*table).CTable.len(),
-            );
-        }
+        *oldHufTable = (*table).CTable;
     }
     HUF_compressCTable_internal(
         ostart,
@@ -1962,7 +1964,7 @@ pub unsafe fn HUF_compress1X_repeat(
         HUF_singleStream,
         workSpace,
         wkspSize,
-        hufTable.as_mut_ptr(),
+        hufTable,
         repeat,
         flags,
     )
@@ -1994,7 +1996,7 @@ pub unsafe fn HUF_compress4X_repeat(
         HUF_fourStreams,
         workSpace,
         wkspSize,
-        hufTable.as_mut_ptr(),
+        hufTable,
         repeat,
         flags,
     )
