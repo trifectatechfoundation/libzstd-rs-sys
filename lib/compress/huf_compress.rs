@@ -214,23 +214,26 @@ fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     }
 }
 
-pub(super) unsafe fn HUF_readCTableHeader(ctable: &CTable) -> HUF_CTableHeader {
+pub(super) fn HUF_readCTableHeader(ctable: &CTable) -> HUF_CTableHeader {
     // the header is stored in the first `HUF_CElt` slot of the table
-    ctable.as_ptr().cast::<HUF_CTableHeader>().read()
+    let [tableLog, maxSymbolValue, unused @ ..] = ctable[0].to_ne_bytes();
+
+    HUF_CTableHeader {
+        tableLog,
+        maxSymbolValue,
+        unused,
+    }
 }
 
-unsafe fn HUF_writeCTableHeader(ctable: &mut CTable, tableLog: u32, maxSymbolValue: u8) {
-    const {
-        assert!(size_of::<HUF_CElt>() == size_of::<HUF_CTableHeader>());
-    }
+fn HUF_writeCTableHeader(ctable: &mut CTable, tableLog: u32, maxSymbolValue: u8) {
     debug_assert!(tableLog < 256);
-    let header = HUF_CTableHeader {
-        tableLog: tableLog as u8,
-        maxSymbolValue,
-        unused: [0; _],
-    };
+
+    let mut bytes = [0; size_of::<HUF_CElt>()];
+    bytes[0] = tableLog as u8;
+    bytes[1] = maxSymbolValue;
+
     // the header is stored in the first `HUF_CElt` slot of the table
-    ctable.as_mut_ptr().cast::<HUF_CTableHeader>().write(header);
+    ctable[0] = HUF_CElt::from_ne_bytes(bytes);
 }
 
 #[derive(Copy, Clone)]
