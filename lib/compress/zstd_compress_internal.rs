@@ -520,47 +520,23 @@ const fn ZSTD_hash64<const MLS: u32>(u: u64, h: u32, s: u64) -> usize {
     ((((u << (64 - 8 * MLS)).wrapping_mul(prime)) ^ s) >> 64u32.wrapping_sub(h)) as usize
 }
 
-unsafe fn ZSTD_hash5Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash64::<5>(MEM_readLE64(p), h, 0)
+unsafe fn ZSTD_hash64Ptr<const MLS: u32>(p: *const core::ffi::c_void, h: u32) -> usize {
+    ZSTD_hash64::<MLS>(MEM_readLE64(p), h, 0)
 }
-unsafe fn ZSTD_hash5PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash64::<5>(MEM_readLE64(p), h, s)
+unsafe fn ZSTD_hash64PtrS<const MLS: u32>(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
+    ZSTD_hash64::<MLS>(MEM_readLE64(p), h, s)
 }
-
-pub(crate) unsafe fn ZSTD_hash6Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash64::<6>(MEM_readLE64(p), h, 0)
-}
-pub(crate) fn ZSTD_hash6Ptr_array(p: &[u8; 8], h: u32) -> usize {
-    ZSTD_hash64::<6>(u64::from_le_bytes(*p), h, 0)
-}
-unsafe fn ZSTD_hash6PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash64::<6>(MEM_readLE64(p), h, s)
-}
-
-unsafe fn ZSTD_hash7Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash64::<7>(MEM_readLE64(p), h, 0)
-}
-unsafe fn ZSTD_hash7PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash64::<7>(MEM_readLE64(p), h, s)
-}
-
-pub(crate) unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
-    ZSTD_hash64::<8>(MEM_readLE64(p), h, 0)
-}
-pub(crate) fn ZSTD_hash8Ptr_array(p: &[u8; 8], h: u32) -> usize {
-    ZSTD_hash64::<8>(u64::from_le_bytes(*p), h, 0)
-}
-unsafe fn ZSTD_hash8PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
-    ZSTD_hash64::<8>(MEM_readLE64(p), h, s)
+pub(crate) fn ZSTD_hash64Ptr_array<const MLS: u32>(p: &[u8; 8], h: u32) -> usize {
+    ZSTD_hash64::<MLS>(u64::from_le_bytes(*p), h, 0)
 }
 
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_hashPtr(p: *const core::ffi::c_void, hBits: u32, mls: u32) -> usize {
     match mls {
-        5 => ZSTD_hash5Ptr(p, hBits),
-        6 => ZSTD_hash6Ptr(p, hBits),
-        7 => ZSTD_hash7Ptr(p, hBits),
-        8 => ZSTD_hash8Ptr(p, hBits),
+        5 => ZSTD_hash64Ptr::<5>(p, hBits),
+        6 => ZSTD_hash64Ptr::<6>(p, hBits),
+        7 => ZSTD_hash64Ptr::<7>(p, hBits),
+        8 => ZSTD_hash64Ptr::<8>(p, hBits),
         _ => ZSTD_hash4Ptr(p, hBits),
     }
 }
@@ -573,10 +549,10 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
     hashSalt: u64,
 ) -> usize {
     match mls {
-        5 => ZSTD_hash5PtrS(p, hBits, hashSalt),
-        6 => ZSTD_hash6PtrS(p, hBits, hashSalt),
-        7 => ZSTD_hash7PtrS(p, hBits, hashSalt),
-        8 => ZSTD_hash8PtrS(p, hBits, hashSalt),
+        5 => ZSTD_hash64PtrS::<5>(p, hBits, hashSalt),
+        6 => ZSTD_hash64PtrS::<6>(p, hBits, hashSalt),
+        7 => ZSTD_hash64PtrS::<7>(p, hBits, hashSalt),
+        8 => ZSTD_hash64PtrS::<8>(p, hBits, hashSalt),
         4 | _ => ZSTD_hash4PtrS(p, hBits, hashSalt as u32),
     }
 }

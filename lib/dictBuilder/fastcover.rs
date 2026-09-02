@@ -5,7 +5,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
-use crate::lib::compress::zstd_compress_internal::{ZSTD_hash6Ptr_array, ZSTD_hash8Ptr_array};
+use crate::lib::compress::zstd_compress_internal::ZSTD_hash64Ptr_array;
 use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
     COVER_dictSelectionError, COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t,
@@ -57,8 +57,8 @@ const DEFAULT_ACCEL: core::ffi::c_int = 1;
 
 fn FASTCOVER_hashPtrToIndex(p: &[u8; 8], f: u32, d: core::ffi::c_uint) -> size_t {
     match d {
-        6 => ZSTD_hash6Ptr_array(p, f),
-        _ => ZSTD_hash8Ptr_array(p, f),
+        6 => ZSTD_hash64Ptr_array::<6>(p, f),
+        _ => ZSTD_hash64Ptr_array::<8>(p, f),
     }
 }
 
