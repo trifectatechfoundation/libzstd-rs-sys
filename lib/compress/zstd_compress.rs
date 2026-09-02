@@ -2951,21 +2951,12 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     dictSize: size_t,
     mode: CParamMode,
 ) -> ZSTD_compressionParameters {
-    let mut cParams = ZSTD_compressionParameters {
-        windowLog: 0,
-        chainLog: 0,
-        hashLog: 0,
-        searchLog: 0,
-        minMatch: 0,
-        targetLength: 0,
-        strategy: 0,
-    };
     if srcSizeHint as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
         && CCtxParams.srcSizeHint > 0
     {
         srcSizeHint = CCtxParams.srcSizeHint as u64;
     }
-    cParams = ZSTD_getCParams_internal(
+    let mut cParams = ZSTD_getCParams_internal(
         CCtxParams.compressionLevel,
         srcSizeHint as core::ffi::c_ulonglong,
         dictSize,
@@ -8174,27 +8165,20 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let mut cctxParams = *originalCctxParams;
-    let mut cParams = ZSTD_compressionParameters {
-        windowLog: 0,
-        chainLog: 0,
-        hashLog: 0,
-        searchLog: 0,
-        minMatch: 0,
-        targetLength: 0,
-        strategy: 0,
-    };
 
-    if cctxParams.enableDedicatedDictSearch != 0 {
-        cParams = ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
+    let mut cParams = if cctxParams.enableDedicatedDictSearch != 0 {
+        let mut cParams =
+            ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
         ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
+        cParams
     } else {
-        cParams = ZSTD_getCParamsFromCCtxParams_internal(
+        ZSTD_getCParamsFromCCtxParams_internal(
             &cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN,
             dictSize,
             CParamMode::CreateCDict,
-        );
-    }
+        )
+    };
 
     if !ZSTD_dedicatedDictSearch_isSupported(&cParams) {
         // Fall back to non-DDSS params
