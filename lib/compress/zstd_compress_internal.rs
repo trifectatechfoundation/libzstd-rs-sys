@@ -619,11 +619,11 @@ pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
-pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> DictMode {
-    if ZSTD_window_hasExtDict((*ms).window) {
+pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMode {
+    if ZSTD_window_hasExtDict(ms.window) {
         DictMode::ExtDict
-    } else if !((*ms).dictMatchState).is_null() {
-        if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
+    } else if !ms.dictMatchState.is_null() {
+        if (*ms.dictMatchState).dedicatedDictSearch != 0 {
             DictMode::DedicatedDictSearch
         } else {
             DictMode::DictMatchState
