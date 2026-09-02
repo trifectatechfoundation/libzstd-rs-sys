@@ -10,7 +10,8 @@ use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{LitHufLog, SymbolEncodingType};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hufCTables_t;
-use crate::lib::zstd::{ZSTD_btultra, ZSTD_lazy, ZSTD_strategy};
+use crate::lib::compress::zstd_compress_internal::ZSTD_minGain;
+use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 
@@ -27,16 +28,6 @@ pub type huf_compress_f = unsafe extern "C" fn(
     *mut HUF_repeat,
     core::ffi::c_int,
 ) -> size_t;
-
-#[inline]
-fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
-    let minlog = if strat >= ZSTD_btultra {
-        strat.wrapping_sub(1)
-    } else {
-        6
-    };
-    (srcSize >> minlog).wrapping_add(2)
-}
 
 pub unsafe fn ZSTD_noCompressLiterals(
     dst: *mut core::ffi::c_void,
