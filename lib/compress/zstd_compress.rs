@@ -1309,8 +1309,8 @@ fn ZSTD_resolveExternalRepcodeSearch(value: ParamSwitch, cLevel: core::ffi::c_in
 
 /// Returns 1 if compression parameters are such that CDict hashtable and chaintable indices are
 /// tagged. If so, the tags need to be removed in ZSTD_resetCCtx_byCopyingCDict.
-unsafe fn ZSTD_CDictIndicesAreTagged(cParams: *const ZSTD_compressionParameters) -> bool {
-    (*cParams).strategy == ZSTD_fast || (*cParams).strategy == ZSTD_dfast
+unsafe fn ZSTD_CDictIndicesAreTagged(cParams: &ZSTD_compressionParameters) -> bool {
+    cParams.strategy == ZSTD_fast || cParams.strategy == ZSTD_dfast
 }
 
 unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
