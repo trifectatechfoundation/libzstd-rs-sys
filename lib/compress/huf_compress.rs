@@ -214,9 +214,9 @@ fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     }
 }
 
-pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTableHeader {
+pub(super) unsafe fn HUF_readCTableHeader(ctable: &CTable) -> HUF_CTableHeader {
     // the header is stored in the first `HUF_CElt` slot of the table
-    ctable.cast::<HUF_CTableHeader>().read()
+    ctable.as_ptr().cast::<HUF_CTableHeader>().read()
 }
 
 unsafe fn HUF_writeCTableHeader(ctable: &mut CTable, tableLog: u32, maxSymbolValue: u8) {
@@ -259,8 +259,8 @@ pub unsafe fn HUF_writeCTable_wksp(
         assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
-    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).maxSymbolValue == maxSymbolValue);
-    debug_assert!(HUF_readCTableHeader(CTable.as_ptr()).tableLog as c_uint == huffLog);
+    debug_assert!(HUF_readCTableHeader(CTable).maxSymbolValue == maxSymbolValue);
+    debug_assert!(HUF_readCTableHeader(CTable).tableLog as c_uint == huffLog);
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
@@ -434,7 +434,7 @@ pub unsafe fn HUF_readCTable(
 
 pub unsafe fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
     debug_assert!(symbolValue <= HUF_SYMBOLVALUE_MAX);
-    if symbolValue > (HUF_readCTableHeader(CTable.as_ptr())).maxSymbolValue as u32 {
+    if symbolValue > (HUF_readCTableHeader(CTable)).maxSymbolValue as u32 {
         return 0;
     }
     // the first slot holds the header, so symbol `s` lives at index `s + 1`
@@ -995,7 +995,7 @@ pub unsafe fn HUF_validateCTable(
     count: *const c_uint,
     maxSymbolValue: u8,
 ) -> bool {
-    let header = HUF_readCTableHeader(CTable.as_ptr());
+    let header = HUF_readCTableHeader(CTable);
     let ct = &CTable[1..];
     let mut bad = false;
 
@@ -1288,7 +1288,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     srcSize: size_t,
     CTable: &CTable,
 ) -> size_t {
-    let tableLog = (HUF_readCTableHeader(CTable.as_ptr())).tableLog as u32;
+    let tableLog = (HUF_readCTableHeader(CTable)).tableLog as u32;
     let ct = CTable.as_ptr().add(1);
     let ip = src as *const u8;
     let ostart = dst as *mut u8;
