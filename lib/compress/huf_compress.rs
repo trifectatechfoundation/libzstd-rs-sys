@@ -1366,9 +1366,9 @@ unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable.as_ptr())
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal_default(
@@ -1376,9 +1376,9 @@ unsafe fn HUF_compress1X_usingCTable_internal_default(
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
-    CTable: *const HUF_CElt,
+    CTable: &CTable,
 ) -> size_t {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable.as_ptr())
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal(
@@ -1390,15 +1390,9 @@ unsafe fn HUF_compress1X_usingCTable_internal(
     flags: c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as c_int != 0 {
-        return HUF_compress1X_usingCTable_internal_bmi2(
-            dst,
-            dstSize,
-            src,
-            srcSize,
-            CTable.as_ptr(),
-        );
+        return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, srcSize, CTable);
     }
-    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable.as_ptr())
+    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable)
 }
 
 pub unsafe fn HUF_compress1X_usingCTable(
