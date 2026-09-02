@@ -1,6 +1,6 @@
 use core::arch::asm;
 
-pub type ZSTD_match4Found = Option<unsafe fn(*const u8, *const u8, u32, u32) -> bool>;
+pub type ZSTD_match4Found = unsafe fn(*const u8, *const u8, u32, u32) -> bool;
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 use libc::size_t;
@@ -282,9 +282,9 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     let mut nextStep = core::ptr::null::<u8>();
     let kStepIncr = (1 << (kSearchStrength - 1)) as size_t;
     let matchFound: ZSTD_match4Found = if useCmov {
-        Some(ZSTD_match4Found_cmov as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
+        ZSTD_match4Found_cmov
     } else {
-        Some(ZSTD_match4Found_branch as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
+        ZSTD_match4Found_branch
     };
 
     ip0 = ip0.offset((ip0 == prefixStart) as core::ffi::c_int as isize);
@@ -347,7 +347,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
 
                 current_block = 4391991184774404966;
                 break;
-            } else if matchFound.unwrap_unchecked()(
+            } else if matchFound(
                 ip0,
                 base.wrapping_offset(matchIdx as isize),
                 matchIdx,
@@ -377,7 +377,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                 current0 = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
                 *hashTable.add(hash0) = current0;
 
-                if matchFound.unwrap_unchecked()(
+                if matchFound(
                     ip0,
                     base.wrapping_offset(matchIdx as isize),
                     matchIdx,
