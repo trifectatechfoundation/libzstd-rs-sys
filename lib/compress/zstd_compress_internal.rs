@@ -374,6 +374,26 @@ pub enum DictMode {
     DedicatedDictSearch = 3,
 }
 
+/// A type-level [`DictMode`], a workaround for const generics not supporting enums yet.
+pub trait DictModeMarker {
+    const DICT_MODE: DictMode;
+}
+
+pub struct NoDict;
+impl DictModeMarker for NoDict {
+    const DICT_MODE: DictMode = DictMode::NoDict;
+}
+
+pub struct ExtDict;
+impl DictModeMarker for ExtDict {
+    const DICT_MODE: DictMode = DictMode::ExtDict;
+}
+
+pub struct DictMatchState;
+impl DictModeMarker for DictMatchState {
+    const DICT_MODE: DictMode = DictMode::DictMatchState;
+}
+
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum CParamMode {

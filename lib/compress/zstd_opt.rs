@@ -36,9 +36,9 @@ use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, DictMode, OptPrice, ZSTD_LLcode, ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
-    ZSTD_storeSeq, ZSTD_updateRep,
+    optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
+    ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr,
+    ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
 use crate::lib::polyfill::PointerExt;
@@ -1063,23 +1063,6 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     ms.nextToUpdate = matchEndIdx.wrapping_sub(8); // skip repetitive patterns
 
     mnum
-}
-
-// A workaround for const generics not supporting enums yet.
-trait DictModeMarker {
-    const DICT_MODE: DictMode;
-}
-struct NoDict;
-impl DictModeMarker for NoDict {
-    const DICT_MODE: DictMode = DictMode::NoDict;
-}
-struct ExtDict;
-impl DictModeMarker for ExtDict {
-    const DICT_MODE: DictMode = DictMode::ExtDict;
-}
-struct DictMatchState;
-impl DictModeMarker for DictMatchState {
-    const DICT_MODE: DictMode = DictMode::DictMatchState;
 }
 
 #[inline(always)]
