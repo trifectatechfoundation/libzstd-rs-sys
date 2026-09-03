@@ -773,7 +773,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 bucket,
             } = ldmState.matchCandidates[n];
 
-            let mut cur = core::ptr::null::<ldmEntry_t>();
             let mut bestEntry = core::ptr::null();
             let mut newEntry = ldmEntry_t {
                 offset: 0,
@@ -789,75 +788,69 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             if split < anchor {
                 ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
             } else {
-                let mut current_block_30: u64;
-                cur = bucket;
-                while cur < bucket.offset(entsPerBucket as isize) as *const ldmEntry_t {
-                    let mut curForwardMatchLength: size_t = 0;
-                    let mut curBackwardMatchLength: size_t = 0;
-                    let mut curTotalMatchLength: size_t = 0;
-                    if !((*cur).checksum != checksum || (*cur).offset <= lowestIndex) {
-                        if extDict {
-                            let curMatchBase = if (*cur).offset < dictLimit {
-                                dictBase
-                            } else {
-                                base
-                            };
-                            let pMatch = curMatchBase.offset((*cur).offset as isize);
-                            let matchEnd = if (*cur).offset < dictLimit {
-                                dictEnd
-                            } else {
-                                iend
-                            };
-                            let lowMatchPtr = if (*cur).offset < dictLimit {
-                                dictStart
-                            } else {
-                                lowPrefixPtr
-                            };
-                            curForwardMatchLength =
-                                ZSTD_count_2segments(split, pMatch, iend, matchEnd, lowPrefixPtr);
-                            if curForwardMatchLength < minMatchLength as size_t {
-                                current_block_30 = 17788412896529399552;
-                            } else {
-                                curBackwardMatchLength = ZSTD_ldm_countBackwardsMatch_2segments(
-                                    split,
-                                    anchor,
-                                    pMatch,
-                                    lowMatchPtr,
-                                    dictStart,
-                                    dictEnd,
-                                );
-                                current_block_30 = 15512526488502093901;
-                            }
-                        } else {
-                            let pMatch_0 = base.offset((*cur).offset as isize);
-                            curForwardMatchLength = ZSTD_count(split, pMatch_0, iend);
-                            if curForwardMatchLength < minMatchLength as size_t {
-                                current_block_30 = 17788412896529399552;
-                            } else {
-                                curBackwardMatchLength = ZSTD_ldm_countBackwardsMatch(
-                                    split,
-                                    anchor,
-                                    pMatch_0,
-                                    lowPrefixPtr,
-                                );
-                                current_block_30 = 15512526488502093901;
-                            }
-                        }
-                        match current_block_30 {
-                            17788412896529399552 => {}
-                            _ => {
-                                curTotalMatchLength =
-                                    curForwardMatchLength.wrapping_add(curBackwardMatchLength);
-                                if curTotalMatchLength > bestMatchLength {
-                                    bestMatchLength = curTotalMatchLength;
-                                    forwardMatchLength = curForwardMatchLength;
-                                    backwardMatchLength = curBackwardMatchLength;
-                                    bestEntry = cur;
-                                }
-                            }
-                        }
+                for i in 0..entsPerBucket as usize {
+                    let cur = bucket.add(i) as *const ldmEntry_t;
+
+                    if (*cur).checksum != checksum || (*cur).offset <= lowestIndex {
+                        continue;
                     }
-                    cur = cur.add(1);
+
+                    let (curForwardMatchLength, curBackwardMatchLength) = if extDict {
+                        let curMatchBase = if (*cur).offset < dictLimit {
+                            dictBase
+                        } else {
+                            base
+                        };
+                        let pMatch = curMatchBase.offset((*cur).offset as isize);
+                        let matchEnd = if (*cur).offset < dictLimit {
+                            dictEnd
+                        } else {
+                            iend
+                        };
+                        let lowMatchPtr = if (*cur).offset < dictLimit {
+                            dictStart
+                        } else {
+                            lowPrefixPtr
+                        };
+
+                        let forward =
+                            ZSTD_count_2segments(split, pMatch, iend, matchEnd, lowPrefixPtr);
+                        if forward < minMatchLength as size_t {
+                            continue;
+                        }
+
+                        let backward = ZSTD_ldm_countBackwardsMatch_2segments(
+                            split,
+                            anchor,
+                            pMatch,
+                            lowMatchPtr,
+                            dictStart,
+                            dictEnd,
+                        );
+
+                        (forward, backward)
+                    } else {
+                        let pMatch = base.offset((*cur).offset as isize);
+
+                        let forward = ZSTD_count(split, pMatch, iend);
+                        if forward < minMatchLength as size_t {
+                            continue;
+                        }
+
+                        let backward =
+                            ZSTD_ldm_countBackwardsMatch(split, anchor, pMatch, lowPrefixPtr);
+
+                        (forward, backward)
+                    };
+
+                    let curTotalMatchLength =
+                        curForwardMatchLength.wrapping_add(curBackwardMatchLength);
+                    if curTotalMatchLength > bestMatchLength {
+                        bestMatchLength = curTotalMatchLength;
+                        forwardMatchLength = curForwardMatchLength;
+                        backwardMatchLength = curBackwardMatchLength;
+                        bestEntry = cur;
+                    }
                 }
 
                 // No match found -- insert an entry into the hash table
