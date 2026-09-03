@@ -344,11 +344,9 @@ pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 
 /// Initializes the rolling hash state such that it will honor the
 /// settings in params.
-fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: &ldmParams_t) {
+fn ZSTD_ldm_gear_init(params: &ldmParams_t) -> ldmRollingHashState_t {
     let maxBitsInMask = params.minMatchLength.min(64);
     let hashRateLog = params.hashRateLog;
-
-    state.rolling = !0u32 as u64;
 
     // The choice of the splitting criterion is subject to two conditions:
     //   1. it has to trigger on average every 2^(hashRateLog) bytes;
@@ -362,12 +360,16 @@ fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: &ldmParams_t) {
     // and, because of the previous remark, we make sure these bits
     // have the highest possible weight while still respecting
     // condition 2.
-    if hashRateLog > 0 && hashRateLog <= maxBitsInMask {
-        state.stopMask =
-            (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
+    let stopMask = if hashRateLog > 0 && hashRateLog <= maxBitsInMask {
+        (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog)
     } else {
         // In this degenerate case we simply honor the hash rate.
-        state.stopMask = (1u64 << hashRateLog).wrapping_sub(1);
+        (1u64 << hashRateLog).wrapping_sub(1)
+    };
+
+    ldmRollingHashState_t {
+        rolling: !0u32 as u64,
+        stopMask,
     }
 }
 
@@ -636,12 +638,8 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
     let base = ldmState.window.base;
     let istart = ip;
-    let mut hashState = ldmRollingHashState_t {
-        rolling: 0,
-        stopMask: 0,
-    };
 
-    ZSTD_ldm_gear_init(&mut hashState, params);
+    let mut hashState = ZSTD_ldm_gear_init(params);
 
     while ip < iend {
         let mut numSplits = 0;
@@ -742,18 +740,12 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let mut anchor = istart;
     let mut ip = istart;
 
-    // Rolling hash state
-    let mut hashState = ldmRollingHashState_t {
-        rolling: 0,
-        stopMask: 0,
-    };
-
     if srcSize < minMatchLength as size_t {
         return iend.offset_from_unsigned(anchor);
     }
 
     // Initialize the rolling hash state with the first minMatchLength bytes
-    ZSTD_ldm_gear_init(&mut hashState, params);
+    let mut hashState = ZSTD_ldm_gear_init(params);
     ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
     ip = ip.offset(minMatchLength as isize);
 
