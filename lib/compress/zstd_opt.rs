@@ -1065,8 +1065,25 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     mnum
 }
 
+// A workaround for const generics not supporting enums yet.
+trait DictModeMarker {
+    const DICT_MODE: DictMode;
+}
+struct NoDict;
+impl DictModeMarker for NoDict {
+    const DICT_MODE: DictMode = DictMode::NoDict;
+}
+struct ExtDict;
+impl DictModeMarker for ExtDict {
+    const DICT_MODE: DictMode = DictMode::ExtDict;
+}
+struct DictMatchState;
+impl DictModeMarker for DictMatchState {
+    const DICT_MODE: DictMode = DictMode::DictMatchState;
+}
+
 #[inline(always)]
-unsafe fn ZSTD_btGetAllMatches_internal<const MLS: u32>(
+unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u32>(
     matches: *mut ZSTD_match_t,
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
@@ -1075,19 +1092,18 @@ unsafe fn ZSTD_btGetAllMatches_internal<const MLS: u32>(
     rep: &[u32; 3],
     ll0: u32,
     lengthToBeat: u32,
-    dictMode: DictMode,
 ) -> u32 {
     if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
         return 0; // skipped area
     }
-    ZSTD_updateTree_internal(ms, ip, iHighLimit, MLS, dictMode);
+    ZSTD_updateTree_internal(ms, ip, iHighLimit, MLS, DICT_MODE::DICT_MODE);
     ZSTD_insertBtAndGetAllMatches(
         matches,
         ms,
         nextToUpdate3,
         ip,
         iHighLimit,
-        dictMode,
+        DICT_MODE::DICT_MODE,
         rep,
         ll0,
         lengthToBeat,
@@ -1095,94 +1111,25 @@ unsafe fn ZSTD_btGetAllMatches_internal<const MLS: u32>(
     )
 }
 
-unsafe fn ZSTD_btGetAllMatches_noDict<const MLS: u32>(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal::<MLS>(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::NoDict,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_extDict<const MLS: u32>(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal::<MLS>(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::ExtDict,
-    )
-}
-
-unsafe fn ZSTD_btGetAllMatches_dictMatchState<const MLS: u32>(
-    matches: *mut ZSTD_match_t,
-    ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
-    ip: *const u8,
-    iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
-    lengthToBeat: u32,
-) -> u32 {
-    ZSTD_btGetAllMatches_internal::<MLS>(
-        matches,
-        ms,
-        nextToUpdate3,
-        ip,
-        iHighLimit,
-        rep,
-        ll0,
-        lengthToBeat,
-        DictMode::DictMatchState,
-    )
-}
-
 fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZSTD_getAllMatchesFn {
     let getAllMatchesFns: [[ZSTD_getAllMatchesFn; 4]; 3] = [
         [
-            ZSTD_btGetAllMatches_noDict::<3>,
-            ZSTD_btGetAllMatches_noDict::<4>,
-            ZSTD_btGetAllMatches_noDict::<5>,
-            ZSTD_btGetAllMatches_noDict::<6>,
+            ZSTD_btGetAllMatches_internal::<NoDict, 3>,
+            ZSTD_btGetAllMatches_internal::<NoDict, 4>,
+            ZSTD_btGetAllMatches_internal::<NoDict, 5>,
+            ZSTD_btGetAllMatches_internal::<NoDict, 6>,
         ],
         [
-            ZSTD_btGetAllMatches_extDict::<3>,
-            ZSTD_btGetAllMatches_extDict::<4>,
-            ZSTD_btGetAllMatches_extDict::<5>,
-            ZSTD_btGetAllMatches_extDict::<6>,
+            ZSTD_btGetAllMatches_internal::<ExtDict, 3>,
+            ZSTD_btGetAllMatches_internal::<ExtDict, 4>,
+            ZSTD_btGetAllMatches_internal::<ExtDict, 5>,
+            ZSTD_btGetAllMatches_internal::<ExtDict, 6>,
         ],
         [
-            ZSTD_btGetAllMatches_dictMatchState::<3>,
-            ZSTD_btGetAllMatches_dictMatchState::<4>,
-            ZSTD_btGetAllMatches_dictMatchState::<5>,
-            ZSTD_btGetAllMatches_dictMatchState::<6>,
+            ZSTD_btGetAllMatches_internal::<DictMatchState, 3>,
+            ZSTD_btGetAllMatches_internal::<DictMatchState, 4>,
+            ZSTD_btGetAllMatches_internal::<DictMatchState, 5>,
+            ZSTD_btGetAllMatches_internal::<DictMatchState, 6>,
         ],
     ];
     let mls = ms.cParams.minMatch.clamp(3, 6);
