@@ -1601,9 +1601,8 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
 /// pointer because after Spectre and Meltdown mitigations, indirect
 /// function calls can be very costly, especially in the kernel.
 ///
-/// NOTE: dictMode and searchMethod should be templated, so those switch
-/// statements should be optimized out. Only the mls & rowLog switches
-/// should be left.
+/// The searchMethod and dictMode switches are on compile-time constants,
+/// so they are optimized out. Only the mls & rowLog switches are left.
 ///
 /// @param ms The match state.
 /// @param ip The position to search at.
@@ -1611,182 +1610,53 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
 /// @param[out] offsetPtr Stores the match offset into this pointer.
 /// @param mls The minimum search length, in the range [4, 6].
 /// @param rowLog The row log (if applicable), in the range [4, 6].
-/// @param searchMethod The search method to use (templated).
-/// @param dictMode The dictMode (templated).
 ///
 /// # Returns
 ///
 /// The length of the longest match found, or < mls if no match is found.
 /// If a match is found its offset is stored in @p offsetPtr.
 #[inline(always)]
-unsafe fn ZSTD_searchMax(
+unsafe fn ZSTD_searchMax<SEARCH_METHOD: SearchMethodMarker, DICT_MODE: DictModeMarker>(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
     offsetPtr: &mut size_t,
     mls: u32,
     rowLog: u32,
-    searchMethod: SearchMethod,
-    dictMode: DictMode,
 ) -> size_t {
-    match dictMode {
-        DictMode::NoDict => match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch::<NoDict, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch::<NoDict, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch::<NoDict, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => ZSTD_BtFindBestMatch::<NoDict, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_BtFindBestMatch::<NoDict, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_BtFindBestMatch::<NoDict, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::RowHash => match mls {
-                4 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<NoDict, 4, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<NoDict, 4, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<NoDict, 4, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                5 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<NoDict, 5, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<NoDict, 5, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<NoDict, 5, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                6 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<NoDict, 6, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<NoDict, 6, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<NoDict, 6, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                _ => unreachable!(),
-            },
+    match SEARCH_METHOD::SEARCH_METHOD {
+        SearchMethod::HashChain => match mls {
+            4 => ZSTD_HcFindBestMatch::<DICT_MODE, 4>(ms, ip, iend, offsetPtr),
+            5 => ZSTD_HcFindBestMatch::<DICT_MODE, 5>(ms, ip, iend, offsetPtr),
+            6 => ZSTD_HcFindBestMatch::<DICT_MODE, 6>(ms, ip, iend, offsetPtr),
+            _ => unreachable!(),
         },
-        DictMode::ExtDict => match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch::<ExtDict, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch::<ExtDict, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch::<ExtDict, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => ZSTD_BtFindBestMatch::<ExtDict, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_BtFindBestMatch::<ExtDict, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_BtFindBestMatch::<ExtDict, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::RowHash => match mls {
-                4 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<ExtDict, 4, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<ExtDict, 4, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<ExtDict, 4, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                5 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<ExtDict, 5, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<ExtDict, 5, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<ExtDict, 5, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                6 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<ExtDict, 6, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<ExtDict, 6, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<ExtDict, 6, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                _ => unreachable!(),
-            },
+        SearchMethod::BinaryTree => match mls {
+            4 => ZSTD_BtFindBestMatch::<DICT_MODE, 4>(ms, ip, iend, offsetPtr),
+            5 => ZSTD_BtFindBestMatch::<DICT_MODE, 5>(ms, ip, iend, offsetPtr),
+            6 => ZSTD_BtFindBestMatch::<DICT_MODE, 6>(ms, ip, iend, offsetPtr),
+            _ => unreachable!(),
         },
-        DictMode::DictMatchState => match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch::<DictMatchState, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch::<DictMatchState, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch::<DictMatchState, 6>(ms, ip, iend, offsetPtr),
+        SearchMethod::RowHash => match mls {
+            4 => match rowLog {
+                4 => ZSTD_RowFindBestMatch::<DICT_MODE, 4, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_RowFindBestMatch::<DICT_MODE, 4, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_RowFindBestMatch::<DICT_MODE, 4, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
-            SearchMethod::BinaryTree => match mls {
-                4 => ZSTD_BtFindBestMatch::<DictMatchState, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_BtFindBestMatch::<DictMatchState, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_BtFindBestMatch::<DictMatchState, 6>(ms, ip, iend, offsetPtr),
+            5 => match rowLog {
+                4 => ZSTD_RowFindBestMatch::<DICT_MODE, 5, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_RowFindBestMatch::<DICT_MODE, 5, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_RowFindBestMatch::<DICT_MODE, 5, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
-            SearchMethod::RowHash => match mls {
-                4 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<DictMatchState, 4, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<DictMatchState, 4, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<DictMatchState, 4, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                5 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<DictMatchState, 5, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<DictMatchState, 5, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<DictMatchState, 5, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
-                6 => match rowLog {
-                    4 => ZSTD_RowFindBestMatch::<DictMatchState, 6, 4>(ms, ip, iend, offsetPtr),
-                    5 => ZSTD_RowFindBestMatch::<DictMatchState, 6, 5>(ms, ip, iend, offsetPtr),
-                    6 => ZSTD_RowFindBestMatch::<DictMatchState, 6, 6>(ms, ip, iend, offsetPtr),
-                    _ => unreachable!(),
-                },
+            6 => match rowLog {
+                4 => ZSTD_RowFindBestMatch::<DICT_MODE, 6, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_RowFindBestMatch::<DICT_MODE, 6, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_RowFindBestMatch::<DICT_MODE, 6, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
-        },
-        DictMode::DedicatedDictSearch => match searchMethod {
-            SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::BinaryTree => match mls {
-                4 => ZSTD_BtFindBestMatch::<DedicatedDictSearch, 4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_BtFindBestMatch::<DedicatedDictSearch, 5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_BtFindBestMatch::<DedicatedDictSearch, 6>(ms, ip, iend, offsetPtr),
-                _ => unreachable!(),
-            },
-            SearchMethod::RowHash => match mls {
-                4 => match rowLog {
-                    4 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 4, 4>(ms, ip, iend, offsetPtr)
-                    }
-                    5 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 4, 5>(ms, ip, iend, offsetPtr)
-                    }
-                    6 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 4, 6>(ms, ip, iend, offsetPtr)
-                    }
-                    _ => unreachable!(),
-                },
-                5 => match rowLog {
-                    4 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 5, 4>(ms, ip, iend, offsetPtr)
-                    }
-                    5 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 5, 5>(ms, ip, iend, offsetPtr)
-                    }
-                    6 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 5, 6>(ms, ip, iend, offsetPtr)
-                    }
-                    _ => unreachable!(),
-                },
-                6 => match rowLog {
-                    4 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 6, 4>(ms, ip, iend, offsetPtr)
-                    }
-                    5 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 6, 5>(ms, ip, iend, offsetPtr)
-                    }
-                    6 => {
-                        ZSTD_RowFindBestMatch::<DedicatedDictSearch, 6, 6>(ms, ip, iend, offsetPtr)
-                    }
-                    _ => unreachable!(),
-                },
-                _ => unreachable!(),
-            },
+            _ => unreachable!(),
         },
     }
 }
@@ -1962,15 +1832,13 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                 _ => {
                     // first search (depth 0)
                     let mut offbaseFound = 999999999;
-                    let ml2 = ZSTD_searchMax(
+                    let ml2 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
                         ms,
                         ip,
                         iend,
                         &mut offbaseFound,
                         mls,
                         rowLog,
-                        searchMethod,
-                        dictMode,
                     );
                     if ml2 > matchLength {
                         matchLength = ml2;
@@ -2064,15 +1932,13 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 }
 
                                 let mut ofbCandidate = 999999999;
-                                let ml2_0 = ZSTD_searchMax(
+                                let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
                                     ms,
                                     ip,
                                     iend,
                                     &mut ofbCandidate,
                                     mls,
                                     rowLog,
-                                    searchMethod,
-                                    dictMode,
                                 );
                                 let gain2_1 = (ml2_0 * 4)
                                     .wrapping_sub(ZSTD_highbit32(ofbCandidate as u32) as size_t)
@@ -2163,15 +2029,13 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     }
 
                                     let mut ofbCandidate_0 = 999999999;
-                                    let ml2_1 = ZSTD_searchMax(
+                                    let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
                                         ms,
                                         ip,
                                         iend,
                                         &mut ofbCandidate_0,
                                         mls,
                                         rowLog,
-                                        searchMethod,
-                                        dictMode,
                                     );
                                     let gain2_4 = (ml2_1 * 4)
                                         .wrapping_sub(
@@ -2673,15 +2537,13 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         if current_block_61 == 12147880666119273379 {
             // first search (depth 0)
             let mut ofbCandidate = 999999999;
-            let ml2 = ZSTD_searchMax(
+            let ml2 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
                 ms,
                 ip,
                 iend,
                 &mut ofbCandidate,
                 mls,
                 rowLog,
-                searchMethod,
-                DictMode::ExtDict,
             );
             if ml2 > matchLength {
                 matchLength = ml2;
@@ -2751,15 +2613,13 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
 
                         // search match, depth 1
                         let mut ofbCandidate_0 = 999999999;
-                        let ml2_0 = ZSTD_searchMax(
+                        let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
                             ms,
                             ip,
                             iend,
                             &mut ofbCandidate_0,
                             mls,
                             rowLog,
-                            searchMethod,
-                            DictMode::ExtDict,
                         );
                         let gain2_0 = (ml2_0 * 4)
                             .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as u32) as size_t)
@@ -2824,15 +2684,13 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
 
                             // search match, depth 2
                             let mut ofbCandidate_1 = 999999999;
-                            let ml2_1 = ZSTD_searchMax(
+                            let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
                                 ms,
                                 ip,
                                 iend,
                                 &mut ofbCandidate_1,
                                 mls,
                                 rowLog,
-                                searchMethod,
-                                DictMode::ExtDict,
                             );
                             let gain2_2 = (ml2_1 * 4)
                                 .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as u32) as size_t)
