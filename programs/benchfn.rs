@@ -261,7 +261,7 @@ pub unsafe fn BMK_benchTimedFn(
             (*cont).nbLoops = ((*cont).nbLoops).wrapping_mul(multiplier);
         }
         if loopDuration_ns < runTimeMin_ns as core::ffi::c_double {
-            assert!(completed == 0);
+            assert_eq!(completed, 0);
         } else {
             if newRunTime.nanoSecPerRun < bestRunTime.nanoSecPerRun {
                 bestRunTime = newRunTime;

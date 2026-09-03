@@ -1647,7 +1647,7 @@ fn decompression_margin(mut src: &[u8]) -> Result<size_t, Error> {
             margin += 3 * frameSizeInfo.nbBlocks;
             maxBlockSize = Ord::max(maxBlockSize, zfh.blockSizeMax)
         } else {
-            debug_assert!(zfh.frameType == ZSTD_skippableFrame);
+            debug_assert_eq!(zfh.frameType, ZSTD_skippableFrame);
             // add the entire skippable frame size to our margin.
             margin += compressedSize;
         }

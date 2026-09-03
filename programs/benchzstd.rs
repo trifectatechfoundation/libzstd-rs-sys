@@ -651,7 +651,7 @@ pub unsafe fn BMK_isSuccessful_benchOutcome(outcome: BMK_benchOutcome_t) -> core
     (outcome.tag == 0) as core::ffi::c_int
 }
 pub unsafe fn BMK_extract_benchResult(outcome: BMK_benchOutcome_t) -> BMK_benchResult_t {
-    assert!(outcome.tag == 0);
+    assert_eq!(outcome.tag, 0);
     outcome.internal_never_use_directly
 }
 unsafe fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
@@ -824,7 +824,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             fileNb = fileNb.wrapping_add(1);
         }
         let decodedSize = totalDSize64 as size_t;
-        assert!(decodedSize as u64 == totalDSize64);
+        assert_eq!(decodedSize as u64, totalDSize64);
         free(*resultBufferPtr);
         if totalDSize64 > decodedSize as u64 {
             let mut r_1 = BMK_benchOutcome_t {

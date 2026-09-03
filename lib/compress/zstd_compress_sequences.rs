@@ -223,10 +223,10 @@ pub unsafe fn ZSTD_selectEncodingType(
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
-            assert!(ZSTD_isError(basicCost) == 0);
+            assert_eq!(ZSTD_isError(basicCost), 0);
             assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
         }
-        assert!(ZSTD_isError(NCountCost) == 0);
+        assert_eq!(ZSTD_isError(NCountCost), 0);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat_none;
             return SymbolEncodingType::Basic;

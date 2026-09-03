@@ -350,10 +350,10 @@ pub const DEFAULT_FILE_PERMISSIONS: mode_t =
 pub const TEMPORARY_FILE_PERMISSIONS: mode_t = S_IRUSR | S_IWUSR;
 static mut g_artefact: *const core::ffi::c_char = core::ptr::null();
 unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
-    assert!(sig == SIGINT);
+    assert_eq!(sig, SIGINT);
     signal(sig, SIG_IGN);
     if !g_artefact.is_null() {
-        assert!(UTIL_isRegularFile(g_artefact) != 0);
+        assert_ne!(UTIL_isRegularFile(g_artefact), 0);
         remove(g_artefact);
     }
     fprintf(stderr, c"\n".as_ptr());
@@ -1397,7 +1397,7 @@ unsafe fn FIO_createFilename_fromOutDir(
 }
 unsafe fn FIO_highbit64(mut v: core::ffi::c_ulonglong) -> core::ffi::c_uint {
     let mut count = 0 as core::ffi::c_uint;
-    assert!(v != 0);
+    assert_ne!(v, 0);
     v >>= 1;
     while v != 0 {
         v >>= 1;
@@ -1449,7 +1449,7 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
         }
         exit(42);
     }
-    assert!(maxSize != UTIL_FILESIZE_UNKNOWN as core::ffi::c_ulonglong);
+    assert_ne!(maxSize, UTIL_FILESIZE_UNKNOWN as core::ffi::c_ulonglong);
     if maxSize > maxWindowSize as core::ffi::c_ulonglong {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, c"zstd: ".as_ptr());
@@ -5172,7 +5172,7 @@ unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
         AIO_ReadPool_consumeBytes((*ress).readCtx, writeSize);
         AIO_ReadPool_fillBuffer((*ress).readCtx, blockSize);
     }
-    assert!((*(*ress).readCtx).reachedEof != 0);
+    assert_ne!((*(*ress).readCtx).reachedEof, 0);
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     0

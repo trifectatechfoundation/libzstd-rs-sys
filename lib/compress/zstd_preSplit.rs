@@ -182,7 +182,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
         }
         pos = pos.wrapping_add(CHUNKSIZE as size_t);
     }
-    debug_assert!(pos == blockSize);
+    debug_assert_eq!(pos, blockSize);
     blockSize
 }
 

@@ -49,12 +49,12 @@ unsafe fn HUF_alignUpWorkspace(
     let add = (align - (rem)) & mask;
     let aligned = workspace.byte_add(add);
 
-    debug_assert!((align & (align - 1)) == 0); /* pow 2 */
+    debug_assert_eq!(align & (align - 1), 0); /* pow 2 */
     debug_assert!(align <= HUF_WORKSPACE_MAX_ALIGNMENT);
 
     if *workspaceSizePtr >= add {
         debug_assert!(add < align);
-        debug_assert!(((aligned as size_t) & mask) == 0);
+        debug_assert_eq!((aligned as size_t) & mask, 0);
         *workspaceSizePtr -= add;
         aligned
     } else {
@@ -208,7 +208,7 @@ fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: size_t) {
 fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
-        debug_assert!((value >> nbBits) == 0);
+        debug_assert_eq!(value >> nbBits, 0);
         *elt |= value << (HUF_CElt::BITS as usize - nbBits);
     }
 }
@@ -480,7 +480,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
 
         /* renorm totalCost from 2^largestBits to 2^targetNbBits
          * note : totalCost is necessarily a multiple of baseCost */
-        debug_assert!(((totalCost as u32) & (baseCost - 1)) == 0);
+        debug_assert_eq!((totalCost as u32) & (baseCost - 1), 0);
         totalCost >>= largestBits - (targetNbBits);
         debug_assert!(totalCost > 0);
 
@@ -534,7 +534,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
                 {
                     nBitsToDecrease += 1;
                 }
-                debug_assert!(rankLast[nBitsToDecrease as usize] != noSymbol);
+                debug_assert_ne!(rankLast[nBitsToDecrease as usize], noSymbol);
 
                 /* Increase the number of bits to gain back half the rank cost. */
                 totalCost -= 1 << (nBitsToDecrease - 1);
@@ -726,7 +726,7 @@ unsafe fn HUF_sort(
         debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
         rankPosition[lowerRank as usize].base += 1;
     }
-    debug_assert!(rankPosition[RANK_POSITION_TABLE_SIZE - 1].base == 0);
+    debug_assert_eq!(rankPosition[RANK_POSITION_TABLE_SIZE - 1].base, 0);
 
     /* Set up the rankPosition table */
     for n in (1..RANK_POSITION_TABLE_SIZE as u32).rev() {

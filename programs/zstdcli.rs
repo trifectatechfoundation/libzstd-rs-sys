@@ -2582,8 +2582,9 @@ unsafe fn main_0(
                         }
                         let strategyBounds =
                             ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_strategy);
-                        assert!(
-                            ZSTD_NB_STRATEGIES as core::ffi::c_int == strategyBounds.upperBound
+                        assert_eq!(
+                            ZSTD_NB_STRATEGIES as core::ffi::c_int,
+                            strategyBounds.upperBound
                         );
                         if showDefaultCParams != 0 || g_displayLevel >= 4 {
                             let mut fileNb: size_t = 0;

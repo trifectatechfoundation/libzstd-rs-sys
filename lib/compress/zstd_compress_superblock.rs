@@ -213,7 +213,7 @@ unsafe fn ZSTD_seqDecompressedSize(
     }
 
     if lastSubBlock == 0 {
-        assert!(litLengthSum == litSize);
+        assert_eq!(litLengthSum, litSize);
     } else {
         assert!(litLengthSum <= litSize);
     }
