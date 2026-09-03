@@ -1199,6 +1199,8 @@ unsafe fn maybeSplitSequence(
     sequence
 }
 
+/// Moves forward in @rawSeqStore by @nbBytes,
+/// which will update the fields 'pos' and 'posInSequence'.
 pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: size_t) {
     let mut currPos = (rawSeqStore.posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
