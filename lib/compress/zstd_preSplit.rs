@@ -83,15 +83,15 @@ fn abs64(s64: i64) -> u64 {
     s64.unsigned_abs()
 }
 
-unsafe fn fpDistance(fp1: &Fingerprint, fp2: *const Fingerprint, hashLog: c_uint) -> u64 {
+fn fpDistance(fp1: &Fingerprint, fp2: &Fingerprint, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
 
     debug_assert!(hashLog <= HASHLOG_MAX);
 
     for n in 0..(1 << hashLog) {
         distance = distance.wrapping_add(abs64(
-            fp1.events[n as usize] as i64 * (*fp2).nbEvents as i64
-                - ((*fp2).events)[n as usize] as i64 * fp1.nbEvents as i64,
+            fp1.events[n as usize] as i64 * fp2.nbEvents as i64
+                - fp2.events[n as usize] as i64 * fp1.nbEvents as i64,
         ));
     }
     distance
@@ -100,7 +100,7 @@ unsafe fn fpDistance(fp1: &Fingerprint, fp2: *const Fingerprint, hashLog: c_uint
 /// Compares new events with past events.
 ///
 /// Returns `true` when the fingerprints are considered "too different".
-unsafe fn compareFingerprints(
+fn compareFingerprints(
     ref_0: &Fingerprint,
     newfp: &Fingerprint,
     penalty: c_int,
@@ -242,8 +242,8 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         SEGMENT_SIZE as size_t,
     );
     (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;
-    let distFromBegin = fpDistance(&(*fpstats).pastEvents, middleEvents, 8);
-    let distFromEnd = fpDistance(&(*fpstats).newEvents, middleEvents, 8);
+    let distFromBegin = fpDistance(&(*fpstats).pastEvents, &*middleEvents, 8);
+    let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
         return (64 * (1 << 10)) as size_t;
