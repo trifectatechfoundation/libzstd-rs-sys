@@ -1665,20 +1665,27 @@ pub unsafe fn HUF_optimalTableLog(
 
 /// `workSpace_align4` must be aligned on 4-bytes boundaries,
 /// and occupies the same space as a table of HUF_WORKSPACE_SIZE_U64 unsigned
-unsafe fn HUF_compress_internal(
+pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     dst: *mut c_void,
     dstSize: size_t,
     src: *const c_void,
     srcSize: size_t,
     maxSymbolValue: c_uint,
     mut huffLog: c_uint,
-    nbStreams: HUF_nbStreams_e,
     workSpace: *mut c_void,
     mut wkspSize: size_t,
     oldHufTable: &mut CTable,
     repeat: &mut HUF_repeat,
     flags: c_int,
 ) -> size_t {
+    const { assert!(matches!(NB_STREAMS, 1 | 4)) };
+
+    let nbStreams = match NB_STREAMS {
+        1 => HUF_singleStream,
+        4 => HUF_fourStreams,
+        _ => unreachable!(),
+    };
+
     let table = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<size_t>())
         as *mut HUF_compress_tables_t;
 
@@ -1902,67 +1909,6 @@ unsafe fn HUF_compress_internal(
         srcSize,
         nbStreams,
         &(*table).CTable,
-        flags,
-    )
-}
-
-pub unsafe fn HUF_compress1X_repeat(
-    dst: *mut c_void,
-    dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
-    maxSymbolValue: c_uint,
-    huffLog: c_uint,
-    workSpace: *mut c_void,
-    wkspSize: size_t,
-    hufTable: &mut CTable,
-    repeat: &mut HUF_repeat,
-    flags: c_int,
-) -> size_t {
-    HUF_compress_internal(
-        dst,
-        dstSize,
-        src,
-        srcSize,
-        maxSymbolValue,
-        huffLog,
-        HUF_singleStream,
-        workSpace,
-        wkspSize,
-        hufTable,
-        repeat,
-        flags,
-    )
-}
-
-/// compress input using 4 streams.
-/// consider skipping quickly
-/// reuse an existing huffman compression table
-pub unsafe fn HUF_compress4X_repeat(
-    dst: *mut c_void,
-    dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
-    maxSymbolValue: c_uint,
-    huffLog: c_uint,
-    workSpace: *mut c_void,
-    wkspSize: size_t,
-    hufTable: &mut CTable,
-    repeat: &mut HUF_repeat,
-    flags: c_int,
-) -> size_t {
-    HUF_compress_internal(
-        dst,
-        dstSize,
-        src,
-        srcSize,
-        maxSymbolValue,
-        huffLog,
-        HUF_fourStreams,
-        workSpace,
-        wkspSize,
-        hufTable,
-        repeat,
         flags,
     )
 }
