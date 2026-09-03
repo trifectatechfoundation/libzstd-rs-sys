@@ -40,6 +40,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t,
     ZSTD_storeSeq, ZSTD_updateRep,
 };
+use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
@@ -1188,25 +1189,6 @@ fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZST
     getAllMatchesFns[dictMode as usize][mls.wrapping_sub(3) as usize]
 }
 
-/// Moves forward in @rawSeqStore by @nbBytes,
-/// which will update the fields 'pos' and 'posInSequence'.
-unsafe fn ZSTD_optLdm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: size_t) {
-    let mut currPos = (rawSeqStore.posInSequence).wrapping_add(nbBytes) as u32;
-    while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
-        let currSeq = *(rawSeqStore.seq).add(rawSeqStore.pos);
-        if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
-            currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
-            rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
-        } else {
-            rawSeqStore.posInSequence = currPos as size_t;
-            break;
-        }
-    }
-    if currPos == 0 || rawSeqStore.pos == rawSeqStore.size {
-        rawSeqStore.posInSequence = 0;
-    }
-}
-
 /// Calculates the beginning and end of the next match in the current block.
 /// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
 unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
@@ -1249,7 +1231,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
     if literalsBytesRemaining >= blockBytesRemaining {
         optLdm.startPosInBlock = UINT_MAX;
         optLdm.endPosInBlock = UINT_MAX;
-        ZSTD_optLdm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as size_t);
+        ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as size_t);
         return;
     }
 
@@ -1262,13 +1244,13 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
     if optLdm.endPosInBlock > currBlockEndPos {
         // Match ends after the block ends, we can't use the whole match
         optLdm.endPosInBlock = currBlockEndPos;
-        ZSTD_optLdm_skipRawSeqStoreBytes(
+        ZSTD_ldm_skipRawSeqStoreBytes(
             &mut optLdm.seqStore,
             currBlockEndPos.wrapping_sub(currPosInBlock) as size_t,
         );
     } else {
         // Consume number of bytes equal to size of sequence left
-        ZSTD_optLdm_skipRawSeqStoreBytes(
+        ZSTD_ldm_skipRawSeqStoreBytes(
             &mut optLdm.seqStore,
             literalsBytesRemaining.wrapping_add(matchBytesRemaining) as size_t,
         );
@@ -1329,7 +1311,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
             // at the end of a match from the ldm seq store, and will often be some bytes
             // over beyond matchEndPosInBlock. As such, we need to correct for these "overshoots"
             let posOvershoot = currPosInBlock.wrapping_sub(optLdm.endPosInBlock);
-            ZSTD_optLdm_skipRawSeqStoreBytes(&mut optLdm.seqStore, posOvershoot as size_t);
+            ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, posOvershoot as size_t);
         }
         ZSTD_opt_getNextMatchAndUpdateSeqStore(optLdm, currPosInBlock, remainingBytes);
     }
