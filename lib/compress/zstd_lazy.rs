@@ -797,15 +797,14 @@ pub unsafe fn ZSTD_insertAndFindFirstIndex(ms: &mut ZSTD_MatchState_t, ip: *cons
     ZSTD_insertAndFindFirstIndex_internal(ms, ip, ms.cParams.minMatch, 0)
 }
 
-/// inlining is important to hardwire a hot branch (template emulation)
-#[inline(always)]
-unsafe fn ZSTD_HcFindBestMatch<const MLS: u32>(
+#[inline(never)]
+unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
     offsetPtr: &mut size_t,
-    dictMode: DictMode,
 ) -> size_t {
+    let dictMode = DICT_MODE::DICT_MODE;
     let cParams = &ms.cParams;
     let chainTable = ms.chainTable;
     let chainSize = (1 << cParams.chainLog) as u32;
@@ -1615,46 +1614,6 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch<const MLS: u32, const ROW_LO
     ZSTD_RowFindBestMatch::<MLS, ROW_LOG>(ms, ip, iLimit, offsetPtr, DictMode::DedicatedDictSearch)
 }
 
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_noDict<const MLS: u32>(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::NoDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_extDict<const MLS: u32>(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::ExtDict)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dictMatchState<const MLS: u32>(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::DictMatchState)
-}
-
-#[inline(never)]
-unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch<const MLS: u32>(
-    ms: &mut ZSTD_MatchState_t,
-    ip: *const u8,
-    iLimit: *const u8,
-    offsetPtr: &mut size_t,
-) -> size_t {
-    ZSTD_HcFindBestMatch::<MLS>(ms, ip, iLimit, offsetPtr, DictMode::DedicatedDictSearch)
-}
-
 /// Searches for the longest match at @p ip.
 /// Dispatches to the correct implementation function based on the
 /// (searchMethod, dictMode, mls, rowLog). We use switch statements
@@ -1693,9 +1652,9 @@ unsafe fn ZSTD_searchMax(
     match dictMode {
         DictMode::NoDict => match searchMethod {
             SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch_noDict::<4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch_noDict::<5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch_noDict::<6>(ms, ip, iend, offsetPtr),
+                4 => ZSTD_HcFindBestMatch::<NoDict, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_HcFindBestMatch::<NoDict, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_HcFindBestMatch::<NoDict, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
             SearchMethod::BinaryTree => match mls {
@@ -1728,9 +1687,9 @@ unsafe fn ZSTD_searchMax(
         },
         DictMode::ExtDict => match searchMethod {
             SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch_extDict::<4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch_extDict::<5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch_extDict::<6>(ms, ip, iend, offsetPtr),
+                4 => ZSTD_HcFindBestMatch::<ExtDict, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_HcFindBestMatch::<ExtDict, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_HcFindBestMatch::<ExtDict, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
             SearchMethod::BinaryTree => match mls {
@@ -1763,9 +1722,9 @@ unsafe fn ZSTD_searchMax(
         },
         DictMode::DictMatchState => match searchMethod {
             SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch_dictMatchState::<4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch_dictMatchState::<5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch_dictMatchState::<6>(ms, ip, iend, offsetPtr),
+                4 => ZSTD_HcFindBestMatch::<DictMatchState, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_HcFindBestMatch::<DictMatchState, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_HcFindBestMatch::<DictMatchState, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
             SearchMethod::BinaryTree => match mls {
@@ -1798,9 +1757,9 @@ unsafe fn ZSTD_searchMax(
         },
         DictMode::DedicatedDictSearch => match searchMethod {
             SearchMethod::HashChain => match mls {
-                4 => ZSTD_HcFindBestMatch_dedicatedDictSearch::<4>(ms, ip, iend, offsetPtr),
-                5 => ZSTD_HcFindBestMatch_dedicatedDictSearch::<5>(ms, ip, iend, offsetPtr),
-                6 => ZSTD_HcFindBestMatch_dedicatedDictSearch::<6>(ms, ip, iend, offsetPtr),
+                4 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 4>(ms, ip, iend, offsetPtr),
+                5 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 5>(ms, ip, iend, offsetPtr),
+                6 => ZSTD_HcFindBestMatch::<DedicatedDictSearch, 6>(ms, ip, iend, offsetPtr),
                 _ => unreachable!(),
             },
             SearchMethod::BinaryTree => match mls {
