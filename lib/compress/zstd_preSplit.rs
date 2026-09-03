@@ -74,7 +74,7 @@ unsafe fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG:
     src: *const c_void,
     srcSize: size_t,
 ) {
-    ptr::write_bytes(fp as *mut _ as *mut u8, 0, size_of::<c_uint>() << HASH_LOG);
+    fp.events[..1usize << HASH_LOG].fill(0);
     fp.nbEvents = 0;
     addEvents_generic(fp, src, srcSize, SAMPLING_RATE, HASH_LOG);
 }
