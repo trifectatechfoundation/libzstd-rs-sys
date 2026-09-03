@@ -126,7 +126,7 @@ struct buffer_s {
     capacity: size_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct Range {
     start: *const core::ffi::c_void,
@@ -784,11 +784,6 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
         (*serialState).ldmWindowCond.notify_one();
     }
 }
-
-const kNullRange: Range = Range {
-    start: core::ptr::null(),
-    size: 0,
-};
 
 /// This is a POOL_function type
 unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
@@ -1691,7 +1686,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     (*mtctx).roundBuff.pos = 0;
     (*mtctx).inBuff.buffer = g_nullBuffer;
     (*mtctx).inBuff.filled = 0;
-    (*mtctx).inBuff.prefix = kNullRange;
+    (*mtctx).inBuff.prefix = Range::default();
     (*mtctx).doneJobID = 0;
     (*mtctx).nextJobID = 0;
     (*mtctx).frameEnded = 0;
@@ -1751,7 +1746,7 @@ unsafe fn ZSTDMT_writeLastEmptyBlock(job: *mut ZSTDMT_jobDescription) {
         (*job).cSize = Error::memory_allocation.to_error_code();
         return;
     }
-    (*job).src = kNullRange;
+    (*job).src = Range::default();
     (*job).cSize = ZSTD_writeLastEmptyBlock((*job).dstBuff.start, (*job).dstBuff.capacity);
 }
 
@@ -1809,7 +1804,7 @@ unsafe fn ZSTDMT_createCompressionJob(
             (*mtctx).inBuff.prefix.size = newPrefixSize;
         } else {
             // endFrame==1 => no need for another input buffer
-            (*mtctx).inBuff.prefix = kNullRange;
+            (*mtctx).inBuff.prefix = Range::default();
             (*mtctx).frameEnded = endFrame as core::ffi::c_uint;
             if (*mtctx).nextJobID == 0 {
                 // single job exception: checksum is already calculated directly within worker thread
@@ -1974,7 +1969,7 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
     let roundBuffCapacity = (*mtctx).roundBuff.capacity;
     let nbJobs1stRoundMin = roundBuffCapacity / (*mtctx).targetSectionSize;
     if (lastJobID as size_t) < nbJobs1stRoundMin {
-        return kNullRange;
+        return Range::default();
     }
 
     jobID = firstJobID;
@@ -2002,7 +1997,7 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
         jobID = jobID.wrapping_add(1);
     }
 
-    kNullRange
+    Range::default()
 }
 
 /// Returns `true` iff buffer and range overlap.
@@ -2025,14 +2020,8 @@ fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> bool {
 }
 
 unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> bool {
-    let mut extDict = Range {
-        start: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
-    };
-    let mut prefix = Range {
-        start: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
-    };
+    let mut extDict = Range::default();
+    let mut prefix = Range::default();
 
     extDict.start = (window.dictBase).offset(window.lowLimit as isize) as *const core::ffi::c_void;
     extDict.size = (window.dictLimit).wrapping_sub(window.lowLimit) as size_t;
