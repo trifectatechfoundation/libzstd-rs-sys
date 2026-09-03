@@ -8,6 +8,26 @@ pub enum SearchMethod {
     HashChain = 0,
 }
 
+/// A type-level [`SearchMethod`], a workaround for const generics not supporting enums yet.
+trait SearchMethodMarker {
+    const SEARCH_METHOD: SearchMethod;
+}
+
+struct HashChain;
+impl SearchMethodMarker for HashChain {
+    const SEARCH_METHOD: SearchMethod = SearchMethod::HashChain;
+}
+
+struct BinaryTree;
+impl SearchMethodMarker for BinaryTree {
+    const SEARCH_METHOD: SearchMethod = SearchMethod::BinaryTree;
+}
+
+struct RowHash;
+impl SearchMethodMarker for RowHash {
+    const SEARCH_METHOD: SearchMethod = SearchMethod::RowHash;
+}
+
 pub type ZSTD_VecMask = u64;
 
 use libc::size_t;
@@ -1772,15 +1792,19 @@ unsafe fn ZSTD_searchMax(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_compressBlock_lazy_generic<const DEPTH: u32>(
+unsafe fn ZSTD_compressBlock_lazy_generic<
+    SEARCH_METHOD: SearchMethodMarker,
+    DICT_MODE: DictModeMarker,
+    const DEPTH: u32,
+>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    searchMethod: SearchMethod,
-    dictMode: DictMode,
 ) -> size_t {
+    let searchMethod = SEARCH_METHOD::SEARCH_METHOD;
+    let dictMode = DICT_MODE::DICT_MODE;
     let mut current_block: u64;
     let istart = src as *const u8;
     let mut ip = istart;
@@ -2351,15 +2375,7 @@ pub unsafe fn ZSTD_compressBlock_greedy(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, NoDict, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
@@ -2369,15 +2385,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, DictMatchState, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
@@ -2387,14 +2395,8 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<HashChain, DedicatedDictSearch, 0>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2405,15 +2407,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, NoDict, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
@@ -2423,15 +2417,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, DictMatchState, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
@@ -2441,14 +2427,8 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<RowHash, DedicatedDictSearch, 0>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2459,15 +2439,7 @@ pub unsafe fn ZSTD_compressBlock_lazy(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, NoDict, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
@@ -2477,15 +2449,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, DictMatchState, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
@@ -2495,14 +2459,8 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<HashChain, DedicatedDictSearch, 1>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2513,15 +2471,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, NoDict, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
@@ -2531,15 +2481,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, DictMatchState, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
@@ -2549,14 +2491,8 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<RowHash, DedicatedDictSearch, 1>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2567,15 +2503,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, NoDict, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
@@ -2585,15 +2513,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<HashChain, DictMatchState, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
@@ -2603,14 +2523,8 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<HashChain, DedicatedDictSearch, 2>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2621,15 +2535,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, NoDict, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
@@ -2639,15 +2545,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DictMatchState,
-    )
+    ZSTD_compressBlock_lazy_generic::<RowHash, DictMatchState, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
@@ -2657,14 +2555,8 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-        DictMode::DedicatedDictSearch,
+    ZSTD_compressBlock_lazy_generic::<RowHash, DedicatedDictSearch, 2>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
@@ -2675,15 +2567,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::BinaryTree,
-        DictMode::NoDict,
-    )
+    ZSTD_compressBlock_lazy_generic::<BinaryTree, NoDict, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
@@ -2693,14 +2577,8 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::BinaryTree,
-        DictMode::DictMatchState,
+    ZSTD_compressBlock_lazy_generic::<BinaryTree, DictMatchState, 2>(
+        ms, seqStore, rep, src, srcSize,
     )
 }
 
