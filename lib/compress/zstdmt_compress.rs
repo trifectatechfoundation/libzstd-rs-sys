@@ -2006,16 +2006,15 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
 }
 
 /// Returns `true` iff buffer and range overlap.
-unsafe fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> bool {
-    let bufferStart = buffer.start as *const u8;
-    let rangeStart = range.start as *const u8;
-
-    if rangeStart.is_null() || bufferStart.is_null() {
+fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> bool {
+    if range.start.is_null() || buffer.start.is_null() {
         return false;
     }
 
-    let bufferEnd = bufferStart.add(buffer.capacity);
-    let rangeEnd = rangeStart.add(range.size);
+    let bufferStart = buffer.start.addr();
+    let rangeStart = range.start.addr();
+    let bufferEnd = bufferStart.wrapping_add(buffer.capacity);
+    let rangeEnd = rangeStart.wrapping_add(range.size);
 
     // Empty ranges cannot overlap
     if bufferStart == bufferEnd || rangeStart == rangeEnd {
