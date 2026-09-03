@@ -385,32 +385,18 @@ unsafe fn ZSTD_ldm_gear_reset(
     let mut n = 0usize;
 
     while n.wrapping_add(3) < minMatchLength {
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
         n = n.wrapping_add(1);
     }
+
     for n in n..minMatchLength {
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
     }
 }
 
