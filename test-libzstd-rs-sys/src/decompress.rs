@@ -1228,7 +1228,7 @@ mod is_frame {
         assert!(!is_frame(&[MAGIC[0], MAGIC[1], MAGIC[2]]));
 
         // null pointer
-        assert!(assert_eq_rs_c!({ ZSTD_isFrame(core::ptr::null(), 0) }) == 0);
+        assert_eq!(assert_eq_rs_c!({ ZSTD_isFrame(core::ptr::null(), 0) }), 0);
     }
 
     fn is_skippable_frame(buf: &[u8]) -> bool {
@@ -1257,7 +1257,10 @@ mod is_frame {
         ]));
 
         // null pointer
-        assert!(assert_eq_rs_c!({ ZSTD_isSkippableFrame(core::ptr::null(), 0) }) == 0);
+        assert_eq!(
+            assert_eq_rs_c!({ ZSTD_isSkippableFrame(core::ptr::null(), 0) }),
+            0
+        );
     }
 }
 

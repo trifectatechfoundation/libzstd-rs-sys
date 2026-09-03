@@ -333,7 +333,7 @@ unsafe fn AIO_fwriteSparseEnd(
     storedSkips: core::ffi::c_uint,
 ) {
     if (*prefs).testMode != 0 {
-        assert!(storedSkips == 0);
+        assert_eq!(storedSkips, 0);
     }
     if storedSkips > 0 {
         assert!((*prefs).sparseFileSupport > 0);
@@ -558,7 +558,7 @@ unsafe fn AIO_IOPool_destroy(ctx: *mut IOPoolCtx_t) {
     let mut i: core::ffi::c_int = 0;
     if !((*ctx).threadPool).is_null() {
         AIO_IOPool_join(ctx);
-        assert!((*ctx).availableJobsCount == (*ctx).totalIoJobs);
+        assert_eq!((*ctx).availableJobsCount, (*ctx).totalIoJobs);
         POOL_free((*ctx).threadPool);
         pthread_mutex_destroy(&mut (*ctx).ioJobsMutex);
     }
@@ -589,7 +589,7 @@ unsafe fn AIO_IOPool_acquireJob(ctx: *mut IOPoolCtx_t) -> *mut IOJob_t {
 unsafe fn AIO_IOPool_setFile(ctx: *mut IOPoolCtx_t, file: *mut FILE) {
     assert!(!ctx.is_null());
     AIO_IOPool_join(ctx);
-    assert!((*ctx).availableJobsCount == (*ctx).totalIoJobs);
+    assert_eq!((*ctx).availableJobsCount, (*ctx).totalIoJobs);
     (*ctx).file = file;
 }
 unsafe fn AIO_IOPool_getFile(ctx: *const IOPoolCtx_t) -> *mut FILE {
@@ -622,7 +622,7 @@ pub unsafe fn AIO_WritePool_sparseWriteEnd(ctx: *mut WritePoolCtx_t) {
 }
 pub unsafe fn AIO_WritePool_setFile(ctx: *mut WritePoolCtx_t, file: *mut FILE) {
     AIO_IOPool_setFile(&mut (*ctx).base, file);
-    assert!((*ctx).storedSkips == 0);
+    assert_eq!((*ctx).storedSkips, 0);
 }
 pub unsafe fn AIO_WritePool_getFile(ctx: *const WritePoolCtx_t) -> *mut FILE {
     AIO_IOPool_getFile(&(*ctx).base)
@@ -691,7 +691,7 @@ pub unsafe fn AIO_WritePool_free(ctx: *mut WritePoolCtx_t) {
         AIO_WritePool_closeFile(ctx);
     }
     AIO_IOPool_destroy(&mut (*ctx).base);
-    assert!((*ctx).storedSkips == 0);
+    assert_eq!((*ctx).storedSkips, 0);
     free(ctx as *mut core::ffi::c_void);
 }
 pub unsafe fn AIO_WritePool_setAsync(ctx: *mut WritePoolCtx_t, async_0: core::ffi::c_int) {
@@ -755,7 +755,7 @@ unsafe fn AIO_ReadPool_getNextCompletedJob(ctx: *mut ReadPoolCtx_t) -> *mut IOJo
         job = AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(ctx);
     }
     if !job.is_null() {
-        assert!((*job).offset == (*ctx).waitingOnOffset);
+        assert_eq!((*job).offset, (*ctx).waitingOnOffset);
         (*ctx).waitingOnOffset = (*ctx)
             .waitingOnOffset
             .wrapping_add((*job).usedBufferSize as u64);

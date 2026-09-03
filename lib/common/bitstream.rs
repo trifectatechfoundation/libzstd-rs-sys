@@ -414,7 +414,7 @@ mod tests {
         let buffer = [0b10101010, 0b11110000, END_MARK];
         let stream = BIT_DStream_t::new(&buffer).expect("BIT_DStream_t::new should succeed");
         assert!(stream.ptr >= stream.start);
-        assert!(stream.bitContainer != 0);
+        assert_ne!(stream.bitContainer, 0);
     }
 
     #[test]

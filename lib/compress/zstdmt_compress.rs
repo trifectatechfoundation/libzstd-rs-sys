@@ -975,7 +975,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                 < i32::MAX as u64 * chunkSize as u64
                                         );
                                     }
-                                    assert!((*job).cSize == 0);
+                                    assert_eq!((*job).cSize, 0);
 
                                     chunkNb = 1;
                                     loop {

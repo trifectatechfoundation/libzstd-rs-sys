@@ -282,7 +282,7 @@ fuzz_target!(|data: (ArbitraryRoundTrip, ArbitrarySamples)| {
         ),
         "Decompression failed"
     );
-    assert!(res == src.len(), "Incorrect regenerated size");
+    assert_eq!(res, src.len(), "Incorrect regenerated size");
     assert_eq!(result, src, "Corruption!");
 
     unsafe {
