@@ -11,10 +11,10 @@ use crate::lib::common::fse::{
 };
 use crate::lib::common::huf::{
     CTable, HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth,
-    HUF_flags_preferRepeat, HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check,
-    HUF_repeat_none, HUF_repeat_valid, SymbolTable, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND,
-    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8,
-    HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
+    HUF_flags_preferRepeat, HUF_flags_suspectUncompressible, HUF_repeat, SymbolTable,
+    HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX,
+    HUF_SYMBOLVALUE_MAX_U8, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX,
+    HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -1732,9 +1732,7 @@ unsafe fn HUF_compress_internal(
     }
 
     /* Heuristic : If old table is valid, use it for small inputs */
-    if flags & HUF_flags_preferRepeat as c_int != 0
-        && *repeat as c_uint == HUF_repeat_valid as c_int as c_uint
-    {
+    if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat == HUF_repeat::Valid {
         return HUF_compressCTable_internal(
             ostart,
             op,
@@ -1801,16 +1799,14 @@ unsafe fn HUF_compress_internal(
     }
 
     /* Check validity of previous table */
-    if *repeat as c_uint == HUF_repeat_check as c_int as c_uint
+    if *repeat == HUF_repeat::Check
         && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
     {
-        *repeat = HUF_repeat_none;
+        *repeat = HUF_repeat::None;
     }
 
     /* Heuristic : use existing table for small inputs */
-    if flags & HUF_flags_preferRepeat as c_int != 0
-        && *repeat as c_uint != HUF_repeat_none as c_int as c_uint
-    {
+    if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat != HUF_repeat::None {
         return HUF_compressCTable_internal(
             ostart,
             op,
@@ -1864,7 +1860,7 @@ unsafe fn HUF_compress_internal(
         }
 
         /* Check if using previous huffman table is beneficial */
-        if *repeat as c_uint != HUF_repeat_none as c_int as c_uint {
+        if *repeat != HUF_repeat::None {
             let oldSize = HUF_estimateCompressedSize(
                 oldHufTable,
                 ((*table).count).as_mut_ptr(),
@@ -1895,7 +1891,7 @@ unsafe fn HUF_compress_internal(
             return 0;
         }
         op = op.add(hSize);
-        *repeat = HUF_repeat_none;
+        *repeat = HUF_repeat::None;
         *oldHufTable = (*table).CTable;
     }
     HUF_compressCTable_internal(

@@ -485,8 +485,8 @@ use crate::lib::common::fse::{
     FSE_CTable, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
 };
 use crate::lib::common::huf::{
-    CTable, HUF_flags_optimalDepth, HUF_repeat_check, HUF_repeat_none, HUF_repeat_valid,
-    HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
+    CTable, HUF_flags_optimalDepth, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+    HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
@@ -3240,7 +3240,7 @@ pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState
     for i in 0..ZSTD_REP_NUM {
         (*bs).rep[i as usize] = repStartValue[i as usize];
     }
-    (*bs).entropy.huf.repeatMode = HUF_repeat_none;
+    (*bs).entropy.huf.repeatMode = HUF_repeat::None;
     (*bs).entropy.fse.offcode_repeatMode = FSE_repeat_none;
     (*bs).entropy.fse.matchlength_repeatMode = FSE_repeat_none;
     (*bs).entropy.fse.litlength_repeatMode = FSE_repeat_none;
@@ -5187,7 +5187,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // small ? don't even attempt compression (speed opt)
-    let minLitSize = (if prevHuf.repeatMode == HUF_repeat_valid {
+    let minLitSize = (if prevHuf.repeatMode == HUF_repeat::Valid {
         6
     } else {
         COMPRESS_LITERALS_SIZE_MIN
@@ -5222,9 +5222,10 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // Validate the previous Huffman table
-    if repeat == HUF_repeat_check && !HUF_validateCTable(&prevHuf.CTable, countWksp, maxSymbolValue)
+    if repeat == HUF_repeat::Check
+        && !HUF_validateCTable(&prevHuf.CTable, countWksp, maxSymbolValue)
     {
-        repeat = HUF_repeat_none;
+        repeat = HUF_repeat::None;
     }
 
     // Build Huffman Tree
@@ -5264,7 +5265,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         nodeWkspSize,
     );
     // Check against repeating the previous CTable
-    if repeat != HUF_repeat_none {
+    if repeat != HUF_repeat::None {
         let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, countWksp, maxSymbolValue);
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
@@ -5280,7 +5281,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return 0;
     }
     hufMetadata.hType = SymbolEncodingType::Compressed;
-    nextHuf.repeatMode = HUF_repeat_check;
+    nextHuf.repeatMode = HUF_repeat::Check;
 
     hSize
 }
@@ -7023,7 +7024,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
     dictPtr = dictPtr.add(8);
-    (*bs).entropy.huf.repeatMode = HUF_repeat_check;
+    (*bs).entropy.huf.repeatMode = HUF_repeat::Check;
 
     let mut maxSymbolValue = u8::MAX;
     let mut hasZeroWeights = 1;
@@ -7038,7 +7039,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     // We only set the loaded table as valid if it contains all non-zero
     // weights. Otherwise, we set it to check
     if hasZeroWeights == 0 && maxSymbolValue == u8::MAX {
-        (*bs).entropy.huf.repeatMode = HUF_repeat_valid;
+        (*bs).entropy.huf.repeatMode = HUF_repeat::Valid;
     }
 
     if ERR_isError(hufHeaderSize) {

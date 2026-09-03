@@ -3,8 +3,7 @@ use libc::size_t;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{
     CTable, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
-    HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+    HUF_flags_suspectUncompressible, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{LitHufLog, SymbolEncodingType};
@@ -140,7 +139,7 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
     // max threshold 64 bytes
     let shift = (9 - strategy as core::ffi::c_int).min(3);
 
-    if huf_repeat == HUF_repeat_valid {
+    if huf_repeat == HUF_repeat::Valid {
         6
     } else {
         8 << shift
@@ -203,7 +202,7 @@ pub unsafe fn ZSTD_compressLiterals(
     } else {
         0
     });
-    if repeat == HUF_repeat_valid && lhSize == 3 {
+    if repeat == HUF_repeat::Valid && lhSize == 3 {
         singleStream = true;
     }
     let huf_compress: huf_compress_f = if singleStream {
@@ -224,7 +223,7 @@ pub unsafe fn ZSTD_compressLiterals(
         &mut repeat,
         flags,
     );
-    if repeat != HUF_repeat_none {
+    if repeat != HUF_repeat::None {
         // reused the existing table
         hType = SymbolEncodingType::Repeat;
     }
@@ -247,7 +246,7 @@ pub unsafe fn ZSTD_compressLiterals(
 
     if hType == SymbolEncodingType::Compressed {
         // using a newly constructed table
-        nextHuf.repeatMode = HUF_repeat_check;
+        nextHuf.repeatMode = HUF_repeat::Check;
     }
 
     // Build header

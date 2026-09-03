@@ -48,13 +48,19 @@ pub(crate) const HUF_flags_disableFast: core::ffi::c_uint = 32;
 
 pub(crate) const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 
-pub(crate) type HUF_repeat = core::ffi::c_uint;
-/// Cannot use the previous table
-pub(crate) const HUF_repeat_none: HUF_repeat = 0;
-/// Can use the previous table but it must be checked. Note : The previous table must have been constructed by `HUF_compress{1, 4}X_repeat`
-pub(crate) const HUF_repeat_check: HUF_repeat = 1;
-/// Can use the previous table and it is assumed to be valid
-pub(crate) const HUF_repeat_valid: HUF_repeat = 2;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum HUF_repeat {
+    /// Cannot use the previous table
+    #[default]
+    None = 0,
+    /// Can use the previous table but it must be checked.
+    ///
+    /// Note: the previous table must have been constructed by `HUF_compress{1,4}X_repeat`.
+    Check = 1,
+    /// Can use the previous table and it is assumed to be valid
+    Valid = 2,
+}
 
 pub(crate) const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
