@@ -268,7 +268,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     ZSTD_downscaleStats(opt_state.litFreq, u32::from(MaxLit), 8, base_0possible);
             }
 
-            let baseLLfreqs: [core::ffi::c_uint; 36] = [
+            let baseLLfreqs: [u32; MaxLL as usize + 1] = [
                 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
             ];
@@ -277,14 +277,14 @@ unsafe fn ZSTD_rescaleFreqs(
                 opt_state.litLengthFreq,
                 baseLLfreqs.len(),
             );
-            opt_state.litLengthSum = sum_u32(baseLLfreqs.as_ptr(), usize::from(MaxLL) + 1);
+            opt_state.litLengthSum = baseLLfreqs.iter().sum();
 
             for ml_0 in 0..MaxML + 1 {
                 *(opt_state.matchLengthFreq).offset(ml_0 as isize) = 1;
             }
             opt_state.matchLengthSum = u32::from(MaxML) + 1;
 
-            let baseOFCfreqs: [core::ffi::c_uint; 32] = [
+            let baseOFCfreqs: [u32; MaxOff as usize + 1] = [
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1,
             ];
@@ -293,7 +293,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 opt_state.offCodeFreq,
                 baseOFCfreqs.len(),
             );
-            opt_state.offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), usize::from(MaxOff) + 1);
+            opt_state.offCodeSum = baseOFCfreqs.iter().sum();
         }
     } else {
         // new block: scale down accumulated statistics
