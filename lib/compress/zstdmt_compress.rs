@@ -606,16 +606,14 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
     } else {
-        ptr::write_bytes(
-            &mut params.ldmParams as *mut ldmParams_t as *mut u8,
-            0,
-            size_of::<ldmParams_t>(),
-        );
+        params.ldmParams = ldmParams_t::default();
     }
+
     serialState.nextJobID = 0;
     if params.fParams.checksumFlag != 0 {
         ZSTD_XXH64_reset(&mut serialState.xxhState, 0);
     }
+
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
