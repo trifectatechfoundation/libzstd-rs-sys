@@ -394,6 +394,11 @@ impl DictModeMarker for DictMatchState {
     const DICT_MODE: DictMode = DictMode::DictMatchState;
 }
 
+pub struct DedicatedDictSearch;
+impl DictModeMarker for DedicatedDictSearch {
+    const DICT_MODE: DictMode = DictMode::DedicatedDictSearch;
+}
+
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum CParamMode {
