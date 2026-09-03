@@ -16,8 +16,8 @@ impl Default for ldmState_t {
             hashTable: core::ptr::null_mut(),
             loadedDictEnd: 0,
             bucketOffsets: core::ptr::null_mut(),
-            splitIndices: [0; 64],
-            matchCandidates: [ldmMatchCandidate_t::default(); 64],
+            splitIndices: [0; LDM_BATCH_SIZE],
+            matchCandidates: [ldmMatchCandidate_t::default(); LDM_BATCH_SIZE],
         }
     }
 }
@@ -424,8 +424,8 @@ unsafe fn ZSTD_ldm_gear_feed(
     state: &mut ldmRollingHashState_t,
     data: *const u8,
     size: size_t,
-    splits: *mut size_t,
-    numSplits: &mut core::ffi::c_uint,
+    splits: &mut [size_t; LDM_BATCH_SIZE],
+    numSplits: &mut usize,
 ) -> size_t {
     let mut current_block: u64;
     let mut n: size_t = 0;
@@ -447,9 +447,9 @@ unsafe fn ZSTD_ldm_gear_feed(
         );
         n = n.wrapping_add(1);
         if hash & mask == 0 {
-            *splits.offset(*numSplits as isize) = n;
+            splits[*numSplits] = n;
             *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
+            if *numSplits == LDM_BATCH_SIZE {
                 current_block = 12351618399163395313;
                 break;
             }
@@ -460,9 +460,9 @@ unsafe fn ZSTD_ldm_gear_feed(
         );
         n = n.wrapping_add(1);
         if hash & mask == 0 {
-            *splits.offset(*numSplits as isize) = n;
+            splits[*numSplits] = n;
             *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
+            if *numSplits == LDM_BATCH_SIZE {
                 current_block = 12351618399163395313;
                 break;
             }
@@ -473,9 +473,9 @@ unsafe fn ZSTD_ldm_gear_feed(
         );
         n = n.wrapping_add(1);
         if hash & mask == 0 {
-            *splits.offset(*numSplits as isize) = n;
+            splits[*numSplits] = n;
             *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
+            if *numSplits == LDM_BATCH_SIZE {
                 current_block = 12351618399163395313;
                 break;
             }
@@ -488,9 +488,9 @@ unsafe fn ZSTD_ldm_gear_feed(
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
             continue;
         }
-        *splits.offset(*numSplits as isize) = n;
+        splits[*numSplits] = n;
         *numSplits = (*numSplits).wrapping_add(1);
-        if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
+        if *numSplits == LDM_BATCH_SIZE {
             current_block = 12351618399163395313;
             break;
         }
@@ -514,9 +514,9 @@ unsafe fn ZSTD_ldm_gear_feed(
                     current_block = 5689316957504528238;
                     continue;
                 }
-                *splits.offset(*numSplits as isize) = n;
+                splits[*numSplits] = n;
                 *numSplits = (*numSplits).wrapping_add(1);
-                if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
+                if *numSplits == LDM_BATCH_SIZE {
                     current_block = 12351618399163395313;
                 } else {
                     current_block = 5689316957504528238;
@@ -704,26 +704,23 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         rolling: 0,
         stopMask: 0,
     };
-    let splits = ldmState.splitIndices.as_mut_ptr();
-    let mut numSplits: core::ffi::c_uint = 0;
 
     ZSTD_ldm_gear_init(&mut hashState, params);
-    while ip < iend {
-        let mut hashed: size_t = 0;
 
-        numSplits = 0;
-        hashed = ZSTD_ldm_gear_feed(
+    while ip < iend {
+        let mut numSplits = 0;
+        let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
             ip,
             iend.offset_from_unsigned(ip),
-            splits,
+            &mut ldmState.splitIndices,
             &mut numSplits,
         );
 
         for n in 0..numSplits {
-            if ip.add(*splits.offset(n as isize)) >= istart.offset(minMatchLength as isize) {
+            if ip.add(ldmState.splitIndices[n as usize]) >= istart.offset(minMatchLength as isize) {
                 let split = ip
-                    .add(*splits.offset(n as isize))
+                    .add(ldmState.splitIndices[n as usize])
                     .sub(minMatchLength as usize);
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
@@ -816,9 +813,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
 
     // Arrays for staged-processing
-    let splits = (ldmState.splitIndices).as_mut_ptr();
     let candidates = (ldmState.matchCandidates).as_mut_ptr();
-    let mut numSplits: core::ffi::c_uint = 0;
 
     if srcSize < minMatchLength as size_t {
         return iend.offset_from_unsigned(anchor);
@@ -830,20 +825,18 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     ip = ip.offset(minMatchLength as isize);
 
     while ip < ilimit {
-        let mut hashed: size_t = 0;
-
-        numSplits = 0;
-        hashed = ZSTD_ldm_gear_feed(
+        let mut numSplits = 0;
+        let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
             ip,
             ilimit.offset_from_unsigned(ip),
-            splits,
+            &mut ldmState.splitIndices,
             &mut numSplits,
         );
 
         for n in 0..numSplits {
             let split = ip
-                .add(*splits.offset(n as isize))
+                .add(ldmState.splitIndices[n as usize])
                 .sub(minMatchLength as usize);
             let xxhash = ZSTD_XXH64(
                 split as *const core::ffi::c_void,
