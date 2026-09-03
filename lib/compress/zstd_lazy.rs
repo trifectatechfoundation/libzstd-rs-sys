@@ -2583,14 +2583,17 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_compressBlock_lazy_extDict_generic<const DEPTH: u32>(
+unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
+    SEARCH_METHOD: SearchMethodMarker,
+    const DEPTH: u32,
+>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    searchMethod: SearchMethod,
 ) -> size_t {
+    let searchMethod = SEARCH_METHOD::SEARCH_METHOD;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
@@ -2959,14 +2962,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<HashChain, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
@@ -2976,14 +2972,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<0>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<RowHash, 0>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_extDict(
@@ -2993,14 +2982,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<HashChain, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
@@ -3010,14 +2992,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<1>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<RowHash, 1>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
@@ -3027,14 +3002,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::HashChain,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<HashChain, 2>(ms, seqStore, rep, src, srcSize)
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     ms: &mut ZSTD_MatchState_t,
@@ -3043,14 +3011,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::RowHash,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<RowHash, 2>(ms, seqStore, rep, src, srcSize)
 }
 
 pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
@@ -3060,12 +3021,5 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressBlock_lazy_extDict_generic::<2>(
-        ms,
-        seqStore,
-        rep,
-        src,
-        srcSize,
-        SearchMethod::BinaryTree,
-    )
+    ZSTD_compressBlock_lazy_extDict_generic::<BinaryTree, 2>(ms, seqStore, rep, src, srcSize)
 }
