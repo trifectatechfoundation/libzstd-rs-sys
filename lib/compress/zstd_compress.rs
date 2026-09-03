@@ -5473,7 +5473,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     nbSeq: size_t,
     maxCode: u8,
     fseCTable: &[FSE_CTable],
-    additionalBits: *const u8,
+    additionalBits: &[u8],
     defaultNorm: &[core::ffi::c_short],
     defaultNormLog: u32,
     defaultMax: u8,
@@ -5511,13 +5511,11 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     }
 
     while ctp < ctEnd {
-        if !additionalBits.is_null() {
-            cSymbolTypeSizeEstimateInBits = cSymbolTypeSizeEstimateInBits
-                .wrapping_add(*additionalBits.offset(*ctp as isize) as size_t);
+        cSymbolTypeSizeEstimateInBits = if !additionalBits.is_empty() {
+            cSymbolTypeSizeEstimateInBits.wrapping_add(additionalBits[usize::from(*ctp)] as size_t)
         } else {
-            cSymbolTypeSizeEstimateInBits =
-                cSymbolTypeSizeEstimateInBits.wrapping_add(*ctp as size_t);
-        }
+            cSymbolTypeSizeEstimateInBits.wrapping_add(usize::from(*ctp))
+        };
         ctp = ctp.add(1);
     }
 
@@ -5548,7 +5546,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         nbSeq,
         MaxOff,
         &fseTables.offcodeCTable,
-        core::ptr::null(),
+        &[],
         &OF_defaultNorm,
         OF_defaultNormLog,
         DefaultMaxOff,
@@ -5561,7 +5559,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         nbSeq,
         MaxLL,
         &fseTables.litlengthCTable,
-        LL_bits.as_ptr(),
+        &LL_bits,
         &LL_defaultNorm,
         LL_defaultNormLog,
         MaxLL,
@@ -5574,7 +5572,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         nbSeq,
         MaxML,
         &fseTables.matchlengthCTable,
-        ML_bits.as_ptr(),
+        &ML_bits,
         &ML_defaultNorm,
         ML_defaultNormLog,
         MaxML,
