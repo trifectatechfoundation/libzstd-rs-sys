@@ -1508,11 +1508,12 @@ pub unsafe fn HUF_compress4X_usingCTable(
     HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
 
-pub type HUF_nbStreams_e = c_uint;
-
-pub const HUF_fourStreams: HUF_nbStreams_e = 1;
-
-pub const HUF_singleStream: HUF_nbStreams_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum HUF_nbStreams_e {
+    Single = 0,
+    Four = 1,
+}
 
 unsafe fn HUF_compressCTable_internal(
     ostart: *mut u8,
@@ -1524,24 +1525,23 @@ unsafe fn HUF_compressCTable_internal(
     CTable: &CTable,
     flags: c_int,
 ) -> size_t {
-    let cSize = if nbStreams as c_uint == HUF_singleStream as c_int as c_uint {
-        HUF_compress1X_usingCTable_internal(
+    let cSize = match nbStreams {
+        HUF_nbStreams_e::Single => HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             src,
             srcSize,
             CTable,
             flags,
-        )
-    } else {
-        HUF_compress4X_usingCTable_internal(
+        ),
+        HUF_nbStreams_e::Four => HUF_compress4X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             src,
             srcSize,
             CTable,
             flags,
-        )
+        ),
     };
 
     if ERR_isError(cSize) {
@@ -1681,8 +1681,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     const { assert!(matches!(NB_STREAMS, 1 | 4)) };
 
     let nbStreams = match NB_STREAMS {
-        1 => HUF_singleStream,
-        4 => HUF_fourStreams,
+        1 => HUF_nbStreams_e::Single,
+        4 => HUF_nbStreams_e::Four,
         _ => unreachable!(),
     };
 
