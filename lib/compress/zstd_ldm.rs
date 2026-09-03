@@ -1,3 +1,5 @@
+use crate::lib::polyfill::unlikely;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
@@ -427,103 +429,37 @@ unsafe fn ZSTD_ldm_gear_feed(
     splits: &mut [size_t; LDM_BATCH_SIZE],
     numSplits: &mut usize,
 ) -> size_t {
-    let mut current_block: u64;
-    let mut n: size_t = 0;
-    let mut hash: u64 = 0;
-    let mut mask: u64 = 0;
+    let mut hash = state.rolling;
+    let mask = state.stopMask;
+    let mut n = 0usize;
 
-    hash = state.rolling;
-    mask = state.stopMask;
-    n = 0;
+    'done: {
+        macro_rules! gear_iter_once {
+            () => {
+                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+                n += 1;
+                if unlikely(hash & mask == 0) {
+                    splits[*numSplits] = n;
+                    *numSplits += 1;
+                    if *numSplits == LDM_BATCH_SIZE {
+                        break 'done;
+                    }
+                }
+            };
+        }
 
-    loop {
-        if n.wrapping_add(3) >= size {
-            current_block = 5689316957504528238;
-            break;
+        while n + 3 < size {
+            gear_iter_once!();
+            gear_iter_once!();
+            gear_iter_once!();
+            gear_iter_once!();
         }
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
-        n = n.wrapping_add(1);
-        if hash & mask == 0 {
-            splits[*numSplits] = n;
-            *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE {
-                current_block = 12351618399163395313;
-                break;
-            }
-        }
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
-        n = n.wrapping_add(1);
-        if hash & mask == 0 {
-            splits[*numSplits] = n;
-            *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE {
-                current_block = 12351618399163395313;
-                break;
-            }
-        }
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
-        n = n.wrapping_add(1);
-        if hash & mask == 0 {
-            splits[*numSplits] = n;
-            *numSplits = (*numSplits).wrapping_add(1);
-            if *numSplits == LDM_BATCH_SIZE {
-                current_block = 12351618399163395313;
-                break;
-            }
-        }
-        hash = (hash << 1).wrapping_add(
-            ZSTD_ldm_gearTab
-                [(*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as usize],
-        );
-        n = n.wrapping_add(1);
-        if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
-            continue;
-        }
-        splits[*numSplits] = n;
-        *numSplits = (*numSplits).wrapping_add(1);
-        if *numSplits == LDM_BATCH_SIZE {
-            current_block = 12351618399163395313;
-            break;
+        while n < size {
+            gear_iter_once!();
         }
     }
-    loop {
-        match current_block {
-            12351618399163395313 => {
-                state.rolling = hash;
-                break;
-            }
-            _ => {
-                if n >= size {
-                    current_block = 12351618399163395313;
-                    continue;
-                }
-                hash = (hash << 1).wrapping_add(
-                    ZSTD_ldm_gearTab[(*data.add(n) as core::ffi::c_int & 0xff) as usize],
-                );
-                n = n.wrapping_add(1);
-                if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
-                    current_block = 5689316957504528238;
-                    continue;
-                }
-                splits[*numSplits] = n;
-                *numSplits = (*numSplits).wrapping_add(1);
-                if *numSplits == LDM_BATCH_SIZE {
-                    current_block = 12351618399163395313;
-                } else {
-                    current_block = 5689316957504528238;
-                }
-            }
-        }
-    }
+
+    state.rolling = hash;
 
     n
 }
@@ -718,9 +654,9 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         );
 
         for n in 0..numSplits {
-            if ip.add(ldmState.splitIndices[n as usize]) >= istart.offset(minMatchLength as isize) {
+            if ip.add(ldmState.splitIndices[n]) >= istart.offset(minMatchLength as isize) {
                 let split = ip
-                    .add(ldmState.splitIndices[n as usize])
+                    .add(ldmState.splitIndices[n])
                     .sub(minMatchLength as usize);
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
