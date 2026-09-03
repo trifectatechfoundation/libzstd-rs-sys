@@ -30,6 +30,7 @@ use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
+use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
     ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
@@ -2019,16 +2020,17 @@ fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> bool {
     bufferStart < rangeEnd && rangeStart < bufferEnd
 }
 
-unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> bool {
+fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> bool {
     let mut extDict = Range::default();
     let mut prefix = Range::default();
 
-    extDict.start = (window.dictBase).offset(window.lowLimit as isize) as *const core::ffi::c_void;
+    extDict.start =
+        (window.dictBase).wrapping_offset(window.lowLimit as isize) as *const core::ffi::c_void;
     extDict.size = (window.dictLimit).wrapping_sub(window.lowLimit) as size_t;
 
-    prefix.start = (window.base).offset(window.dictLimit as isize) as *const core::ffi::c_void;
-    prefix.size =
-        (window.nextSrc).offset_from((window.base).offset(window.dictLimit as isize)) as size_t;
+    let prefixStart = (window.base).wrapping_offset(window.dictLimit as isize);
+    prefix.start = prefixStart as *const core::ffi::c_void;
+    prefix.size = (window.nextSrc).wrapping_offset_from(prefixStart) as size_t;
 
     ZSTDMT_isOverlapped(buffer, extDict) || ZSTDMT_isOverlapped(buffer, prefix)
 }
