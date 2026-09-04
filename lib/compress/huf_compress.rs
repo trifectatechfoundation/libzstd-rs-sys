@@ -39,7 +39,7 @@ pub struct nodeElt_s {
 
 pub const HUF_WORKSPACE_MAX_ALIGNMENT: usize = 8;
 
-unsafe fn HUF_alignUpWorkspace(
+fn HUF_alignUpWorkspace(
     workspace: *mut c_void,
     workspaceSizePtr: &mut size_t,
     align: size_t,
@@ -47,7 +47,7 @@ unsafe fn HUF_alignUpWorkspace(
     let mask = align - 1;
     let rem = workspace as size_t & mask;
     let add = (align - (rem)) & mask;
-    let aligned = workspace.byte_add(add);
+    let aligned = workspace.wrapping_byte_add(add);
 
     debug_assert_eq!(align & (align - 1), 0); /* pow 2 */
     debug_assert!(align <= HUF_WORKSPACE_MAX_ALIGNMENT);
