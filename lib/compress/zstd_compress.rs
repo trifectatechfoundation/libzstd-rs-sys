@@ -7765,11 +7765,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         outBuffFlushedSize: 0,
         streamStage: StreamStage::Init,
         frameEnded: 0,
-        expectedInBuffer: ZSTD_inBuffer_s {
-            src: core::ptr::null::<core::ffi::c_void>(),
-            size: 0,
-            pos: 0,
-        },
+        expectedInBuffer: ZSTD_inBuffer_s::default(),
         stableIn_notConsumed: 0,
         expectedOutBufferSize: 0,
         localDict: ZSTD_localDict {
@@ -9348,21 +9344,15 @@ pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
     endOp: ZSTD_EndDirective,
 ) -> size_t {
     let mut output = ZSTD_outBuffer_s {
-        dst: core::ptr::null_mut::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
+        dst,
+        size: dstCapacity,
+        pos: *dstPos,
     };
     let mut input = ZSTD_inBuffer_s {
-        src: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
+        src,
+        size: srcSize,
+        pos: *srcPos,
     };
-    output.dst = dst;
-    output.size = dstCapacity;
-    output.pos = *dstPos;
-    input.src = src;
-    input.size = srcSize;
-    input.pos = *srcPos;
 
     // ZSTD_compressStream2() will check validity of dstPos and srcPos
     let cErr = ZSTD_compressStream2(cctx, &mut output, &mut input, endOp);
@@ -10578,18 +10568,11 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
 }
 
 unsafe fn inBuffer_forEndFlush(zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
-    let nullInput = {
-        ZSTD_inBuffer_s {
-            src: core::ptr::null(),
-            size: 0,
-            pos: 0,
-        }
-    };
     let stableInput = ((*zcs).appliedParams.inBufferMode == ZSTD_bm_stable) as core::ffi::c_int;
     if stableInput != 0 {
         (*zcs).expectedInBuffer
     } else {
-        nullInput
+        ZSTD_inBuffer_s::default()
     }
 }
 

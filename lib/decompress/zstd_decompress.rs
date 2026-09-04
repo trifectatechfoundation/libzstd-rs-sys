@@ -34,7 +34,7 @@ use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;
 use crate::lib::zstd::{
     BufferMode, ForceIgnoreChecksum, Format, ZSTD_ResetDirective, ZSTD_customMem, ZSTD_dParameter,
     ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e,
-    ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_format_e, ZSTD_inBuffer, ZSTD_inBuffer_s,
+    ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_format_e, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_outBuffer,
     ZSTD_outBuffer_s, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_CONTENTSIZE_ERROR,
     ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_MASK,
     ZSTD_MAGIC_SKIPPABLE_START, ZSTD_SKIPPABLEHEADERSIZE, ZSTD_VERSION_NUMBER,
@@ -75,7 +75,6 @@ use crate::{
     ZSTD_compress_usingCDict, ZSTD_compress_usingDict, ZSTD_isError, ZSTD_FRAMEHEADERSIZE_MAX,
 };
 
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
     pub f1c: u32,

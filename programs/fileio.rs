@@ -1603,27 +1603,19 @@ unsafe fn FIO_multiFilesConcatWarning(
         (*fCtx).hasStdinInput,
     )
 }
-unsafe fn setInBuffer(buf: *const core::ffi::c_void, s: size_t, pos: size_t) -> ZSTD_inBuffer {
-    let mut i = ZSTD_inBuffer_s {
-        src: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
-    };
-    i.src = buf;
-    i.size = s;
-    i.pos = pos;
-    i
+unsafe fn setInBuffer(buf: *const core::ffi::c_void, size: size_t, pos: size_t) -> ZSTD_inBuffer {
+    ZSTD_inBuffer_s {
+        src: buf,
+        size,
+        pos,
+    }
 }
-unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, s: size_t, pos: size_t) -> ZSTD_outBuffer {
-    let mut o = ZSTD_outBuffer_s {
-        dst: core::ptr::null_mut::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
-    };
-    o.dst = buf;
-    o.size = s;
-    o.pos = pos;
-    o
+unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: size_t, pos: size_t) -> ZSTD_outBuffer {
+    ZSTD_outBuffer_s {
+        dst: buf,
+        size,
+        pos,
+    }
 }
 unsafe fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
     let btScale = (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
