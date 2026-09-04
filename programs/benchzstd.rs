@@ -621,21 +621,15 @@ unsafe fn local_defaultDecompress(
     let mut moreToFlush = 1;
     let dctx = addArgs as *mut ZSTD_DCtx;
     let mut in_0 = ZSTD_inBuffer_s {
-        src: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
+        src: srcBuffer,
+        size: srcSize,
         pos: 0,
     };
     let mut out = ZSTD_outBuffer_s {
-        dst: core::ptr::null_mut::<core::ffi::c_void>(),
-        size: 0,
+        dst: dstBuffer,
+        size: dstCapacity,
         pos: 0,
     };
-    in_0.src = srcBuffer;
-    in_0.size = srcSize;
-    in_0.pos = 0;
-    out.dst = dstBuffer;
-    out.size = dstCapacity;
-    out.pos = 0;
     while moreToFlush != 0 {
         if out.pos == out.size {
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;

@@ -327,7 +327,7 @@ impl TryFrom<i32> for Format {
 }
 
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_inBuffer_s {
     /// Pointer to start of input buffer
@@ -339,7 +339,7 @@ pub struct ZSTD_inBuffer_s {
 }
 
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_outBuffer_s {
     /// Pointer to start of output buffer
