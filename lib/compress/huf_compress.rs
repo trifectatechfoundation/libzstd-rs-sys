@@ -607,7 +607,12 @@ pub struct rankPos {
     pub curr: u16,
 }
 
-pub type huffNodeTable = [nodeElt; 2 * (HUF_SYMBOLVALUE_MAX as usize + 1)];
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct HuffNodeTable {
+    pub(crate) barrier: nodeElt,
+    pub(crate) nodes: [nodeElt; 2 * (HUF_SYMBOLVALUE_MAX as usize + 1) - 1],
+}
 
 /// Number of buckets available for `HUF_sort`
 pub const RANK_POSITION_TABLE_SIZE: usize = 192;
@@ -615,7 +620,7 @@ pub const RANK_POSITION_TABLE_SIZE: usize = 192;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_buildCTable_wksp_tables {
-    pub huffNodeTbl: huffNodeTable,
+    pub huffNodeTbl: HuffNodeTable,
     pub rankPosition: [rankPos; RANK_POSITION_TABLE_SIZE],
 }
 
@@ -767,81 +772,83 @@ pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
 ///
 /// # Parameters
 ///
-/// * `huffNode` - The array sorted by HUF_sort(). Builds the Huffman tree in this array.
+/// * `huffNode` - The full node array, with a barrier slot followed by the symbols
+///   sorted by HUF_sort(). Builds the Huffman tree in this array.
 /// * `maxSymbolValue` - The maximum symbol value.
 ///
 /// # Returns
 ///
 /// The smallest node in the Huffman tree (by count).
-unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
-    let huffNode0 = huffNode.sub(1);
-    let mut nonNullRank: c_int = 0;
-    let mut lowS: c_int = 0;
-    let mut lowN: c_int = 0;
+fn HUF_buildTree(huffNode: &mut HuffNodeTable, maxSymbolValue: u8) -> c_int {
     let mut nodeNb = STARTNODE;
-    let mut nodeRoot: c_int = 0;
 
     /* init for parents */
-    nonNullRank = c_int::from(maxSymbolValue);
-    while (*huffNode.offset(nonNullRank as isize)).count == 0 {
+    let mut nonNullRank = c_int::from(maxSymbolValue);
+    while huffNode.nodes[nonNullRank as usize].count == 0 {
         nonNullRank -= 1;
     }
-    lowS = nonNullRank;
-    nodeRoot = nodeNb + lowS - 1;
-    lowN = nodeNb;
-    (*huffNode.offset(nodeNb as isize)).count =
-        ((*huffNode.offset(lowS as isize)).count) + ((*huffNode.offset((lowS - 1) as isize)).count);
-    (*huffNode.offset((lowS - 1) as isize)).parent = nodeNb as u16;
-    (*huffNode.offset(lowS as isize)).parent = nodeNb as u16;
+    let mut lowS = nonNullRank;
+    let nodeRoot = nodeNb + lowS - 1;
+    let mut lowN = nodeNb;
+    huffNode.nodes[nodeNb as usize].count =
+        huffNode.nodes[lowS as usize].count + huffNode.nodes[(lowS - 1) as usize].count;
+    huffNode.nodes[(lowS - 1) as usize].parent = nodeNb as u16;
+    huffNode.nodes[lowS as usize].parent = nodeNb as u16;
     nodeNb += 1;
     lowS -= 2;
     for n in nodeNb..nodeRoot + 1 {
-        (*huffNode.offset(n as isize)).count = 1 << 30;
+        huffNode.nodes[n as usize].count = 1 << 30;
     }
-    (*huffNode0).count = 1 << 31; /* fake entry, strong barrier */
+    huffNode.barrier.count = 1 << 31; /* fake entry, strong barrier */
 
     /* create parents */
     while nodeNb <= nodeRoot {
-        let n1 =
-            if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let val = lowS;
-                lowS -= 1;
-                val
-            } else {
-                let val = lowN;
-                lowN += 1;
-                val
-            };
-        let n2 =
-            if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let val = lowS;
-                lowS -= 1;
-                val
-            } else {
-                let val = lowN;
-                lowN += 1;
-                val
-            };
-        (*huffNode.offset(nodeNb as isize)).count =
-            ((*huffNode.offset(n1 as isize)).count) + ((*huffNode.offset(n2 as isize)).count);
-        (*huffNode.offset(n2 as isize)).parent = nodeNb as u16;
-        (*huffNode.offset(n1 as isize)).parent = nodeNb as u16;
+        let lowSCount = if lowS == -1 {
+            huffNode.barrier.count
+        } else {
+            huffNode.nodes[lowS as usize].count
+        };
+        let n1 = if lowSCount < huffNode.nodes[lowN as usize].count {
+            let val = lowS;
+            lowS -= 1;
+            val
+        } else {
+            let val = lowN;
+            lowN += 1;
+            val
+        };
+        let lowSCount = if lowS == -1 {
+            huffNode.barrier.count
+        } else {
+            huffNode.nodes[lowS as usize].count
+        };
+        let n2 = if lowSCount < huffNode.nodes[lowN as usize].count {
+            let val = lowS;
+            lowS -= 1;
+            val
+        } else {
+            let val = lowN;
+            lowN += 1;
+            val
+        };
+        huffNode.nodes[nodeNb as usize].count =
+            huffNode.nodes[n1 as usize].count + huffNode.nodes[n2 as usize].count;
+        huffNode.nodes[n2 as usize].parent = nodeNb as u16;
+        huffNode.nodes[n1 as usize].parent = nodeNb as u16;
         nodeNb += 1;
     }
 
     /* distribute weights (unlimited tree height) */
-    (*huffNode.offset(nodeRoot as isize)).nbBits = 0;
+    huffNode.nodes[nodeRoot as usize].nbBits = 0;
     for n in (STARTNODE..nodeRoot).rev() {
-        (*huffNode.offset(n as isize)).nbBits = ((*huffNode
-            .offset((*huffNode.offset(n as isize)).parent as isize))
-        .nbBits as c_int
-            + 1) as u8;
+        let parent = c_int::from(huffNode.nodes[n as usize].parent);
+        huffNode.nodes[n as usize].nbBits =
+            (c_int::from(huffNode.nodes[parent as usize].nbBits) + 1) as u8;
     }
     for n in 0..nonNullRank + 1 {
-        (*huffNode.offset(n as isize)).nbBits = ((*huffNode
-            .offset((*huffNode.offset(n as isize)).parent as isize))
-        .nbBits as c_int
-            + 1) as u8;
+        let parent = c_int::from(huffNode.nodes[n as usize].parent);
+        huffNode.nodes[n as usize].nbBits =
+            (c_int::from(huffNode.nodes[parent as usize].nbBits) + 1) as u8;
     }
     nonNullRank
 }
@@ -920,35 +927,33 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
     }
-    huffNodeTbl.fill(nodeElt {
+    let emptyNode = nodeElt {
         count: 0,
         parent: 0,
         byte: 0,
         nbBits: 0,
-    });
+    };
+    huffNodeTbl.barrier = emptyNode;
+    huffNodeTbl.nodes.fill(emptyNode);
     /* sort, decreasing order */
     HUF_sort(
-        &mut huffNodeTbl[1..],
+        &mut huffNodeTbl.nodes,
         count,
         maxSymbolValue,
         &mut (*wksp_tables).rankPosition,
     );
 
-    // HUF_buildTree reaches back to the slot before `huffNode` for its barrier entry,
-    // so this pointer must keep provenance over the whole table.
-    let huffNode = huffNodeTbl.as_mut_ptr().add(1);
-
     /* build tree */
-    nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
+    nonNullRank = HUF_buildTree(huffNodeTbl, maxSymbolValue);
 
     /* determine and enforce maxTableLog */
-    maxNbBits = HUF_setMaxHeight(&mut huffNodeTbl[1..], nonNullRank as u32, maxNbBits);
+    maxNbBits = HUF_setMaxHeight(&mut huffNodeTbl.nodes, nonNullRank as u32, maxNbBits);
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
         return Error::GENERIC.to_error_code(); /* check fit into table */
     }
     HUF_buildCTableFromTree(
         CTable,
-        &huffNodeTbl[1..],
+        &huffNodeTbl.nodes,
         nonNullRank,
         maxSymbolValue,
         maxNbBits,
