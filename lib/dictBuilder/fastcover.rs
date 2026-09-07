@@ -95,21 +95,12 @@ fn FASTCOVER_selectSegment(
     let samples = ctx.samples;
     let f = ctx.f;
     let dmersInK = k.wrapping_sub(d).wrapping_add(1);
-    let mut bestSegment = {
-        COVER_segment_t {
-            begin: 0,
-            end: 0,
-            score: 0,
-        }
-    };
+    let mut bestSegment = COVER_segment_t::default();
     let mut activeSegment = COVER_segment_t {
-        begin: 0,
-        end: 0,
+        begin,
+        end: begin,
         score: 0,
     };
-    activeSegment.begin = begin;
-    activeSegment.end = begin;
-    activeSegment.score = 0;
     while activeSegment.end < end {
         let idx = FASTCOVER_hashPtrToIndex(
             ctx.samples[activeSegment.end as usize..][..8]
