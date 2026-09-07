@@ -8,7 +8,7 @@ use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
     ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, SymbolEncodingType,
-    LONGNBSEQ, MINMATCH, ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE,
+    LONGNBSEQ, MINMATCH, ZSTD_BLOCKHEADERSIZE,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -964,21 +964,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
     srcSize: size_t,
     lastBlock: core::ffi::c_uint,
 ) -> size_t {
-    let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t {
-        hufMetadata: ZSTD_hufCTablesMetadata_t {
-            hType: SymbolEncodingType::Basic,
-            hufDesBuffer: [0; ZSTD_MAX_HUF_HEADER_SIZE],
-            hufDesSize: 0,
-        },
-        fseMetadata: ZSTD_fseCTablesMetadata_t {
-            llType: SymbolEncodingType::Basic,
-            ofType: SymbolEncodingType::Basic,
-            mlType: SymbolEncodingType::Basic,
-            fseTablesBuffer: [0; 133],
-            fseTablesSize: 0,
-            lastCountSize: 0,
-        },
-    };
+    let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
 
     let err_code = ZSTD_buildBlockEntropyStats(
         &(*zc).seqStore,
