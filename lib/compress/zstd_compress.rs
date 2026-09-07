@@ -612,6 +612,7 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
     ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_nextInputSizeHint,
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
+    ZSTDMT_JOBSIZE_MIN,
 };
 use crate::lib::zstd::{
     Format, ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_Sequence,
@@ -1026,8 +1027,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
         ws.workspaceOversizedDuration = 0;
     }
 }
-
-pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
