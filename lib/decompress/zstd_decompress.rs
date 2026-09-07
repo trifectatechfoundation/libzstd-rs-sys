@@ -48,7 +48,7 @@ use crate::lib::common::zstd_trace::{
 use crate::lib::legacy::zstd_v05::{
     ZBUFFv05_DCtx, ZBUFFv05_createDCtx, ZBUFFv05_decompressContinue,
     ZBUFFv05_decompressInitDictionary, ZBUFFv05_freeDCtx, ZSTDv05_createDCtx,
-    ZSTDv05_decompress_usingDict, ZSTDv05_fast, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_freeDCtx,
+    ZSTDv05_decompress_usingDict, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_freeDCtx,
     ZSTDv05_getFrameParams, ZSTDv05_parameters,
 };
 use crate::lib::legacy::zstd_v06::{
@@ -149,28 +149,14 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
 
     match is_legacy(src) {
         5 => {
-            let mut fParams = ZSTDv05_parameters {
-                srcSize: 0,
-                windowLog: 0,
-                contentLog: 0,
-                hashLog: 0,
-                searchLog: 0,
-                searchLength: 0,
-                targetLength: 0,
-                strategy: ZSTDv05_fast,
-            };
-
+            let mut fParams = ZSTDv05_parameters::default();
             match ZSTDv05_getFrameParams(&mut fParams, src) {
                 Ok(0) => Some(fParams.srcSize as core::ffi::c_ulonglong),
                 _ => None,
             }
         }
         6 => {
-            let mut fParams = ZSTDv06_frameParams_s {
-                frameContentSize: 0,
-                windowLog: 0,
-            };
-
+            let mut fParams = ZSTDv06_frameParams_s::default();
             match unsafe { ZSTDv06_getFrameParams(&mut fParams, ptr, src.len() as _) } {
                 0 => Some(fParams.frameContentSize),
                 _ => None,
