@@ -195,13 +195,13 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
     }
 }
 
-unsafe fn FSE_writeNCount_generic(
+#[inline(always)]
+unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     header: *mut core::ffi::c_void,
     headerBufferSize: size_t,
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
-    writeIsSafe: bool,
 ) -> size_t {
     let ostart = header as *mut u8;
     let mut out = ostart;
@@ -240,7 +240,7 @@ unsafe fn FSE_writeNCount_generic(
                 start = start.wrapping_add(24);
                 bitStream = (bitStream as core::ffi::c_uint)
                     .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
-                if !writeIsSafe && out > oend.sub(2) {
+                if !SAFE && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -257,7 +257,7 @@ unsafe fn FSE_writeNCount_generic(
                 .wrapping_add(symbol.wrapping_sub(start) << bitCount);
             bitCount += 2;
             if bitCount > 16 {
-                if !writeIsSafe && out > oend.sub(2) {
+                if !SAFE && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -288,7 +288,7 @@ unsafe fn FSE_writeNCount_generic(
             threshold >>= 1;
         }
         if bitCount > 16 {
-            if !writeIsSafe && out > oend.sub(2) {
+            if !SAFE && out > oend.sub(2) {
                 return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
             }
             *out = bitStream as u8;
@@ -304,7 +304,7 @@ unsafe fn FSE_writeNCount_generic(
     }
 
     // flush remaining bitStream
-    if !writeIsSafe && out > oend.sub(2) {
+    if !SAFE && out > oend.sub(2) {
         return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
     }
     *out = bitStream as u8;
@@ -328,15 +328,24 @@ pub(crate) unsafe fn FSE_writeNCount(
         return Error::GENERIC.to_error_code(); // Unsupported
     }
 
-    FSE_writeNCount_generic(
-        buffer,
-        bufferSize,
-        normalizedCounter,
-        maxSymbolValue,
-        tableLog,
+    if bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog) {
         // write in buffer is safe
-        bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog),
-    )
+        FSE_writeNCount_generic::<true>(
+            buffer,
+            bufferSize,
+            normalizedCounter,
+            maxSymbolValue,
+            tableLog,
+        )
+    } else {
+        FSE_writeNCount_generic::<false>(
+            buffer,
+            bufferSize,
+            normalizedCounter,
+            maxSymbolValue,
+            tableLog,
+        )
+    }
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
