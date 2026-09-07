@@ -39,7 +39,7 @@ const bt_end: blockType_t = 3;
 const bt_rle: blockType_t = 2;
 const bt_compressed: blockType_t = 0;
 type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(crate) struct ZSTDv06_frameParams_s {
     pub(crate) frameContentSize: core::ffi::c_ulonglong,

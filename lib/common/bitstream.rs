@@ -187,79 +187,63 @@ const fn get_middle_bits(
 
 impl<'a> BIT_DStream_t<'a> {
     pub(crate) fn new(srcBuffer: &'a [u8]) -> Result<Self, Error> {
-        let mut bitD = Self {
-            bitContainer: 0,
-            bitsConsumed: 0,
-            ptr: core::ptr::null::<core::ffi::c_char>(),
-            start: core::ptr::null::<core::ffi::c_char>(),
-            limitPtr: core::ptr::null::<core::ffi::c_char>(),
-            _marker: PhantomData,
-        };
-
         if srcBuffer.is_empty() {
             return Err(Error::srcSize_wrong);
         }
 
         const USIZE_BYTES: usize = size_of::<BitContainerType>();
 
+        let start = srcBuffer.as_ptr() as *const core::ffi::c_char;
+        let limitPtr = start.wrapping_add(USIZE_BYTES);
+
+        // None when endMark not present
+        let bitsConsumed = srcBuffer
+            .last()
+            .and_then(|v| v.checked_ilog2())
+            .map(|v| 8 - v);
+
         if let Some(chunk) = srcBuffer.last_chunk() {
-            bitD.start = srcBuffer.as_ptr() as *const core::ffi::c_char;
-            bitD.limitPtr = bitD.start.wrapping_add(USIZE_BYTES);
-
-            bitD.ptr = (srcBuffer.as_ptr() as *const core::ffi::c_char)
-                .wrapping_add(srcBuffer.len())
-                .wrapping_sub(USIZE_BYTES);
-            bitD.bitContainer = usize::from_le_bytes(*chunk);
-
-            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-                None => {
-                    /* endMark not present */
-                    return Err(Error::GENERIC);
-                }
-                Some(v) => {
-                    bitD.bitsConsumed = 8 - v;
-                }
-            }
+            Ok(Self {
+                bitContainer: usize::from_le_bytes(*chunk),
+                bitsConsumed: bitsConsumed.ok_or(Error::GENERIC)?,
+                ptr: start
+                    .wrapping_add(srcBuffer.len())
+                    .wrapping_sub(USIZE_BYTES),
+                start,
+                limitPtr,
+                _marker: PhantomData,
+            })
         } else {
-            bitD.start = srcBuffer.as_ptr() as *const core::ffi::c_char;
-            bitD.limitPtr = bitD.start.wrapping_add(USIZE_BYTES);
-            bitD.ptr = bitD.start;
-
-            bitD.bitContainer = usize::from(srcBuffer[0]);
-
+            let mut bitContainer = usize::from(srcBuffer[0]);
             if srcBuffer.len() >= 7 {
-                bitD.bitContainer += usize::from(srcBuffer[6]) << (USIZE_BYTES * 8 - 16);
+                bitContainer += usize::from(srcBuffer[6]) << (USIZE_BYTES * 8 - 16);
             }
             if srcBuffer.len() >= 6 {
-                bitD.bitContainer += usize::from(srcBuffer[5]) << (USIZE_BYTES * 8 - 24);
+                bitContainer += usize::from(srcBuffer[5]) << (USIZE_BYTES * 8 - 24);
             }
             if srcBuffer.len() >= 5 {
-                bitD.bitContainer += usize::from(srcBuffer[4]) << (USIZE_BYTES * 8 - 32);
+                bitContainer += usize::from(srcBuffer[4]) << (USIZE_BYTES * 8 - 32);
             }
             if srcBuffer.len() >= 4 {
-                bitD.bitContainer += usize::from(srcBuffer[3]) << 24;
+                bitContainer += usize::from(srcBuffer[3]) << 24;
             }
             if srcBuffer.len() >= 3 {
-                bitD.bitContainer += usize::from(srcBuffer[2]) << 16;
+                bitContainer += usize::from(srcBuffer[2]) << 16;
             }
             if srcBuffer.len() >= 2 {
-                bitD.bitContainer += usize::from(srcBuffer[1]) << 8;
+                bitContainer += usize::from(srcBuffer[1]) << 8;
             }
 
-            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-                None => {
-                    /* endMark not present */
-                    return Err(Error::corruption_detected);
-                }
-                Some(v) => {
-                    bitD.bitsConsumed = 8 - v;
-                }
-            }
-
-            bitD.bitsConsumed += ((USIZE_BYTES - srcBuffer.len()) * 8) as u32;
+            Ok(Self {
+                bitContainer,
+                bitsConsumed: bitsConsumed.ok_or(Error::corruption_detected)?
+                    + ((USIZE_BYTES - srcBuffer.len()) * 8) as u32,
+                ptr: start,
+                start,
+                limitPtr,
+                _marker: PhantomData,
+            })
         }
-
-        Ok(bitD)
     }
 
     /// Provides the next n bits from local register.

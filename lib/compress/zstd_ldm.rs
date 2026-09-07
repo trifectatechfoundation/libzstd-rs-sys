@@ -644,13 +644,11 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                     0,
                 );
                 let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
-                let mut entry = ldmEntry_t {
-                    offset: 0,
-                    checksum: 0,
+                let entry = ldmEntry_t {
+                    offset: split.offset_from(base) as core::ffi::c_long as u32,
+                    checksum: (xxhash >> 32) as u32,
                 };
 
-                entry.offset = split.offset_from(base) as core::ffi::c_long as u32;
-                entry.checksum = (xxhash >> 32) as u32;
                 ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, params.bucketSizeLog);
             }
         }
@@ -774,13 +772,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             } = ldmState.matchCandidates[n];
 
             let mut bestEntry = core::ptr::null();
-            let mut newEntry = ldmEntry_t {
-                offset: 0,
-                checksum: 0,
+            let newEntry = ldmEntry_t {
+                offset: split.offset_from(base) as core::ffi::c_long as u32,
+                checksum,
             };
-
-            newEntry.offset = split.offset_from(base) as core::ffi::c_long as u32;
-            newEntry.checksum = checksum;
 
             // If a split point would generate a sequence overlapping with
             // the previous one, we merely register it in the hash table and

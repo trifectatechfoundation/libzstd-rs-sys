@@ -76,7 +76,7 @@ struct COVER_ctx_t<'a> {
     displayLevel: core::ffi::c_int,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(super) struct COVER_segment_t {
     pub(super) begin: u32,
@@ -441,22 +441,13 @@ fn COVER_selectSegment(
     let k = parameters.k;
     let d = parameters.d;
     let dmersInK = k.wrapping_sub(d).wrapping_add(1);
-    let mut bestSegment = {
-        COVER_segment_t {
-            begin: 0,
-            end: 0,
-            score: 0,
-        }
-    };
+    let mut bestSegment = COVER_segment_t::default();
+    COVER_map_clear(activeDmers);
     let mut activeSegment = COVER_segment_t {
-        begin: 0,
-        end: 0,
+        begin,
+        end: begin,
         score: 0,
     };
-    COVER_map_clear(activeDmers);
-    activeSegment.begin = begin;
-    activeSegment.end = begin;
-    activeSegment.score = 0;
     while activeSegment.end < end {
         let newDmer = ctx.dmerAt[activeSegment.end as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
@@ -688,23 +679,15 @@ pub(super) fn COVER_computeEpochs(
     passes: u32,
 ) -> COVER_epoch_info_t {
     let minEpochSize = k * 10;
-    let mut epochs = COVER_epoch_info_t { num: 0, size: 0 };
-    epochs.num = if 1 > maxDictSize / k / passes {
-        1
+    let num = (maxDictSize / k / passes).max(1);
+    let size = nbDmers / num;
+    if size >= minEpochSize {
+        COVER_epoch_info_t { num, size }
     } else {
-        maxDictSize / k / passes
-    };
-    epochs.size = nbDmers / epochs.num;
-    if epochs.size >= minEpochSize {
-        return epochs;
+        let size = nbDmers.min(minEpochSize);
+        let num = nbDmers / size;
+        COVER_epoch_info_t { num, size }
     }
-    epochs.size = if minEpochSize < nbDmers {
-        minEpochSize
-    } else {
-        nbDmers
-    };
-    epochs.num = nbDmers / epochs.size;
-    epochs
 }
 
 fn COVER_buildDictionary<'a>(
