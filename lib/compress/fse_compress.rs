@@ -2,7 +2,8 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
-    BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream, BitContainerType,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream,
+    BitContainerType,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -585,13 +586,22 @@ pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> siz
     0
 }
 
-unsafe fn FSE_compress_usingCTable_generic(
+#[inline(always)]
+unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
+    if FAST {
+        BIT_flushBitsFast(bitC);
+    } else {
+        BIT_flushBits(bitC);
+    }
+}
+
+#[inline(always)]
+unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     src: *const core::ffi::c_void,
     mut srcSize: size_t,
     ct: &[FSE_CTable],
-    fast: bool,
 ) -> size_t {
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
@@ -617,11 +627,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_initCState2(&mut CState2, ct, *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     } else {
         ip = ip.sub(1);
         FSE_initCState2(&mut CState2, ct, *ip as u32);
@@ -639,11 +645,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     }
 
     // 2 or 4 encoding per loop
@@ -655,11 +657,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
         {
             // this test must be static
-            if fast {
-                BIT_flushBitsFast(&mut bitC);
-            } else {
-                BIT_flushBits(&mut bitC);
-            }
+            FSE_flushBits::<FAST>(&mut bitC);
         }
 
         ip = ip.sub(1);
@@ -675,11 +673,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         }
 
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     }
 
     FSE_flushCState(&mut bitC, &CState2);
@@ -700,5 +694,9 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
             .wrapping_add(4)
             .wrapping_add(size_of::<size_t>());
 
-    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, fast)
+    if fast {
+        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, srcSize, ct)
+    } else {
+        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src, srcSize, ct)
+    }
 }
