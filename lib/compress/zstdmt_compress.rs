@@ -1581,11 +1581,10 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         }
     }
 
-    if params.jobSize != 0 && params.jobSize < ZSTDMT_JOBSIZE_MIN as size_t {
-        params.jobSize = ZSTDMT_JOBSIZE_MIN as size_t;
-    }
-    if params.jobSize > ZSTDMT_JOBSIZE_MAX as size_t {
-        params.jobSize = ZSTDMT_JOBSIZE_MAX as size_t;
+    if params.jobSize != 0 {
+        params.jobSize = params
+            .jobSize
+            .clamp(ZSTDMT_JOBSIZE_MIN as size_t, ZSTDMT_JOBSIZE_MAX as size_t);
     }
 
     if (*mtctx).allJobsCompleted == 0 {
