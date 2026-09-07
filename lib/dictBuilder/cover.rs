@@ -679,23 +679,15 @@ pub(super) fn COVER_computeEpochs(
     passes: u32,
 ) -> COVER_epoch_info_t {
     let minEpochSize = k * 10;
-    let mut epochs = COVER_epoch_info_t { num: 0, size: 0 };
-    epochs.num = if 1 > maxDictSize / k / passes {
-        1
+    let num = (maxDictSize / k / passes).max(1);
+    let size = nbDmers / num;
+    if size >= minEpochSize {
+        COVER_epoch_info_t { num, size }
     } else {
-        maxDictSize / k / passes
-    };
-    epochs.size = nbDmers / epochs.num;
-    if epochs.size >= minEpochSize {
-        return epochs;
+        let size = nbDmers.min(minEpochSize);
+        let num = nbDmers / size;
+        COVER_epoch_info_t { num, size }
     }
-    epochs.size = if minEpochSize < nbDmers {
-        minEpochSize
-    } else {
-        nbDmers
-    };
-    epochs.num = nbDmers / epochs.size;
-    epochs
 }
 
 fn COVER_buildDictionary<'a>(
