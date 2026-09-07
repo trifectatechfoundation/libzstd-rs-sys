@@ -637,10 +637,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 
     // join to mod 4
     srcSize = srcSize.wrapping_sub(2);
-    if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-        > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-        && srcSize & 2 != 0
-    {
+    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && srcSize & 2 != 0 {
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         ip = ip.sub(1);
@@ -653,20 +650,16 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
 
-        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-            < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-        {
-            // this test must be static
+        // this test must be static
+        if BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 {
             FSE_flushBits::<FAST>(&mut bitC);
         }
 
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
 
-        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-            > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-        {
-            // this test must be static
+        // this test must be static
+        if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 {
             ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
             ip = ip.sub(1);
