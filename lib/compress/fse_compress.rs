@@ -374,13 +374,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
     if minBits > tableLog {
         tableLog = minBits; // Need a minimum to safely represent all symbol values
     }
-    if tableLog < FSE_MIN_TABLELOG as u32 {
-        tableLog = FSE_MIN_TABLELOG as u32;
-    }
-    if tableLog > FSE_MAX_TABLELOG as u32 {
-        tableLog = FSE_MAX_TABLELOG as u32;
-    }
-    tableLog
+    tableLog.clamp(FSE_MIN_TABLELOG as u32, FSE_MAX_TABLELOG as u32)
 }
 
 pub(crate) fn FSE_optimalTableLog(
