@@ -2586,21 +2586,21 @@ fn ZSTD_adjustCParams_internal(
     let minSrcSize = 513; // (1<<9) + 1
     let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
 
-    match mode as core::ffi::c_uint {
-        2 => {
+    match mode {
+        CParamMode::CreateCDict => {
             // Assume a small source size when creating a dictionary
             // with an unknown source size.
             if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
                 srcSize = minSrcSize as core::ffi::c_ulonglong;
             }
         }
-        1 => {
+        CParamMode::AttachDict => {
             // Dictionary has its own dedicated parameters which have
             // already been selected. We are selecting parameters
             // for only the source.
             dictSize = 0;
         }
-        3 | 0 | _ => {
+        CParamMode::NoAttachDict | CParamMode::Unknown => {
             // If we don't know the source size, don't make any
             // assumptions about it. We will already have selected
             // smaller parameters if a dictionary is in use.
