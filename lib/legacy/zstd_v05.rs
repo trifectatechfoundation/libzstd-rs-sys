@@ -38,7 +38,7 @@ type blockType_t = core::ffi::c_uint;
 const bt_end: blockType_t = 3;
 const bt_rle: blockType_t = 2;
 const bt_compressed: blockType_t = 0;
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(crate) struct ZSTDv05_parameters {
     pub(crate) srcSize: u64,
@@ -51,7 +51,6 @@ pub(crate) struct ZSTDv05_parameters {
     pub(crate) strategy: ZSTDv05_strategy,
 }
 pub(crate) type ZSTDv05_strategy = core::ffi::c_uint;
-pub(crate) const ZSTDv05_fast: ZSTDv05_strategy = 0;
 #[repr(C)]
 struct blockProperties_t {
     blockType: blockType_t,
