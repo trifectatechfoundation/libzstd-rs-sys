@@ -186,7 +186,7 @@ pub enum StreamStage {
 
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_prefixDict_s {
     pub dict: *const core::ffi::c_void,
@@ -194,7 +194,7 @@ pub struct ZSTD_prefixDict_s {
     pub dictContentType: ZSTD_dictContentType_e,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_localDict {
     pub dictBuffer: *mut core::ffi::c_void,
@@ -346,6 +346,20 @@ pub struct ZSTD_blockSplitCtx {
     pub nextSeqStore: SeqStore_t,
     pub partitions: [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
+}
+
+impl Default for ZSTD_blockSplitCtx {
+    fn default() -> Self {
+        Self {
+            fullSeqStoreChunk: Default::default(),
+            firstHalfSeqStore: Default::default(),
+            secondHalfSeqStore: Default::default(),
+            currSeqStore: Default::default(),
+            nextSeqStore: Default::default(),
+            partitions: [0; _],
+            entropyMetadata: Default::default(),
+        }
+    }
 }
 
 #[repr(u32)]

@@ -4,6 +4,7 @@ use crate::lib::polyfill::PointerExt;
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_CCtx_s {
     pub(super) stage: CompressionStage,
@@ -542,8 +543,8 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
     ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
-    ZSTD_prefixDict, ZSTD_prefixDict_s, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
-    ZSTD_window_clear, ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
+    ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
+    ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
     ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
     ZSTD_WINDOW_START_INDEX,
 };
@@ -579,10 +580,9 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_insertAndFindFirstIndex, ZSTD_row_update,
 };
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmMatchCandidate_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters,
-    ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences,
-    ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_getTableSize, ZSTD_ldm_skipRawSeqStoreBytes,
-    ZSTD_ldm_skipSequences,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_blockCompress,
+    ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
+    ZSTD_ldm_getTableSize, ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -7728,96 +7728,7 @@ pub unsafe extern "C" fn ZSTD_compress(
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let mut result: size_t = 0;
-    let mut ctxBody = ZSTD_CCtx_s {
-        stage: CompressionStage::Created,
-        cParamsChanged: 0,
-        bmi2: 0,
-        requestedParams: ZSTD_CCtx_params_s::default(),
-        appliedParams: ZSTD_CCtx_params_s::default(),
-        simpleApiParams: ZSTD_CCtx_params_s::default(),
-        dictID: 0,
-        dictContentSize: 0,
-        workspace: ZSTD_cwksp::default(),
-        blockSizeMax: 0,
-        pledgedSrcSizePlusOne: 0,
-        consumedSrcSize: 0,
-        producedCSize: 0,
-        xxhState: XXH64_state_t::default(),
-        customMem: ZSTD_customMem::default(),
-        pool: core::ptr::null_mut::<ZSTD_threadPool>(),
-        staticSize: 0,
-        seqCollector: SeqCollector::default(),
-        isFirstBlock: 0,
-        initialized: 0,
-        seqStore: SeqStore_t::default(),
-        ldmState: ldmState_t {
-            window: ZSTD_window_t {
-                nextSrc: core::ptr::null::<u8>(),
-                base: core::ptr::null::<u8>(),
-                dictBase: core::ptr::null::<u8>(),
-                dictLimit: 0,
-                lowLimit: 0,
-                nbOverflowCorrections: 0,
-            },
-            hashTable: core::ptr::null_mut::<ldmEntry_t>(),
-            loadedDictEnd: 0,
-            bucketOffsets: core::ptr::null_mut::<u8>(),
-            splitIndices: [0; 64],
-            matchCandidates: [ldmMatchCandidate_t {
-                split: core::ptr::null::<u8>(),
-                hash: 0,
-                checksum: 0,
-                bucket: core::ptr::null_mut::<ldmEntry_t>(),
-            }; 64],
-        },
-        ldmSequences: core::ptr::null_mut::<rawSeq>(),
-        maxNbLdmSequences: 0,
-        externSeqStore: RawSeqStore_t::default(),
-        blockState: ZSTD_blockState_t::default(),
-        tmpWorkspace: core::ptr::null_mut::<core::ffi::c_void>(),
-        tmpWkspSize: 0,
-        bufferedPolicy: BufferedPolicy::NotBuffered,
-        inBuff: core::ptr::null_mut(),
-        inBuffSize: 0,
-        inToCompress: 0,
-        inBuffPos: 0,
-        inBuffTarget: 0,
-        outBuff: core::ptr::null_mut(),
-        outBuffSize: 0,
-        outBuffContentSize: 0,
-        outBuffFlushedSize: 0,
-        streamStage: StreamStage::Init,
-        frameEnded: 0,
-        expectedInBuffer: ZSTD_inBuffer_s::default(),
-        stableIn_notConsumed: 0,
-        expectedOutBufferSize: 0,
-        localDict: ZSTD_localDict {
-            dictBuffer: core::ptr::null_mut::<core::ffi::c_void>(),
-            dict: core::ptr::null::<core::ffi::c_void>(),
-            dictSize: 0,
-            dictContentType: ZSTD_dct_auto,
-            cdict: core::ptr::null_mut::<ZSTD_CDict>(),
-        },
-        cdict: core::ptr::null::<ZSTD_CDict>(),
-        prefixDict: ZSTD_prefixDict_s {
-            dict: core::ptr::null::<core::ffi::c_void>(),
-            dictSize: 0,
-            dictContentType: ZSTD_dct_auto,
-        },
-        mtctx: core::ptr::null_mut::<ZSTDMT_CCtx>(),
-        traceCtx: 0,
-        blockSplitCtx: ZSTD_blockSplitCtx {
-            fullSeqStoreChunk: SeqStore_t::default(),
-            firstHalfSeqStore: SeqStore_t::default(),
-            secondHalfSeqStore: SeqStore_t::default(),
-            currSeqStore: SeqStore_t::default(),
-            nextSeqStore: SeqStore_t::default(),
-            partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS],
-            entropyMetadata: ZSTD_entropyCTablesMetadata_t::default(),
-        },
-        extSeqBuf: core::ptr::null_mut::<ZSTD_Sequence>(),
-        extSeqBufCapacity: 0,
-    };
+    let mut ctxBody = ZSTD_CCtx_s::default();
     ZSTD_initCCtx(&mut ctxBody, ZSTD_customMem::default());
     result = ZSTD_compressCCtx(
         &mut ctxBody,
