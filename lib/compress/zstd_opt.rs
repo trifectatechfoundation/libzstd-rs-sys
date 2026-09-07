@@ -33,7 +33,7 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
+    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
@@ -1126,15 +1126,6 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
     currPosInBlock: u32,
     blockBytesRemaining: u32,
 ) {
-    let mut currSeq = rawSeq {
-        offset: 0,
-        litLength: 0,
-        matchLength: 0,
-    };
-    let mut currBlockEndPos: u32 = 0;
-    let mut literalsBytesRemaining: u32 = 0;
-    let mut matchBytesRemaining: u32 = 0;
-
     // Setting match end position to MAX to ensure we never use an LDM during this block
     if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
         optLdm.startPosInBlock = UINT_MAX;
@@ -1143,14 +1134,14 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
     }
     // Calculate appropriate bytes left in matchLength and litLength
     // after adjusting based on ldmSeqStore->posInSequence
-    currSeq = *(optLdm.seqStore.seq).add(optLdm.seqStore.pos);
-    currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
-    literalsBytesRemaining = if optLdm.seqStore.posInSequence < currSeq.litLength as size_t {
+    let currSeq = *(optLdm.seqStore.seq).add(optLdm.seqStore.pos);
+    let currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
+    let literalsBytesRemaining = if optLdm.seqStore.posInSequence < currSeq.litLength as size_t {
         (currSeq.litLength).wrapping_sub(optLdm.seqStore.posInSequence as u32)
     } else {
         0
     };
-    matchBytesRemaining = if literalsBytesRemaining == 0 {
+    let matchBytesRemaining = if literalsBytesRemaining == 0 {
         (currSeq.matchLength)
             .wrapping_sub((optLdm.seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
     } else {
