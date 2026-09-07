@@ -263,7 +263,7 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
     hash
 }
 
-const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
+pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
 const g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
