@@ -59,7 +59,7 @@ pub struct ZSTD_CCtx_s {
     pub(super) extSeqBufCapacity: size_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_entropyCTablesMetadata_t {
     pub hufMetadata: ZSTD_hufCTablesMetadata_t,
@@ -77,12 +77,35 @@ pub struct ZSTD_fseCTablesMetadata_t {
     pub lastCountSize: size_t,
 }
 
+impl Default for ZSTD_fseCTablesMetadata_t {
+    fn default() -> Self {
+        Self {
+            llType: Default::default(),
+            ofType: Default::default(),
+            mlType: Default::default(),
+            fseTablesBuffer: [0; _],
+            fseTablesSize: Default::default(),
+            lastCountSize: Default::default(),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTablesMetadata_t {
     pub hType: SymbolEncodingType,
     pub hufDesBuffer: [u8; ZSTD_MAX_HUF_HEADER_SIZE],
     pub hufDesSize: size_t,
+}
+
+impl Default for ZSTD_hufCTablesMetadata_t {
+    fn default() -> Self {
+        Self {
+            hType: Default::default(),
+            hufDesBuffer: [0; _],
+            hufDesSize: Default::default(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -7790,21 +7813,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             currSeqStore: SeqStore_t::default(),
             nextSeqStore: SeqStore_t::default(),
             partitions: [0; ZSTD_MAX_NB_BLOCK_SPLITS],
-            entropyMetadata: ZSTD_entropyCTablesMetadata_t {
-                hufMetadata: ZSTD_hufCTablesMetadata_t {
-                    hType: SymbolEncodingType::Basic,
-                    hufDesBuffer: [0; ZSTD_MAX_HUF_HEADER_SIZE],
-                    hufDesSize: 0,
-                },
-                fseMetadata: ZSTD_fseCTablesMetadata_t {
-                    llType: SymbolEncodingType::Basic,
-                    ofType: SymbolEncodingType::Basic,
-                    mlType: SymbolEncodingType::Basic,
-                    fseTablesBuffer: [0; 133],
-                    fseTablesSize: 0,
-                    lastCountSize: 0,
-                },
-            },
+            entropyMetadata: ZSTD_entropyCTablesMetadata_t::default(),
         },
         extSeqBuf: core::ptr::null_mut::<ZSTD_Sequence>(),
         extSeqBufCapacity: 0,
