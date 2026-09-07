@@ -1,5 +1,4 @@
 use core::ffi::{c_int, c_uint, c_void};
-use core::ptr;
 
 use libc::size_t;
 
@@ -1020,28 +1019,23 @@ pub struct HUF_CStream_t {
     pub endPtr: *mut u8,
 }
 
-/// Initializes the bitstream.
-///
-/// # Returns
-///
-/// 0 or an error code.
-unsafe fn HUF_initCStream(
-    bitC: &mut HUF_CStream_t,
-    startPtr: *mut c_void,
-    dstCapacity: size_t,
-) -> size_t {
-    ptr::write_bytes(
-        ptr::from_mut(bitC).cast::<u8>(),
-        0,
-        size_of::<HUF_CStream_t>(),
-    );
-    bitC.startPtr = startPtr as *mut u8;
-    bitC.ptr = bitC.startPtr;
-    bitC.endPtr = (bitC.startPtr).add(dstCapacity).sub(size_of::<size_t>());
-    if dstCapacity <= size_of::<size_t>() {
-        return Error::dstSize_tooSmall.to_error_code();
+impl HUF_CStream_t {
+    pub unsafe fn new(startPtr: *mut c_void, dstCapacity: size_t) -> Result<Self, Error> {
+        if dstCapacity <= size_of::<size_t>() {
+            return Err(Error::dstSize_tooSmall);
+        }
+
+        let startPtr = startPtr as *mut u8;
+        let endPtr = startPtr.add(dstCapacity).sub(size_of::<size_t>());
+
+        Ok(HUF_CStream_t {
+            bitContainer: [0; 2],
+            bitPos: [0; 2],
+            startPtr,
+            ptr: startPtr,
+            endPtr,
+        })
     }
-    0
 }
 
 /// Adds the symbol stored in HUF_CElt elt to the bitstream.
@@ -1270,27 +1264,16 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     let tableLog = CTable.header.tableLog as u32;
     let ct = &CTable.elements;
     let ip = src as *const u8;
-    let ostart = dst as *mut u8;
-    let oend = ostart.add(dstSize);
-    let mut bitC = HUF_CStream_t {
-        bitContainer: [0; 2],
-        bitPos: [0; 2],
-        startPtr: core::ptr::null_mut::<u8>(),
-        ptr: core::ptr::null_mut::<u8>(),
-        endPtr: core::ptr::null_mut::<u8>(),
-    };
 
     /* init */
     if dstSize < 8 {
         return 0; /* not enough space to compress */
     }
-    {
-        let op = ostart;
-        let initErr = HUF_initCStream(&mut bitC, op as *mut c_void, oend.offset_from_unsigned(op));
-        if ERR_isError(initErr) {
-            return 0;
-        }
-    }
+
+    let mut bitC = match HUF_CStream_t::new(dst, dstSize) {
+        Ok(bitC) => bitC,
+        Err(_) => return 0,
+    };
 
     if dstSize < HUF_tightCompressBound(srcSize, tableLog as size_t) || tableLog > 11 {
         HUF_compress1X_usingCTable_internal_body_loop(
