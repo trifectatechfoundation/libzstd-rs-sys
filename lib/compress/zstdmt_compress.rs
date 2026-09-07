@@ -265,6 +265,7 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
 
 pub const ZSTDMT_NBWORKERS_MAX: core::ffi::c_int = if MEM_32bits() { 64 } else { 256 };
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
+pub const ZSTDMT_JOBLOG_MAX: core::ffi::c_uint = if MEM_32bits() { 29 } else { 30 };
 
 const g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
@@ -1513,7 +1514,7 @@ fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
     } else {
         jobLog = (params.cParams.windowLog).wrapping_add(2).max(20);
     }
-    jobLog.min((if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint)
+    jobLog.min(ZSTDMT_JOBLOG_MAX)
 }
 
 fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
