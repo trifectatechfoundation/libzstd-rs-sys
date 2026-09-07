@@ -1571,12 +1571,7 @@ fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: &mut core::ffi::c_int
         return bounds.error;
     }
 
-    if *value < bounds.lowerBound {
-        *value = bounds.lowerBound;
-    }
-    if *value > bounds.upperBound {
-        *value = bounds.upperBound;
-    }
+    *value = (*value).clamp(bounds.lowerBound, bounds.upperBound);
 
     0
 }
