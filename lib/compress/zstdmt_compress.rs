@@ -263,6 +263,7 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
     hash
 }
 
+pub const ZSTDMT_NBWORKERS_MAX: core::ffi::c_int = if MEM_32bits() { 64 } else { 256 };
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
 const g_nullBuffer: Buffer = buffer_s {
@@ -1220,13 +1221,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     if nbWorkers < 1 {
         return core::ptr::null_mut();
     }
-    nbWorkers = nbWorkers.min(
-        (if size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
-            64
-        } else {
-            256
-        }) as core::ffi::c_uint,
-    );
+    nbWorkers = nbWorkers.min(ZSTDMT_NBWORKERS_MAX as core::ffi::c_uint);
 
     let mtctx = ZSTD_customCalloc(size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
     if mtctx.is_null() {

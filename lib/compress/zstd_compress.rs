@@ -612,7 +612,7 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
     ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_nextInputSizeHint,
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
-    ZSTDMT_JOBSIZE_MIN,
+    ZSTDMT_JOBSIZE_MIN, ZSTDMT_NBWORKERS_MAX,
 };
 use crate::lib::zstd::{
     Format, ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_Sequence,
@@ -1503,14 +1503,7 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
         200 => ZSTD_bounds::new(0, 1),
         201 => ZSTD_bounds::new(0, 1),
         202 => ZSTD_bounds::new(0, 1),
-        400 => ZSTD_bounds::new(
-            0,
-            if size_of::<*mut core::ffi::c_void>() == 4 {
-                64
-            } else {
-                256
-            },
-        ),
+        400 => ZSTD_bounds::new(0, ZSTDMT_NBWORKERS_MAX),
         401 => ZSTD_bounds::new(
             0,
             if MEM_32bits() {
