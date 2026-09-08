@@ -5693,8 +5693,6 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     let rleMaxLength = 25;
     let op = dst as *mut u8;
     let ip = src as *const u8;
-    let mut cSize: size_t = 0;
-    let mut cSeqsSize: size_t = 0;
 
     // In case of an RLE or raw block, the simulated decompression repcode history must be reset
     let dRepOriginal = *dRep;
@@ -5710,7 +5708,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     if dstCapacity < ZSTD_BLOCKHEADERSIZE {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    cSeqsSize = ZSTD_entropyCompressSeqStore(
+    let mut cSeqsSize = ZSTD_entropyCompressSeqStore(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5747,6 +5745,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         return 0;
     }
 
+    let cSize: size_t;
     if cSeqsSize == 0 {
         cSize = ZSTD_noCompressBlock(
             op as *mut core::ffi::c_void,
