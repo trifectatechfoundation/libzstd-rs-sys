@@ -7952,8 +7952,6 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         })
         .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
         .wrapping_add(matchStateSize);
-    let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
-    let mut params = ZSTD_CCtx_params_s::default();
 
     // 8-aligned
     if workspace as size_t & 7 != 0 {
@@ -7962,7 +7960,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
 
     let mut ws = ZSTD_cwksp::default();
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
-    cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
+    let cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
     if cdict.is_null() {
         return core::ptr::null();
     }
@@ -7972,6 +7970,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         return core::ptr::null();
     }
 
+    let mut params = ZSTD_CCtx_params_s::default();
     ZSTD_CCtxParams_init(&mut params, 0);
     params.cParams = cParams;
     params.useRowMatchFinder = useRowMatchFinder;
