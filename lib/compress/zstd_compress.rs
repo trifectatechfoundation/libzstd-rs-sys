@@ -9363,7 +9363,6 @@ unsafe fn ZSTD_transferSequences_noDelim(
     let mut idx = seqPos.idx;
     let mut startPosInSequence = seqPos.posInSequence;
     let mut endPosInSequence = seqPos.posInSequence.wrapping_add(blockSize as u32);
-    let mut dictSize: size_t = 0;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut iend = istart.add(blockSize);
@@ -9373,20 +9372,19 @@ unsafe fn ZSTD_transferSequences_noDelim(
     /* TODO(embg) support fast parsing mode in noBlockDelim mode */
     let _ = externalRepSearch;
 
-    if !((*cctx).cdict).is_null() {
-        dictSize = (*(*cctx).cdict).dictContentSize;
+    let dictSize = if !((*cctx).cdict).is_null() {
+        (*(*cctx).cdict).dictContentSize
     } else if !((*cctx).prefixDict.dict).is_null() {
-        dictSize = (*cctx).prefixDict.dictSize;
+        (*cctx).prefixDict.dictSize
     } else {
-        dictSize = 0;
-    }
+        0
+    };
     let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
     while endPosInSequence != 0 && (idx as size_t) < inSeqsSize && !finalMatchSplit {
         let currSeq = *inSeqs.offset(idx as isize);
         let mut litLength = currSeq.litLength;
         let mut matchLength = currSeq.matchLength;
         let rawOffset = currSeq.offset;
-        let mut offBase: u32 = 0;
 
         // Modify the sequence depending on where endPosInSequence lies
         if endPosInSequence >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
@@ -9408,13 +9406,12 @@ unsafe fn ZSTD_transferSequences_noDelim(
                 // This sequence ends inside the literals, break to store the last literals
                 break;
             }
-            let mut firstHalfMatchLength: u32 = 0;
             litLength = if startPosInSequence >= litLength {
                 0
             } else {
                 litLength.wrapping_sub(startPosInSequence)
             };
-            firstHalfMatchLength = endPosInSequence
+            let mut firstHalfMatchLength = endPosInSequence
                 .wrapping_sub(startPosInSequence)
                 .wrapping_sub(litLength);
             if matchLength as size_t > blockSize
@@ -9451,7 +9448,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
 
         // Check if this offset can be represented with a repcode
         let ll0 = (litLength == 0) as core::ffi::c_int as u32;
-        offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes, ll0);
+        let offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes, ll0);
         ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
 
         if (*cctx).appliedParams.validateSequences != 0 {
