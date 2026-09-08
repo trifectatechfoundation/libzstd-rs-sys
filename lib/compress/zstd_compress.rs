@@ -9018,7 +9018,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
 
     // compression stage
     if (*cctx).appliedParams.nbWorkers > 0 {
-        let mut flushMin: size_t = 0;
+        let mut flushMin: size_t;
         if (*cctx).cParamsChanged != 0 {
             ZSTDMT_updateCParams_whileCompressing((*cctx).mtctx, &(*cctx).requestedParams);
             (*cctx).cParamsChanged = 0;
