@@ -427,7 +427,6 @@ pub const ZSTD_c_prefetchCDictTables: core::ffi::c_int = 1013;
 pub const ZSTD_c_enableSeqProducerFallback: core::ffi::c_int = 1014;
 pub const ZSTD_c_maxBlockSize: core::ffi::c_int = 1015;
 pub const ZSTD_c_repcodeResolution: core::ffi::c_int = 1016;
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
@@ -563,8 +562,8 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE,
+    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

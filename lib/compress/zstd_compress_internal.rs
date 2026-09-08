@@ -14,8 +14,7 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
-    ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, HASH_READ_SIZE,
-    ZSTD_MAX_NB_BLOCK_SPLITS,
+    ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
@@ -23,6 +22,7 @@ use crate::lib::zstd::{
 };
 
 pub const kSearchStrength: core::ffi::c_int = 8;
+pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.

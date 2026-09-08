@@ -10,11 +10,11 @@ use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
     ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
-    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE,
+    ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
 unsafe fn ZSTD_fillDoubleHashTableForCDict(
