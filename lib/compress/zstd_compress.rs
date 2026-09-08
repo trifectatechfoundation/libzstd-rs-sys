@@ -1099,7 +1099,6 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     workspaceSize: size_t,
 ) -> *mut ZSTD_CCtx {
     let mut ws = ZSTD_cwksp::default();
-    let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
     if workspaceSize <= size_of::<ZSTD_CCtx>() {
         // minimum size
         return core::ptr::null_mut();
@@ -1110,7 +1109,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     }
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
 
-    cctx = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CCtx>()) as *mut ZSTD_CCtx;
+    let cctx = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CCtx>()) as *mut ZSTD_CCtx;
     if cctx.is_null() {
         return core::ptr::null_mut();
     }
