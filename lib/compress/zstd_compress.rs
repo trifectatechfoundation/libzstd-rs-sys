@@ -4969,7 +4969,6 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
     let unrollSize = size_of::<size_t>().wrapping_mul(4);
     let unrollMask = unrollSize.wrapping_sub(1);
     let prefixLength = length & unrollMask;
-    let mut i: size_t = 0;
 
     if length == 1 {
         return true;
@@ -4982,7 +4981,7 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
         return false;
     }
 
-    i = prefixLength;
+    let mut i = prefixLength;
     while i != length {
         for u in (0..unrollSize).step_by(size_of::<size_t>()) {
             if MEM_readST(ip.add(i).add(u) as *const core::ffi::c_void) != valueST {
