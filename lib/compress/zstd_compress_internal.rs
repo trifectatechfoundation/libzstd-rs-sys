@@ -22,6 +22,8 @@ use crate::lib::zstd::{
     ParamSwitch, ZSTD_Sequence, ZSTD_btultra, ZSTD_dictContentType_e, ZSTD_strategy,
 };
 
+pub const kSearchStrength: core::ffi::c_int = 8;
+
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
 #[inline]
