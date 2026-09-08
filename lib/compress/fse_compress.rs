@@ -2,7 +2,8 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
-    BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream, BitContainerType,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream,
+    BitContainerType,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -194,13 +195,13 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
     }
 }
 
-unsafe fn FSE_writeNCount_generic(
+#[inline(always)]
+unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     header: *mut core::ffi::c_void,
     headerBufferSize: size_t,
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
-    writeIsSafe: bool,
 ) -> size_t {
     let ostart = header as *mut u8;
     let mut out = ostart;
@@ -239,7 +240,7 @@ unsafe fn FSE_writeNCount_generic(
                 start = start.wrapping_add(24);
                 bitStream = (bitStream as core::ffi::c_uint)
                     .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
-                if !writeIsSafe && out > oend.sub(2) {
+                if !SAFE && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -256,7 +257,7 @@ unsafe fn FSE_writeNCount_generic(
                 .wrapping_add(symbol.wrapping_sub(start) << bitCount);
             bitCount += 2;
             if bitCount > 16 {
-                if !writeIsSafe && out > oend.sub(2) {
+                if !SAFE && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
                 }
                 *out = bitStream as u8;
@@ -287,7 +288,7 @@ unsafe fn FSE_writeNCount_generic(
             threshold >>= 1;
         }
         if bitCount > 16 {
-            if !writeIsSafe && out > oend.sub(2) {
+            if !SAFE && out > oend.sub(2) {
                 return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
             }
             *out = bitStream as u8;
@@ -303,7 +304,7 @@ unsafe fn FSE_writeNCount_generic(
     }
 
     // flush remaining bitStream
-    if !writeIsSafe && out > oend.sub(2) {
+    if !SAFE && out > oend.sub(2) {
         return Error::dstSize_tooSmall.to_error_code(); // Buffer overflow
     }
     *out = bitStream as u8;
@@ -327,15 +328,24 @@ pub(crate) unsafe fn FSE_writeNCount(
         return Error::GENERIC.to_error_code(); // Unsupported
     }
 
-    FSE_writeNCount_generic(
-        buffer,
-        bufferSize,
-        normalizedCounter,
-        maxSymbolValue,
-        tableLog,
+    if bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog) {
         // write in buffer is safe
-        bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog),
-    )
+        FSE_writeNCount_generic::<true>(
+            buffer,
+            bufferSize,
+            normalizedCounter,
+            maxSymbolValue,
+            tableLog,
+        )
+    } else {
+        FSE_writeNCount_generic::<false>(
+            buffer,
+            bufferSize,
+            normalizedCounter,
+            maxSymbolValue,
+            tableLog,
+        )
+    }
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
@@ -585,13 +595,22 @@ pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> siz
     0
 }
 
-unsafe fn FSE_compress_usingCTable_generic(
+#[inline(always)]
+unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
+    if FAST {
+        BIT_flushBitsFast(bitC);
+    } else {
+        BIT_flushBits(bitC);
+    }
+}
+
+#[inline(always)]
+unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     src: *const core::ffi::c_void,
     mut srcSize: size_t,
     ct: &[FSE_CTable],
-    fast: bool,
 ) -> size_t {
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
@@ -617,11 +636,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_initCState2(&mut CState2, ct, *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     } else {
         ip = ip.sub(1);
         FSE_initCState2(&mut CState2, ct, *ip as u32);
@@ -631,19 +646,12 @@ unsafe fn FSE_compress_usingCTable_generic(
 
     // join to mod 4
     srcSize = srcSize.wrapping_sub(2);
-    if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-        > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-        && srcSize & 2 != 0
-    {
+    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && srcSize & 2 != 0 {
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     }
 
     // 2 or 4 encoding per loop
@@ -651,35 +659,23 @@ unsafe fn FSE_compress_usingCTable_generic(
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
 
-        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-            < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-        {
-            // this test must be static
-            if fast {
-                BIT_flushBitsFast(&mut bitC);
-            } else {
-                BIT_flushBits(&mut bitC);
-            }
+        // this test must be static
+        if BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 {
+            FSE_flushBits::<FAST>(&mut bitC);
         }
 
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
 
-        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-            > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-        {
-            // this test must be static
+        // this test must be static
+        if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 {
             ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
             ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         }
 
-        if fast {
-            BIT_flushBitsFast(&mut bitC);
-        } else {
-            BIT_flushBits(&mut bitC);
-        }
+        FSE_flushBits::<FAST>(&mut bitC);
     }
 
     FSE_flushCState(&mut bitC, &CState2);
@@ -700,5 +696,9 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
             .wrapping_add(4)
             .wrapping_add(size_of::<size_t>());
 
-    FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, fast)
+    if fast {
+        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, srcSize, ct)
+    } else {
+        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src, srcSize, ct)
+    }
 }

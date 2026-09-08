@@ -188,19 +188,20 @@ fn FSE_buildDTable_internal(
 }
 
 #[inline(always)]
-fn FSE_decompress_usingDTable_generic(
+fn FSE_getSymbol<const FAST: bool>(state: &mut FSE_DState_t<'_>, bitD: &mut BIT_DStream_t) -> u8 {
+    if FAST {
+        state.decode_symbol_fast(bitD)
+    } else {
+        state.decode_symbol(bitD)
+    }
+}
+
+#[inline(always)]
+fn FSE_decompress_usingDTable_generic<const FAST: bool>(
     dst: &mut [u8],
     cSrc: &[u8],
     dt: &DTable,
-    fast: bool,
 ) -> Result<usize, Error> {
-    enum Mode {
-        Slow,
-        Fast,
-    }
-
-    let mode = if fast { Mode::Fast } else { Mode::Slow };
-
     let mut op = 0;
     let omax = dst.len();
     let olimit = omax - 3;
@@ -215,45 +216,28 @@ fn FSE_decompress_usingDTable_generic(
     }
 
     while bitD.reload() == StreamStatus::Unfinished && op < olimit {
-        dst[op] = match mode {
-            Mode::Fast => state1.decode_symbol_fast(&mut bitD),
-            Mode::Slow => state1.decode_symbol(&mut bitD),
-        };
+        dst[op] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-            > (size_of::<usize>() as core::ffi::c_ulong).wrapping_mul(8)
-        {
+        if (FSE_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
             let _ = bitD.reload();
         }
 
-        dst[op + 1] = match mode {
-            Mode::Fast => state2.decode_symbol_fast(&mut bitD),
-            Mode::Slow => state2.decode_symbol(&mut bitD),
-        };
+        dst[op + 1] = FSE_getSymbol::<FAST>(&mut state2, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-            > (size_of::<usize>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (FSE_MAX_TABLELOG * 4 + 7) as u32 > usize::BITS
             && bitD.reload() != StreamStatus::Unfinished
         {
             op += 2;
             break;
         }
 
-        dst[op + 2] = match mode {
-            Mode::Fast => state1.decode_symbol_fast(&mut bitD),
-            Mode::Slow => state1.decode_symbol(&mut bitD),
-        };
+        dst[op + 2] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-            > (size_of::<usize>() as core::ffi::c_ulong).wrapping_mul(8)
-        {
+        if (FSE_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
             let _ = bitD.reload();
         }
 
-        dst[op + 3] = match mode {
-            Mode::Fast => state2.decode_symbol_fast(&mut bitD),
-            Mode::Slow => state2.decode_symbol(&mut bitD),
-        };
+        dst[op + 3] = FSE_getSymbol::<FAST>(&mut state2, &mut bitD);
 
         op += 4;
     }
@@ -263,17 +247,11 @@ fn FSE_decompress_usingDTable_generic(
             return Err(Error::dstSize_tooSmall);
         }
 
-        dst[op] = match mode {
-            Mode::Fast => state1.decode_symbol_fast(&mut bitD),
-            Mode::Slow => state1.decode_symbol(&mut bitD),
-        };
+        dst[op] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
         op += 1;
 
         if let StreamStatus::Overflow = bitD.reload() {
-            dst[op] = match mode {
-                Mode::Fast => state2.decode_symbol_fast(&mut bitD),
-                Mode::Slow => state2.decode_symbol(&mut bitD),
-            };
+            dst[op] = FSE_getSymbol::<FAST>(&mut state2, &mut bitD);
             op += 1;
             break;
         } else {
@@ -281,10 +259,7 @@ fn FSE_decompress_usingDTable_generic(
                 return Err(Error::dstSize_tooSmall);
             }
 
-            dst[op] = match mode {
-                Mode::Fast => state2.decode_symbol_fast(&mut bitD),
-                Mode::Slow => state2.decode_symbol(&mut bitD),
-            };
+            dst[op] = FSE_getSymbol::<FAST>(&mut state2, &mut bitD);
             op += 1;
 
             match bitD.reload() {
@@ -292,10 +267,7 @@ fn FSE_decompress_usingDTable_generic(
                 _ => continue,
             }
 
-            dst[op] = match mode {
-                Mode::Fast => state1.decode_symbol_fast(&mut bitD),
-                Mode::Slow => state1.decode_symbol(&mut bitD),
-            };
+            dst[op] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
             op += 1;
 
             break;
@@ -371,12 +343,11 @@ fn FSE_decompress_wksp_body(
         tableLog,
     )?;
 
-    FSE_decompress_usingDTable_generic(
-        dst,
-        ip,
-        &workspace.dtable,
-        workspace.dtable.header.fastMode != 0,
-    )
+    if workspace.dtable.header.fastMode != 0 {
+        FSE_decompress_usingDTable_generic::<true>(dst, ip, &workspace.dtable)
+    } else {
+        FSE_decompress_usingDTable_generic::<false>(dst, ip, &workspace.dtable)
+    }
 }
 
 fn FSE_decompress_wksp_body_default(
