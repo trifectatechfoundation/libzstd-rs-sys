@@ -785,12 +785,10 @@ fn ZSTD_cwksp_reserve_internal(
     bytes: size_t,
     phase: CwkspAllocPhase,
 ) -> *mut core::ffi::c_void {
-    let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) || bytes == 0 {
         return core::ptr::null_mut();
     }
-    alloc = ZSTD_cwksp_reserve_internal_buffer_space(ws, bytes);
-    alloc
+    ZSTD_cwksp_reserve_internal_buffer_space(ws, bytes)
 }
 
 /// Reserves and returns unaligned memory.
