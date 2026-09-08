@@ -4893,7 +4893,6 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     srcSize: size_t,
 ) -> size_t {
     let dstCapacity = ZSTD_compressBound(srcSize);
-    let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
 
     let mut targetCBlockSize: core::ffi::c_int = 0;
     let err_code = ZSTD_CCtx_getParameter(
@@ -4917,7 +4916,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
         return Error::parameter_unsupported.to_error_code();
     }
 
-    dst = ZSTD_customMalloc(dstCapacity, ZSTD_customMem::default());
+    let dst = ZSTD_customMalloc(dstCapacity, ZSTD_customMem::default());
     if dst.is_null() {
         return Error::memory_allocation.to_error_code();
     }
