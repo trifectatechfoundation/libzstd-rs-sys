@@ -3891,8 +3891,7 @@ unsafe fn ZSTD_reduceTable_internal(
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
 
-    let mut rowNb = 0;
-    while rowNb < nbRows {
+    for _rowNb in 0..nbRows {
         for _column in 0..ZSTD_ROWSIZE {
             let newVal = if preserveMark != 0
                 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
@@ -3906,7 +3905,6 @@ unsafe fn ZSTD_reduceTable_internal(
             *table.offset(cellNb as isize) = newVal;
             cellNb += 1;
         }
-        rowNb += 1;
     }
 }
 
