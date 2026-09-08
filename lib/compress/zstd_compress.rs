@@ -5920,7 +5920,6 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
 
     ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as size_t);
     for i in 0..numSplits + 1 {
-        let mut cSizeChunk: size_t = 0;
         let lastPartition = i == numSplits;
         let mut lastBlockEntireSrc = 0;
         let mut srcBytes = (ZSTD_countSeqStoreLiteralsBytes(currSeqStore))
@@ -5939,7 +5938,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             );
         }
 
-        cSizeChunk = ZSTD_compressSeqStore_singleBlock(
+        let cSizeChunk = ZSTD_compressSeqStore_singleBlock(
             zc,
             currSeqStore,
             &mut dRep,
