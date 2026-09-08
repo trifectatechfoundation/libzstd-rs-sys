@@ -4941,9 +4941,8 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     sequences: *mut ZSTD_Sequence,
     seqsSize: size_t,
 ) -> size_t {
-    let mut in_0 = 0;
     let mut out = 0usize;
-    while in_0 < seqsSize {
+    for in_0 in 0..seqsSize {
         if (*sequences.add(in_0)).offset == 0 && (*sequences.add(in_0)).matchLength == 0 {
             if in_0 != seqsSize.wrapping_sub(1) {
                 let fresh6 = &mut (*sequences.add(in_0.wrapping_add(1))).litLength;
@@ -4953,7 +4952,6 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
             *sequences.add(out) = *sequences.add(in_0);
             out = out.wrapping_add(1);
         }
-        in_0 = in_0.wrapping_add(1);
     }
     out
 }
