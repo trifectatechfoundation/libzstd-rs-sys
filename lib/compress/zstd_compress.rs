@@ -3891,8 +3891,7 @@ unsafe fn ZSTD_reduceTable_internal(
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
 
-    let mut rowNb = 0;
-    while rowNb < nbRows {
+    for _rowNb in 0..nbRows {
         for _column in 0..ZSTD_ROWSIZE {
             let newVal = if preserveMark != 0
                 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
@@ -3906,7 +3905,6 @@ unsafe fn ZSTD_reduceTable_internal(
             *table.offset(cellNb as isize) = newVal;
             cellNb += 1;
         }
-        rowNb += 1;
     }
 }
 
@@ -4943,9 +4941,8 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     sequences: *mut ZSTD_Sequence,
     seqsSize: size_t,
 ) -> size_t {
-    let mut in_0 = 0;
     let mut out = 0usize;
-    while in_0 < seqsSize {
+    for in_0 in 0..seqsSize {
         if (*sequences.add(in_0)).offset == 0 && (*sequences.add(in_0)).matchLength == 0 {
             if in_0 != seqsSize.wrapping_sub(1) {
                 let fresh6 = &mut (*sequences.add(in_0.wrapping_add(1))).litLength;
@@ -4955,7 +4952,6 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
             *sequences.add(out) = *sequences.add(in_0);
             out = out.wrapping_add(1);
         }
-        in_0 = in_0.wrapping_add(1);
     }
     out
 }
@@ -4981,14 +4977,12 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
         return false;
     }
 
-    let mut i = prefixLength;
-    while i != length {
+    for i in (prefixLength..length).step_by(unrollSize) {
         for u in (0..unrollSize).step_by(size_of::<size_t>()) {
             if MEM_readST(ip.add(i).add(u) as *const core::ffi::c_void) != valueST {
                 return false;
             }
         }
-        i = i.wrapping_add(unrollSize);
     }
 
     true
@@ -9528,9 +9522,8 @@ unsafe fn blockSize_explicitDelimiter(
 ) -> size_t {
     let mut end = 0;
     let mut blockSize = 0usize;
-    let mut spos = seqPos.idx as size_t;
 
-    while spos < inSeqsSize {
+    for spos in (seqPos.idx as size_t)..inSeqsSize {
         end = ((*inSeqs.add(spos)).offset == 0) as core::ffi::c_int;
         blockSize = blockSize.wrapping_add(
             ((*inSeqs.add(spos)).litLength).wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
@@ -9540,8 +9533,6 @@ unsafe fn blockSize_explicitDelimiter(
                 return Error::externalSequences_invalid.to_error_code();
             }
             break;
-        } else {
-            spos = spos.wrapping_add(1);
         }
     }
 
@@ -9919,8 +9910,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
             }
         }
     } else {
-        let mut seqNb = 0;
-        while seqNb < nbSequences.wrapping_sub(1) {
+        for seqNb in 0..nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
@@ -9932,7 +9922,6 @@ pub unsafe fn ZSTD_convertBlockSequences(
                 matchLength as size_t,
             );
             ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
-            seqNb = seqNb.wrapping_add(1);
         }
     }
 

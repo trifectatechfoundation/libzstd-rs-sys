@@ -414,8 +414,7 @@ unsafe fn ZSTD_encodeSequences_body(
     }
     BIT_flushBits(&mut blockStream);
 
-    let mut n: size_t = nbSeq.wrapping_sub(2);
-    while n < nbSeq {
+    for n in (0..nbSeq.wrapping_sub(1)).rev() {
         let llCode = *llCodeTable.add(n);
         let ofCode = *ofCodeTable.add(n);
         let mlCode = *mlCodeTable.add(n);
@@ -485,7 +484,6 @@ unsafe fn ZSTD_encodeSequences_body(
             );
         }
         BIT_flushBits(&mut blockStream);
-        n = n.wrapping_sub(1);
     }
 
     FSE_flushCState(&mut blockStream, &stateMatchLength);
