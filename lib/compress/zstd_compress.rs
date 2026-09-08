@@ -6316,7 +6316,7 @@ unsafe fn ZSTD_compress_frameChunk(
             ms.nextToUpdate = ms.window.lowLimit;
         }
 
-        let mut cSize: size_t = 0;
+        let mut cSize: size_t;
         if ZSTD_useTargetCBlockSize(&(*cctx).appliedParams) {
             cSize = ZSTD_compressBlock_targetCBlockSize(
                 cctx,
