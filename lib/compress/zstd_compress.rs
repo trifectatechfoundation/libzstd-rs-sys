@@ -10128,9 +10128,6 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
 
     while nbSequences != 0 {
-        let mut compressedSeqsSize: size_t = 0;
-        let mut cBlockSize: size_t = 0;
-        let mut conversionStatus: size_t = 0;
         let block = ZSTD_get1BlockSummary(inSeqs, nbSequences);
         let lastBlock = (block.nbSequences == nbSequences) as core::ffi::c_int as u32;
         let err_code = block.nbSequences;
@@ -10142,7 +10139,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        conversionStatus =
+        let conversionStatus =
             ZSTD_convertBlockSequences(cctx, inSeqs, block.nbSequences, repcodeResolution);
         let err_code_0 = conversionStatus;
         if ERR_isError(err_code_0) {
@@ -10161,7 +10158,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             return Error::dstSize_tooSmall.to_error_code();
         }
 
-        compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
+        let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
             op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
             literals,
@@ -10195,29 +10192,28 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             // but it's complex, and memory hungry, killing the purpose of this variant.
             // Current outcome: generate an error code.
             return Error::cannotProduce_uncompressedBlock.to_error_code();
-        } else {
-            let mut cBlockHeader: u32 = 0;
-            // Error checking and repcodes update
-            ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
-            if (*(*cctx).blockState.prevCBlock)
+        }
+
+        // Error checking and repcodes update
+        ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
+        if (*(*cctx).blockState.prevCBlock)
+            .entropy
+            .fse
+            .offcode_repeatMode
+            == FSE_repeat_valid
+        {
+            (*(*cctx).blockState.prevCBlock)
                 .entropy
                 .fse
-                .offcode_repeatMode
-                == FSE_repeat_valid
-            {
-                (*(*cctx).blockState.prevCBlock)
-                    .entropy
-                    .fse
-                    .offcode_repeatMode = FSE_repeat_check;
-            }
-
-            // Write block header into beginning of block
-            cBlockHeader = lastBlock
-                .wrapping_add((BlockType::Compressed as u32) << 1)
-                .wrapping_add((compressedSeqsSize << 3) as u32);
-            MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-            cBlockSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize);
+                .offcode_repeatMode = FSE_repeat_check;
         }
+
+        // Write block header into beginning of block
+        let cBlockHeader = lastBlock
+            .wrapping_add((BlockType::Compressed as u32) << 1)
+            .wrapping_add((compressedSeqsSize << 3) as u32);
+        MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
+        let cBlockSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize);
 
         cSize = cSize.wrapping_add(cBlockSize);
         op = op.add(cBlockSize);
