@@ -9910,8 +9910,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
             }
         }
     } else {
-        let mut seqNb = 0;
-        while seqNb < nbSequences.wrapping_sub(1) {
+        for seqNb in 0..nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
@@ -9923,7 +9922,6 @@ pub unsafe fn ZSTD_convertBlockSequences(
                 matchLength as size_t,
             );
             ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
-            seqNb = seqNb.wrapping_add(1);
         }
     }
 
