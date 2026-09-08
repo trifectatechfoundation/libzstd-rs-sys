@@ -9621,8 +9621,6 @@ unsafe fn ZSTD_compressSequences_internal(
     }
 
     while remaining != 0 {
-        let mut compressedSeqsSize: size_t = 0;
-        let mut cBlockSize: size_t = 0;
         let mut blockSize = determine_blockSize(
             (*cctx).appliedParams.blockDelimiters,
             (*cctx).blockSizeMax,
@@ -9659,7 +9657,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 .wrapping_add(1)
                 .wrapping_add(1)
         {
-            cBlockSize = ZSTD_noCompressBlock(
+            let cBlockSize = ZSTD_noCompressBlock(
                 op as *mut core::ffi::c_void,
                 dstCapacity,
                 ip as *const core::ffi::c_void,
@@ -9680,7 +9678,7 @@ unsafe fn ZSTD_compressSequences_internal(
             if dstCapacity < ZSTD_BLOCKHEADERSIZE {
                 return Error::dstSize_tooSmall.to_error_code();
             }
-            compressedSeqsSize = ZSTD_entropyCompressSeqStore(
+            let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore(
                 &(*cctx).seqStore,
                 &(*(*cctx).blockState.prevCBlock).entropy,
                 &mut (*(*cctx).blockState.nextCBlock).entropy,
@@ -9707,6 +9705,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 compressedSeqsSize = 1;
             }
 
+            let cBlockSize: size_t;
             if compressedSeqsSize == 0 {
                 // ZSTD_noCompressBlock writes the block header as well
                 cBlockSize = ZSTD_noCompressBlock(
@@ -9733,7 +9732,6 @@ unsafe fn ZSTD_compressSequences_internal(
                     return err_code_4;
                 }
             } else {
-                let mut cBlockHeader: u32 = 0;
                 // Error checking and repcodes update
                 ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
                 if (*(*cctx).blockState.prevCBlock)
@@ -9749,7 +9747,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 }
 
                 // Write block header into beginning of block
-                cBlockHeader = lastBlock
+                let cBlockHeader = lastBlock
                     .wrapping_add((BlockType::Compressed as u32) << 1)
                     .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
