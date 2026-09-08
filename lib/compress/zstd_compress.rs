@@ -3888,22 +3888,21 @@ unsafe fn ZSTD_reduceTable_internal(
 ) {
     let nbRows = size as core::ffi::c_int / ZSTD_ROWSIZE;
     let mut cellNb = 0;
-    let mut rowNb: core::ffi::c_int = 0;
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
 
-    rowNb = 0;
+    let mut rowNb = 0;
     while rowNb < nbRows {
         for _column in 0..ZSTD_ROWSIZE {
-            let mut newVal: u32 = 0;
-            if preserveMark != 0 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
+            let newVal = if preserveMark != 0
+                && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
             {
-                newVal = ZSTD_DUBT_UNSORTED_MARK as u32;
+                ZSTD_DUBT_UNSORTED_MARK as u32
             } else if *table.offset(cellNb as isize) < reducerThreshold {
-                newVal = 0;
+                0
             } else {
-                newVal = (*table.offset(cellNb as isize)).wrapping_sub(reducerValue);
-            }
+                (*table.offset(cellNb as isize)).wrapping_sub(reducerValue)
+            };
             *table.offset(cellNb as isize) = newVal;
             cellNb += 1;
         }
