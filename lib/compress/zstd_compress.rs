@@ -2297,11 +2297,10 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
     if dictLoadMethod == ZSTD_dlm_byRef {
         (*cctx).localDict.dict = dict;
     } else {
-        let mut dictBuffer = core::ptr::null_mut::<core::ffi::c_void>();
         if (*cctx).staticSize != 0 {
             return Error::memory_allocation.to_error_code();
         }
-        dictBuffer = ZSTD_customMalloc(dictSize, (*cctx).customMem);
+        let dictBuffer = ZSTD_customMalloc(dictSize, (*cctx).customMem);
         if dictBuffer.is_null() {
             return Error::memory_allocation.to_error_code();
         }
