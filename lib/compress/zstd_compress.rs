@@ -5976,8 +5976,6 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     srcSize: size_t,
     lastBlock: u32,
 ) -> size_t {
-    let mut nbSeq: u32 = 0;
-    let mut cSize: size_t = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
     if ERR_isError(err_code) {
@@ -5999,30 +5997,11 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         if (*zc).seqCollector.collectSequences != 0 {
             return Error::sequenceProducer_failed.to_error_code();
         }
-        cSize = ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
-        let err_code_0 = cSize;
-        if ERR_isError(err_code_0) {
-            return err_code_0;
-        }
-        return cSize;
+        return ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
     }
-    nbSeq = ((*zc).seqStore.sequences).offset_from((*zc).seqStore.sequencesStart)
-        as core::ffi::c_long as u32;
 
-    cSize = ZSTD_compressBlock_splitBlock_internal(
-        zc,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        lastBlock,
-        nbSeq,
-    );
-    let err_code_1 = cSize;
-    if ERR_isError(err_code_1) {
-        return err_code_1;
-    }
-    cSize
+    let nbSeq = ((*zc).seqStore.sequences).offset_from((*zc).seqStore.sequencesStart) as u32;
+    ZSTD_compressBlock_splitBlock_internal(zc, dst, dstCapacity, src, srcSize, lastBlock, nbSeq)
 }
 
 unsafe fn ZSTD_compressBlock_internal(
