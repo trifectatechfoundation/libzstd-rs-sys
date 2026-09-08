@@ -7039,15 +7039,13 @@ unsafe fn ZSTD_loadZstdDictionary(
 ) -> size_t {
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
-    let mut dictID: size_t = 0;
-    let mut eSize: size_t = 0;
 
-    dictID = (if params.fParams.noDictIDFlag != 0 {
+    let dictID = (if params.fParams.noDictIDFlag != 0 {
         0
     } else {
         MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void)
     }) as size_t;
-    eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
+    let eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
     let err_code = eSize;
     if ERR_isError(err_code) {
         return err_code;
