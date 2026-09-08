@@ -7556,10 +7556,9 @@ pub unsafe extern "C" fn ZSTD_compress(
     srcSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let mut result: size_t = 0;
     let mut ctxBody = ZSTD_CCtx_s::default();
     ZSTD_initCCtx(&mut ctxBody, ZSTD_customMem::default());
-    result = ZSTD_compressCCtx(
+    let result = ZSTD_compressCCtx(
         &mut ctxBody,
         dst,
         dstCapacity,
