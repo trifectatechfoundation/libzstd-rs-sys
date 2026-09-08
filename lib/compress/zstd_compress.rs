@@ -9893,8 +9893,6 @@ pub unsafe fn ZSTD_convertBlockSequences(
     nbSequences: size_t,
     repcodeResolution: bool,
 ) -> size_t {
-    let mut seqNb = 0;
-
     if nbSequences >= (*cctx).seqStore.maxNbSeq {
         return Error::externalSequences_invalid.to_error_code();
     }
@@ -9921,7 +9919,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
             }
         }
     } else {
-        seqNb = 0;
+        let mut seqNb = 0;
         while seqNb < nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
