@@ -8588,8 +8588,8 @@ unsafe fn ZSTD_compressStream_generic(
                             let inputBuffered = ((*zcs).appliedParams.inBufferMode
                                 == ZSTD_bm_buffered)
                                 as core::ffi::c_int;
-                            let mut cDst = core::ptr::null_mut::<core::ffi::c_void>();
-                            let mut cSize_0: size_t = 0;
+                            let cDst;
+                            let cSize_0: size_t;
                             let mut oSize = oend.offset_from_unsigned(op);
                             let iSize = if inputBuffered != 0 {
                                 ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
