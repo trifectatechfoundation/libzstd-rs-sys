@@ -75,8 +75,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
 
 unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
     let b = *(src as *const u8);
-    let mut p: size_t = 0;
-    p = 1;
+    let mut p: size_t = 1;
     while p < srcSize {
         if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
             return false;
@@ -166,7 +165,6 @@ pub unsafe fn ZSTD_compressLiterals(
     let ostart = dst as *mut u8;
     let mut singleStream = srcSize < 256;
     let mut hType = SymbolEncodingType::Compressed;
-    let mut cLitSize: size_t = 0;
 
     // Prepare nextEntropy assuming reusing the existing table
     core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
@@ -210,7 +208,7 @@ pub unsafe fn ZSTD_compressLiterals(
     } else {
         HUF_compress::<4>
     };
-    cLitSize = huf_compress(
+    let cLitSize = huf_compress(
         ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
         src,

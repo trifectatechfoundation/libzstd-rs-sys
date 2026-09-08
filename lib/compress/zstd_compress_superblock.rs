@@ -252,7 +252,6 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
-    let mut seqHead = core::ptr::null_mut::<u8>();
 
     *entropyWritten = false;
     // Sequences Header
@@ -279,7 +278,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     }
 
     // seqHead : flags for FSE encoding type
-    seqHead = op;
+    let seqHead = op;
     op = op.add(1);
 
     if writeEntropy {
@@ -672,9 +671,7 @@ unsafe fn sizeBlockSequences(
     avgSeqCost: size_t,
     firstSubBlock: bool,
 ) -> size_t {
-    let mut n: size_t = 0;
     let mut budget = 0usize;
-    let mut inSize = 0;
 
     // entropy headers, generous estimate
     let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
@@ -685,11 +682,11 @@ unsafe fn sizeBlockSequences(
     if budget > targetBudget {
         return 1;
     }
-    inSize = ((*sp).litLength as core::ffi::c_int + ((*sp).mlBase as core::ffi::c_int + MINMATCH))
-        as size_t;
+    let mut inSize = ((*sp).litLength as core::ffi::c_int
+        + ((*sp).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
 
     // loop over sequences
-    n = 1;
+    let mut n = 1;
     while n < nbSeqs {
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
@@ -780,9 +777,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
 
         let nbSubBlocks =
             ((ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize).max(1);
-        let mut avgBlockBudget: size_t = 0;
         let mut blockBudgetSupp = 0;
-        avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;
+        let avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;
         // simplification: if estimates states that the full superblock doesn't compress, just bail out immediately
         // this will result in the production of a single uncompressed block covering srcSize.
         if ebs.estBlockSize > srcSize {
@@ -937,9 +933,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
 
         // We have to regenerate the repcodes because we've skipped some sequences
         if sp < send {
-            let mut seq = core::ptr::null::<SeqDef>();
             let mut rep = (*prevCBlock).rep;
-            seq = sstart;
+            let mut seq = sstart;
             while seq < sp {
                 ZSTD_updateRep(
                     &mut rep,

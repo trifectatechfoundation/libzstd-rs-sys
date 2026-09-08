@@ -414,8 +414,7 @@ unsafe fn ZSTD_encodeSequences_body(
     }
     BIT_flushBits(&mut blockStream);
 
-    let mut n: size_t = 0;
-    n = nbSeq.wrapping_sub(2);
+    let mut n: size_t = nbSeq.wrapping_sub(2);
     while n < nbSeq {
         let llCode = *llCodeTable.add(n);
         let ofCode = *ofCodeTable.add(n);
