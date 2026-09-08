@@ -7398,13 +7398,12 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let mut endResult: size_t = 0;
     let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 1);
     let err_code = cSize;
     if ERR_isError(err_code) {
         return err_code;
     }
-    endResult = ZSTD_writeEpilogue(
+    let endResult = ZSTD_writeEpilogue(
         cctx,
         (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(cSize),
