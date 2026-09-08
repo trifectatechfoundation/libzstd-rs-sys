@@ -3031,12 +3031,10 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
     let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) {
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
-        let mut noRowCCtxSize: size_t = 0;
-        let mut rowCCtxSize: size_t = 0;
         initialParams.useRowMatchFinder = ParamSwitch::Disable;
-        noRowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
+        let noRowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
         initialParams.useRowMatchFinder = ParamSwitch::Enable;
-        rowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
+        let rowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
         noRowCCtxSize.max(rowCCtxSize)
     } else {
         ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams)
