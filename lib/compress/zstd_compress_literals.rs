@@ -75,12 +75,10 @@ pub unsafe fn ZSTD_noCompressLiterals(
 
 unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
     let b = *(src as *const u8);
-    let mut p: size_t = 1;
-    while p < srcSize {
+    for p in 1..srcSize {
         if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
             return false;
         }
-        p = p.wrapping_add(1);
     }
     true
 }
