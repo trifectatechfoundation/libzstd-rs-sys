@@ -11504,12 +11504,11 @@ fn ZSTD_getCParams_internal(
         + (rSize <= (128 * (1 << 10)) as u64) as core::ffi::c_int
         + (rSize <= (16 * (1 << 10)) as u64) as core::ffi::c_int) as u32;
 
-    let mut row: core::ffi::c_int = 0;
-    if compressionLevel == 0 {
-        row = ZSTD_CLEVEL_DEFAULT;
+    let row = if compressionLevel == 0 {
+        ZSTD_CLEVEL_DEFAULT
     } else {
-        row = compressionLevel.clamp(0, ZSTD_MAX_CLEVEL); // entry 0 is baseline for fast mode
-    }
+        compressionLevel.clamp(0, ZSTD_MAX_CLEVEL) // entry 0 is baseline for fast mode
+    };
 
     let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
     // acceleration factor
