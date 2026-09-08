@@ -4655,16 +4655,16 @@ unsafe fn ZSTD_buildSeqStore(
 
     // select and store sequences
     let dictMode = ZSTD_matchState_dictMode(ms);
-    let mut lastLLSize: size_t = 0;
     for i in 0..ZSTD_REP_NUM {
         (*(*zc).blockState.nextCBlock).rep[i as usize] =
             (*(*zc).blockState.prevCBlock).rep[i as usize];
     }
-    if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
+    let lastLLSize: size_t = if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
             return Error::parameter_combination_unsupported.to_error_code();
         }
-        lastLLSize = ZSTD_ldm_blockCompress(
+
+        ZSTD_ldm_blockCompress(
             &mut (*zc).externSeqStore,
             ms,
             &mut (*zc).seqStore,
@@ -4672,7 +4672,7 @@ unsafe fn ZSTD_buildSeqStore(
             (*zc).appliedParams.useRowMatchFinder,
             src,
             srcSize,
-        );
+        )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore_t::default();
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
@@ -4692,7 +4692,7 @@ unsafe fn ZSTD_buildSeqStore(
             return err_code;
         }
 
-        lastLLSize = ZSTD_ldm_blockCompress(
+        ZSTD_ldm_blockCompress(
             &mut ldmSeqStore,
             ms,
             &mut (*zc).seqStore,
@@ -4700,7 +4700,7 @@ unsafe fn ZSTD_buildSeqStore(
             (*zc).appliedParams.useRowMatchFinder,
             src,
             srcSize,
-        );
+        )
     } else if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
         let windowSize = 1 << (*zc).appliedParams.cParams.windowLog;
 
@@ -4764,13 +4764,14 @@ unsafe fn ZSTD_buildSeqStore(
             dictMode,
         );
         ms.ldmSeqStore = core::ptr::null();
-        lastLLSize = blockCompressor.unwrap_unchecked()(
+
+        blockCompressor.unwrap_unchecked()(
             ms,
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             src,
             srcSize,
-        );
+        )
     } else {
         // not long range mode and no external matchfinder
         let blockCompressor_0 = ZSTD_selectBlockCompressor(
@@ -4779,14 +4780,15 @@ unsafe fn ZSTD_buildSeqStore(
             dictMode,
         );
         ms.ldmSeqStore = core::ptr::null();
-        lastLLSize = blockCompressor_0.unwrap_unchecked()(
+
+        blockCompressor_0.unwrap_unchecked()(
             ms,
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             src,
             srcSize,
-        );
-    }
+        )
+    };
 
     let lastLiterals = (src as *const u8).add(srcSize).sub(lastLLSize as usize);
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
