@@ -9522,9 +9522,8 @@ unsafe fn blockSize_explicitDelimiter(
 ) -> size_t {
     let mut end = 0;
     let mut blockSize = 0usize;
-    let mut spos = seqPos.idx as size_t;
 
-    while spos < inSeqsSize {
+    for spos in (seqPos.idx as size_t)..inSeqsSize {
         end = ((*inSeqs.add(spos)).offset == 0) as core::ffi::c_int;
         blockSize = blockSize.wrapping_add(
             ((*inSeqs.add(spos)).litLength).wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
@@ -9534,8 +9533,6 @@ unsafe fn blockSize_explicitDelimiter(
                 return Error::externalSequences_invalid.to_error_code();
             }
             break;
-        } else {
-            spos = spos.wrapping_add(1);
         }
     }
 
