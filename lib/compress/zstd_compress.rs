@@ -6016,7 +6016,6 @@ unsafe fn ZSTD_compressBlock_internal(
     // This isn't the actual upper bound.
     // Finding the real threshold needs further investigation.
     let rleMaxLength = 25;
-    let mut cSize: size_t = 0;
     let ip = src as *const u8;
     let op = dst as *mut u8;
 
@@ -6025,6 +6024,8 @@ unsafe fn ZSTD_compressBlock_internal(
     if ERR_isError(err_code) {
         return err_code;
     }
+
+    let mut cSize: size_t;
     if bss == BuildSeqStore::NoCompress as size_t {
         if (*zc).seqCollector.collectSequences != 0 {
             return Error::sequenceProducer_failed.to_error_code();
