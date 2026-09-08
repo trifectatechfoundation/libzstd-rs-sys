@@ -6133,14 +6133,13 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     srcSize: size_t,
     lastBlock: u32,
 ) -> size_t {
-    let mut cSize = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
     if ERR_isError(err_code) {
         return err_code;
     }
 
-    cSize = ZSTD_compressBlock_targetCBlockSize_body(
+    let cSize = ZSTD_compressBlock_targetCBlockSize_body(
         zc,
         dst,
         dstCapacity,
