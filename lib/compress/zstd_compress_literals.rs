@@ -165,7 +165,6 @@ pub unsafe fn ZSTD_compressLiterals(
     let ostart = dst as *mut u8;
     let mut singleStream = srcSize < 256;
     let mut hType = SymbolEncodingType::Compressed;
-    let mut cLitSize: size_t = 0;
 
     // Prepare nextEntropy assuming reusing the existing table
     core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
@@ -209,7 +208,7 @@ pub unsafe fn ZSTD_compressLiterals(
     } else {
         HUF_compress::<4>
     };
-    cLitSize = huf_compress(
+    let cLitSize = huf_compress(
         ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
         src,
