@@ -9234,15 +9234,14 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     let startIdx = idx;
     let mut ip = src as *const u8;
     let iend = ip.add(blockSize);
-    let mut dictSize: u32 = 0;
 
-    if !((*cctx).cdict).is_null() {
-        dictSize = (*(*cctx).cdict).dictContentSize as u32;
+    let dictSize = if !((*cctx).cdict).is_null() {
+        (*(*cctx).cdict).dictContentSize as u32
     } else if !((*cctx).prefixDict.dict).is_null() {
-        dictSize = (*cctx).prefixDict.dictSize as u32;
+        (*cctx).prefixDict.dictSize as u32
     } else {
-        dictSize = 0;
-    }
+        0
+    };
 
     let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
     while (idx as size_t) < inSeqsSize
@@ -9251,8 +9250,8 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     {
         let litLength = (*inSeqs.offset(idx as isize)).litLength;
         let matchLength = (*inSeqs.offset(idx as isize)).matchLength;
-        let mut offBase: u32 = 0;
 
+        let offBase: u32;
         if externalRepSearch == ParamSwitch::Disable {
             offBase = ((*inSeqs.offset(idx as isize)).offset)
                 .wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
