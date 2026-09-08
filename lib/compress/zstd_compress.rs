@@ -4214,8 +4214,6 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
-    let mut lastCountSize: size_t = 0;
-    let mut longOffsets = false;
 
     entropyWorkspace = count.add(MaxSeq + 1) as *mut core::ffi::c_void;
     entropyWkspSize = (entropyWkspSize as size_t)
@@ -4297,9 +4295,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     *seqHead = ((stats.LLtype as u32) << 6)
         .wrapping_add((stats.Offtype as u32) << 4)
         .wrapping_add((stats.MLtype as u32) << 2) as u8;
-    lastCountSize = stats.lastCountSize;
+    let lastCountSize = stats.lastCountSize;
     op = op.add(stats.size);
-    longOffsets = stats.longOffsets;
+    let longOffsets = stats.longOffsets;
 
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
