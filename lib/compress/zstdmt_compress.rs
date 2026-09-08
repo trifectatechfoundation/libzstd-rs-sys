@@ -263,7 +263,14 @@ fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u
     hash
 }
 
-const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
+pub const ZSTDMT_NBWORKERS_MAX: core::ffi::c_int = if MEM_32bits() { 64 } else { 256 };
+pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
+pub const ZSTDMT_JOBLOG_MAX: core::ffi::c_uint = if MEM_32bits() { 29 } else { 30 };
+pub const ZSTDMT_JOBSIZE_MAX: core::ffi::c_int = if MEM_32bits() {
+    512 * (1 << 20)
+} else {
+    1024 * (1 << 20)
+};
 
 const g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
@@ -1220,13 +1227,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     if nbWorkers < 1 {
         return core::ptr::null_mut();
     }
-    nbWorkers = nbWorkers.min(
-        (if size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
-            64
-        } else {
-            256
-        }) as core::ffi::c_uint,
-    );
+    nbWorkers = nbWorkers.min(ZSTDMT_NBWORKERS_MAX as core::ffi::c_uint);
 
     let mtctx = ZSTD_customCalloc(size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
     if mtctx.is_null() {
@@ -1518,7 +1519,7 @@ fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
     } else {
         jobLog = (params.cParams.windowLog).wrapping_add(2).max(20);
     }
-    jobLog.min((if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint)
+    jobLog.min(ZSTDMT_JOBLOG_MAX)
 }
 
 fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
@@ -1580,21 +1581,10 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         }
     }
 
-    if params.jobSize != 0 && params.jobSize < ZSTDMT_JOBSIZE_MIN as size_t {
-        params.jobSize = ZSTDMT_JOBSIZE_MIN as size_t;
-    }
-    if params.jobSize
-        > (if MEM_32bits() {
-            512 * (1 << 20)
-        } else {
-            1024 * (1 << 20)
-        }) as size_t
-    {
-        params.jobSize = (if MEM_32bits() {
-            512 * (1 << 20)
-        } else {
-            1024 * (1 << 20)
-        }) as size_t;
+    if params.jobSize != 0 {
+        params.jobSize = params
+            .jobSize
+            .clamp(ZSTDMT_JOBSIZE_MIN as size_t, ZSTDMT_JOBSIZE_MAX as size_t);
     }
 
     if (*mtctx).allJobsCompleted == 0 {

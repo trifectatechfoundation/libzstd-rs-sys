@@ -369,6 +369,24 @@ pub struct ZSTD_bounds {
     pub upperBound: core::ffi::c_int,
 }
 
+impl ZSTD_bounds {
+    pub fn new(lowerBound: core::ffi::c_int, upperBound: core::ffi::c_int) -> Self {
+        ZSTD_bounds {
+            error: 0,
+            lowerBound,
+            upperBound,
+        }
+    }
+
+    pub fn error(error: size_t) -> Self {
+        ZSTD_bounds {
+            error,
+            lowerBound: 0,
+            upperBound: 0,
+        }
+    }
+}
+
 pub type ZSTD_CStream = ZSTD_CCtx;
 
 pub type ZSTD_SequenceCopier_f = unsafe fn(
@@ -594,6 +612,7 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
     ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_nextInputSizeHint,
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
+    ZSTDMT_JOBSIZE_MAX, ZSTDMT_JOBSIZE_MIN, ZSTDMT_NBWORKERS_MAX,
 };
 use crate::lib::zstd::{
     Format, ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_Sequence,
@@ -1008,8 +1027,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
         ws.workspaceOversizedDuration = 0;
     }
 }
-
-pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * (1 << 10);
 
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
@@ -1474,216 +1491,76 @@ fn ZSTD_CCtxParams_setZstdParams(cctxParams: &mut ZSTD_CCtx_params, params: &ZST
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
 pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
-    let mut bounds = {
-        ZSTD_bounds {
-            error: 0,
-            lowerBound: 0,
-            upperBound: 0,
-        }
-    };
     match param.0 {
-        100 => {
-            bounds.lowerBound = ZSTD_minCLevel();
-            bounds.upperBound = ZSTD_maxCLevel();
-            bounds
-        }
-        101 => {
-            bounds.lowerBound = ZSTD_WINDOWLOG_MIN;
-            bounds.upperBound = ZSTD_WINDOWLOG_MAX;
-            bounds
-        }
-        102 => {
-            bounds.lowerBound = ZSTD_HASHLOG_MIN;
-            bounds.upperBound = ZSTD_HASHLOG_MAX;
-            bounds
-        }
-        103 => {
-            bounds.lowerBound = ZSTD_CHAINLOG_MIN;
-            bounds.upperBound = ZSTD_CHAINLOG_MAX;
-            bounds
-        }
-        104 => {
-            bounds.lowerBound = ZSTD_SEARCHLOG_MIN;
-            bounds.upperBound = ZSTD_SEARCHLOG_MAX;
-            bounds
-        }
-        105 => {
-            bounds.lowerBound = ZSTD_MINMATCH_MIN;
-            bounds.upperBound = ZSTD_MINMATCH_MAX;
-            bounds
-        }
-        106 => {
-            bounds.lowerBound = ZSTD_TARGETLENGTH_MIN;
-            bounds.upperBound = ZSTD_TARGETLENGTH_MAX;
-            bounds
-        }
-        107 => {
-            bounds.lowerBound = ZSTD_STRATEGY_MIN;
-            bounds.upperBound = ZSTD_STRATEGY_MAX;
-            bounds
-        }
-        200 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        201 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        202 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        400 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = if size_of::<*mut core::ffi::c_void>() == 4 {
-                64
-            } else {
-                256
-            };
-            bounds
-        }
-        401 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = if MEM_32bits() {
-                512 * (1 << 20)
-            } else {
-                1024 * (1 << 20)
-            };
-            bounds
-        }
-        402 => {
-            bounds.lowerBound = ZSTD_OVERLAPLOG_MIN;
-            bounds.upperBound = ZSTD_OVERLAPLOG_MAX;
-            bounds
-        }
-        1005 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        160 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        161 => {
-            bounds.lowerBound = ZSTD_LDM_HASHLOG_MIN;
-            bounds.upperBound = ZSTD_LDM_HASHLOG_MAX;
-            bounds
-        }
-        162 => {
-            bounds.lowerBound = ZSTD_LDM_MINMATCH_MIN;
-            bounds.upperBound = ZSTD_LDM_MINMATCH_MAX;
-            bounds
-        }
-        163 => {
-            bounds.lowerBound = ZSTD_LDM_BUCKETSIZELOG_MIN;
-            bounds.upperBound = ZSTD_LDM_BUCKETSIZELOG_MAX;
-            bounds
-        }
-        164 => {
-            bounds.lowerBound = ZSTD_LDM_HASHRATELOG_MIN;
-            bounds.upperBound = ZSTD_LDM_HASHRATELOG_MAX;
-            bounds
-        }
-        500 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        1000 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        10 => {
-            bounds.lowerBound = Format::ZSTD_f_zstd1 as core::ffi::c_int;
-            bounds.upperBound = Format::ZSTD_f_zstd1_magicless as core::ffi::c_int;
-            bounds
-        }
-        1001 => {
-            bounds.lowerBound = ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int;
-            bounds.upperBound = ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int;
-            bounds
-        }
-        1002 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        130 => {
-            bounds.lowerBound = ZSTD_TARGETCBLOCKSIZE_MIN;
-            bounds.upperBound = ZSTD_TARGETCBLOCKSIZE_MAX;
-            bounds
-        }
-        1004 => {
-            bounds.lowerBound = ZSTD_SRCSIZEHINT_MIN;
-            bounds.upperBound = ZSTD_SRCSIZEHINT_MAX;
-            bounds
-        }
-        1006 | 1007 => {
-            bounds.lowerBound = ZSTD_bm_buffered as core::ffi::c_int;
-            bounds.upperBound = ZSTD_bm_stable as core::ffi::c_int;
-            bounds
-        }
-        1008 => {
-            bounds.lowerBound = ZSTD_sf_noBlockDelimiters as core::ffi::c_int;
-            bounds.upperBound = ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int;
-            bounds
-        }
-        1009 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        1010 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        1017 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = ZSTD_BLOCKSPLITTER_LEVEL_MAX;
-            bounds
-        }
-        1011 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        1012 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        1013 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        1014 => {
-            bounds.lowerBound = 0;
-            bounds.upperBound = 1;
-            bounds
-        }
-        1015 => {
-            bounds.lowerBound = ZSTD_BLOCKSIZE_MAX_MIN;
-            bounds.upperBound = ZSTD_BLOCKSIZE_MAX;
-            bounds
-        }
-        1016 => {
-            bounds.lowerBound = ParamSwitch::Auto as core::ffi::c_int;
-            bounds.upperBound = ParamSwitch::Disable as core::ffi::c_int;
-            bounds
-        }
-        _ => {
-            bounds.error = Error::parameter_unsupported.to_error_code();
-            bounds
-        }
+        100 => ZSTD_bounds::new(ZSTD_minCLevel(), ZSTD_maxCLevel()),
+        101 => ZSTD_bounds::new(ZSTD_WINDOWLOG_MIN, ZSTD_WINDOWLOG_MAX),
+        102 => ZSTD_bounds::new(ZSTD_HASHLOG_MIN, ZSTD_HASHLOG_MAX),
+        103 => ZSTD_bounds::new(ZSTD_CHAINLOG_MIN, ZSTD_CHAINLOG_MAX),
+        104 => ZSTD_bounds::new(ZSTD_SEARCHLOG_MIN, ZSTD_SEARCHLOG_MAX),
+        105 => ZSTD_bounds::new(ZSTD_MINMATCH_MIN, ZSTD_MINMATCH_MAX),
+        106 => ZSTD_bounds::new(ZSTD_TARGETLENGTH_MIN, ZSTD_TARGETLENGTH_MAX),
+        107 => ZSTD_bounds::new(ZSTD_STRATEGY_MIN, ZSTD_STRATEGY_MAX),
+        200 => ZSTD_bounds::new(0, 1),
+        201 => ZSTD_bounds::new(0, 1),
+        202 => ZSTD_bounds::new(0, 1),
+        400 => ZSTD_bounds::new(0, ZSTDMT_NBWORKERS_MAX),
+        401 => ZSTD_bounds::new(0, ZSTDMT_JOBSIZE_MAX),
+        402 => ZSTD_bounds::new(ZSTD_OVERLAPLOG_MIN, ZSTD_OVERLAPLOG_MAX),
+        1005 => ZSTD_bounds::new(0, 1),
+        160 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        161 => ZSTD_bounds::new(ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHLOG_MAX),
+        162 => ZSTD_bounds::new(ZSTD_LDM_MINMATCH_MIN, ZSTD_LDM_MINMATCH_MAX),
+        163 => ZSTD_bounds::new(ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX),
+        164 => ZSTD_bounds::new(ZSTD_LDM_HASHRATELOG_MIN, ZSTD_LDM_HASHRATELOG_MAX),
+        500 => ZSTD_bounds::new(0, 1),
+        1000 => ZSTD_bounds::new(0, 1),
+        10 => ZSTD_bounds::new(
+            Format::ZSTD_f_zstd1 as core::ffi::c_int,
+            Format::ZSTD_f_zstd1_magicless as core::ffi::c_int,
+        ),
+        1001 => ZSTD_bounds::new(
+            ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int,
+            ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int,
+        ),
+        1002 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        130 => ZSTD_bounds::new(ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETCBLOCKSIZE_MAX),
+        1004 => ZSTD_bounds::new(ZSTD_SRCSIZEHINT_MIN, ZSTD_SRCSIZEHINT_MAX),
+        1006 | 1007 => ZSTD_bounds::new(
+            ZSTD_bm_buffered as core::ffi::c_int,
+            ZSTD_bm_stable as core::ffi::c_int,
+        ),
+        1008 => ZSTD_bounds::new(
+            ZSTD_sf_noBlockDelimiters as core::ffi::c_int,
+            ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int,
+        ),
+        1009 => ZSTD_bounds::new(0, 1),
+        1010 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        1017 => ZSTD_bounds::new(0, ZSTD_BLOCKSPLITTER_LEVEL_MAX),
+        1011 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        1012 => ZSTD_bounds::new(0, 1),
+        1013 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        1014 => ZSTD_bounds::new(0, 1),
+        1015 => ZSTD_bounds::new(ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_BLOCKSIZE_MAX),
+        1016 => ZSTD_bounds::new(
+            ParamSwitch::Auto as core::ffi::c_int,
+            ParamSwitch::Disable as core::ffi::c_int,
+        ),
+        _ => ZSTD_bounds::error(Error::parameter_unsupported.to_error_code()),
     }
 }
 
@@ -1694,12 +1571,7 @@ fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: &mut core::ffi::c_int
         return bounds.error;
     }
 
-    if *value < bounds.lowerBound {
-        *value = bounds.lowerBound;
-    }
-    if *value > bounds.upperBound {
-        *value = bounds.upperBound;
-    }
+    *value = (*value).clamp(bounds.lowerBound, bounds.upperBound);
 
     0
 }
@@ -2714,21 +2586,21 @@ fn ZSTD_adjustCParams_internal(
     let minSrcSize = 513; // (1<<9) + 1
     let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
 
-    match mode as core::ffi::c_uint {
-        2 => {
+    match mode {
+        CParamMode::CreateCDict => {
             // Assume a small source size when creating a dictionary
             // with an unknown source size.
             if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
                 srcSize = minSrcSize as core::ffi::c_ulonglong;
             }
         }
-        1 => {
+        CParamMode::AttachDict => {
             // Dictionary has its own dedicated parameters which have
             // already been selected. We are selecting parameters
             // for only the source.
             dictSize = 0;
         }
-        3 | 0 | _ => {
+        CParamMode::NoAttachDict | CParamMode::Unknown => {
             // If we don't know the source size, don't make any
             // assumptions about it. We will already have selected
             // smaller parameters if a dictionary is in use.
@@ -11692,12 +11564,8 @@ fn ZSTD_getCParams_internal(
     let mut row: core::ffi::c_int = 0;
     if compressionLevel == 0 {
         row = ZSTD_CLEVEL_DEFAULT;
-    } else if compressionLevel < 0 {
-        row = 0; // entry 0 is baseline for fast mode
-    } else if compressionLevel > ZSTD_MAX_CLEVEL {
-        row = ZSTD_MAX_CLEVEL;
     } else {
-        row = compressionLevel;
+        row = compressionLevel.clamp(0, ZSTD_MAX_CLEVEL); // entry 0 is baseline for fast mode
     }
 
     let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
