@@ -40,11 +40,11 @@ use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DedicatedDictSearch, DictMatchState, DictMode, DictModeMarker, ExtDict,
     NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex,
     ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_DUBT_UNSORTED_MARK,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality, PointerExt};
 use crate::lib::zstd::ZSTD_compressionParameters;
 
-pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
 
 /// absolute maximum number of entries per row, for all configurations
