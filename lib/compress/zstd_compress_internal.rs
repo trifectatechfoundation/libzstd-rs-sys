@@ -23,6 +23,14 @@ use crate::lib::zstd::{
 
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
+/// For btlazy2 strategy, index `ZSTD_DUBT_UNSORTED_MARK==1` means "unsorted".
+/// It could be confused for a real successor at index "1", if sorted as larger than its predecessor.
+/// It's not a big deal though: the candidate will just be sorted again.
+/// Additionally, candidate position 1 will be lost.
+/// But candidate 1 cannot hide a large tree of candidates, so it's a minimal loss.
+/// The benefit is that `ZSTD_DUBT_UNSORTED_MARK` cannot be mishandled after table reuse with a different strategy.
+/// This constant is required by `ZSTD_compressBlock_btlazy2()` and `ZSTD_reduceTable_internal()`
+pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
