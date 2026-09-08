@@ -70,6 +70,7 @@ use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
     ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_correctOverflow,
     ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -78,7 +79,6 @@ use crate::lib::zstd::{
     ZSTD_HASHLOG_MIN,
 };
 
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const LDM_BATCH_SIZE: usize = 64;
 
 static ZSTD_ldm_gearTab: [u64; 256] = [
