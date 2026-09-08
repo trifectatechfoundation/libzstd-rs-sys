@@ -844,15 +844,12 @@ fn ZSTD_cwksp_reserve_aligned64(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core
 #[inline]
 fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let phase = CwkspAllocPhase::AlignedInitOnce;
-    let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
-    let mut end = core::ptr::null_mut::<core::ffi::c_void>();
-    let mut top = core::ptr::null_mut::<core::ffi::c_void>();
     if ws.phase < phase && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) {
         return core::ptr::null_mut();
     }
-    alloc = ws.tableEnd;
-    end = alloc.wrapping_byte_add(bytes);
-    top = ws.allocStart;
+    let alloc = ws.tableEnd;
+    let end = alloc.wrapping_byte_add(bytes);
+    let top = ws.allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
         ws.allocFailed = 1;
