@@ -671,9 +671,7 @@ unsafe fn sizeBlockSequences(
     avgSeqCost: size_t,
     firstSubBlock: bool,
 ) -> size_t {
-    let mut n: size_t = 0;
     let mut budget = 0usize;
-    let mut inSize = 0;
 
     // entropy headers, generous estimate
     let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
@@ -684,11 +682,11 @@ unsafe fn sizeBlockSequences(
     if budget > targetBudget {
         return 1;
     }
-    inSize = ((*sp).litLength as core::ffi::c_int + ((*sp).mlBase as core::ffi::c_int + MINMATCH))
-        as size_t;
+    let mut inSize = ((*sp).litLength as core::ffi::c_int
+        + ((*sp).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
 
     // loop over sequences
-    n = 1;
+    let mut n = 1;
     while n < nbSeqs {
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
