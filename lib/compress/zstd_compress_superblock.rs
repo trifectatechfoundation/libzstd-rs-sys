@@ -252,7 +252,6 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
-    let mut seqHead = core::ptr::null_mut::<u8>();
 
     *entropyWritten = false;
     // Sequences Header
@@ -279,7 +278,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     }
 
     // seqHead : flags for FSE encoding type
-    seqHead = op;
+    let seqHead = op;
     op = op.add(1);
 
     if writeEntropy {
