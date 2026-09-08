@@ -4820,7 +4820,6 @@ unsafe fn ZSTD_copyBlockSequences(
 
     let mut repcodes = *prevRepcodes;
     for i in 0..nbInSequences {
-        let mut rawOffset: u32 = 0;
         (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
         (*outSeqs.add(i)).matchLength =
             ((*inSeqs.add(i)).mlBase as core::ffi::c_int + MINMATCH) as core::ffi::c_uint;
@@ -4840,19 +4839,20 @@ unsafe fn ZSTD_copyBlockSequences(
         }
 
         // Determine the raw offset given the offBase, which may be a repcode.
-        if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM as u32 {
-            let repcode = (*inSeqs.add(i)).offBase;
-            (*outSeqs.add(i)).rep = repcode;
-            if (*outSeqs.add(i)).litLength != 0 {
-                rawOffset = repcodes[repcode.wrapping_sub(1) as usize];
-            } else if repcode == 3 {
-                rawOffset = repcodes[0].wrapping_sub(1);
+        let rawOffset =
+            if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM as u32 {
+                let repcode = (*inSeqs.add(i)).offBase;
+                (*outSeqs.add(i)).rep = repcode;
+                if (*outSeqs.add(i)).litLength != 0 {
+                    repcodes[repcode.wrapping_sub(1) as usize]
+                } else if repcode == 3 {
+                    repcodes[0].wrapping_sub(1)
+                } else {
+                    repcodes[repcode as usize]
+                }
             } else {
-                rawOffset = repcodes[repcode as usize];
-            }
-        } else {
-            rawOffset = ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
-        }
+                ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32)
+            };
         (*outSeqs.add(i)).offset = rawOffset;
 
         // Update repcode history for the sequence
