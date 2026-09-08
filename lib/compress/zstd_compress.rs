@@ -5816,9 +5816,6 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     let fullSeqStoreChunk: &mut SeqStore_t = &mut (*zc).blockSplitCtx.fullSeqStoreChunk;
     let firstHalfSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.firstHalfSeqStore;
     let secondHalfSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.secondHalfSeqStore;
-    let mut estimatedOriginalSize: size_t = 0;
-    let mut estimatedFirstHalfSize: size_t = 0;
-    let mut estimatedSecondHalfSize: size_t = 0;
     let midIdx = startIdx.wrapping_add(endIdx) / 2;
 
     if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING
@@ -5829,11 +5826,11 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     ZSTD_deriveSeqStoreChunk(fullSeqStoreChunk, origSeqStore, startIdx, endIdx);
     ZSTD_deriveSeqStoreChunk(firstHalfSeqStore, origSeqStore, startIdx, midIdx);
     ZSTD_deriveSeqStoreChunk(secondHalfSeqStore, origSeqStore, midIdx, endIdx);
-    estimatedOriginalSize =
+    let estimatedOriginalSize =
         ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(fullSeqStoreChunk, zc);
-    estimatedFirstHalfSize =
+    let estimatedFirstHalfSize =
         ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(firstHalfSeqStore, zc);
-    estimatedSecondHalfSize =
+    let estimatedSecondHalfSize =
         ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(secondHalfSeqStore, zc);
     if ERR_isError(estimatedOriginalSize)
         || ERR_isError(estimatedFirstHalfSize)
