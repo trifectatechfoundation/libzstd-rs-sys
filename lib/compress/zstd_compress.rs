@@ -4759,7 +4759,7 @@ unsafe fn ZSTD_buildSeqStore(
 unsafe fn ZSTD_copyBlockSequences(
     seqCollector: &mut SeqCollector,
     seqStore: *const SeqStore_t,
-    prevRepcodes: &[u32; ZSTD_REP_NUM as usize],
+    prevRepcodes: &RepCodes,
 ) -> size_t {
     let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
     let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);

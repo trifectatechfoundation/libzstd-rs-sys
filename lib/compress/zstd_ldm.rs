@@ -61,7 +61,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::xxhash::ZSTD_XXH64;
-use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
+use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
     ZSTD_selectBlockCompressor, ZSTD_window_t,
@@ -1106,7 +1106,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: &mut RawSeqStore_t,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; ZSTD_REP_NUM as usize],
+    rep: &mut RepCodes,
     useRowMatchFinder: ParamSwitch,
     src: *const core::ffi::c_void,
     srcSize: size_t,

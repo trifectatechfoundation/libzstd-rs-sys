@@ -678,7 +678,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     ip: *const u8,
     iLimit: *const u8,
     dictMode: DictMode,
-    rep: &[u32; 3],
+    rep: &RepCodes,
     ll0: u32,
     lengthToBeat: u32,
     mls: u32,
@@ -1068,7 +1068,7 @@ unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u3
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: &[u32; 3],
+    rep: &RepCodes,
     ll0: u32,
     lengthToBeat: u32,
 ) -> u32 {
