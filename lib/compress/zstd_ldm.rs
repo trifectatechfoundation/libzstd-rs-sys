@@ -1173,7 +1173,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             newLitLength,
             ip.sub(newLitLength),
             iend,
-            (sequence.offset).wrapping_add(ZSTD_REP_NUM as u32),
+            (sequence.offset).wrapping_add(ZSTD_REP_NUM),
             sequence.matchLength as size_t,
         );
         ip = ip.offset(sequence.matchLength as isize);

@@ -396,7 +396,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
             match0 = base.wrapping_offset(matchIdx as isize);
             rep_offset2 = rep_offset1;
             rep_offset1 = ip0.offset_from(match0) as core::ffi::c_long as u32;
-            offcode = rep_offset1.wrapping_add(ZSTD_REP_NUM as u32);
+            offcode = rep_offset1.wrapping_add(ZSTD_REP_NUM);
             mLength = 4;
 
             // Count the backwards match length.
@@ -697,7 +697,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                             ip0.offset_from_unsigned(anchor),
                             anchor,
                             iend,
-                            offset.wrapping_add(ZSTD_REP_NUM as u32),
+                            offset.wrapping_add(ZSTD_REP_NUM),
                             mLength,
                         );
                         break;
@@ -724,7 +724,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                         ip0.offset_from_unsigned(anchor),
                         anchor,
                         iend,
-                        offset_0.wrapping_add(ZSTD_REP_NUM as u32),
+                        offset_0.wrapping_add(ZSTD_REP_NUM),
                         mLength,
                     );
                     break;
@@ -1077,7 +1077,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
             match0 = idxBase.wrapping_offset(idx as isize);
             offset_2 = offset_1;
             offset_1 = offset;
-            offcode = offset.wrapping_add(ZSTD_REP_NUM as u32);
+            offcode = offset.wrapping_add(ZSTD_REP_NUM);
             mLength = 4;
 
             // Count the backwards match length.

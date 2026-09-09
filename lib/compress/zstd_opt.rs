@@ -778,11 +778,11 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut bestLength = lengthToBeat.wrapping_sub(1) as size_t;
 
     // check repCode
-    let lastR = (ZSTD_REP_NUM as u32).wrapping_add(ll0);
+    let lastR = (ZSTD_REP_NUM).wrapping_add(ll0);
     let mut repCode: u32 = 0;
     repCode = ll0;
     while repCode < lastR {
-        let repOffset = if repCode == ZSTD_REP_NUM as u32 {
+        let repOffset = if repCode == ZSTD_REP_NUM {
             rep[0].wrapping_sub(1)
         } else {
             rep[repCode as usize]
@@ -891,9 +891,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             // save best solution
             if mlen >= mls as size_t {
                 bestLength = mlen;
-                (*matches).off = curr
-                    .wrapping_sub(matchIndex3)
-                    .wrapping_add(ZSTD_REP_NUM as u32);
+                (*matches).off = curr.wrapping_sub(matchIndex3).wrapping_add(ZSTD_REP_NUM);
                 (*matches).len = mlen as u32;
                 mnum = 1;
                 if (mlen > sufficient_len as size_t) as core::ffi::c_int
@@ -951,9 +949,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 matchEndIdx = matchIndex.wrapping_add(matchLength as u32);
             }
             bestLength = matchLength;
-            (*matches.offset(mnum as isize)).off = curr
-                .wrapping_sub(matchIndex)
-                .wrapping_add(ZSTD_REP_NUM as u32);
+            (*matches.offset(mnum as isize)).off =
+                curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
             (*matches.offset(mnum as isize)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
             // equal: no way to know if inf or sup
@@ -1029,9 +1026,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     matchEndIdx = matchIndex.wrapping_add(matchLength_0 as u32);
                 }
                 bestLength = matchLength_0;
-                (*matches.offset(mnum as isize)).off = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32);
+                (*matches.offset(mnum as isize)).off =
+                    curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
                 (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
                 // equal: no way to know if inf or sup
@@ -1206,7 +1202,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
         || candidateMatchLength > (*matches.offset((*nbMatches).wrapping_sub(1) as isize)).len
             && *nbMatches < ZSTD_OPT_NUM as u32
     {
-        let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM as u32);
+        let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM);
         (*matches.offset(*nbMatches as isize)).len = candidateMatchLength;
         (*matches.offset(*nbMatches as isize)).off = candidateOffBase;
         *nbMatches = (*nbMatches).wrapping_add(1);

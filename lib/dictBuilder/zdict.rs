@@ -704,8 +704,8 @@ unsafe fn ZDICT_countEStats(
     if nbSeq >= 2 {
         // rep offsets
         let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
-        let mut offset1 = (*seq).offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize;
-        let mut offset2 = (*seq.add(1)).offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize;
+        let mut offset1 = (*seq).offBase.wrapping_sub(ZSTD_REP_NUM) as usize;
+        let mut offset2 = (*seq.add(1)).offBase.wrapping_sub(ZSTD_REP_NUM) as usize;
         if offset1 >= MAXREPOFFSET {
             offset1 = 0;
         }
