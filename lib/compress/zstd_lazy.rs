@@ -53,7 +53,10 @@ const ZSTD_ROW_HASH_MAX_ENTRIES: usize = 64;
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
-pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
+
+/// number of bits to use for the tag
+pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_uint = 8;
+
 pub const kLazySkippingStep: core::ffi::c_int = 8;
 
 unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
@@ -1059,7 +1062,7 @@ unsafe fn ZSTD_row_fillHashCache(
     for idx in idx..lim {
         let hash = ZSTD_hashPtrSalted(
             base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
-            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             mls,
             ms.hashSalt,
         ) as u32;
@@ -1086,7 +1089,7 @@ unsafe fn ZSTD_row_nextCachedHash(
     let newHash = ZSTD_hashPtrSalted(
         base.wrapping_offset(idx as isize)
             .offset(ZSTD_ROW_HASH_CACHE_SIZE as isize) as *const core::ffi::c_void,
-        hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+        hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
         mls,
         hashSalt,
     ) as u32;
@@ -1131,7 +1134,7 @@ unsafe fn ZSTD_row_update_internalImpl(
         } else {
             ZSTD_hashPtrSalted(
                 base.wrapping_offset(updateStartIdx as isize) as *const core::ffi::c_void,
-                hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+                hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
                 mls,
                 ms.hashSalt,
             ) as u32
@@ -1403,7 +1406,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let dmsTagTable = (*dms).tagTable;
         let dmsHash = ZSTD_hashPtr(
             ip as *const core::ffi::c_void,
-            ((*dms).rowHashLog).wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            ((*dms).rowHashLog).wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
         ) as u32;
         let dmsRelRow = dmsHash >> ZSTD_ROW_HASH_TAG_BITS << ROW_LOG;
@@ -1432,7 +1435,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // The hash cache is also not kept up to date in this mode.
         hash = ZSTD_hashPtrSalted(
             ip as *const core::ffi::c_void,
-            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
             hashSalt,
         ) as u32;
