@@ -504,6 +504,9 @@ pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
 /// Maximum chunk size before overflow correction needs to be called again
 pub(crate) const ZSTD_CHUNKSIZE_MAX: usize = u32::MAX as usize - ZSTD_CURRENT_MAX;
 
+pub const REPCODE1_TO_OFFBASE: u32 = 1;
+pub const REPCODE3_TO_OFFBASE: u32 = 3;
+
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeqOnly(
     seqStorePtr: &mut SeqStore_t,

@@ -460,9 +460,6 @@ fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
     }
 }
 
-pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
-pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
-
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
 /// progresses beyond window size.
 /// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
@@ -541,8 +538,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, ZSTD_CHUNKSIZE_MAX,
-    ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
+    REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
+    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -9143,13 +9141,13 @@ fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: u32) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
 
     if ll0 == 0 && rawOffset == rep[0] {
-        offBase = REPCODE1_TO_OFFBASE as u32;
+        offBase = REPCODE1_TO_OFFBASE;
     } else if rawOffset == rep[1] {
         offBase = 2u32.wrapping_sub(ll0);
     } else if rawOffset == rep[2] {
         offBase = 3u32.wrapping_sub(ll0);
     } else if ll0 != 0 && rawOffset == rep[0].wrapping_sub(1) {
-        offBase = REPCODE3_TO_OFFBASE as u32;
+        offBase = REPCODE3_TO_OFFBASE;
     }
 
     offBase
