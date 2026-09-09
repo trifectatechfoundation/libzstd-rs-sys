@@ -509,8 +509,8 @@ use crate::lib::common::huf::{
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
-    MEM_writeLE32, MEM_writeLE64,
+    MEM_32bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
+    MEM_writeLE64,
 };
 use crate::lib::common::pool::ZSTD_threadPool;
 use crate::lib::common::xxhash::{
@@ -541,8 +541,8 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, ZSTD_CURRENT_MAX,
-    ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, ZSTD_CHUNKSIZE_MAX,
+    ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -3256,18 +3256,11 @@ fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> bool {
         > ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_INDEXOVERFLOW_MARGIN)
 }
 
-/// When dictionaries are larger than ZSTD_CHUNKSIZE_MAX they can't be loaded in
+/// When dictionaries are larger than [`ZSTD_CHUNKSIZE_MAX`] they can't be loaded in
 /// one go generically. So we ensure that in that case we reset the tables to zero,
 /// so that we can load as much of the dictionary as possible.
 fn ZSTD_dictTooBig(loadedDictSize: size_t) -> bool {
-    loadedDictSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        }) as size_t
+    loadedDictSize > ZSTD_CHUNKSIZE_MAX
 }
 
 /// loadedDictSize is the size of the dictionary to be loaded
@@ -6707,15 +6700,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         srcSize = maxDictSize;
     }
 
-    if srcSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        }) as size_t
-    {
+    if srcSize > ZSTD_CHUNKSIZE_MAX {
         // We must have cleared our windows when our source is this large.
         assert!(loadLdmDict.is_some());
     }
