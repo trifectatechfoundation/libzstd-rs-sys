@@ -12,12 +12,10 @@ use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
     ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
     ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE,
-    ZSTD_SHORT_CACHE_TAG_BITS,
+    REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
-
-pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
 unsafe fn ZSTD_fillHashTableForCDict(
     ms: &mut ZSTD_MatchState_t,
@@ -311,7 +309,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                     as core::ffi::c_int as size_t;
                 ip0 = ip0.sub(mLength as usize);
                 match0 = match0.sub(mLength as usize);
-                offcode = REPCODE1_TO_OFFBASE as u32;
+                offcode = REPCODE1_TO_OFFBASE;
                 mLength = mLength.wrapping_add(4);
 
                 // Write next hash table entry: it's already calculated.
@@ -456,14 +454,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                     *hashTable.add(ZSTD_hashPtr(ip0 as *const core::ffi::c_void, hlog, MLS)) =
                         ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
                     ip0 = ip0.add(rLength);
-                    ZSTD_storeSeq(
-                        seqStore,
-                        0,
-                        anchor,
-                        iend,
-                        REPCODE1_TO_OFFBASE as u32,
-                        rLength,
-                    );
+                    ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, rLength);
                     anchor = ip0;
                 }
             }
@@ -663,7 +654,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                     ip0.offset_from_unsigned(anchor),
                     anchor,
                     iend,
-                    REPCODE1_TO_OFFBASE as u32,
+                    REPCODE1_TO_OFFBASE,
                     mLength,
                 );
                 break;
@@ -809,14 +800,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                 ))
                 .wrapping_add(4);
                 core::mem::swap(&mut offset_2, &mut offset_1);
-                ZSTD_storeSeq(
-                    seqStore,
-                    0,
-                    anchor,
-                    iend,
-                    REPCODE1_TO_OFFBASE as u32,
-                    repLength2,
-                );
+                ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, repLength2);
                 *hashTable.add(ZSTD_hashPtr(ip0 as *const core::ffi::c_void, hlog, MLS)) = current2;
                 ip0 = ip0.add(repLength2);
                 anchor = ip0;
@@ -994,7 +978,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                     as core::ffi::c_int as size_t;
                 ip0 = ip0.sub(mLength as usize);
                 match0 = match0.sub(mLength as usize);
-                offcode = REPCODE1_TO_OFFBASE as u32;
+                offcode = REPCODE1_TO_OFFBASE;
                 mLength = mLength.wrapping_add(4);
                 current_block = 1352918242886884122;
                 break;
@@ -1176,14 +1160,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 ))
                 .wrapping_add(4);
                 core::mem::swap(&mut offset_2, &mut offset_1);
-                ZSTD_storeSeq(
-                    seqStore,
-                    0,
-                    anchor,
-                    iend,
-                    REPCODE1_TO_OFFBASE as u32,
-                    repLength2,
-                );
+                ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, repLength2);
                 *hashTable.add(ZSTD_hashPtr(ip0 as *const core::ffi::c_void, hlog, MLS)) =
                     ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
                 ip0 = ip0.add(repLength2);
