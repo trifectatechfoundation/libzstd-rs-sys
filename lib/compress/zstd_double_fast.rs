@@ -377,7 +377,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                                 ip.offset_from_unsigned(anchor),
                                 anchor,
                                 iend,
-                                offset.wrapping_add(ZSTD_REP_NUM as u32),
+                                offset.wrapping_add(ZSTD_REP_NUM),
                                 mLength,
                             );
                         }
@@ -836,7 +836,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                 ip.offset_from_unsigned(anchor),
                 anchor,
                 iend,
-                offset.wrapping_add(ZSTD_REP_NUM as u32),
+                offset.wrapping_add(ZSTD_REP_NUM),
                 mLength,
             );
         }
@@ -1090,7 +1090,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 ip.offset_from_unsigned(anchor),
                 anchor,
                 iend,
-                offset.wrapping_add(ZSTD_REP_NUM as u32),
+                offset.wrapping_add(ZSTD_REP_NUM),
                 mLength,
             );
         } else if matchIndex > dictStartIndex
@@ -1173,7 +1173,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 ip.offset_from_unsigned(anchor),
                 anchor,
                 iend,
-                offset_0.wrapping_add(ZSTD_REP_NUM as u32),
+                offset_0.wrapping_add(ZSTD_REP_NUM),
                 mLength,
             );
         } else {

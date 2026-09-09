@@ -289,9 +289,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
                     as core::ffi::c_int
             {
                 bestLength = matchLength;
-                *offsetPtr = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                *offsetPtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             }
             if ip.add(matchLength) == iend {
                 // reached end of input: ip[matchLength] is not valid, no way to know if it's larger or smaller than match
@@ -440,9 +438,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
                     as core::ffi::c_int
             {
                 bestLength = matchLength;
-                *offBasePtr = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                *offBasePtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             }
             if ip.add(matchLength) == iend {
                 // equal: no way to know if inf or sup
@@ -728,7 +724,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
             ml = currentMl;
             *offsetPtr = curr
                 .wrapping_sub(matchIndex.wrapping_add(ddsIndexDelta))
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                .wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 // best possible, avoids read overflow on next attempt
                 return ml;
@@ -772,7 +768,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
             ml = currentMl_0;
             *offsetPtr = curr
                 .wrapping_sub(matchIndex.wrapping_add(ddsIndexDelta))
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                .wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl_0) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -908,9 +904,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         // save best solution
         if currentMl > ml {
             ml = currentMl;
-            *offsetPtr = curr
-                .wrapping_sub(matchIndex)
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+            *offsetPtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -976,7 +970,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
                 ml = currentMl_0;
                 *offsetPtr = curr
                     .wrapping_sub(matchIndex.wrapping_add(dmsIndexDelta))
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                    .wrapping_add(ZSTD_REP_NUM) as size_t;
                 if ip.add(currentMl_0) == iLimit {
                     break;
                 }
@@ -1514,9 +1508,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // Save best solution
         if currentMl > ml {
             ml = currentMl;
-            *offsetPtr = curr
-                .wrapping_sub(matchIndex_0)
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+            *offsetPtr = curr.wrapping_sub(matchIndex_0).wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -1585,7 +1577,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 ml = currentMl_0;
                 *offsetPtr = curr
                     .wrapping_sub(matchIndex_2.wrapping_add(dmsIndexDelta))
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                    .wrapping_add(ZSTD_REP_NUM) as size_t;
                 if ip.add(currentMl_0) == iLimit {
                     break;
                 }
@@ -2061,20 +2053,16 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                         // Pay attention that `start[-value]` can lead to strange undefined behavior
                         // notably if `value` is unsigned, resulting in a large positive `-value`.
                         // catch up
-                        if offBase > ZSTD_REP_NUM as u32 {
+                        if offBase > ZSTD_REP_NUM {
                             if dictMode == DictMode::NoDict {
                                 while (start > anchor) as core::ffi::c_int
-                                    & (start.offset(
-                                        -(offBase.wrapping_sub(ZSTD_REP_NUM as u32) as isize),
-                                    ) > prefixLowest)
+                                    & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
+                                        > prefixLowest)
                                         as core::ffi::c_int
                                     != 0
                                     && *start.sub(1) as core::ffi::c_int
                                         == *start
-                                            .offset(
-                                                -(offBase.wrapping_sub(ZSTD_REP_NUM as u32)
-                                                    as isize),
-                                            )
+                                            .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
                                             .sub(1)
                                             as core::ffi::c_int
                                 {
@@ -2084,11 +2072,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                             }
 
                             if isDxS {
-                                let matchIndex =
-                                    (start.offset_from(base) as core::ffi::c_long as size_t)
-                                        .wrapping_sub(
-                                            offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize
-                                        ) as u32;
+                                let matchIndex = (start.offset_from(base) as core::ffi::c_long
+                                    as size_t)
+                                    .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
+                                    as u32;
                                 let mut match_0 = if matchIndex < prefixLowestIndex {
                                     dictBase
                                         .offset(matchIndex as isize)
@@ -2113,7 +2100,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                             }
 
                             offset_2 = offset_1;
-                            offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+                            offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
                         }
                     }
                 }
@@ -2692,9 +2679,9 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                 }
 
                 // catch up
-                if offBase > ZSTD_REP_NUM as u32 {
+                if offBase > ZSTD_REP_NUM {
                     let matchIndex = ((start.wrapping_offset_from(base)) as usize)
-                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize)
+                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
                         as u32;
                     let mut match_0 = if matchIndex < dictLimit {
                         dictBase.offset(matchIndex as isize)
@@ -2715,7 +2702,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                         matchLength = matchLength.wrapping_add(1);
                     }
                     offset_2 = offset_1;
-                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
                 }
             }
         }

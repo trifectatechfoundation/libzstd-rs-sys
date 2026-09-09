@@ -4798,20 +4798,20 @@ unsafe fn ZSTD_copyBlockSequences(
         }
 
         // Determine the raw offset given the offBase, which may be a repcode.
-        let rawOffset =
-            if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM as u32 {
-                let repcode = (*inSeqs.add(i)).offBase;
-                (*outSeqs.add(i)).rep = repcode;
-                if (*outSeqs.add(i)).litLength != 0 {
-                    repcodes[repcode.wrapping_sub(1) as usize]
-                } else if repcode == 3 {
-                    repcodes[0].wrapping_sub(1)
-                } else {
-                    repcodes[repcode as usize]
-                }
+        let rawOffset = if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM
+        {
+            let repcode = (*inSeqs.add(i)).offBase;
+            (*outSeqs.add(i)).rep = repcode;
+            if (*outSeqs.add(i)).litLength != 0 {
+                repcodes[repcode.wrapping_sub(1) as usize]
+            } else if repcode == 3 {
+                repcodes[0].wrapping_sub(1)
             } else {
-                ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32)
-            };
+                repcodes[repcode as usize]
+            }
+        } else {
+            ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM)
+        };
         (*outSeqs.add(i)).offset = rawOffset;
 
         // Update repcode history for the sequence
@@ -5579,7 +5579,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
 fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
-    if adjustedRepCode == ZSTD_REP_NUM as u32 {
+    if adjustedRepCode == ZSTD_REP_NUM {
         return rep[0].wrapping_sub(1);
     }
     rep[adjustedRepCode as usize]
@@ -5610,14 +5610,14 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         let ll0 = ((*seq).litLength as core::ffi::c_int == 0 && idx != longLitLenIdx)
             as core::ffi::c_int as u32;
         let offBase = (*seq).offBase;
-        if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
+        if 1 <= offBase && offBase <= ZSTD_REP_NUM {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
             let cRawOffset = ZSTD_resolveRepcodeToRawOffset(cRepcodes, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
             if dRawOffset != cRawOffset {
-                (*seq).offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM as u32);
+                (*seq).offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM);
             }
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
@@ -9138,7 +9138,7 @@ fn ZSTD_validateSequence(
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
 /// litLength == 0
 fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: u32) -> u32 {
-    let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
+    let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM);
 
     if ll0 == 0 && rawOffset == rep[0] {
         offBase = REPCODE1_TO_OFFBASE;
@@ -9193,8 +9193,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 
         let offBase: u32;
         if externalRepSearch == ParamSwitch::Disable {
-            offBase = ((*inSeqs.offset(idx as isize)).offset)
-                .wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
+            offBase = ((*inSeqs.offset(idx as isize)).offset).wrapping_add(ZSTD_REP_NUM);
         } else {
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
             offBase =
@@ -9798,8 +9797,7 @@ pub unsafe fn convertSequences_noRepcodes(
     let mut longLen = 0;
 
     for n in 0..nbSequences {
-        (*dstSeqs.add(n)).offBase =
-            ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
+        (*dstSeqs.add(n)).offBase = ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM);
         (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
         (*dstSeqs.add(n)).mlBase =
             ((*inSeqs.add(n)).matchLength).wrapping_sub(MINMATCH as core::ffi::c_uint) as u16;
