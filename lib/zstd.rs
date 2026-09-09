@@ -3,9 +3,8 @@ use libc::size_t;
 
 #[cfg(doc)]
 use crate::{
-    lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
-    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compressBound,
-    ZSTD_compress_usingDict, ZSTD_decompress, ZSTD_freeDCtx,
+    ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict, ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict,
+    ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_decompress, ZSTD_freeDCtx,
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
@@ -484,7 +483,7 @@ impl ZSTD_dParameter {
     /// Allowed values are between 1KB and [`ZSTD_BLOCKSIZE_MAX`] (128KB).
     /// The default is [`ZSTD_BLOCKSIZE_MAX`], and setting to 0 will set to the default.
     ///
-    /// This option is typically used in conjunction with [`ZSTD_c_maxBlockSize`].
+    /// This option is typically used in conjunction with [`ZSTD_cParameter::ZSTD_c_maxBlockSize`].
     ///
     /// **Warning:** This causes the decoder to reject otherwise valid frames that have block sizes
     /// larger than the configured `maxBlockSize`.
@@ -564,6 +563,7 @@ impl ZSTD_cParameter {
     pub const ZSTD_c_enableSeqProducerFallback: Self = Self::ZSTD_c_experimentalParam17;
     pub const ZSTD_c_maxBlockSize: Self = Self::ZSTD_c_experimentalParam18;
     pub const ZSTD_c_repcodeResolution: Self = Self::ZSTD_c_experimentalParam19;
+    /// Older name of [`ZSTD_cParameter::ZSTD_c_repcodeResolution`]
     pub const ZSTD_c_searchForExternalRepcodes: Self = Self::ZSTD_c_experimentalParam19;
 
     pub const ZSTD_c_compressionLevel: Self = Self(100);

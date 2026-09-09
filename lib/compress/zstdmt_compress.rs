@@ -202,9 +202,6 @@ struct SyncPoint {
     flush: core::ffi::c_int,
 }
 
-const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
-const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
-
 /// Return base^exponent
 fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     let mut power = 1u64;
@@ -878,7 +875,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                         };
                         let forceWindowError = ZSTD_CCtxParams_setParameter(
                             &mut jobParams,
-                            ZSTD_c_forceMaxWindow as ZSTD_cParameter,
+                            ZSTD_cParameter::ZSTD_c_forceMaxWindow,
                             ((*job).firstJob == 0) as core::ffi::c_int,
                         );
                         if ERR_isError(forceWindowError) {
@@ -890,7 +887,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                             if (*job).firstJob == 0 {
                                 let err = ZSTD_CCtxParams_setParameter(
                                     &mut jobParams,
-                                    ZSTD_c_deterministicRefPrefix as ZSTD_cParameter,
+                                    ZSTD_cParameter::ZSTD_c_deterministicRefPrefix,
                                     0,
                                 );
                                 if ERR_isError(err) {
