@@ -699,7 +699,7 @@ unsafe fn ZSTD_hash32PtrS<const MLS: u32>(ptr: *const core::ffi::c_void, h: u32,
 const prime5bytes: u64 = 889523592379;
 const prime6bytes: u64 = 227718039650203;
 const prime7bytes: u64 = 58295818150454627;
-const prime8bytes: u64 = 0xcf1bbcdcb7a56463;
+pub(crate) const prime8bytes: u64 = 0xcf1bbcdcb7a56463;
 
 /// Hash the first `MLS` bytes of the little-endian value `u`, salted with `s`.
 const fn ZSTD_hash64<const MLS: u32>(u: u64, h: u32, s: u64) -> usize {
