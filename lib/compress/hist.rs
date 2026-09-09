@@ -89,6 +89,11 @@ unsafe fn HIST_count_parallel_wksp(
     check: CheckInput,
     workSpace: &mut [u32; 1024],
 ) -> size_t {
+    // TEMP: this can probably be removed if we make this function fully safe
+    // Some callers reuse `workSpace`'s memory as `count`: to prevent aliasing issues
+    // with the `&mut` reference, skip writes to `count`.
+    let aliasesWorkSpace = count as *mut u8 == workSpace.as_mut_ptr().cast::<u8>();
+
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
     let countSize = (usize::from(*maxSymbolValuePtr) + 1) * size_of::<core::ffi::c_uint>();
@@ -101,7 +106,9 @@ unsafe fn HIST_count_parallel_wksp(
 
     // safety checks
     if sourceSize == 0 {
-        ptr::write_bytes(count as *mut u8, 0, countSize);
+        if !aliasesWorkSpace {
+            ptr::write_bytes(count as *mut u8, 0, countSize);
+        }
         *maxSymbolValuePtr = 0;
         return 0;
     }
@@ -166,7 +173,9 @@ unsafe fn HIST_count_parallel_wksp(
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    core::ptr::copy(workSpace.as_ptr().cast::<u8>(), count as *mut u8, countSize);
+    if !aliasesWorkSpace {
+        core::ptr::copy(workSpace.as_ptr().cast::<u8>(), count as *mut u8, countSize);
+    }
 
     max as size_t
 }
