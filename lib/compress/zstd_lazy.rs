@@ -1845,7 +1845,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                     if matchLength < 4 {
                         let step =
                             (ip.offset_from_unsigned(anchor) >> kSearchStrength).wrapping_add(1); // jump faster over incompressible sections
-                        ip = ip.add(step);
+                        ip = ip.wrapping_add(step);
                         // Enter the lazy skipping mode once we are skipping more than 8 bytes at a time.
                         // In this mode we stop inserting every position into our tables, and only insert
                         // positions that we search, which is one in step positions.
