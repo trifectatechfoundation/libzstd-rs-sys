@@ -490,6 +490,11 @@ pub unsafe fn ZSTD_noCompressBlock(
     ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize)
 }
 
+/// In 32-bit mode: we want to avoid crossing the 2 GB limit,
+/// reducing risks of side effects in case of signed operations on indexes.
+///
+/// In 64-bit mode: we want to ensure that adding the maximum job size (512 MB)
+/// doesn't overflow u32 index capacity (4 GB)
 pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
     3500 * (1 << 20)
 } else {

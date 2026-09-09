@@ -541,7 +541,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, ZSTD_CURRENT_MAX,
     ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
@@ -3245,7 +3245,7 @@ unsafe fn ZSTD_reset_matchState(
     0
 }
 
-pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * (1 << 20);
+pub const ZSTD_INDEXOVERFLOW_MARGIN: usize = 16 * (1 << 20);
 
 /// Minor optimization: prefer memset() rather than reduceIndex() which is measurably slow in some
 /// circumstances (reported for Visual Studio). Works when re-using a context for a lot of smallish
@@ -3253,14 +3253,7 @@ pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * (1 << 20);
 /// before reduceIndex().
 fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> bool {
     (w.nextSrc).wrapping_offset_from(w.base) as size_t
-        > (if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        })
-        .wrapping_sub(ZSTD_INDEXOVERFLOW_MARGIN as core::ffi::c_uint) as size_t
+        > ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_INDEXOVERFLOW_MARGIN)
 }
 
 /// When dictionaries are larger than ZSTD_CHUNKSIZE_MAX they can't be loaded in
@@ -6698,27 +6691,20 @@ unsafe fn ZSTD_loadDictionaryContent(
     ZSTD_assertEqualCParams(params.cParams, ms.cParams);
 
     // Ensure large dictionaries can't cause index overflow
-    let mut maxDictSize = (if MEM_64bits() {
-        (3500 as core::ffi::c_uint)
-            .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-    } else {
-        (2000 as core::ffi::c_uint)
-            .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-    })
-    .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
+    let mut maxDictSize = ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
 
     let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
     if CDictTaggedIndices && tfp == TableFillPurpose::ForCDict {
-        let shortCacheMaxDictSize = ((1 as core::ffi::c_uint) << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
-            .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
+        let shortCacheMaxDictSize = (1usize << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
+            .wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
         maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
     }
 
     // If the dictionary is too large, only load the suffix of the dictionary.
-    if srcSize > maxDictSize as size_t {
-        ip = iend.sub(maxDictSize as usize);
+    if srcSize > maxDictSize {
+        ip = iend.sub(maxDictSize);
         src = ip as *const core::ffi::c_void;
-        srcSize = maxDictSize as size_t;
+        srcSize = maxDictSize;
     }
 
     if srcSize
