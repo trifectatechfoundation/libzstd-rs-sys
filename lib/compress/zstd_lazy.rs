@@ -52,7 +52,12 @@ const ZSTD_ROW_HASH_MAX_ENTRIES: usize = 64;
 
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 
-pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
+/// Dedicated Dictionary Search Structure bucket log
+///
+/// In the `ZSTD_dedicatedDictSearch` mode, the hashTable
+/// `2 ** ZSTD_LAZY_DDSS_BUCKET_LOG` entries in each bucket,
+/// rather than just one.
+pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_uint = 2;
 
 /// number of bits to use for the tag
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_uint = 8;
@@ -526,7 +531,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     } else {
         idx
     };
-    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let cacheSize = bucketSize.wrapping_sub(1);
     let chainAttempts = ((1 << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
     let chainLimit = chainAttempts.min(255);
@@ -535,10 +540,10 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // We are going to temporarily pretend `bucketSize == 1`, keeping only a
     // single entry. We will use the rest of the space to construct a temporary
     // chaintable.
-    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
     let tmpHashTable = hashTable;
     let tmpChainTable = hashTable.offset((1 << hashLog) as isize);
-    let tmpChainSize = (((1 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) as u32) << hashLog;
+    let tmpChainSize = ((1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) << hashLog;
     let tmpMinChain = if tmpChainSize < target {
         target.wrapping_sub(tmpChainSize)
     } else {
@@ -671,7 +676,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsEnd = (*dms).window.nextSrc;
     let ddsSize = ddsEnd.offset_from(ddsBase) as core::ffi::c_long as u32;
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
-    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
     let mut ddsAttempt: u32 = 0;
     let mut matchIndex: u32 = 0;
@@ -860,7 +865,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
 
     let dms = ms.dictMatchState;
     let ddsHashLog = if dictMode == DictMode::DedicatedDictSearch {
-        ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint)
+        ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG)
     } else {
         0
     };
@@ -1385,8 +1390,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let mut dmsTagRow = core::ptr::null_mut();
 
     if dictMode == DictMode::DedicatedDictSearch {
-        let ddsHashLog =
-            ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        let ddsHashLog = ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
         {
             /* Prefetch DDS hashtable entry */
             ddsIdx = ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, MLS)

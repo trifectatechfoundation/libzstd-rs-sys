@@ -573,7 +573,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_compressBlock_lazy_dictMatchState, ZSTD_compressBlock_lazy_dictMatchState_row,
     ZSTD_compressBlock_lazy_extDict, ZSTD_compressBlock_lazy_extDict_row,
     ZSTD_compressBlock_lazy_row, ZSTD_dedicatedDictSearch_lazy_loadDictionary,
-    ZSTD_insertAndFindFirstIndex, ZSTD_row_update, ZSTD_ROW_HASH_TAG_BITS,
+    ZSTD_insertAndFindFirstIndex, ZSTD_row_update, ZSTD_LAZY_DDSS_BUCKET_LOG,
+    ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_blockCompress,
@@ -1001,7 +1002,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
     }
 }
 
-pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 
 /// Maximum size of the hash table dedicated to find 3-bytes matches,
@@ -10347,8 +10347,7 @@ fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) ->
 /// context. (Otherwise, those tables would also grow.)
 fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParameters) {
     if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog =
-            (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        cParams.hashLog = (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
         if cParams.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
             cParams.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
         }
@@ -11444,8 +11443,7 @@ fn ZSTD_dedicatedDictSearch_getCParams(
     let mut cParams =
         ZSTD_getCParams_internal(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
     if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog =
-            (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
     }
     cParams
 }
