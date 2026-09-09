@@ -560,14 +560,14 @@ pub(crate) unsafe fn ZSTD_storeSeq(
 
 #[inline]
 pub(crate) fn ZSTD_updateRep(rep: &mut RepCodes, offBase: u32, ll0: u32) {
-    if offBase > ZSTD_REP_NUM as u32 {
+    if offBase > ZSTD_REP_NUM {
         rep[2] = rep[1];
         rep[1] = rep[0];
-        rep[0] = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        rep[0] = offBase.wrapping_sub(ZSTD_REP_NUM);
     } else {
         let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
         if repCode > 0 {
-            let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
+            let currentOffset = if repCode == ZSTD_REP_NUM {
                 rep[0].wrapping_sub(1)
             } else {
                 rep[repCode as usize]
