@@ -407,27 +407,7 @@ pub struct BlockSummary {
     pub litSize: size_t,
 }
 
-pub const ZSTD_c_rsyncable: core::ffi::c_int = 500;
-pub const ZSTD_c_format: core::ffi::c_int = 10;
-pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = 1000;
-pub const ZSTD_c_forceAttachDict: core::ffi::c_int = 1001;
-pub const ZSTD_c_literalCompressionMode: core::ffi::c_int = 1002;
-pub const ZSTD_c_srcSizeHint: core::ffi::c_int = 1004;
-pub const ZSTD_c_enableDedicatedDictSearch: core::ffi::c_int = 1005;
-pub const ZSTD_c_stableInBuffer: core::ffi::c_int = 1006;
-pub const ZSTD_c_stableOutBuffer: core::ffi::c_int = 1007;
-pub const ZSTD_c_blockDelimiters: core::ffi::c_int = 1008;
-pub const ZSTD_c_validateSequences: core::ffi::c_int = 1009;
 pub const ZSTD_BLOCKSPLITTER_LEVEL_MAX: core::ffi::c_int = 6;
-pub const ZSTD_c_blockSplitterLevel: core::ffi::c_int = 1017;
-pub const ZSTD_c_splitAfterSequences: core::ffi::c_int = 1010;
-pub const ZSTD_c_useRowMatchFinder: core::ffi::c_int = 1011;
-pub const ZSTD_c_deterministicRefPrefix: core::ffi::c_int = 1012;
-pub const ZSTD_c_prefetchCDictTables: core::ffi::c_int = 1013;
-pub const ZSTD_c_enableSeqProducerFallback: core::ffi::c_int = 1014;
-pub const ZSTD_c_maxBlockSize: core::ffi::c_int = 1015;
-pub const ZSTD_c_repcodeResolution: core::ffi::c_int = 1016;
-
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
