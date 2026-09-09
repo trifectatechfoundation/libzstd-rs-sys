@@ -573,7 +573,7 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_compressBlock_lazy_dictMatchState, ZSTD_compressBlock_lazy_dictMatchState_row,
     ZSTD_compressBlock_lazy_extDict, ZSTD_compressBlock_lazy_extDict_row,
     ZSTD_compressBlock_lazy_row, ZSTD_dedicatedDictSearch_lazy_loadDictionary,
-    ZSTD_insertAndFindFirstIndex, ZSTD_row_update,
+    ZSTD_insertAndFindFirstIndex, ZSTD_row_update, ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_blockCompress,
@@ -1002,7 +1002,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
 }
 
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
-pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 
 /// Maximum size of the hash table dedicated to find 3-bytes matches,
@@ -2632,7 +2631,7 @@ fn ZSTD_adjustCParams_internal(
     if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) {
         // Switch to 32-entry rows if searchLog is 5 (or more)
         let rowLog = cPar.searchLog.clamp(4, 6);
-        let maxRowHashLog = (32 - ZSTD_ROW_HASH_TAG_BITS) as u32;
+        let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
         let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
         if cPar.hashLog > maxHashLog {
             cPar.hashLog = maxHashLog;
