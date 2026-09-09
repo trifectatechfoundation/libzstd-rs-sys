@@ -5610,7 +5610,7 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         let ll0 = ((*seq).litLength as core::ffi::c_int == 0 && idx != longLitLenIdx)
             as core::ffi::c_int as u32;
         let offBase = (*seq).offBase;
-        if 1 <= offBase && offBase <= ZSTD_REP_NUM {
+        if (1..=ZSTD_REP_NUM).contains(&offBase) {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
             let cRawOffset = ZSTD_resolveRepcodeToRawOffset(cRepcodes, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
