@@ -4818,7 +4818,7 @@ unsafe fn ZSTD_copyBlockSequences(
         ZSTD_updateRep(
             &mut repcodes,
             (*inSeqs.add(i)).offBase,
-            ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int as u32,
+            (*inSeqs.add(i)).litLength == 0,
         );
         nbOutLiterals = nbOutLiterals.wrapping_add((*outSeqs.add(i)).litLength as size_t);
     }
@@ -5577,8 +5577,8 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 
 /// Returns the raw offset represented by the combination of offBase, ll0, and repcode history.
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
-fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: u32) -> u32 {
-    let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
+fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: bool) -> u32 {
+    let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0 as u32);
     if adjustedRepCode == ZSTD_REP_NUM {
         return rep[0].wrapping_sub(1);
     }
@@ -5607,8 +5607,7 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
     };
     for idx in 0..nbSeq {
         let seq = ((*seqStore).sequencesStart).offset(idx as isize);
-        let ll0 = ((*seq).litLength as core::ffi::c_int == 0 && idx != longLitLenIdx)
-            as core::ffi::c_int as u32;
+        let ll0 = (*seq).litLength == 0 && idx != longLitLenIdx;
         let offBase = (*seq).offBase;
         if (1..=ZSTD_REP_NUM).contains(&offBase) {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
@@ -9137,20 +9136,18 @@ fn ZSTD_validateSequence(
 
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
 /// litLength == 0
-fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: u32) -> u32 {
-    let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM);
-
-    if ll0 == 0 && rawOffset == rep[0] {
-        offBase = REPCODE1_TO_OFFBASE;
+fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: bool) -> u32 {
+    if !ll0 && rawOffset == rep[0] {
+        REPCODE1_TO_OFFBASE
     } else if rawOffset == rep[1] {
-        offBase = 2u32.wrapping_sub(ll0);
+        2u32.wrapping_sub(ll0 as u32)
     } else if rawOffset == rep[2] {
-        offBase = 3u32.wrapping_sub(ll0);
-    } else if ll0 != 0 && rawOffset == rep[0].wrapping_sub(1) {
-        offBase = REPCODE3_TO_OFFBASE;
+        3u32.wrapping_sub(ll0 as u32)
+    } else if ll0 && rawOffset == rep[0].wrapping_sub(1) {
+        REPCODE3_TO_OFFBASE
+    } else {
+        rawOffset.wrapping_add(ZSTD_REP_NUM)
     }
-
-    offBase
 }
 
 /// This function scans through an array of ZSTD_Sequence,
@@ -9195,7 +9192,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         if externalRepSearch == ParamSwitch::Disable {
             offBase = ((*inSeqs.offset(idx as isize)).offset).wrapping_add(ZSTD_REP_NUM);
         } else {
-            let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+            let ll0 = litLength == 0;
             offBase =
                 ZSTD_finalizeOffBase((*inSeqs.offset(idx as isize)).offset, &updatedRepcodes, ll0);
             ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
@@ -9386,7 +9383,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
         }
 
         // Check if this offset can be represented with a repcode
-        let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+        let ll0 = litLength == 0;
         let offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes, ll0);
         ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
 
@@ -9857,7 +9854,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         for seqNb in 0..nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
-            let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+            let ll0 = litLength == 0;
             let offBase = ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes, ll0);
             ZSTD_storeSeqOnly(
                 &mut (*cctx).seqStore,
