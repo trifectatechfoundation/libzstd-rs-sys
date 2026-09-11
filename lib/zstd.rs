@@ -76,6 +76,11 @@ pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = 1 << 10;
 pub const ZSTD_CLEVEL_DEFAULT: c_int = 3;
 
+#[cfg(target_pointer_width = "64")]
+pub const ZSTD_MAX_INPUT_SIZE: size_t = 0xff00ff00ff00ff00;
+#[cfg(not(target_pointer_width = "64"))]
+pub const ZSTD_MAX_INPUT_SIZE: size_t = 0xff00ff00;
+
 pub const ZSTD_MAGICNUMBER: c_uint = 0xfd2fb528;
 pub const ZSTD_MAGIC_DICTIONARY: c_uint = 0xec30a437;
 pub const ZSTD_MAGIC_SKIPPABLE_START: c_uint = 0x184d2a50;
