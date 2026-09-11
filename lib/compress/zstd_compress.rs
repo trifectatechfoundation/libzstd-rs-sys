@@ -3520,7 +3520,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     mut params: ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     let mut adjusted_cdict_cParams = (*cdict).matchState.cParams;
     let windowLog = params.cParams.windowLog;
 
@@ -3537,11 +3537,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     );
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    if let Err(err) =
-        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff)
-    {
-        return err.to_error_code();
-    }
+    ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff)?;
 
     let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
         as core::ffi::c_long as u32;
@@ -3571,7 +3567,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         1,
     );
 
-    0
+    Ok(())
 }
 
 unsafe fn ZSTD_copyCDictTableIntoCCtx(
@@ -3599,18 +3595,14 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     mut params: ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     let cdict_cParams = &(*cdict).matchState.cParams;
 
     let windowLog = params.cParams.windowLog;
     params.cParams = *cdict_cParams;
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    if let Err(err) =
-        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff)
-    {
-        return err.to_error_code();
-    }
+    ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff)?;
 
     ZSTD_cwksp_mark_tables_dirty(&mut (*cctx).workspace);
 
@@ -3683,7 +3675,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
         1,
     );
 
-    0
+    Ok(())
 }
 
 /// We have a choice between copying the dictionary context into the working context,
@@ -3695,7 +3687,7 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     if ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
         ZSTD_resetCCtx_byAttachingCDict(cctx, cdict, *params, pledgedSrcSize, zbuff)
     } else {
@@ -7059,7 +7051,10 @@ unsafe fn ZSTD_compressBegin_internal(
             || (*cdict).compressionLevel == 0)
         && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceLoad
     {
-        return ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff);
+        return match ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff) {
+            Ok(()) => 0,
+            Err(err) => err.to_error_code(),
+        };
     }
 
     if let Err(err) = ZSTD_resetCCtx_internal(
