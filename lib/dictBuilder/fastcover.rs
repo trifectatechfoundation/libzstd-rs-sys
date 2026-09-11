@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::mem::MEM_64bits;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hash64Ptr_array;
 use crate::lib::dictBuilder::cover::{
@@ -49,6 +50,12 @@ struct FASTCOVER_tryParameters_data_t<'a, 'b> {
     parameters: ZDICT_cover_params_t,
 }
 
+/// There are 32-bit indexes used to ref samples, so limit samples size to 4GB
+/// on 64-bit builds.
+/// For 32-bit builds we choose 1 GB: most 32-bit platforms have 2GB user-mode
+/// addressable space and we allocate a large contiguous buffer, so 1GB is
+/// already a high limit.
+const FASTCOVER_MAX_SAMPLES_SIZE: usize = if MEM_64bits() { u32::MAX as _ } else { 1 << 30 };
 const FASTCOVER_MAX_F: core::ffi::c_int = 31;
 const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
 const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
@@ -239,12 +246,6 @@ fn FASTCOVER_ctx_init<'a>(
             .sum()
     } else {
         totalSamplesSize
-    };
-
-    const GB: usize = 1 << 30;
-    const FASTCOVER_MAX_SAMPLES_SIZE: usize = match usize::BITS {
-        64 => 4 * GB,
-        _ => GB,
     };
 
     ctx.displayLevel = displayLevel;
