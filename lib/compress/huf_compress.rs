@@ -306,7 +306,7 @@ pub unsafe fn HUF_readCTable(
     src: *const c_void,
     srcSize: size_t,
     hasZeroWeights: &mut c_uint,
-) -> size_t {
+) -> Result<size_t, Error> {
     let src = core::slice::from_raw_parts(src.cast(), srcSize);
 
     let mut huffWeight: [u8; HUF_SYMBOLVALUE_MAX as usize + 1] =
@@ -316,32 +316,26 @@ pub unsafe fn HUF_readCTable(
     let mut nbSymbols = 0;
 
     /* get symbol weights */
-    let readSize = match HUF_readStats(
+    let readSize = HUF_readStats(
         &mut huffWeight,
         (255 + 1) as size_t,
         &mut rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,
-    ) {
-        Ok(readSize) => readSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     *hasZeroWeights = (rankVal[0] > 0) as c_int as c_uint;
 
     /* check result */
     if tableLog > HUF_TABLELOG_MAX as u32 {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     if nbSymbols > c_uint::from(*maxSymbolValuePtr) + 1 {
-        return Error::maxSymbolValue_tooSmall.to_error_code();
+        return Err(Error::maxSymbolValue_tooSmall);
     }
 
     // the check above bounds `nbSymbols - 1` by `*maxSymbolValuePtr`
-    match u8::try_from(nbSymbols - 1) {
-        Ok(v) => *maxSymbolValuePtr = v,
-        Err(_) => return Error::maxSymbolValue_tooSmall.to_error_code(),
-    };
+    *maxSymbolValuePtr = u8::try_from(nbSymbols - 1).map_err(|_| Error::maxSymbolValue_tooSmall)?;
 
     CTable.header = HUF_CTableHeader::new(tableLog, *maxSymbolValuePtr);
 
@@ -405,7 +399,7 @@ pub unsafe fn HUF_readCTable(
             }
         }
     }
-    readSize
+    Ok(readSize)
 }
 
 pub fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
