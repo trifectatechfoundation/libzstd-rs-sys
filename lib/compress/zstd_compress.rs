@@ -6837,16 +6837,16 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(hufHeaderSize);
 
     let mut offcodeLog: core::ffi::c_uint = 0;
-    let offcodeHeaderSize = FSE_readNCount(
+    let offcodeHeaderSize = match FSE_readNCount(
         &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    );
-    if ERR_isError(offcodeHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(offcodeHeaderSize) => offcodeHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if offcodeLog > 8 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -6869,16 +6869,16 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    let matchlengthHeaderSize = FSE_readNCount(
+    let matchlengthHeaderSize = match FSE_readNCount(
         &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    );
-    if ERR_isError(matchlengthHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(matchlengthHeaderSize) => matchlengthHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if matchlengthLog > 9 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -6901,16 +6901,16 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    let litlengthHeaderSize = FSE_readNCount(
+    let litlengthHeaderSize = match FSE_readNCount(
         &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    );
-    if ERR_isError(litlengthHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(litlengthHeaderSize) => litlengthHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if litlengthLog > 9 {
         return Error::dictionary_corrupted.to_error_code();
     }

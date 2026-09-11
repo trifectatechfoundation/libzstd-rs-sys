@@ -209,18 +209,13 @@ pub(crate) unsafe fn FSE_readNCount(
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: *const core::ffi::c_void,
     hbSize: size_t,
-) -> size_t {
-    let ret = FSE_readNCount_slice(
+) -> Result<size_t, Error> {
+    FSE_readNCount_slice(
         normalizedCounter,
         maxSVPtr,
         tableLogPtr,
         core::slice::from_raw_parts(headerBuffer.cast(), hbSize),
-    );
-
-    match ret {
-        Ok(v) => v,
-        Err(e) => e.to_error_code(),
-    }
+    )
 }
 
 pub(crate) fn FSE_readNCount_slice(
