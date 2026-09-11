@@ -7019,10 +7019,6 @@ pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: core::ffi::c_int = 128 * (1 << 1
 pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: core::ffi::c_ulonglong = 6;
 
 /// Assumption: either @dict OR @cdict (or none) is non-NULL, never both.
-///
-/// # Returns
-///
-/// 0, or an error code.
 unsafe fn ZSTD_compressBegin_internal(
     cctx: *mut ZSTD_CCtx,
     dict: *const core::ffi::c_void,
@@ -7033,7 +7029,7 @@ unsafe fn ZSTD_compressBegin_internal(
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     let dictContentSize = if !cdict.is_null() {
         (*cdict).dictContentSize
     } else {
@@ -7051,22 +7047,17 @@ unsafe fn ZSTD_compressBegin_internal(
             || (*cdict).compressionLevel == 0)
         && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceLoad
     {
-        return match ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff) {
-            Ok(()) => 0,
-            Err(err) => err.to_error_code(),
-        };
+        return ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff);
     }
 
-    if let Err(err) = ZSTD_resetCCtx_internal(
+    ZSTD_resetCCtx_internal(
         cctx,
         params,
         pledgedSrcSize,
         dictContentSize,
         ZSTDcrp_makeClean,
         zbuff,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     let dictID = if !cdict.is_null() {
         ZSTD_compress_insertDictionary(
@@ -7081,7 +7072,7 @@ unsafe fn ZSTD_compressBegin_internal(
             dtlm,
             TableFillPurpose::ForCCtx,
             (*cctx).tmpWorkspace,
-        )
+        )?
     } else {
         ZSTD_compress_insertDictionary(
             (*cctx).blockState.prevCBlock,
@@ -7095,16 +7086,12 @@ unsafe fn ZSTD_compressBegin_internal(
             dtlm,
             TableFillPurpose::ForCCtx,
             (*cctx).tmpWorkspace,
-        )
-    };
-    let dictID = match dictID {
-        Ok(dictID) => dictID,
-        Err(err) => return err.to_error_code(),
+        )?
     };
     (*cctx).dictID = dictID as u32;
     (*cctx).dictContentSize = dictContentSize;
 
-    0
+    Ok(())
 }
 
 pub unsafe fn ZSTD_compressBegin_advanced_internal(
@@ -7123,7 +7110,7 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
         return err_code;
     }
 
-    ZSTD_compressBegin_internal(
+    match ZSTD_compressBegin_internal(
         cctx,
         dict,
         dictSize,
@@ -7133,7 +7120,10 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
         params,
         pledgedSrcSize,
         BufferedPolicy::NotBuffered,
-    )
+    ) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 /// # Returns
@@ -7185,7 +7175,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         },
     );
 
-    ZSTD_compressBegin_internal(
+    match ZSTD_compressBegin_internal(
         cctx,
         dict,
         dictSize,
@@ -7195,7 +7185,10 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         &cctxParams,
         ZSTD_CONTENTSIZE_UNKNOWN,
         BufferedPolicy::NotBuffered,
-    )
+    ) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingDict))]
@@ -7374,7 +7367,7 @@ pub unsafe fn ZSTD_compress_advanced_internal(
     dictSize: size_t,
     params: &ZSTD_CCtx_params,
 ) -> size_t {
-    let err_code = ZSTD_compressBegin_internal(
+    if let Err(err) = ZSTD_compressBegin_internal(
         cctx,
         dict,
         dictSize,
@@ -7384,9 +7377,8 @@ pub unsafe fn ZSTD_compress_advanced_internal(
         params,
         srcSize as u64,
         BufferedPolicy::NotBuffered,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
@@ -7961,7 +7953,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         cctxParams.cParams.windowLog = cctxParams.cParams.windowLog.max(limitedSrcLog);
     }
 
-    ZSTD_compressBegin_internal(
+    match ZSTD_compressBegin_internal(
         cctx,
         core::ptr::null(),
         0,
@@ -7971,7 +7963,10 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         &cctxParams,
         pledgedSrcSize,
         BufferedPolicy::NotBuffered,
-    )
+    ) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 /// This function is DEPRECATED.
@@ -8814,7 +8809,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         (*cctx).appliedParams = params;
     } else {
         let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1);
-        let err_code_1 = ZSTD_compressBegin_internal(
+        if let Err(err) = ZSTD_compressBegin_internal(
             cctx,
             prefixDict.dict,
             prefixDict.dictSize,
@@ -8824,9 +8819,8 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             &params,
             pledgedSrcSize,
             BufferedPolicy::Buffered,
-        );
-        if ERR_isError(err_code_1) {
-            return err_code_1;
+        ) {
+            return err.to_error_code();
         }
 
         (*cctx).inToCompress = 0;
