@@ -374,8 +374,8 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                     // advance to next positions
                     ip0 = ip1;
                     ip1 = ip2;
-                    ip2 = ip0.add(step);
-                    ip3 = ip1.add(step);
+                    ip2 = ip0.wrapping_add(step);
+                    ip3 = ip1.wrapping_add(step);
 
                     // calculate step
                     if ip2 >= nextStep {

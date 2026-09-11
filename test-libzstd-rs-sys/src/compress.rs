@@ -140,6 +140,75 @@ mod compress2_strats {
     }
 }
 
+mod target_cblock_size {
+    use crate::assert_eq_rs_c;
+    use std::ffi::c_void;
+
+    #[cfg(miri)]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-tiny.dat");
+    #[cfg(not(miri))]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-small.dat");
+
+    const INCOMPRESSIBLE_INPUT: &[u8] = include_bytes!("../test-data/random-input.dat");
+
+    macro_rules! compress_target {
+        ($strategy:expr, $target_size:expr, $input:expr) => {{
+            let cctx = ZSTD_createCCtx();
+            assert!(!cctx.is_null());
+
+            let err = ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_strategy, $strategy);
+            assert_eq!(ZSTD_isError(err), 0);
+
+            // set targetCBlockSize to use ZSTD_compressSuperBlock
+            let err = ZSTD_CCtx_setParameter(
+                cctx,
+                ZSTD_cParameter::ZSTD_c_targetCBlockSize,
+                $target_size,
+            );
+            assert_eq!(ZSTD_isError(err), 0);
+
+            let bound = ZSTD_compressBound($input.len());
+            let mut dst = vec![0u8; bound];
+
+            let written = ZSTD_compress2(
+                cctx,
+                dst.as_mut_ptr() as *mut c_void,
+                dst.len(),
+                $input.as_ptr() as *const c_void,
+                $input.len(),
+            );
+            assert_eq!(ZSTD_isError(written), 0);
+            dst.truncate(written);
+
+            ZSTD_freeCCtx(cctx);
+
+            dst
+        }};
+    }
+
+    #[cfg(not(miri))]
+    const STRATEGIES: [i32; 4] = [1, 3, 6, 9];
+    #[cfg(miri)]
+    const STRATEGIES: [i32; 1] = [1];
+
+    #[test]
+    fn compressible_input() {
+        for strategy in STRATEGIES {
+            // test both ZSTD_TARGETCBLOCKSIZE_MIN and ZSTD_TARGETCBLOCKSIZE_MAX
+            for target_size in [1340, 131072] {
+                assert_eq_rs_c!({ compress_target!(strategy, target_size, INPUT) });
+            }
+        }
+    }
+
+    #[test]
+    fn incompressible_input() {
+        for strategy in STRATEGIES {
+            assert_eq_rs_c!({ compress_target!(strategy, 1340, INCOMPRESSIBLE_INPUT) });
+        }
+    }
+}
+
 #[test]
 #[cfg_attr(miri, ignore = "slow")]
 fn test_compress_stream_2() {
