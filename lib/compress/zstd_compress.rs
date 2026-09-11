@@ -3982,7 +3982,8 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         entropyWorkspace,
         entropyWkspSize,
-    );
+    )
+    .expect("can't fail");
     nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.litlength_repeatMode,
@@ -4032,7 +4033,8 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         entropyWorkspace,
         entropyWkspSize,
-    );
+    )
+    .expect("can't fail");
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
     let defaultPolicy = if max_0 <= DefaultMaxOff {
         DefaultPolicy::Allowed
@@ -4088,7 +4090,8 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         entropyWorkspace,
         entropyWkspSize,
-    );
+    )
+    .expect("can't fail");
     nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.matchlength_repeatMode,
@@ -5028,18 +5031,17 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // Scan input and build symbol stats
-    let largest = HIST_count_wksp(
+    let largest = match HIST_count_wksp(
         countWksp,
         &mut maxSymbolValue,
         src as *const u8 as *const core::ffi::c_void,
         srcSize,
         workspace,
         wkspSize,
-    );
-    let err_code = largest;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(largest) => largest,
+        Err(err) => return err.to_error_code(),
+    };
     if largest == srcSize {
         // only one literal symbol
         hufMetadata.hType = SymbolEncodingType::Rle;
@@ -5270,17 +5272,18 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     } else if hufMetadata.hType == SymbolEncodingType::Compressed
         || hufMetadata.hType == SymbolEncodingType::Repeat
     {
-        let largest = HIST_count_wksp(
+        if HIST_count_wksp(
             countWksp,
             &mut maxSymbolValue,
             literals as *const core::ffi::c_void,
             litSize,
             workspace,
             wkspSize,
-        );
-        if ERR_isError(largest) {
+        )
+        .is_err()
+        {
             return litSize;
-        }
+        };
         let mut cLitSizeEstimate =
             HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
         if writeEntropy {
@@ -5324,7 +5327,8 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         nbSeq,
         workspace,
         wkspSize,
-    );
+    )
+    .expect("can't fail");
     if type_0 == SymbolEncodingType::Basic {
         /* We selected this encoding type, so it must be valid. */
         assert!(max <= defaultMax);
