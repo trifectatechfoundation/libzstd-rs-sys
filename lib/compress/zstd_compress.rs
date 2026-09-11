@@ -73,7 +73,7 @@ pub struct ZSTD_fseCTablesMetadata_t {
     pub llType: SymbolEncodingType,
     pub ofType: SymbolEncodingType,
     pub mlType: SymbolEncodingType,
-    pub fseTablesBuffer: [u8; 133],
+    pub fseTablesBuffer: [u8; ZSTD_MAX_FSE_HEADERS_SIZE],
     pub fseTablesSize: size_t,
     pub lastCountSize: size_t,
 }
@@ -518,8 +518,8 @@ use crate::lib::common::zstd_internal::{
     LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
     MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH,
-    ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM, ZSTD_REP_NUM,
-    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_FSE_HEADERS_SIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
