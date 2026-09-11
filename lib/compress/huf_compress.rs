@@ -902,7 +902,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     mut maxNbBits: u32,
     workSpace: *mut c_void,
     mut wkspSize: size_t,
-) -> size_t {
+) -> Result<core::ffi::c_uint, Error> {
     let wksp_tables = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<u32>())
         as *mut HUF_buildCTable_wksp_tables;
     let huffNodeTbl = &mut (*wksp_tables).huffNodeTbl;
@@ -914,7 +914,7 @@ pub unsafe fn HUF_buildCTable_wksp(
 
     /* safety checks */
     if wkspSize < size_of::<HUF_buildCTable_wksp_tables>() {
-        return Error::workSpace_tooSmall.to_error_code();
+        return Err(Error::workSpace_tooSmall);
     }
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
@@ -943,7 +943,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     /* determine and enforce maxTableLog */
     maxNbBits = HUF_setMaxHeight(&mut huffNodeTbl[1..], nonNullRank as u32, maxNbBits);
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
-        return Error::GENERIC.to_error_code(); /* check fit into table */
+        return Err(Error::GENERIC); /* check fit into table */
     }
     HUF_buildCTableFromTree(
         CTable,
@@ -952,7 +952,7 @@ pub unsafe fn HUF_buildCTable_wksp(
         maxSymbolValue,
         maxNbBits,
     );
-    maxNbBits as size_t
+    Ok(maxNbBits)
 }
 
 pub unsafe fn HUF_estimateCompressedSize(
@@ -1626,16 +1626,15 @@ pub unsafe fn HUF_optimalTableLog(
     /* Search until size increases */
     optLogGuess = minTableLog;
     while optLogGuess <= maxTableLog {
-        let maxBits = HUF_buildCTable_wksp(
+        if let Ok(maxBits) = HUF_buildCTable_wksp(
             table,
             count,
             maxSymbolValue,
             optLogGuess,
             workSpace,
             wkspSize,
-        );
-        if !ERR_isError(maxBits) {
-            if maxBits < optLogGuess as size_t && optLogGuess > minTableLog {
+        ) {
+            if maxBits < optLogGuess && optLogGuess > minTableLog {
                 break;
             }
             hSize = HUF_writeCTable_wksp(
@@ -1643,7 +1642,7 @@ pub unsafe fn HUF_optimalTableLog(
                 dstSize,
                 table,
                 maxSymbolValue,
-                maxBits as u32,
+                maxBits,
                 workSpace,
                 wkspSize,
             );
@@ -1838,18 +1837,17 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         ((*table).count).as_mut_ptr(),
         flags,
     );
-    let maxBits = HUF_buildCTable_wksp(
+    let maxBits = match HUF_buildCTable_wksp(
         &mut (*table).CTable,
         ((*table).count).as_mut_ptr(),
         maxSymbolValue,
         huffLog,
         &mut (*table).wksps.buildCTable_wksp as *mut HUF_buildCTable_wksp_tables as *mut c_void,
         size_of::<HUF_buildCTable_wksp_tables>(),
-    );
-    let _var_err__ = maxBits;
-    if ERR_isError(_var_err__) {
-        return _var_err__;
-    }
+    ) {
+        Ok(maxBits) => maxBits,
+        Err(err) => return err.to_error_code(),
+    };
     huffLog = maxBits as u32;
 
     /* Write table description header */
