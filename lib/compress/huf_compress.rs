@@ -316,17 +316,17 @@ pub unsafe fn HUF_readCTable(
     let mut nbSymbols = 0;
 
     /* get symbol weights */
-    let readSize = HUF_readStats(
+    let readSize = match HUF_readStats(
         &mut huffWeight,
         (255 + 1) as size_t,
         &mut rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,
-    );
-    if ERR_isError(readSize) {
-        return readSize;
-    }
+    ) {
+        Ok(readSize) => readSize,
+        Err(err) => return err.to_error_code(),
+    };
     *hasZeroWeights = (rankVal[0] > 0) as c_int as c_uint;
 
     /* check result */
