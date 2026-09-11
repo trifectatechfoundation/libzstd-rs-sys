@@ -234,7 +234,7 @@ pub(crate) fn HUF_readStats(
     nbSymbolsPtr: &mut u32,
     tableLogPtr: &mut u32,
     src: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     // We can remove this at some point, it's just a check that the constants are correct.
     const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
 
@@ -471,10 +471,10 @@ pub(crate) fn HUF_readStats_wksp(
     src: &[u8],
     workspace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let use_bmi2 = flags & HUF_flags_bmi2 as core::ffi::c_int != 0;
 
-    let ret = HUF_readStats_body(
+    HUF_readStats_body(
         huffWeight,
         hwSize,
         rankStats,
@@ -483,12 +483,7 @@ pub(crate) fn HUF_readStats_wksp(
         src,
         workspace,
         use_bmi2,
-    );
-
-    match ret {
-        Ok(v) => v,
-        Err(e) => e.to_error_code(),
-    }
+    )
 }
 
 #[cfg(test)]

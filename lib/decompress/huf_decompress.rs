@@ -344,7 +344,7 @@ pub fn HUF_readDTableX1_wksp(
 
     let wksp = workSpace.as_x1_mut();
 
-    iSize = HUF_readStats_wksp(
+    iSize = match HUF_readStats_wksp(
         &mut wksp.huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankVal,
@@ -353,10 +353,10 @@ pub fn HUF_readDTableX1_wksp(
         src,
         &mut wksp.statsWksp,
         flags,
-    );
-    if ERR_isError(iSize) {
-        return iSize;
-    }
+    ) {
+        Ok(iSize) => iSize,
+        Err(err) => return err.to_error_code(),
+    };
 
     let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
@@ -1055,7 +1055,7 @@ pub fn HUF_readDTableX2_wksp(
         return Error::tableLog_tooLarge.to_error_code();
     }
 
-    iSize = HUF_readStats_wksp(
+    iSize = match HUF_readStats_wksp(
         &mut wksp.weightList,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankStats,
@@ -1064,10 +1064,10 @@ pub fn HUF_readDTableX2_wksp(
         src,
         &mut wksp.calleeWksp,
         flags,
-    );
-    if ERR_isError(iSize) {
-        return iSize;
-    }
+    ) {
+        Ok(iSize) => iSize,
+        Err(err) => return err.to_error_code(),
+    };
     if tableLog > maxTableLog {
         return Error::tableLog_tooLarge.to_error_code();
     }
