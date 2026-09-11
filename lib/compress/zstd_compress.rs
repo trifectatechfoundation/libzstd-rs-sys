@@ -73,7 +73,7 @@ pub struct ZSTD_fseCTablesMetadata_t {
     pub llType: SymbolEncodingType,
     pub ofType: SymbolEncodingType,
     pub mlType: SymbolEncodingType,
-    pub fseTablesBuffer: [u8; 133],
+    pub fseTablesBuffer: [u8; ZSTD_MAX_FSE_HEADERS_SIZE],
     pub fseTablesSize: size_t,
     pub lastCountSize: size_t,
 }
@@ -407,29 +407,7 @@ pub struct BlockSummary {
     pub litSize: size_t,
 }
 
-pub const ZSTD_c_rsyncable: core::ffi::c_int = 500;
-pub const ZSTD_c_format: core::ffi::c_int = 10;
-pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = 1000;
-pub const ZSTD_c_forceAttachDict: core::ffi::c_int = 1001;
-pub const ZSTD_c_literalCompressionMode: core::ffi::c_int = 1002;
-pub const ZSTD_c_srcSizeHint: core::ffi::c_int = 1004;
-pub const ZSTD_c_enableDedicatedDictSearch: core::ffi::c_int = 1005;
-pub const ZSTD_c_stableInBuffer: core::ffi::c_int = 1006;
-pub const ZSTD_c_stableOutBuffer: core::ffi::c_int = 1007;
-pub const ZSTD_c_blockDelimiters: core::ffi::c_int = 1008;
-pub const ZSTD_c_validateSequences: core::ffi::c_int = 1009;
 pub const ZSTD_BLOCKSPLITTER_LEVEL_MAX: core::ffi::c_int = 6;
-pub const ZSTD_c_blockSplitterLevel: core::ffi::c_int = 1017;
-pub const ZSTD_c_splitAfterSequences: core::ffi::c_int = 1010;
-pub const ZSTD_c_useRowMatchFinder: core::ffi::c_int = 1011;
-pub const ZSTD_c_deterministicRefPrefix: core::ffi::c_int = 1012;
-pub const ZSTD_c_prefetchCDictTables: core::ffi::c_int = 1013;
-pub const ZSTD_c_enableSeqProducerFallback: core::ffi::c_int = 1014;
-pub const ZSTD_c_maxBlockSize: core::ffi::c_int = 1015;
-pub const ZSTD_c_repcodeResolution: core::ffi::c_int = 1016;
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
-pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
-
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
@@ -482,9 +460,6 @@ fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
     }
 }
 
-pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
-pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
-
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
 /// progresses beyond window size.
 /// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
@@ -531,8 +506,8 @@ use crate::lib::common::huf::{
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
-    MEM_writeLE32, MEM_writeLE64,
+    MEM_32bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
+    MEM_writeLE64,
 };
 use crate::lib::common::pool::ZSTD_threadPool;
 use crate::lib::common::xxhash::{
@@ -543,8 +518,8 @@ use crate::lib::common::zstd_internal::{
     LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
     MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH,
-    ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM, ZSTD_REP_NUM,
-    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_FSE_HEADERS_SIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -563,8 +538,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
     ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, ZSTD_SHORT_CACHE_TAG_BITS,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
+    REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
+    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -595,7 +571,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_compressBlock_lazy_dictMatchState, ZSTD_compressBlock_lazy_dictMatchState_row,
     ZSTD_compressBlock_lazy_extDict, ZSTD_compressBlock_lazy_extDict_row,
     ZSTD_compressBlock_lazy_row, ZSTD_dedicatedDictSearch_lazy_loadDictionary,
-    ZSTD_insertAndFindFirstIndex, ZSTD_row_update,
+    ZSTD_insertAndFindFirstIndex, ZSTD_row_update, ZSTD_LAZY_DDSS_BUCKET_LOG,
+    ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_blockCompress,
@@ -630,11 +607,12 @@ use crate::lib::zstd::{
     ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_HASHLOG_MAX, ZSTD_LDM_HASHLOG_MIN,
     ZSTD_LDM_HASHRATELOG_MAX, ZSTD_LDM_HASHRATELOG_MIN, ZSTD_LDM_MINMATCH_MAX,
     ZSTD_LDM_MINMATCH_MIN, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_START,
-    ZSTD_MINMATCH_MAX, ZSTD_MINMATCH_MIN, ZSTD_OVERLAPLOG_MAX, ZSTD_OVERLAPLOG_MIN,
-    ZSTD_SEARCHLOG_MAX, ZSTD_SEARCHLOG_MIN, ZSTD_SKIPPABLEHEADERSIZE, ZSTD_SRCSIZEHINT_MAX,
-    ZSTD_SRCSIZEHINT_MIN, ZSTD_STRATEGY_MAX, ZSTD_STRATEGY_MIN, ZSTD_TARGETCBLOCKSIZE_MAX,
-    ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETLENGTH_MAX, ZSTD_TARGETLENGTH_MIN, ZSTD_VERSION_NUMBER,
-    ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MIN,
+    ZSTD_MAX_INPUT_SIZE, ZSTD_MINMATCH_MAX, ZSTD_MINMATCH_MIN, ZSTD_OVERLAPLOG_MAX,
+    ZSTD_OVERLAPLOG_MIN, ZSTD_SEARCHLOG_MAX, ZSTD_SEARCHLOG_MIN, ZSTD_SKIPPABLEHEADERSIZE,
+    ZSTD_SRCSIZEHINT_MAX, ZSTD_SRCSIZEHINT_MIN, ZSTD_STRATEGY_MAX, ZSTD_STRATEGY_MIN,
+    ZSTD_TARGETCBLOCKSIZE_MAX, ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETLENGTH_MAX,
+    ZSTD_TARGETLENGTH_MIN, ZSTD_VERSION_NUMBER, ZSTD_WINDOWLOG_ABSOLUTEMIN, ZSTD_WINDOWLOG_MAX,
+    ZSTD_WINDOWLOG_MIN,
 };
 
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
@@ -1023,8 +1001,6 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
     }
 }
 
-pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
-pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 
 /// Maximum size of the hash table dedicated to find 3-bytes matches,
@@ -1047,12 +1023,7 @@ pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
 /// than the return value of ZSTD_compressBound().
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBound))]
 pub extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
-    let r = if srcSize as core::ffi::c_ulonglong
-        >= (if size_of::<size_t>() == 8 {
-            0xff00ff00ff00ff00 as core::ffi::c_ulonglong
-        } else {
-            0xff00ff00 as core::ffi::c_uint as core::ffi::c_ulonglong
-        }) {
+    let r = if srcSize >= ZSTD_MAX_INPUT_SIZE {
         0
     } else {
         srcSize
@@ -2654,7 +2625,7 @@ fn ZSTD_adjustCParams_internal(
     if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) {
         // Switch to 32-entry rows if searchLog is 5 (or more)
         let rowLog = cPar.searchLog.clamp(4, 6);
-        let maxRowHashLog = (32 - ZSTD_ROW_HASH_TAG_BITS) as u32;
+        let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
         let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
         if cPar.hashLog > maxHashLog {
             cPar.hashLog = maxHashLog;
@@ -3268,7 +3239,7 @@ unsafe fn ZSTD_reset_matchState(
     0
 }
 
-pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * (1 << 20);
+pub const ZSTD_INDEXOVERFLOW_MARGIN: usize = 16 * (1 << 20);
 
 /// Minor optimization: prefer memset() rather than reduceIndex() which is measurably slow in some
 /// circumstances (reported for Visual Studio). Works when re-using a context for a lot of smallish
@@ -3276,28 +3247,14 @@ pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * (1 << 20);
 /// before reduceIndex().
 fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> bool {
     (w.nextSrc).wrapping_offset_from(w.base) as size_t
-        > (if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        })
-        .wrapping_sub(ZSTD_INDEXOVERFLOW_MARGIN as core::ffi::c_uint) as size_t
+        > ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_INDEXOVERFLOW_MARGIN)
 }
 
-/// When dictionaries are larger than ZSTD_CHUNKSIZE_MAX they can't be loaded in
+/// When dictionaries are larger than [`ZSTD_CHUNKSIZE_MAX`] they can't be loaded in
 /// one go generically. So we ensure that in that case we reset the tables to zero,
 /// so that we can load as much of the dictionary as possible.
 fn ZSTD_dictTooBig(loadedDictSize: size_t) -> bool {
-    loadedDictSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        }) as size_t
+    loadedDictSize > ZSTD_CHUNKSIZE_MAX
 }
 
 /// loadedDictSize is the size of the dictionary to be loaded
@@ -4798,7 +4755,7 @@ unsafe fn ZSTD_buildSeqStore(
 unsafe fn ZSTD_copyBlockSequences(
     seqCollector: &mut SeqCollector,
     seqStore: *const SeqStore_t,
-    prevRepcodes: &[u32; ZSTD_REP_NUM as usize],
+    prevRepcodes: &RepCodes,
 ) -> size_t {
     let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
     let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
@@ -4837,27 +4794,27 @@ unsafe fn ZSTD_copyBlockSequences(
         }
 
         // Determine the raw offset given the offBase, which may be a repcode.
-        let rawOffset =
-            if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM as u32 {
-                let repcode = (*inSeqs.add(i)).offBase;
-                (*outSeqs.add(i)).rep = repcode;
-                if (*outSeqs.add(i)).litLength != 0 {
-                    repcodes[repcode.wrapping_sub(1) as usize]
-                } else if repcode == 3 {
-                    repcodes[0].wrapping_sub(1)
-                } else {
-                    repcodes[repcode as usize]
-                }
+        let rawOffset = if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM
+        {
+            let repcode = (*inSeqs.add(i)).offBase;
+            (*outSeqs.add(i)).rep = repcode;
+            if (*outSeqs.add(i)).litLength != 0 {
+                repcodes[repcode.wrapping_sub(1) as usize]
+            } else if repcode == 3 {
+                repcodes[0].wrapping_sub(1)
             } else {
-                ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32)
-            };
+                repcodes[repcode as usize]
+            }
+        } else {
+            ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM)
+        };
         (*outSeqs.add(i)).offset = rawOffset;
 
         // Update repcode history for the sequence
         ZSTD_updateRep(
             &mut repcodes,
             (*inSeqs.add(i)).offBase,
-            ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int as u32,
+            (*inSeqs.add(i)).litLength == 0,
         );
         nbOutLiterals = nbOutLiterals.wrapping_add((*outSeqs.add(i)).litLength as size_t);
     }
@@ -5616,9 +5573,9 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 
 /// Returns the raw offset represented by the combination of offBase, ll0, and repcode history.
 /// offBase must represent a repcode in the numeric representation of ZSTD_storeSeq().
-fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: u32) -> u32 {
-    let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
-    if adjustedRepCode == ZSTD_REP_NUM as u32 {
+fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: bool) -> u32 {
+    let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0 as u32);
+    if adjustedRepCode == ZSTD_REP_NUM {
         return rep[0].wrapping_sub(1);
     }
     rep[adjustedRepCode as usize]
@@ -5646,17 +5603,16 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
     };
     for idx in 0..nbSeq {
         let seq = ((*seqStore).sequencesStart).offset(idx as isize);
-        let ll0 = ((*seq).litLength as core::ffi::c_int == 0 && idx != longLitLenIdx)
-            as core::ffi::c_int as u32;
+        let ll0 = (*seq).litLength == 0 && idx != longLitLenIdx;
         let offBase = (*seq).offBase;
-        if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
+        if (1..=ZSTD_REP_NUM).contains(&offBase) {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
             let cRawOffset = ZSTD_resolveRepcodeToRawOffset(cRepcodes, offBase, ll0);
             // Adjust simulated decompression repcode history if we come across a mismatch. Replace
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
             if dRawOffset != cRawOffset {
-                (*seq).offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM as u32);
+                (*seq).offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM);
             }
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
@@ -6721,38 +6677,23 @@ unsafe fn ZSTD_loadDictionaryContent(
     ZSTD_assertEqualCParams(params.cParams, ms.cParams);
 
     // Ensure large dictionaries can't cause index overflow
-    let mut maxDictSize = (if MEM_64bits() {
-        (3500 as core::ffi::c_uint)
-            .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-    } else {
-        (2000 as core::ffi::c_uint)
-            .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-    })
-    .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
+    let mut maxDictSize = ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
 
     let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
     if CDictTaggedIndices && tfp == TableFillPurpose::ForCDict {
-        let shortCacheMaxDictSize = ((1 as core::ffi::c_uint) << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
-            .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
+        let shortCacheMaxDictSize = (1usize << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
+            .wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
         maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
     }
 
     // If the dictionary is too large, only load the suffix of the dictionary.
-    if srcSize > maxDictSize as size_t {
-        ip = iend.sub(maxDictSize as usize);
+    if srcSize > maxDictSize {
+        ip = iend.sub(maxDictSize);
         src = ip as *const core::ffi::c_void;
-        srcSize = maxDictSize as size_t;
+        srcSize = maxDictSize;
     }
 
-    if srcSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        }) as size_t
-    {
+    if srcSize > ZSTD_CHUNKSIZE_MAX {
         // We must have cleared our windows when our source is this large.
         assert!(loadLdmDict.is_some());
     }
@@ -9191,20 +9132,18 @@ fn ZSTD_validateSequence(
 
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
 /// litLength == 0
-fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: u32) -> u32 {
-    let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
-
-    if ll0 == 0 && rawOffset == rep[0] {
-        offBase = REPCODE1_TO_OFFBASE as u32;
+fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: bool) -> u32 {
+    if !ll0 && rawOffset == rep[0] {
+        REPCODE1_TO_OFFBASE
     } else if rawOffset == rep[1] {
-        offBase = 2u32.wrapping_sub(ll0);
+        2u32.wrapping_sub(ll0 as u32)
     } else if rawOffset == rep[2] {
-        offBase = 3u32.wrapping_sub(ll0);
-    } else if ll0 != 0 && rawOffset == rep[0].wrapping_sub(1) {
-        offBase = REPCODE3_TO_OFFBASE as u32;
+        3u32.wrapping_sub(ll0 as u32)
+    } else if ll0 && rawOffset == rep[0].wrapping_sub(1) {
+        REPCODE3_TO_OFFBASE
+    } else {
+        rawOffset.wrapping_add(ZSTD_REP_NUM)
     }
-
-    offBase
 }
 
 /// This function scans through an array of ZSTD_Sequence,
@@ -9247,10 +9186,9 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 
         let offBase: u32;
         if externalRepSearch == ParamSwitch::Disable {
-            offBase = ((*inSeqs.offset(idx as isize)).offset)
-                .wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
+            offBase = ((*inSeqs.offset(idx as isize)).offset).wrapping_add(ZSTD_REP_NUM);
         } else {
-            let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+            let ll0 = litLength == 0;
             offBase =
                 ZSTD_finalizeOffBase((*inSeqs.offset(idx as isize)).offset, &updatedRepcodes, ll0);
             ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
@@ -9441,7 +9379,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
         }
 
         // Check if this offset can be represented with a repcode
-        let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+        let ll0 = litLength == 0;
         let offBase = ZSTD_finalizeOffBase(rawOffset, &updatedRepcodes, ll0);
         ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
 
@@ -9852,8 +9790,7 @@ pub unsafe fn convertSequences_noRepcodes(
     let mut longLen = 0;
 
     for n in 0..nbSequences {
-        (*dstSeqs.add(n)).offBase =
-            ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
+        (*dstSeqs.add(n)).offBase = ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM);
         (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
         (*dstSeqs.add(n)).mlBase =
             ((*inSeqs.add(n)).matchLength).wrapping_sub(MINMATCH as core::ffi::c_uint) as u16;
@@ -9913,7 +9850,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         for seqNb in 0..nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.add(seqNb)).litLength;
             let matchLength = (*inSeqs.add(seqNb)).matchLength;
-            let ll0 = (litLength == 0) as core::ffi::c_int as u32;
+            let ll0 = litLength == 0;
             let offBase = ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes, ll0);
             ZSTD_storeSeqOnly(
                 &mut (*cctx).seqStore,
@@ -10370,8 +10307,7 @@ fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) ->
 /// context. (Otherwise, those tables would also grow.)
 fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParameters) {
     if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog =
-            (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        cParams.hashLog = (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
         if cParams.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
             cParams.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
         }
@@ -11467,8 +11403,7 @@ fn ZSTD_dedicatedDictSearch_getCParams(
     let mut cParams =
         ZSTD_getCParams_internal(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
     if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog =
-            (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
     }
     cParams
 }

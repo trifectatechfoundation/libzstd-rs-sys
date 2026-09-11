@@ -23,8 +23,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    CParamMode, DictTableLoadMethod, ZSTD_window_clear, ZSTD_window_hasExtDict, ZSTD_window_init,
-    ZSTD_window_update,
+    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_clear, ZSTD_window_hasExtDict,
+    ZSTD_window_init, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -201,11 +201,6 @@ struct SyncPoint {
     toLoad: size_t,
     flush: core::ffi::c_int,
 }
-
-const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
-const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
-
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 
 /// Return base^exponent
 fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
@@ -880,7 +875,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                         };
                         let forceWindowError = ZSTD_CCtxParams_setParameter(
                             &mut jobParams,
-                            ZSTD_c_forceMaxWindow as ZSTD_cParameter,
+                            ZSTD_cParameter::ZSTD_c_forceMaxWindow,
                             ((*job).firstJob == 0) as core::ffi::c_int,
                         );
                         if ERR_isError(forceWindowError) {
@@ -892,7 +887,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                             if (*job).firstJob == 0 {
                                 let err = ZSTD_CCtxParams_setParameter(
                                     &mut jobParams,
-                                    ZSTD_c_deterministicRefPrefix as ZSTD_cParameter,
+                                    ZSTD_cParameter::ZSTD_c_deterministicRefPrefix,
                                     0,
                                 );
                                 if ERR_isError(err) {

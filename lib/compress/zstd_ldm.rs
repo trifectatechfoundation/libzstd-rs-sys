@@ -61,7 +61,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::xxhash::ZSTD_XXH64;
-use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
+use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
     ZSTD_selectBlockCompressor, ZSTD_window_t,
@@ -70,6 +70,7 @@ use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
     ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_correctOverflow,
     ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -78,7 +79,6 @@ use crate::lib::zstd::{
     ZSTD_HASHLOG_MIN,
 };
 
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const LDM_BATCH_SIZE: usize = 64;
 
 static ZSTD_ldm_gearTab: [u64; 256] = [
@@ -1106,7 +1106,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: &mut RawSeqStore_t,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
-    rep: &mut [u32; ZSTD_REP_NUM as usize],
+    rep: &mut RepCodes,
     useRowMatchFinder: ParamSwitch,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1173,7 +1173,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             newLitLength,
             ip.sub(newLitLength),
             iend,
-            (sequence.offset).wrapping_add(ZSTD_REP_NUM as u32),
+            (sequence.offset).wrapping_add(ZSTD_REP_NUM),
             sequence.matchLength as size_t,
         );
         ip = ip.offset(sequence.matchLength as isize);

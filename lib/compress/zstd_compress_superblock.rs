@@ -939,8 +939,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 ZSTD_updateRep(
                     &mut rep,
                     (*seq).offBase,
-                    ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0) as core::ffi::c_int
-                        as u32,
+                    (ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0,
                 );
                 seq = seq.add(1);
             }

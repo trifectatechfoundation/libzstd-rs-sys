@@ -12,14 +12,11 @@ const fn const_max(a: usize, b: usize) -> usize {
 
 pub(crate) const ZSTD_OPT_NUM: core::ffi::c_int = 1 << 12;
 
-pub(crate) const ZSTD_REP_NUM: core::ffi::c_int = 3;
+pub(crate) const ZSTD_REP_NUM: u32 = 3;
 pub(crate) type RepCodes = [u32; ZSTD_REP_NUM as usize];
 pub(crate) static repStartValue: RepCodes = [1, 4, 8];
 
 pub(crate) const ZSTD_FRAMEIDSIZE: usize = 4;
-
-/// header + <= 127 byte tree description
-pub(crate) const ZSTD_MAX_HUF_HEADER_SIZE: usize = 128;
 
 pub(crate) const ZSTD_BLOCKHEADERSIZE: usize = 3;
 
@@ -90,6 +87,14 @@ pub(crate) const MaxFSELog: usize = const_max(
 );
 pub(crate) const MaxMLBits: u8 = 16;
 pub(crate) const MaxLLBits: u8 = 16;
+
+/// header + <= 127 byte tree description
+pub(crate) const ZSTD_MAX_HUF_HEADER_SIZE: usize = 128;
+/// Each table cannot take more than #symbols * FSELog bits
+pub(crate) const ZSTD_MAX_FSE_HEADERS_SIZE: usize = ((MaxML as u32 + 1) * MLFSELog
+    + (MaxLL as u32 + 1) * LLFSELog
+    + (MaxOff as u32 + 1) * OffFSELog)
+    .div_ceil(8) as usize;
 
 pub(crate) static LL_bits: [u8; MaxLL as usize + 1] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,

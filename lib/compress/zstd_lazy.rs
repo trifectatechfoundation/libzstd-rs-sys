@@ -37,24 +37,29 @@ use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
-    DedicatedDictSearch, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, ZSTD_count,
-    ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
-    ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    kSearchStrength, DedicatedDictSearch, DictMatchState, DictMode, DictModeMarker, ExtDict,
+    NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex,
+    ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE,
+    ZSTD_DUBT_UNSORTED_MARK,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality, PointerExt};
 use crate::lib::zstd::ZSTD_compressionParameters;
 
-pub const kSearchStrength: core::ffi::c_int = 8;
-pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
 
 /// absolute maximum number of entries per row, for all configurations
 const ZSTD_ROW_HASH_MAX_ENTRIES: usize = 64;
 
-pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
+/// Dedicated Dictionary Search Structure bucket log
+///
+/// In the `ZSTD_dedicatedDictSearch` mode, the hashTable
+/// `2 ** ZSTD_LAZY_DDSS_BUCKET_LOG` entries in each bucket,
+/// rather than just one.
+pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_uint = 2;
 
-pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
-pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
+/// number of bits to use for the tag
+pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_uint = 8;
+
 pub const kLazySkippingStep: core::ffi::c_int = 8;
 
 unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
@@ -284,9 +289,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
                     as core::ffi::c_int
             {
                 bestLength = matchLength;
-                *offsetPtr = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                *offsetPtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             }
             if ip.add(matchLength) == iend {
                 // reached end of input: ip[matchLength] is not valid, no way to know if it's larger or smaller than match
@@ -435,9 +438,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
                     as core::ffi::c_int
             {
                 bestLength = matchLength;
-                *offBasePtr = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                *offBasePtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             }
             if ip.add(matchLength) == iend {
                 // equal: no way to know if inf or sup
@@ -524,7 +525,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     } else {
         idx
     };
-    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let cacheSize = bucketSize.wrapping_sub(1);
     let chainAttempts = ((1 << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
     let chainLimit = chainAttempts.min(255);
@@ -533,10 +534,10 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // We are going to temporarily pretend `bucketSize == 1`, keeping only a
     // single entry. We will use the rest of the space to construct a temporary
     // chaintable.
-    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
     let tmpHashTable = hashTable;
     let tmpChainTable = hashTable.offset((1 << hashLog) as isize);
-    let tmpChainSize = (((1 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) as u32) << hashLog;
+    let tmpChainSize = ((1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) << hashLog;
     let tmpMinChain = if tmpChainSize < target {
         target.wrapping_sub(tmpChainSize)
     } else {
@@ -669,7 +670,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsEnd = (*dms).window.nextSrc;
     let ddsSize = ddsEnd.offset_from(ddsBase) as core::ffi::c_long as u32;
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
-    let bucketSize = (1 << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
+    let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
     let mut ddsAttempt: u32 = 0;
     let mut matchIndex: u32 = 0;
@@ -723,7 +724,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
             ml = currentMl;
             *offsetPtr = curr
                 .wrapping_sub(matchIndex.wrapping_add(ddsIndexDelta))
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                .wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 // best possible, avoids read overflow on next attempt
                 return ml;
@@ -767,7 +768,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
             ml = currentMl_0;
             *offsetPtr = curr
                 .wrapping_sub(matchIndex.wrapping_add(ddsIndexDelta))
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                .wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl_0) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -858,7 +859,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
 
     let dms = ms.dictMatchState;
     let ddsHashLog = if dictMode == DictMode::DedicatedDictSearch {
-        ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint)
+        ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG)
     } else {
         0
     };
@@ -903,9 +904,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         // save best solution
         if currentMl > ml {
             ml = currentMl;
-            *offsetPtr = curr
-                .wrapping_sub(matchIndex)
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+            *offsetPtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -971,7 +970,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
                 ml = currentMl_0;
                 *offsetPtr = curr
                     .wrapping_sub(matchIndex.wrapping_add(dmsIndexDelta))
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                    .wrapping_add(ZSTD_REP_NUM) as size_t;
                 if ip.add(currentMl_0) == iLimit {
                     break;
                 }
@@ -1060,7 +1059,7 @@ unsafe fn ZSTD_row_fillHashCache(
     for idx in idx..lim {
         let hash = ZSTD_hashPtrSalted(
             base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
-            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             mls,
             ms.hashSalt,
         ) as u32;
@@ -1087,7 +1086,7 @@ unsafe fn ZSTD_row_nextCachedHash(
     let newHash = ZSTD_hashPtrSalted(
         base.wrapping_offset(idx as isize)
             .offset(ZSTD_ROW_HASH_CACHE_SIZE as isize) as *const core::ffi::c_void,
-        hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+        hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
         mls,
         hashSalt,
     ) as u32;
@@ -1132,7 +1131,7 @@ unsafe fn ZSTD_row_update_internalImpl(
         } else {
             ZSTD_hashPtrSalted(
                 base.wrapping_offset(updateStartIdx as isize) as *const core::ffi::c_void,
-                hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+                hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
                 mls,
                 ms.hashSalt,
             ) as u32
@@ -1383,8 +1382,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let mut dmsTagRow = core::ptr::null_mut();
 
     if dictMode == DictMode::DedicatedDictSearch {
-        let ddsHashLog =
-            ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        let ddsHashLog = ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
         {
             /* Prefetch DDS hashtable entry */
             ddsIdx = ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, MLS)
@@ -1404,7 +1402,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let dmsTagTable = (*dms).tagTable;
         let dmsHash = ZSTD_hashPtr(
             ip as *const core::ffi::c_void,
-            ((*dms).rowHashLog).wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            ((*dms).rowHashLog).wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
         ) as u32;
         let dmsRelRow = dmsHash >> ZSTD_ROW_HASH_TAG_BITS << ROW_LOG;
@@ -1433,7 +1431,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // The hash cache is also not kept up to date in this mode.
         hash = ZSTD_hashPtrSalted(
             ip as *const core::ffi::c_void,
-            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
+            hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
             hashSalt,
         ) as u32;
@@ -1510,9 +1508,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // Save best solution
         if currentMl > ml {
             ml = currentMl;
-            *offsetPtr = curr
-                .wrapping_sub(matchIndex_0)
-                .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+            *offsetPtr = curr.wrapping_sub(matchIndex_0).wrapping_add(ZSTD_REP_NUM) as size_t;
             if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
@@ -1581,7 +1577,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 ml = currentMl_0;
                 *offsetPtr = curr
                     .wrapping_sub(matchIndex_2.wrapping_add(dmsIndexDelta))
-                    .wrapping_add(ZSTD_REP_NUM as u32) as size_t;
+                    .wrapping_add(ZSTD_REP_NUM) as size_t;
                 if ip.add(currentMl_0) == iLimit {
                     break;
                 }
@@ -1761,7 +1757,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
     // Match Loop
     while ip < ilimit {
         let mut matchLength = 0;
-        let mut offBase = REPCODE1_TO_OFFBASE as size_t;
+        let mut offBase = REPCODE1_TO_OFFBASE;
         let mut start = ip.add(1);
 
         // check repCode
@@ -1843,7 +1839,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                     if ml2 > matchLength {
                         matchLength = ml2;
                         start = ip;
-                        offBase = offbaseFound;
+                        offBase = offbaseFound as u32;
                     }
 
                     if matchLength < 4 {
@@ -1880,12 +1876,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     .wrapping_add(4);
                                     let gain2 = (mlRep * 3) as core::ffi::c_int;
                                     let gain1 = (matchLength * 3)
-                                        .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                        .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                         .wrapping_add(1)
                                         as core::ffi::c_int;
                                     if mlRep >= 4 && gain2 > gain1 {
                                         matchLength = mlRep;
-                                        offBase = REPCODE1_TO_OFFBASE as size_t;
+                                        offBase = REPCODE1_TO_OFFBASE;
                                         start = ip;
                                     }
                                 }
@@ -1920,12 +1916,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                         .wrapping_add(4);
                                         let gain2_0 = (mlRep_0 * 3) as core::ffi::c_int;
                                         let gain1_0 = (matchLength * 3)
-                                            .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                            .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                             .wrapping_add(1)
                                             as core::ffi::c_int;
                                         if mlRep_0 >= 4 && gain2_0 > gain1_0 {
                                             matchLength = mlRep_0;
-                                            offBase = REPCODE1_TO_OFFBASE as size_t;
+                                            offBase = REPCODE1_TO_OFFBASE;
                                             start = ip;
                                         }
                                     }
@@ -1944,12 +1940,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     .wrapping_sub(ZSTD_highbit32(ofbCandidate as u32) as size_t)
                                     as core::ffi::c_int;
                                 let gain1_1 = (matchLength * 4)
-                                    .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                    .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                     .wrapping_add(4)
                                     as core::ffi::c_int;
                                 if ml2_0 >= 4 && gain2_1 > gain1_1 {
                                     matchLength = ml2_0;
-                                    offBase = ofbCandidate;
+                                    offBase = ofbCandidate as u32;
                                     start = ip;
                                     // search a better one
                                 } else {
@@ -1975,12 +1971,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                         .wrapping_add(4);
                                         let gain2_2 = (mlRep_1 * 4) as core::ffi::c_int;
                                         let gain1_2 = (matchLength * 4)
-                                            .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                            .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                             .wrapping_add(1)
                                             as core::ffi::c_int;
                                         if mlRep_1 >= 4 && gain2_2 > gain1_2 {
                                             matchLength = mlRep_1;
-                                            offBase = REPCODE1_TO_OFFBASE as size_t;
+                                            offBase = REPCODE1_TO_OFFBASE;
                                             start = ip;
                                         }
                                     }
@@ -2015,14 +2011,12 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                             .wrapping_add(4);
                                             let gain2_3 = (mlRep_2 * 4) as core::ffi::c_int;
                                             let gain1_3 = (matchLength * 4)
-                                                .wrapping_sub(
-                                                    ZSTD_highbit32(offBase as u32) as size_t
-                                                )
+                                                .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                                 .wrapping_add(1)
                                                 as core::ffi::c_int;
                                             if mlRep_2 >= 4 && gain2_3 > gain1_3 {
                                                 matchLength = mlRep_2;
-                                                offBase = REPCODE1_TO_OFFBASE as size_t;
+                                                offBase = REPCODE1_TO_OFFBASE;
                                                 start = ip;
                                             }
                                         }
@@ -2043,14 +2037,14 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                         )
                                         as core::ffi::c_int;
                                     let gain1_4 = (matchLength * 4)
-                                        .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                        .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                         .wrapping_add(7)
                                         as core::ffi::c_int;
                                     if !(ml2_1 >= 4 && gain2_4 > gain1_4) {
                                         break;
                                     }
                                     matchLength = ml2_1;
-                                    offBase = ofbCandidate_0;
+                                    offBase = ofbCandidate_0 as u32;
                                     start = ip;
                                 }
                             }
@@ -2059,20 +2053,16 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                         // Pay attention that `start[-value]` can lead to strange undefined behavior
                         // notably if `value` is unsigned, resulting in a large positive `-value`.
                         // catch up
-                        if offBase > ZSTD_REP_NUM as size_t {
+                        if offBase > ZSTD_REP_NUM {
                             if dictMode == DictMode::NoDict {
                                 while (start > anchor) as core::ffi::c_int
-                                    & (start.offset(
-                                        -(offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as isize),
-                                    ) > prefixLowest)
+                                    & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
+                                        > prefixLowest)
                                         as core::ffi::c_int
                                     != 0
                                     && *start.sub(1) as core::ffi::c_int
                                         == *start
-                                            .offset(
-                                                -(offBase.wrapping_sub(ZSTD_REP_NUM as size_t)
-                                                    as isize),
-                                            )
+                                            .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
                                             .sub(1)
                                             as core::ffi::c_int
                                 {
@@ -2084,7 +2074,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                             if isDxS {
                                 let matchIndex = (start.offset_from(base) as core::ffi::c_long
                                     as size_t)
-                                    .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
+                                    .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
                                     as u32;
                                 let mut match_0 = if matchIndex < prefixLowestIndex {
                                     dictBase
@@ -2110,7 +2100,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                             }
 
                             offset_2 = offset_1;
-                            offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as u32;
+                            offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
                         }
                     }
                 }
@@ -2119,14 +2109,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
         // store sequence
         let litLength = start.offset_from_unsigned(anchor);
-        ZSTD_storeSeq(
-            seqStore,
-            litLength,
-            anchor,
-            iend,
-            offBase as u32,
-            matchLength,
-        );
+        ZSTD_storeSeq(seqStore, litLength, anchor, iend, offBase, matchLength);
         ip = start.add(matchLength);
         anchor = ip;
 
@@ -2169,17 +2152,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                     prefixLowest,
                 ))
                 .wrapping_add(4);
-                offBase = offset_2 as size_t;
+                offBase = offset_2;
                 offset_2 = offset_1;
-                offset_1 = offBase as u32; // swap offset_2 <=> offset_1
-                ZSTD_storeSeq(
-                    seqStore,
-                    0,
-                    anchor,
-                    iend,
-                    REPCODE1_TO_OFFBASE as u32,
-                    matchLength,
-                );
+                offset_1 = offBase; // swap offset_2 <=> offset_1
+                ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, matchLength);
                 ip = ip.add(matchLength);
                 anchor = ip;
             }
@@ -2193,17 +2169,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                 // store sequence
                 matchLength =
                     (ZSTD_count(ip.add(4), ip.add(4).sub(offset_2 as usize), iend)).wrapping_add(4);
-                offBase = offset_2 as size_t;
+                offBase = offset_2;
                 offset_2 = offset_1;
-                offset_1 = offBase as u32; // swap repcodes
-                ZSTD_storeSeq(
-                    seqStore,
-                    0,
-                    anchor,
-                    iend,
-                    REPCODE1_TO_OFFBASE as u32,
-                    matchLength,
-                );
+                offset_1 = offBase; // swap repcodes
+                ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, matchLength);
                 ip = ip.add(matchLength);
                 anchor = ip;
             }
@@ -2498,7 +2467,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
     let mut current_block_61: u64;
     while ip < ilimit {
         let mut matchLength = 0;
-        let mut offBase = REPCODE1_TO_OFFBASE as size_t;
+        let mut offBase = REPCODE1_TO_OFFBASE;
         let mut start = ip.add(1);
         let mut curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
 
@@ -2548,7 +2517,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
             if ml2 > matchLength {
                 matchLength = ml2;
                 start = ip;
-                offBase = ofbCandidate;
+                offBase = ofbCandidate as u32;
             }
 
             if matchLength < 4 {
@@ -2600,12 +2569,12 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                                 .wrapping_add(4);
                                 let gain2 = (repLength * 3) as core::ffi::c_int;
                                 let gain1 = (matchLength * 3)
-                                    .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                    .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                     .wrapping_add(1)
                                     as core::ffi::c_int;
                                 if repLength >= 4 && gain2 > gain1 {
                                     matchLength = repLength;
-                                    offBase = REPCODE1_TO_OFFBASE as size_t;
+                                    offBase = REPCODE1_TO_OFFBASE;
                                     start = ip;
                                 }
                             }
@@ -2625,12 +2594,12 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                             .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as u32) as size_t)
                             as core::ffi::c_int; // raw approx
                         let gain1_0 = (matchLength * 4)
-                            .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                            .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                             .wrapping_add(4)
                             as core::ffi::c_int;
                         if ml2_0 >= 4 && gain2_0 > gain1_0 {
                             matchLength = ml2_0;
-                            offBase = ofbCandidate_0;
+                            offBase = ofbCandidate_0 as u32;
                             start = ip;
                             // search a better one
                         } else {
@@ -2671,12 +2640,12 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                                     .wrapping_add(4);
                                     let gain2_1 = (repLength_0 * 4) as core::ffi::c_int;
                                     let gain1_1 = (matchLength * 4)
-                                        .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                        .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                         .wrapping_add(1)
                                         as core::ffi::c_int;
                                     if repLength_0 >= 4 && gain2_1 > gain1_1 {
                                         matchLength = repLength_0;
-                                        offBase = REPCODE1_TO_OFFBASE as size_t;
+                                        offBase = REPCODE1_TO_OFFBASE;
                                         start = ip;
                                     }
                                 }
@@ -2696,23 +2665,23 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                                 .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as u32) as size_t)
                                 as core::ffi::c_int;
                             let gain1_2 = (matchLength * 4)
-                                .wrapping_sub(ZSTD_highbit32(offBase as u32) as size_t)
+                                .wrapping_sub(ZSTD_highbit32(offBase) as size_t)
                                 .wrapping_add(7)
                                 as core::ffi::c_int;
                             if !(ml2_1 >= 4 && gain2_2 > gain1_2) {
                                 break;
                             }
                             matchLength = ml2_1;
-                            offBase = ofbCandidate_1;
+                            offBase = ofbCandidate_1 as u32;
                             start = ip;
                         }
                     }
                 }
 
                 // catch up
-                if offBase > ZSTD_REP_NUM as size_t {
+                if offBase > ZSTD_REP_NUM {
                     let matchIndex = ((start.wrapping_offset_from(base)) as usize)
-                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
+                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
                         as u32;
                     let mut match_0 = if matchIndex < dictLimit {
                         dictBase.offset(matchIndex as isize)
@@ -2733,21 +2702,14 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                         matchLength = matchLength.wrapping_add(1);
                     }
                     offset_2 = offset_1;
-                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as u32;
+                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
                 }
             }
         }
 
         // store sequence
         let litLength = start.offset_from_unsigned(anchor);
-        ZSTD_storeSeq(
-            seqStore,
-            litLength,
-            anchor,
-            iend,
-            offBase as u32,
-            matchLength,
-        );
+        ZSTD_storeSeq(seqStore, litLength, anchor, iend, offBase, matchLength);
         ip = start.add(matchLength);
         anchor = ip;
 
@@ -2789,17 +2751,10 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
             matchLength =
                 (ZSTD_count_2segments(ip.add(4), repMatch_2.add(4), iend, repEnd_2, prefixStart))
                     .wrapping_add(4);
-            offBase = offset_2 as size_t;
+            offBase = offset_2;
             offset_2 = offset_1;
-            offset_1 = offBase as u32; // swap offset history
-            ZSTD_storeSeq(
-                seqStore,
-                0,
-                anchor,
-                iend,
-                REPCODE1_TO_OFFBASE as u32,
-                matchLength,
-            );
+            offset_1 = offBase; // swap offset history
+            ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, matchLength);
             ip = ip.add(matchLength);
             anchor = ip;
         }

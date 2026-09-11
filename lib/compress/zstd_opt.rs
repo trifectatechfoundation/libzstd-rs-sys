@@ -5,7 +5,7 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
     *const u8,
     *const u8,
     &RepCodes,
-    u32,
+    bool,
     u32,
 ) -> u32;
 
@@ -45,7 +45,7 @@ use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
 #[inline]
-fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: u32) -> RepCodes {
+fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
     let mut newReps = *rep;
     ZSTD_updateRep(&mut newReps, offBase, ll0);
     newReps
@@ -678,8 +678,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     ip: *const u8,
     iLimit: *const u8,
     dictMode: DictMode,
-    rep: &[u32; 3],
-    ll0: u32,
+    rep: &RepCodes,
+    ll0: bool,
     lengthToBeat: u32,
     mls: u32,
 ) -> u32 {
@@ -778,11 +778,11 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut bestLength = lengthToBeat.wrapping_sub(1) as size_t;
 
     // check repCode
-    let lastR = (ZSTD_REP_NUM as u32).wrapping_add(ll0);
+    let lastR = (ZSTD_REP_NUM).wrapping_add(ll0 as u32);
     let mut repCode: u32 = 0;
-    repCode = ll0;
+    repCode = ll0 as u32;
     while repCode < lastR {
-        let repOffset = if repCode == ZSTD_REP_NUM as u32 {
+        let repOffset = if repCode == ZSTD_REP_NUM {
             rep[0].wrapping_sub(1)
         } else {
             rep[repCode as usize]
@@ -855,7 +855,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         // save longer solution
         if repLen as size_t > bestLength {
             bestLength = repLen as size_t;
-            (*matches.offset(mnum as isize)).off = repCode.wrapping_sub(ll0).wrapping_add(1); // expect value between 1 and 3
+            (*matches.offset(mnum as isize)).off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
             (*matches.offset(mnum as isize)).len = repLen;
             mnum = mnum.wrapping_add(1);
             if (repLen > sufficient_len) as core::ffi::c_int
@@ -891,9 +891,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             // save best solution
             if mlen >= mls as size_t {
                 bestLength = mlen;
-                (*matches).off = curr
-                    .wrapping_sub(matchIndex3)
-                    .wrapping_add(ZSTD_REP_NUM as u32);
+                (*matches).off = curr.wrapping_sub(matchIndex3).wrapping_add(ZSTD_REP_NUM);
                 (*matches).len = mlen as u32;
                 mnum = 1;
                 if (mlen > sufficient_len as size_t) as core::ffi::c_int
@@ -951,9 +949,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 matchEndIdx = matchIndex.wrapping_add(matchLength as u32);
             }
             bestLength = matchLength;
-            (*matches.offset(mnum as isize)).off = curr
-                .wrapping_sub(matchIndex)
-                .wrapping_add(ZSTD_REP_NUM as u32);
+            (*matches.offset(mnum as isize)).off =
+                curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
             (*matches.offset(mnum as isize)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
             // equal: no way to know if inf or sup
@@ -1029,9 +1026,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     matchEndIdx = matchIndex.wrapping_add(matchLength_0 as u32);
                 }
                 bestLength = matchLength_0;
-                (*matches.offset(mnum as isize)).off = curr
-                    .wrapping_sub(matchIndex)
-                    .wrapping_add(ZSTD_REP_NUM as u32);
+                (*matches.offset(mnum as isize)).off =
+                    curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
                 (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
                 // equal: no way to know if inf or sup
@@ -1072,8 +1068,8 @@ unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u3
     nextToUpdate3: *mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
-    rep: &[u32; 3],
-    ll0: u32,
+    rep: &RepCodes,
+    ll0: bool,
     lengthToBeat: u32,
 ) -> u32 {
     if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
@@ -1206,7 +1202,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
         || candidateMatchLength > (*matches.offset((*nbMatches).wrapping_sub(1) as isize)).len
             && *nbMatches < ZSTD_OPT_NUM as u32
     {
-        let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM as u32);
+        let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM);
         (*matches.offset(*nbMatches as isize)).len = candidateMatchLength;
         (*matches.offset(*nbMatches as isize)).off = candidateOffBase;
         *nbMatches = (*nbMatches).wrapping_add(1);
@@ -1302,7 +1298,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
         // find first match
         let litlen = ip.offset_from(anchor) as core::ffi::c_long as u32;
-        let ll0 = (litlen == 0) as core::ffi::c_int as u32;
         let mut nbMatches = getAllMatches(
             matches,
             ms,
@@ -1310,7 +1305,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             ip,
             iend,
             rep,
-            ll0,
+            litlen == 0,
             minMatch,
         );
         ZSTD_optLdm_processMatchCandidate(
@@ -1453,8 +1448,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 let newReps = ZSTD_newRep(
                                     &(*opt.offset(prev as isize)).rep,
                                     prevMatch.off,
-                                    ((*opt.offset(prev as isize)).litlen == 0) as core::ffi::c_int
-                                        as u32,
+                                    (*opt.offset(prev as isize)).litlen == 0,
                                 );
                                 *opt.offset(cur.wrapping_add(1) as isize) = prevMatch;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps;
@@ -1475,7 +1469,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         let newReps_0 = ZSTD_newRep(
                             &(*opt.offset(prev_0 as isize)).rep,
                             (*opt.offset(cur as isize)).off,
-                            ((*opt.offset(prev_0 as isize)).litlen == 0) as core::ffi::c_int as u32,
+                            (*opt.offset(prev_0 as isize)).litlen == 0,
                         );
                         (*opt.offset(cur as isize)).rep = newReps_0;
                     }
@@ -1492,8 +1486,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             && (*opt.offset(cur.wrapping_add(1) as isize)).price
                                 <= (*opt.offset(cur as isize)).price + BITCOST_MULTIPLIER / 2)
                         {
-                            let ll0_0 = ((*opt.offset(cur as isize)).litlen == 0)
-                                as core::ffi::c_int as u32;
                             let previousPrice = (*opt.offset(cur as isize)).price;
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
@@ -1504,7 +1496,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 inr,
                                 iend,
                                 &(*opt.offset(cur as isize)).rep,
-                                ll0_0,
+                                (*opt.offset(cur as isize)).litlen == 0,
                                 minMatch,
                             );
                             let mut matchNb_0: u32 = 0;
@@ -1607,7 +1599,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     let reps = ZSTD_newRep(
                         &(*opt.offset(cur as isize)).rep,
                         lastStretch.off,
-                        ((*opt.offset(cur as isize)).litlen == 0) as core::ffi::c_int as u32,
+                        (*opt.offset(cur as isize)).litlen == 0,
                     );
                     *rep = reps;
                 } else {

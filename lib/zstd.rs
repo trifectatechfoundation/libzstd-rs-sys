@@ -3,9 +3,8 @@ use libc::size_t;
 
 #[cfg(doc)]
 use crate::{
-    lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
-    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compressBound,
-    ZSTD_compress_usingDict, ZSTD_decompress, ZSTD_freeDCtx,
+    ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict, ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict,
+    ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_decompress, ZSTD_freeDCtx,
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
@@ -76,6 +75,11 @@ pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
 /// The minimum valid max blocksize. Maximum blocksizes smaller than this make [`ZSTD_compressBound`] inaccurate.
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = 1 << 10;
 pub const ZSTD_CLEVEL_DEFAULT: c_int = 3;
+
+#[cfg(target_pointer_width = "64")]
+pub const ZSTD_MAX_INPUT_SIZE: size_t = 0xff00ff00ff00ff00;
+#[cfg(not(target_pointer_width = "64"))]
+pub const ZSTD_MAX_INPUT_SIZE: size_t = 0xff00ff00;
 
 pub const ZSTD_MAGICNUMBER: c_uint = 0xfd2fb528;
 pub const ZSTD_MAGIC_DICTIONARY: c_uint = 0xec30a437;
@@ -484,7 +488,7 @@ impl ZSTD_dParameter {
     /// Allowed values are between 1KB and [`ZSTD_BLOCKSIZE_MAX`] (128KB).
     /// The default is [`ZSTD_BLOCKSIZE_MAX`], and setting to 0 will set to the default.
     ///
-    /// This option is typically used in conjunction with [`ZSTD_c_maxBlockSize`].
+    /// This option is typically used in conjunction with [`ZSTD_cParameter::ZSTD_c_maxBlockSize`].
     ///
     /// **Warning:** This causes the decoder to reject otherwise valid frames that have block sizes
     /// larger than the configured `maxBlockSize`.
@@ -564,6 +568,7 @@ impl ZSTD_cParameter {
     pub const ZSTD_c_enableSeqProducerFallback: Self = Self::ZSTD_c_experimentalParam17;
     pub const ZSTD_c_maxBlockSize: Self = Self::ZSTD_c_experimentalParam18;
     pub const ZSTD_c_repcodeResolution: Self = Self::ZSTD_c_experimentalParam19;
+    /// Older name of [`ZSTD_cParameter::ZSTD_c_repcodeResolution`]
     pub const ZSTD_c_searchForExternalRepcodes: Self = Self::ZSTD_c_experimentalParam19;
 
     pub const ZSTD_c_compressionLevel: Self = Self(100);

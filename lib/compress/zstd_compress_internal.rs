@@ -14,13 +14,23 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
-    ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, HASH_READ_SIZE,
-    ZSTD_MAX_NB_BLOCK_SPLITS,
+    ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, ZSTD_MAX_NB_BLOCK_SPLITS,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_Sequence, ZSTD_btultra, ZSTD_dictContentType_e, ZSTD_strategy,
 };
+
+pub const kSearchStrength: core::ffi::c_int = 8;
+pub const HASH_READ_SIZE: core::ffi::c_int = 8;
+/// For btlazy2 strategy, index `ZSTD_DUBT_UNSORTED_MARK==1` means "unsorted".
+/// It could be confused for a real successor at index "1", if sorted as larger than its predecessor.
+/// It's not a big deal though: the candidate will just be sorted again.
+/// Additionally, candidate position 1 will be lost.
+/// But candidate 1 cannot hide a large tree of candidates, so it's a minimal loss.
+/// The benefit is that `ZSTD_DUBT_UNSORTED_MARK` cannot be mishandled after table reuse with a different strategy.
+/// This constant is required by `ZSTD_compressBlock_btlazy2()` and `ZSTD_reduceTable_internal()`
+pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
@@ -480,11 +490,22 @@ pub unsafe fn ZSTD_noCompressBlock(
     ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize)
 }
 
+/// In 32-bit mode: we want to avoid crossing the 2 GB limit,
+/// reducing risks of side effects in case of signed operations on indexes.
+///
+/// In 64-bit mode: we want to ensure that adding the maximum job size (512 MB)
+/// doesn't overflow u32 index capacity (4 GB)
 pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
     3500 * (1 << 20)
 } else {
     2000 * (1 << 20)
 };
+
+/// Maximum chunk size before overflow correction needs to be called again
+pub(crate) const ZSTD_CHUNKSIZE_MAX: usize = u32::MAX as usize - ZSTD_CURRENT_MAX;
+
+pub const REPCODE1_TO_OFFBASE: u32 = 1;
+pub const REPCODE3_TO_OFFBASE: u32 = 3;
 
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeqOnly(
@@ -538,15 +559,15 @@ pub(crate) unsafe fn ZSTD_storeSeq(
 }
 
 #[inline]
-pub(crate) fn ZSTD_updateRep(rep: &mut RepCodes, offBase: u32, ll0: u32) {
-    if offBase > ZSTD_REP_NUM as u32 {
+pub(crate) fn ZSTD_updateRep(rep: &mut RepCodes, offBase: u32, ll0: bool) {
+    if offBase > ZSTD_REP_NUM {
         rep[2] = rep[1];
         rep[1] = rep[0];
-        rep[0] = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        rep[0] = offBase.wrapping_sub(ZSTD_REP_NUM);
     } else {
-        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
+        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0 as u32);
         if repCode > 0 {
-            let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
+            let currentOffset = if repCode == ZSTD_REP_NUM {
                 rep[0].wrapping_sub(1)
             } else {
                 rep[repCode as usize]
@@ -689,7 +710,7 @@ unsafe fn ZSTD_hash32PtrS<const MLS: u32>(ptr: *const core::ffi::c_void, h: u32,
 const prime5bytes: u64 = 889523592379;
 const prime6bytes: u64 = 227718039650203;
 const prime7bytes: u64 = 58295818150454627;
-const prime8bytes: u64 = 0xcf1bbcdcb7a56463;
+pub(crate) const prime8bytes: u64 = 0xcf1bbcdcb7a56463;
 
 /// Hash the first `MLS` bytes of the little-endian value `u`, salted with `s`.
 const fn ZSTD_hash64<const MLS: u32>(u: u64, h: u32, s: u64) -> usize {
