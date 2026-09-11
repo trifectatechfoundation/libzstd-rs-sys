@@ -6656,9 +6656,6 @@ pub unsafe extern "C" fn ZSTD_compressBlock(
     ZSTD_compressBlock_deprecated(cctx, dst, dstCapacity, src, srcSize)
 }
 
-/// # Returns
-///
-/// 0, or an error code
 unsafe fn ZSTD_loadDictionaryContent(
     ms: &mut ZSTD_MatchState_t,
     ls: Option<&mut ldmState_t>,
@@ -6668,7 +6665,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     mut srcSize: size_t,
     dtlm: DictTableLoadMethod,
     tfp: TableFillPurpose,
-) -> size_t {
+) {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
     // `Some` when the dict must also be loaded into the LDM matchfinders.
@@ -6743,7 +6740,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     ms.forceNonContiguous = params.deterministicRefPrefix;
 
     if srcSize <= HASH_READ_SIZE as size_t {
-        return 0;
+        return;
     }
 
     ZSTD_overflowCorrectIfNeeded(
@@ -6779,8 +6776,6 @@ unsafe fn ZSTD_loadDictionaryContent(
     }
 
     ms.nextToUpdate = iend.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
-
-    0
 }
 
 /// Dictionaries that assign zero probability to symbols that show up causes problems when FSE
@@ -6807,7 +6802,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     workspace: *mut core::ffi::c_void,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
     let mut offcodeMaxValue = MaxOff;
     let mut dictPtr = dict as *const u8;
@@ -6817,16 +6812,14 @@ pub unsafe fn ZSTD_loadCEntropy(
 
     let mut maxSymbolValue = u8::MAX;
     let mut hasZeroWeights = 1;
-    let hufHeaderSize = match HUF_readCTable(
+    let hufHeaderSize = HUF_readCTable(
         &mut (*bs).entropy.huf.CTable,
         &mut maxSymbolValue,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
         &mut hasZeroWeights,
-    ) {
-        Ok(hufHeaderSize) => hufHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
 
     // We only set the loaded table as valid if it contains all non-zero
     // weights. Otherwise, we set it to check
@@ -6837,21 +6830,19 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr = dictPtr.add(hufHeaderSize);
 
     let mut offcodeLog: core::ffi::c_uint = 0;
-    let offcodeHeaderSize = match FSE_readNCount(
+    let offcodeHeaderSize = FSE_readNCount(
         &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    ) {
-        Ok(offcodeHeaderSize) => offcodeHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if offcodeLog > 8 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     // fill all offset symbols to avoid garbage at end of table
-    if FSE_buildCTable_wksp(
+    FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.offcodeCTable,
         &offcodeNCount,
         31,
@@ -6859,30 +6850,25 @@ pub unsafe fn ZSTD_loadCEntropy(
         workspace,
         ((8 << 10) + 512) as size_t,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     // Defer checking offcodeMaxValue because we need to know the size of the dictionary content
     dictPtr = dictPtr.add(offcodeHeaderSize);
 
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    let matchlengthHeaderSize = match FSE_readNCount(
+    let matchlengthHeaderSize = FSE_readNCount(
         &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    ) {
-        Ok(matchlengthHeaderSize) => matchlengthHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if matchlengthLog > 9 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
-    if FSE_buildCTable_wksp(
+    FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.matchlengthCTable,
         &matchlengthNCount,
         matchlengthMaxValue,
@@ -6890,10 +6876,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         workspace,
         ((8 << 10) + 512) as size_t,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     (*bs).entropy.fse.matchlength_repeatMode =
         ZSTD_dictNCountRepeat(&matchlengthNCount, matchlengthMaxValue, MaxML);
     dictPtr = dictPtr.add(matchlengthHeaderSize);
@@ -6901,20 +6884,18 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    let litlengthHeaderSize = match FSE_readNCount(
+    let litlengthHeaderSize = FSE_readNCount(
         &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
-    ) {
-        Ok(litlengthHeaderSize) => litlengthHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if litlengthLog > 9 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
-    if FSE_buildCTable_wksp(
+    FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.litlengthCTable,
         &litlengthNCount,
         litlengthMaxValue,
@@ -6922,16 +6903,13 @@ pub unsafe fn ZSTD_loadCEntropy(
         workspace,
         ((8 << 10) + 512) as size_t,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     (*bs).entropy.fse.litlength_repeatMode =
         ZSTD_dictNCountRepeat(&litlengthNCount, litlengthMaxValue, MaxLL);
     dictPtr = dictPtr.add(litlengthHeaderSize);
 
     if dictPtr.add(12) > dictEnd {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     (*bs).rep[0] = MEM_readLE32(dictPtr as *const core::ffi::c_void);
     (*bs).rep[1] = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
@@ -6956,11 +6934,11 @@ pub unsafe fn ZSTD_loadCEntropy(
     // All repCodes must be <= dictContentSize and != 0
     for size in (*bs).rep {
         if !(1..=dictContentSize).contains(&(size as usize)) {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
     }
 
-    dictPtr.offset_from_unsigned(dict as *const u8)
+    Ok(dictPtr.offset_from_unsigned(dict as *const u8))
 }
 
 /// Assumptions: magic number supposed already checked, dictSize supposed >= 8.
@@ -6978,7 +6956,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     dtlm: DictTableLoadMethod,
     tfp: TableFillPurpose,
     workspace: *mut core::ffi::c_void,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
 
@@ -6987,15 +6965,11 @@ unsafe fn ZSTD_loadZstdDictionary(
     } else {
         MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void)
     }) as size_t;
-    let eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
-    let err_code = eSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize)?;
     dictPtr = dictPtr.add(eSize);
 
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
-    let err_code_0 = ZSTD_loadDictionaryContent(
+    ZSTD_loadDictionaryContent(
         ms,
         None,
         ws,
@@ -7005,11 +6979,8 @@ unsafe fn ZSTD_loadZstdDictionary(
         dtlm,
         tfp,
     );
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
 
-    dictID
+    Ok(dictID)
 }
 
 /// # Returns
@@ -7027,27 +6998,29 @@ unsafe fn ZSTD_compress_insertDictionary(
     dtlm: DictTableLoadMethod,
     tfp: TableFillPurpose,
     workspace: *mut core::ffi::c_void,
-) -> size_t {
+) -> Result<size_t, Error> {
     if dict.is_null() || dictSize < 8 {
         if dictContentType == ZSTD_dct_fullDict {
-            return Error::dictionary_wrong.to_error_code();
+            return Err(Error::dictionary_wrong);
         }
-        return 0;
+        return Ok(0);
     }
 
     ZSTD_reset_compressedBlockState(bs);
 
     // dict restricted modes
     if dictContentType == ZSTD_dct_rawContent {
-        return ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm, tfp);
+        ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm, tfp);
+        return Ok(0);
     }
 
     if MEM_readLE32(dict) != ZSTD_MAGIC_DICTIONARY {
         if dictContentType == ZSTD_dct_auto {
-            return ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm, tfp);
+            ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm, tfp);
+            return Ok(0);
         }
         if dictContentType == ZSTD_dct_fullDict {
-            return Error::dictionary_wrong.to_error_code();
+            return Err(Error::dictionary_wrong);
         }
     }
 
@@ -7136,10 +7109,10 @@ unsafe fn ZSTD_compressBegin_internal(
             (*cctx).tmpWorkspace,
         )
     };
-    let err_code_0 = dictID;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    let dictID = match dictID {
+        Ok(dictID) => dictID,
+        Err(err) => return err.to_error_code(),
+    };
     (*cctx).dictID = dictID as u32;
     (*cctx).dictContentSize = dictContentSize;
 
@@ -7635,10 +7608,10 @@ unsafe fn ZSTD_initCDict_internal(
         TableFillPurpose::ForCDict,
         (*cdict).entropyWorkspace as *mut core::ffi::c_void,
     );
-    let err_code_0 = dictID;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    let dictID = match dictID {
+        Ok(dictID) => dictID,
+        Err(err) => return err.to_error_code(),
+    };
     (*cdict).dictID = dictID as u32;
 
     0
