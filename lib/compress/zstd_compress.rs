@@ -5072,18 +5072,17 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         countWksp,
         hufFlags,
     );
-    let maxBits = HUF_buildCTable_wksp(
+    let maxBits = match HUF_buildCTable_wksp(
         &mut nextHuf.CTable,
         countWksp,
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-    );
-    let err_code_0 = maxBits;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    ) {
+        Ok(maxBits) => maxBits,
+        Err(err) => return err.to_error_code(),
+    };
     huffLog = maxBits as u32;
     // Build and write the CTable
     let newCSize = HUF_estimateCompressedSize(&nextHuf.CTable, countWksp, maxSymbolValue);

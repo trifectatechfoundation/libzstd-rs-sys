@@ -874,13 +874,12 @@ unsafe fn analyze_entropy_internal(
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
-    );
-    if let Some(err) = Error::from_error_code(maxNbBits) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!(" HUF_buildCTable error");
         }
-        return Err(err);
-    }
+    })?;
     if maxNbBits == 8 {
         // not compressible: will fail on HUF_writeCTable
         if notificationLevel >= 2 {
@@ -894,7 +893,13 @@ unsafe fn analyze_entropy_internal(
             huffLog,
             wksp.as_mut_ptr() as *mut core::ffi::c_void,
             size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
-        );
+        )
+        .inspect_err(|_| {
+            if notificationLevel >= 1 {
+                eprintln!(" HUF_buildCTable error");
+            }
+        })?;
+        debug_assert_eq!(maxNbBits, 9);
     }
     let huffLog = maxNbBits as u32;
 
