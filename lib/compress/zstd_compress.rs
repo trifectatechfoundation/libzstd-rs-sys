@@ -597,8 +597,7 @@ use crate::lib::zstd::{
     ZSTD_btultra, ZSTD_btultra2, ZSTD_bufferMode_e, ZSTD_cParameter, ZSTD_compressionParameters,
     ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dfast,
     ZSTD_dictAttachPref_e, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy,
-    ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush,
-    ZSTD_error_stabilityCondition_notRespected, ZSTD_fast, ZSTD_frameParameters,
+    ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush, ZSTD_fast, ZSTD_frameParameters,
     ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_lazy, ZSTD_lazy2,
     ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sequenceProducer_F,
     ZSTD_sf_explicitBlockDelimiters, ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
@@ -8877,12 +8876,10 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             if (*cctx).stableIn_notConsumed != 0 {
                 // check stable source guarantees
                 if (*input).src != (*cctx).expectedInBuffer.src {
-                    return -(ZSTD_error_stabilityCondition_notRespected as core::ffi::c_int)
-                        as size_t;
+                    return Error::stabilityCondition_notRespected.to_error_code();
                 }
                 if (*input).pos != (*cctx).expectedInBuffer.size {
-                    return -(ZSTD_error_stabilityCondition_notRespected as core::ffi::c_int)
-                        as size_t;
+                    return Error::stabilityCondition_notRespected.to_error_code();
                 }
             }
             // pretend input was consumed, to give a sense forward progress
