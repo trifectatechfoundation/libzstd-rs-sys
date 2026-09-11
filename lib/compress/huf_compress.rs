@@ -1795,7 +1795,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         srcSize,
         &mut (*table).wksps.hist_wksp,
     ) {
-        Ok(largest) => largest,
+        Ok(largest) => largest as usize,
         Err(err) => return err.to_error_code(),
     };
     if largest == srcSize {
