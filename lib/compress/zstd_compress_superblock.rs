@@ -452,17 +452,18 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     } else if hufMetadata.hType == SymbolEncodingType::Compressed
         || hufMetadata.hType == SymbolEncodingType::Repeat
     {
-        let largest = HIST_count_wksp(
+        if HIST_count_wksp(
             countWksp,
             &mut maxSymbolValue,
             literals as *const core::ffi::c_void,
             litSize,
             workspace,
             wkspSize,
-        );
-        if ERR_isError(largest) {
+        )
+        .is_err()
+        {
             return litSize;
-        }
+        };
         let mut cLitSizeEstimate =
             HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
         if writeEntropy {
@@ -500,7 +501,8 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         nbSeq,
         workspace,
         wkspSize,
-    );
+    )
+    .expect("can't fail");
     if type_0 == SymbolEncodingType::Basic {
         // We selected this encoding type, so it must be valid.
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {

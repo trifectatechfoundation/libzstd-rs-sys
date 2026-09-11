@@ -1788,16 +1788,16 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* Scan input and build symbol stats */
     (*table).wksps.hist_wksp.fill(0);
-    let largest = HIST_count_wksp_array(
+    let largest = match HIST_count_wksp_array(
         ((*table).count).as_mut_ptr(),
         &mut maxSymbolValue,
         src as *const u8 as *const c_void,
         srcSize,
         &mut (*table).wksps.hist_wksp,
-    );
-    if ERR_isError(largest) {
-        return largest;
-    }
+    ) {
+        Ok(largest) => largest,
+        Err(err) => return err.to_error_code(),
+    };
     if largest == srcSize {
         *ostart = *(src as *const u8);
         return 1; /* single symbol, rle */
