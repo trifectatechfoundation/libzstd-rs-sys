@@ -6851,14 +6851,16 @@ pub unsafe fn ZSTD_loadCEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     // fill all offset symbols to avoid garbage at end of table
-    if ERR_isError(FSE_buildCTable_wksp(
+    if FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.offcodeCTable,
         &offcodeNCount,
         31,
         offcodeLog,
         workspace,
         ((8 << 10) + 512) as size_t,
-    )) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     // Defer checking offcodeMaxValue because we need to know the size of the dictionary content
@@ -6880,14 +6882,16 @@ pub unsafe fn ZSTD_loadCEntropy(
     if matchlengthLog > 9 {
         return Error::dictionary_corrupted.to_error_code();
     }
-    if ERR_isError(FSE_buildCTable_wksp(
+    if FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.matchlengthCTable,
         &matchlengthNCount,
         matchlengthMaxValue,
         matchlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,
-    )) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.matchlength_repeatMode =
@@ -6910,14 +6914,16 @@ pub unsafe fn ZSTD_loadCEntropy(
     if litlengthLog > 9 {
         return Error::dictionary_corrupted.to_error_code();
     }
-    if ERR_isError(FSE_buildCTable_wksp(
+    if FSE_buildCTable_wksp(
         &mut (*bs).entropy.fse.litlengthCTable,
         &litlengthNCount,
         litlengthMaxValue,
         litlengthLog,
         workspace,
         ((8 << 10) + 512) as size_t,
-    )) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.litlength_repeatMode =

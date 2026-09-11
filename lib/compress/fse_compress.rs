@@ -23,7 +23,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     tableLog: core::ffi::c_uint,
     workSpace: *mut core::ffi::c_void,
     wkspSize: size_t,
-) -> size_t {
+) -> Result<(), Error> {
     let tableSize = (1 << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
     let ptr = ct.as_mut_ptr() as *mut core::ffi::c_void;
@@ -54,7 +54,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
             ),
     ) > wkspSize as core::ffi::c_ulonglong
     {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
 
     // CTable header
@@ -176,7 +176,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
             }
         }
     }
-    0
+    Ok(())
 }
 
 fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size_t {

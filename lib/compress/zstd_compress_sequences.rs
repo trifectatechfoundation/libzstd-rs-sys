@@ -274,16 +274,15 @@ pub unsafe fn ZSTD_buildCTable(
             0
         }
         SymbolEncodingType::Basic => {
-            let err_code_0 = FSE_buildCTable_wksp(
+            if let Err(err) = FSE_buildCTable_wksp(
                 nextCTable,
                 defaultNorm,
                 defaultMax,
                 defaultNormLog,
                 entropyWorkspace,
                 entropyWorkspaceSize,
-            );
-            if ERR_isError(err_code_0) {
-                return err_code_0;
+            ) {
+                return err.to_error_code();
             }
             0
         }
@@ -317,16 +316,15 @@ pub unsafe fn ZSTD_buildCTable(
             if ERR_isError(err_code_2) {
                 return err_code_2;
             }
-            let err_code_3 = FSE_buildCTable_wksp(
+            if let Err(err) = FSE_buildCTable_wksp(
                 nextCTable,
                 &(*wksp).norm,
                 max,
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
                 size_of::<[u32; 285]>(),
-            );
-            if ERR_isError(err_code_3) {
-                return err_code_3;
+            ) {
+                return err.to_error_code();
             }
             NCountSize
         }
