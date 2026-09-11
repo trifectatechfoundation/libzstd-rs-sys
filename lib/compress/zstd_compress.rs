@@ -6817,13 +6817,16 @@ pub unsafe fn ZSTD_loadCEntropy(
 
     let mut maxSymbolValue = u8::MAX;
     let mut hasZeroWeights = 1;
-    let hufHeaderSize = HUF_readCTable(
+    let hufHeaderSize = match HUF_readCTable(
         &mut (*bs).entropy.huf.CTable,
         &mut maxSymbolValue,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),
         &mut hasZeroWeights,
-    );
+    ) {
+        Ok(hufHeaderSize) => hufHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
 
     // We only set the loaded table as valid if it contains all non-zero
     // weights. Otherwise, we set it to check
@@ -6831,9 +6834,6 @@ pub unsafe fn ZSTD_loadCEntropy(
         (*bs).entropy.huf.repeatMode = HUF_repeat::Valid;
     }
 
-    if ERR_isError(hufHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
     dictPtr = dictPtr.add(hufHeaderSize);
 
     let mut offcodeLog: core::ffi::c_uint = 0;
