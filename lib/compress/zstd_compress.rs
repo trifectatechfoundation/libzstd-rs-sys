@@ -3983,7 +3983,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     )
-    .expect("can't fail");
+    .expect("can't fail") as usize;
     nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.litlength_repeatMode,
@@ -4034,7 +4034,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     )
-    .expect("can't fail");
+    .expect("can't fail") as usize;
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
     let defaultPolicy = if max_0 <= DefaultMaxOff {
         DefaultPolicy::Allowed
@@ -4091,7 +4091,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     )
-    .expect("can't fail");
+    .expect("can't fail") as usize;
     nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.matchlength_repeatMode,
@@ -5039,7 +5039,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         workspace,
         wkspSize,
     ) {
-        Ok(largest) => largest,
+        Ok(largest) => largest as usize,
         Err(err) => return err.to_error_code(),
     };
     if largest == srcSize {

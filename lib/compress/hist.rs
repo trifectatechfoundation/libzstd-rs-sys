@@ -88,7 +88,7 @@ unsafe fn HIST_count_parallel_wksp(
     sourceSize: size_t,
     check: CheckInput,
     workSpace: &mut [u32; 1024],
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     // TEMP: this can probably be removed if we make this function fully safe
     // Some callers reuse `workSpace`'s memory as `count`: to prevent aliasing issues
     // with the `&mut` reference, skip writes to `count`.
@@ -177,7 +177,7 @@ unsafe fn HIST_count_parallel_wksp(
         core::ptr::copy(workSpace.as_ptr().cast::<u8>(), count as *mut u8, countSize);
     }
 
-    Ok(max as size_t)
+    Ok(max)
 }
 
 /// Same as [`HIST_countFast`], but using an externally provided scratch buffer.
@@ -190,11 +190,16 @@ pub unsafe fn HIST_countFast_wksp(
     sourceSize: size_t,
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     // checked before the workspace, which this path does not touch
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
-        return Ok(HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t);
+        return Ok(HIST_count_simple(
+            count,
+            maxSymbolValuePtr,
+            source,
+            sourceSize,
+        ));
     }
     if workSpace as size_t & 3 != 0 {
         // must be aligned on 4-bytes boundaries
@@ -220,10 +225,15 @@ pub unsafe fn HIST_countFast_wksp_array(
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
-        return Ok(HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t);
+        return Ok(HIST_count_simple(
+            count,
+            maxSymbolValuePtr,
+            source,
+            sourceSize,
+        ));
     }
 
     HIST_count_parallel_wksp(
@@ -245,7 +255,7 @@ pub unsafe fn HIST_count_wksp(
     sourceSize: size_t,
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     if workSpace as size_t & 3 != 0 {
         // must be aligned on 4-bytes boundaries
         return Err(Error::GENERIC);
@@ -283,7 +293,7 @@ pub unsafe fn HIST_count_wksp_array(
     source: *const core::ffi::c_void,
     sourceSize: size_t,
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     if *maxSymbolValuePtr < u8::MAX {
         HIST_count_parallel_wksp(
             count,
@@ -306,7 +316,7 @@ pub unsafe fn HIST_countFast(
     maxSymbolValuePtr: &mut u8,
     source: *const core::ffi::c_void,
     sourceSize: size_t,
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     // zeroed, as `HIST_countFast_wksp_array` requires
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_countFast_wksp_array(
@@ -323,7 +333,7 @@ pub unsafe fn HIST_count(
     maxSymbolValuePtr: &mut u8,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> Result<size_t, Error> {
+) -> Result<core::ffi::c_uint, Error> {
     // zeroed, as `HIST_count_wksp_array` requires
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
     HIST_count_wksp_array(count, maxSymbolValuePtr, src, srcSize, &mut tmpCounters)
