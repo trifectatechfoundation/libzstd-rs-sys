@@ -5,7 +5,7 @@ use crate::lib::common::bitstream::{
     BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream,
     BitContainerType,
 };
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2, FSE_symbolCompressionTransform,
     FSE_symbolTTIndex, FSE_writeU16Pair, FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG,
@@ -394,7 +394,7 @@ unsafe fn FSE_normalizeM2(
     mut total: size_t,
     maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
-) -> size_t {
+) -> Result<(), Error> {
     let maxSV1 = usize::from(maxSymbolValue) + 1;
     const NOT_YET_ASSIGNED: i16 = -2;
     let mut s = 0;
@@ -425,7 +425,7 @@ unsafe fn FSE_normalizeM2(
     ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
 
     if ToDistribute == 0 {
-        return 0;
+        return Ok(());
     }
 
     if total / ToDistribute as size_t > lowOne as size_t {
@@ -454,7 +454,7 @@ unsafe fn FSE_normalizeM2(
             }
         }
         norm[maxV] += ToDistribute as i16;
-        return 0;
+        return Ok(());
     }
 
     if total == 0 {
@@ -467,7 +467,7 @@ unsafe fn FSE_normalizeM2(
             }
             s = s.wrapping_add(1) % maxSV1;
         }
-        return 0;
+        return Ok(());
     }
 
     let vStepLog = 62u32.wrapping_sub(tableLog) as u64;
@@ -481,14 +481,14 @@ unsafe fn FSE_normalizeM2(
             let sEnd = (end >> vStepLog) as u32;
             let weight = sEnd.wrapping_sub(sStart);
             if weight < 1 {
-                return Error::GENERIC.to_error_code();
+                return Err(Error::GENERIC);
             }
             tmpTotal = end;
             *current = weight as core::ffi::c_short;
         }
     }
 
-    0
+    Ok(())
 }
 
 pub(crate) unsafe fn FSE_normalizeCount(
@@ -498,19 +498,19 @@ pub(crate) unsafe fn FSE_normalizeCount(
     total: size_t,
     maxSymbolValue: u8,
     useLowProbCount: bool,
-) -> size_t {
+) -> Result<core::ffi::c_uint, Error> {
     // Sanity checks
     if tableLog == 0 {
         tableLog = FSE_DEFAULT_TABLELOG as core::ffi::c_uint;
     }
     if tableLog < FSE_MIN_TABLELOG as core::ffi::c_uint {
-        return Error::GENERIC.to_error_code(); // Unsupported size
+        return Err(Error::GENERIC); // Unsupported size
     }
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {
-        return Error::tableLog_tooLarge.to_error_code(); // Unsupported size
+        return Err(Error::tableLog_tooLarge); // Unsupported size
     }
     if tableLog < FSE_minTableLog(total, maxSymbolValue) {
-        return Error::GENERIC.to_error_code(); // Too small tableLog, compression potentially impossible
+        return Err(Error::GENERIC); // Too small tableLog, compression potentially impossible
     }
 
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
@@ -526,7 +526,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let slice = &mut normalizedCounter[0..=usize::from(maxSymbolValue)];
     for (s, current) in slice.iter_mut().enumerate() {
         if *count.add(s) as size_t == total {
-            return 0; // rle special case
+            return Ok(0); // rle special case
         }
 
         *current = if *count.add(s) == 0 {
@@ -555,22 +555,19 @@ pub(crate) unsafe fn FSE_normalizeCount(
     }
     if -stillToDistribute >= normalizedCounter[largest] as core::ffi::c_int >> 1 {
         // corner case, need another normalization method
-        let errorCode = FSE_normalizeM2(
+        FSE_normalizeM2(
             normalizedCounter,
             tableLog,
             count,
             total,
             maxSymbolValue,
             lowProbCount,
-        );
-        if ERR_isError(errorCode) {
-            return errorCode;
-        }
+        )?;
     } else {
         normalizedCounter[largest] += stillToDistribute as core::ffi::c_short
     }
 
-    tableLog as size_t
+    Ok(tableLog)
 }
 
 /// Fake FSE_CTable, for rle input (always same symbol).

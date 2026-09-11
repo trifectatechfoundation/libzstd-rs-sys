@@ -124,16 +124,15 @@ unsafe fn HUF_compressWeights(
         }
     }
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
-    let _var_err__ = FSE_normalizeCount(
+    if let Err(err) = FSE_normalizeCount(
         &mut (*wksp).norm,
         tableLog,
         ((*wksp).count).as_mut_ptr(),
         wtSize,
         maxSymbolValue,
         /* useLowProbCount */ false,
-    );
-    if ERR_isError(_var_err__) {
-        return _var_err__;
+    ) {
+        return err.to_error_code();
     }
 
     /* Write table description header */

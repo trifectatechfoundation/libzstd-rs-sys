@@ -72,16 +72,15 @@ unsafe fn ZSTD_NCountCost(
     let mut wksp: [u8; 512] = [0; 512];
     let mut norm: [i16; 53] = [0; 53];
     let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
-    let err_code = FSE_normalizeCount(
+    if let Err(err) = FSE_normalizeCount(
         &mut norm,
         tableLog,
         count,
         nbSeq,
         max,
         ZSTD_useLowProbCount(nbSeq),
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
     FSE_writeNCount(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
@@ -297,16 +296,15 @@ pub unsafe fn ZSTD_buildCTable(
                 *fresh0 = (*fresh0).wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
-            let err_code_1 = FSE_normalizeCount(
+            if let Err(err) = FSE_normalizeCount(
                 &mut (*wksp).norm,
                 tableLog,
                 count,
                 nbSeq_1,
                 max,
                 ZSTD_useLowProbCount(nbSeq_1),
-            );
-            if ERR_isError(err_code_1) {
-                return err_code_1;
+            ) {
+                return err.to_error_code();
             }
             let NCountSize = FSE_writeNCount(
                 op as *mut core::ffi::c_void,

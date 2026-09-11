@@ -909,55 +909,49 @@ unsafe fn analyze_entropy_internal(
     }
 
     let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
-    let errorCode = FSE_normalizeCount(
+    let offLog = FSE_normalizeCount(
         &mut offcodeNCount,
         OffFSELog,
         offcodeCount.as_mut_ptr(),
         total as size_t,
         offcodeMax,
         true,
-    );
-    if let Some(err) = Error::from_error_code(errorCode) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_normalizeCount error with offcodeCount");
         }
-        return Err(err);
-    }
-    let offLog = errorCode as u32;
+    })?;
 
     let total: u32 = matchLengthCount.iter().sum();
-    let errorCode = FSE_normalizeCount(
+    let mlLog = FSE_normalizeCount(
         &mut matchLengthNCount,
         MLFSELog,
         matchLengthCount.as_mut_ptr(),
         total as size_t,
         MaxML,
         true,
-    );
-    if let Some(err) = Error::from_error_code(errorCode) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_normalizeCount error with matchLengthCount");
         }
-        return Err(err);
-    }
-    let mlLog = errorCode as u32;
+    })?;
 
     let total: u32 = litLengthCount.iter().sum();
-    let errorCode = FSE_normalizeCount(
+    let llLog = FSE_normalizeCount(
         &mut litLengthNCount,
         LLFSELog,
         litLengthCount.as_mut_ptr(),
         total as size_t,
         MaxLL,
         true,
-    );
-    if let Some(err) = Error::from_error_code(errorCode) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_normalizeCount error with litLengthCount");
         }
-        return Err(err);
-    }
-    let llLog = errorCode as u32;
+    })?;
 
     // write result to buffer
     let hhSize = HUF_writeCTable_wksp(
