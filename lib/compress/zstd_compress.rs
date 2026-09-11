@@ -3133,7 +3133,7 @@ unsafe fn ZSTD_reset_matchState(
     crp: ZSTD_compResetPolicy_e,
     forceResetIndex: ZSTD_indexResetPolicy_e,
     forWho: ZSTD_resetTarget_e,
-) -> size_t {
+) -> Result<(), Error> {
     // disable chain table allocation for fast or row-based strategies
     let chainSize = if ZSTD_allocateChainTable(
         cParams.strategy,
@@ -3174,7 +3174,7 @@ unsafe fn ZSTD_reset_matchState(
         ZSTD_cwksp_reserve_table(ws, chainSize.wrapping_mul(size_of::<u32>())) as *mut u32;
     ms.hashTable3 = ZSTD_cwksp_reserve_table(ws, h3Size.wrapping_mul(size_of::<u32>())) as *mut u32;
     if ZSTD_cwksp_reserve_failed(ws) {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
 
     if crp != ZSTDcrp_leaveDirty {
@@ -3233,10 +3233,10 @@ unsafe fn ZSTD_reset_matchState(
     ms.cParams = *cParams;
 
     if ZSTD_cwksp_reserve_failed(ws) {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
 
-    0
+    Ok(())
 }
 
 pub const ZSTD_INDEXOVERFLOW_MARGIN: usize = 16 * (1 << 20);
@@ -3402,7 +3402,7 @@ unsafe fn ZSTD_resetCCtx_internal(
 
     ZSTD_reset_compressedBlockState((*zc).blockState.prevCBlock);
 
-    let err_code_1 = ZSTD_reset_matchState(
+    if let Err(err) = ZSTD_reset_matchState(
         &mut (*zc).blockState.matchState,
         ws,
         &params.cParams,
@@ -3410,10 +3410,8 @@ unsafe fn ZSTD_resetCCtx_internal(
         crp,
         needsIndexReset,
         ZSTD_resetTarget_CCtx,
-    );
-
-    if ERR_isError(err_code_1) {
-        return err_code_1;
+    ) {
+        return err.to_error_code();
     }
 
     (*zc).seqStore.sequencesStart =
@@ -7578,7 +7576,7 @@ unsafe fn ZSTD_initCDict_internal(
 
     // Reset the state to no dictionary
     ZSTD_reset_compressedBlockState(&mut (*cdict).cBlockState);
-    let err_code = ZSTD_reset_matchState(
+    if let Err(err) = ZSTD_reset_matchState(
         &mut (*cdict).matchState,
         &mut (*cdict).workspace,
         &params.cParams,
@@ -7586,9 +7584,8 @@ unsafe fn ZSTD_initCDict_internal(
         ZSTDcrp_makeClean,
         ZSTDirp_reset,
         ZSTD_resetTarget_CDict,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
 
     //(Maybe) load the dictionary
