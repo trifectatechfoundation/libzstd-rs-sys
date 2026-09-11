@@ -934,13 +934,13 @@ unsafe fn ZSTD_cwksp_create(
     ws: &mut ZSTD_cwksp,
     size: size_t,
     customMem: ZSTD_customMem,
-) -> size_t {
+) -> Result<(), Error> {
     let workspace = ZSTD_customMalloc(size, customMem);
     if workspace.is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     ZSTD_cwksp_init(ws, workspace, size, CwkspAllocKind::Dynamic);
-    0
+    Ok(())
 }
 
 /// `ws` must stay a raw pointer: `ZSTD_freeCDict` passes `&mut (*cdict).workspace` for a
@@ -3269,7 +3269,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     loadedDictSize: size_t,
     crp: ZSTD_compResetPolicy_e,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     let ws = &mut (*zc).workspace;
 
     (*zc).isFirstBlock = 1;
@@ -3327,9 +3327,8 @@ unsafe fn ZSTD_resetCCtx_internal(
         params.maxBlockSize,
     );
 
-    let err_code = neededSpace;
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Some(err) = Error::from_error_code(neededSpace) {
+        return Err(err);
     }
 
     if (*zc).staticSize == 0 {
@@ -3343,14 +3342,11 @@ unsafe fn ZSTD_resetCCtx_internal(
 
     if resizeWorkspace {
         if (*zc).staticSize != 0 {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         needsIndexReset = ZSTDirp_reset;
         ZSTD_cwksp_free(ws, (*zc).customMem);
-        let err_code_0 = ZSTD_cwksp_create(ws, neededSpace, (*zc).customMem);
-        if ERR_isError(err_code_0) {
-            return err_code_0;
-        }
+        ZSTD_cwksp_create(ws, neededSpace, (*zc).customMem)?;
 
         // Statically sized space.
         // tmpWorkspace never moves,
@@ -3359,13 +3355,13 @@ unsafe fn ZSTD_resetCCtx_internal(
             ZSTD_cwksp_reserve_object(ws, size_of::<ZSTD_compressedBlockState_t>())
                 as *mut ZSTD_compressedBlockState_t;
         if ((*zc).blockState.prevCBlock).is_null() {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         (*zc).blockState.nextCBlock =
             ZSTD_cwksp_reserve_object(ws, size_of::<ZSTD_compressedBlockState_t>())
                 as *mut ZSTD_compressedBlockState_t;
         if ((*zc).blockState.nextCBlock).is_null() {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
@@ -3374,7 +3370,7 @@ unsafe fn ZSTD_resetCCtx_internal(
                 .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
         );
         if ((*zc).tmpWorkspace).is_null() {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         (*zc).tmpWkspSize = (((8 << 10) + 512) as size_t)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
@@ -3402,7 +3398,7 @@ unsafe fn ZSTD_resetCCtx_internal(
 
     ZSTD_reset_compressedBlockState((*zc).blockState.prevCBlock);
 
-    if let Err(err) = ZSTD_reset_matchState(
+    ZSTD_reset_matchState(
         &mut (*zc).blockState.matchState,
         ws,
         &params.cParams,
@@ -3410,9 +3406,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         crp,
         needsIndexReset,
         ZSTD_resetTarget_CCtx,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     (*zc).seqStore.sequencesStart =
         ZSTD_cwksp_reserve_aligned64(ws, maxNbSeq.wrapping_mul(size_of::<SeqDef>())) as *mut SeqDef;
@@ -3478,7 +3472,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).seqStore.ofCode = ZSTD_cwksp_reserve_buffer(ws, maxNbSeq.wrapping_mul(size_of::<u8>()));
     (*zc).initialized = 1;
 
-    0
+    Ok(())
 }
 
 /// Ensures next compression will not use repcodes from previous block.
@@ -3543,10 +3537,10 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     );
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    let err_code =
-        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) =
+        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff)
+    {
+        return err.to_error_code();
     }
 
     let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
@@ -3612,10 +3606,10 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     params.cParams = *cdict_cParams;
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    let err_code =
-        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) =
+        ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff)
+    {
+        return err.to_error_code();
     }
 
     ZSTD_cwksp_mark_tables_dirty(&mut (*cctx).workspace);
@@ -3740,14 +3734,16 @@ unsafe fn ZSTD_copyCCtx_internal(
     params.ldmParams = (*srcCCtx).appliedParams.ldmParams;
     params.fParams = fParams;
     params.maxBlockSize = (*srcCCtx).appliedParams.maxBlockSize;
-    ZSTD_resetCCtx_internal(
+    if let Err(err) = ZSTD_resetCCtx_internal(
         dstCCtx,
         &params,
         pledgedSrcSize,
         0,
         ZSTDcrp_leaveDirty,
         zbuff,
-    );
+    ) {
+        return err.to_error_code();
+    }
 
     ZSTD_cwksp_mark_tables_dirty(&mut (*dstCCtx).workspace);
 
@@ -7066,16 +7062,15 @@ unsafe fn ZSTD_compressBegin_internal(
         return ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff);
     }
 
-    let err_code = ZSTD_resetCCtx_internal(
+    if let Err(err) = ZSTD_resetCCtx_internal(
         cctx,
         params,
         pledgedSrcSize,
         dictContentSize,
         ZSTDcrp_makeClean,
         zbuff,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
 
     let dictID = if !cdict.is_null() {
