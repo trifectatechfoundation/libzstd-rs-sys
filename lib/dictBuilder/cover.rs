@@ -8,6 +8,7 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::mem::MEM_64bits;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
@@ -137,6 +138,13 @@ pub(super) struct COVER_dictSelection_t {
     dictSize: size_t,
     totalCompressedSize: size_t,
 }
+
+/// There are 32-bit indexes used to ref samples, so limit samples size to 4GB
+/// on 64-bit builds.
+/// For 32-bit builds we choose 1 GB: most 32-bit platforms have 2GB user-mode
+/// addressable space and we allocate a large contiguous buffer, so 1GB is
+/// already a high limit.
+const COVER_MAX_SAMPLES_SIZE: usize = if MEM_64bits() { u32::MAX as _ } else { 1 << 30 };
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 
 fn COVER_map_clear(map: &mut COVER_map_t) {
@@ -548,28 +556,14 @@ fn COVER_ctx_init<'a>(
         totalSamplesSize
     };
     ctx.displayLevel = displayLevel;
-    if totalSamplesSize
-        < (if d as size_t > size_of::<u64>() {
-            d as size_t
-        } else {
-            size_of::<u64>()
-        })
-        || totalSamplesSize
-            >= (if size_of::<size_t>() == 8 {
-                -(1 as core::ffi::c_int) as core::ffi::c_uint
-            } else {
-                1u32.wrapping_mul(1 << 30)
-            }) as size_t
+    if totalSamplesSize < Ord::max(d as size_t, size_of::<u64>())
+        || totalSamplesSize >= COVER_MAX_SAMPLES_SIZE
     {
         if displayLevel >= 1 {
             eprintln!(
                 "Total samples size is too large ({} MB), maximum size is {} MB",
-                (totalSamplesSize >> 20) as core::ffi::c_uint,
-                (if size_of::<size_t>() == 8 {
-                    -(1 as core::ffi::c_int) as core::ffi::c_uint
-                } else {
-                    (1 as core::ffi::c_uint).wrapping_mul(1 << 30)
-                }) >> 20,
+                totalSamplesSize >> 20,
+                COVER_MAX_SAMPLES_SIZE >> 20,
             );
         }
         return Error::srcSize_wrong.to_error_code();
