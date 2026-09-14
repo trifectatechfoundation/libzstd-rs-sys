@@ -302,8 +302,9 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
             if (MEM_read32(ip2 as *const core::ffi::c_void) == rval) & (rep_offset1 > 0) {
                 ip0 = ip2;
                 match0 = ip0.sub(rep_offset1 as usize);
-                mLength = (*ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int)
-                    as core::ffi::c_int as size_t;
+                mLength = size_t::from(
+                    *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
+                );
                 ip0 = ip0.sub(mLength as usize);
                 match0 = match0.sub(mLength as usize);
                 offcode = REPCODE1_TO_OFFBASE;
@@ -941,9 +942,8 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 base
             };
             let mut rval: u32 = 0;
-            if (prefixStartIndex.wrapping_sub(repIndex) >= 4) as core::ffi::c_int // intentional underflow
-                    & (offset_1 > 0) as core::ffi::c_int
-                != 0
+            if (prefixStartIndex.wrapping_sub(repIndex) >= 4) // intentional underflow
+                & (offset_1 > 0)
             {
                 rval = MEM_read32(
                     repBase.wrapping_offset(repIndex as isize) as *const core::ffi::c_void
@@ -965,8 +965,9 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 } else {
                     iend
                 };
-                mLength = (*ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int)
-                    as core::ffi::c_int as size_t;
+                mLength = size_t::from(
+                    *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
+                );
                 ip0 = ip0.sub(mLength as usize);
                 match0 = match0.sub(mLength as usize);
                 offcode = REPCODE1_TO_OFFBASE;

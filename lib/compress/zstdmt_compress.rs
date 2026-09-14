@@ -874,7 +874,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                         let forceWindowError = ZSTD_CCtxParams_setParameter(
                             &mut jobParams,
                             ZSTD_cParameter::ZSTD_c_forceMaxWindow,
-                            ((*job).firstJob == 0) as core::ffi::c_int,
+                            core::ffi::c_int::from((*job).firstJob == 0),
                         );
                         if ERR_isError(forceWindowError) {
                             let guard = (*job).job_mutex.lock().unwrap();
@@ -1457,8 +1457,9 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         fps.consumed = (fps.consumed).wrapping_add((*jobPtr).consumed as core::ffi::c_ulonglong);
         fps.produced = (fps.produced).wrapping_add(produced as core::ffi::c_ulonglong);
         fps.flushed = (fps.flushed).wrapping_add(flushed as core::ffi::c_ulonglong);
-        fps.nbActiveWorkers = (fps.nbActiveWorkers)
-            .wrapping_add(((*jobPtr).consumed < (*jobPtr).src.size) as core::ffi::c_uint);
+        fps.nbActiveWorkers = (fps.nbActiveWorkers).wrapping_add(core::ffi::c_uint::from(
+            (*jobPtr).consumed < (*jobPtr).src.size,
+        ));
         jobNb += 1;
     }
     fps
@@ -1640,7 +1641,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     // flush might waste up to targetSectionSize-1 bytes. Another extra
     // for the overlap (if > 0), then one to fill which doesn't overlap
     // with the LDM window.
-    let nbSlackBuffers = (2 + ((*mtctx).targetPrefixSize > 0) as core::ffi::c_int) as size_t;
+    let nbSlackBuffers = 2 + size_t::from((*mtctx).targetPrefixSize > 0);
     let slackSize = (*mtctx).targetSectionSize * nbSlackBuffers;
     // Compute the total size, and always have enough slack
     let nbWorkers = ((*mtctx).params.nbWorkers.max(1)) as size_t;
@@ -1763,11 +1764,11 @@ unsafe fn ZSTDMT_createCompressionJob(
         (*((*mtctx).jobs).offset(jobID as isize)).serial = &mut (*mtctx).serial;
         (*((*mtctx).jobs).offset(jobID as isize)).jobID = (*mtctx).nextJobID;
         (*((*mtctx).jobs).offset(jobID as isize)).firstJob =
-            ((*mtctx).nextJobID == 0) as core::ffi::c_uint;
+            core::ffi::c_uint::from((*mtctx).nextJobID == 0);
         (*((*mtctx).jobs).offset(jobID as isize)).lastJob = endFrame as core::ffi::c_uint;
-        (*((*mtctx).jobs).offset(jobID as isize)).frameChecksumNeeded =
-            ((*mtctx).params.fParams.checksumFlag != 0 && endFrame && (*mtctx).nextJobID > 0)
-                as core::ffi::c_uint;
+        (*((*mtctx).jobs).offset(jobID as isize)).frameChecksumNeeded = core::ffi::c_uint::from(
+            (*mtctx).params.fParams.checksumFlag != 0 && endFrame && (*mtctx).nextJobID > 0,
+        );
         (*((*mtctx).jobs).offset(jobID as isize)).dstFlushed = 0;
 
         // Update the round buffer pos and clear the input buffer to be reset
@@ -1931,7 +1932,7 @@ unsafe fn ZSTDMT_flushProduced(
     }
     (*mtctx).allJobsCompleted = (*mtctx).frameEnded; // all jobs are entirely flushed => if this one is last one, frame is completed
     if end == ZSTD_e_end {
-        return ((*mtctx).frameEnded == 0) as core::ffi::c_int as size_t; // for ZSTD_e_end, question becomes: is frame completed ?
+        return size_t::from((*mtctx).frameEnded == 0); // for ZSTD_e_end, question becomes: is frame completed ?
     }
 
     0 // internal buffers fully flushed

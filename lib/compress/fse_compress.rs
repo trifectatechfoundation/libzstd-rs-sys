@@ -278,7 +278,7 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
         }
         bitStream = bitStream.wrapping_add((count as u32) << bitCount);
         bitCount += nbBits as core::ffi::c_uint;
-        bitCount -= (count < max) as core::ffi::c_uint;
+        bitCount -= core::ffi::c_uint::from(count < max);
         previousIs0 = count == 1;
         if remaining < 1 {
             return Err(Error::GENERIC);
@@ -540,9 +540,10 @@ pub(crate) unsafe fn FSE_normalizeCount(
             if proba < 8 {
                 let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
-                    + ((u64::from(*count.add(s)) * step).wrapping_sub((proba as u64) << scale)
-                        > restToBeat) as core::ffi::c_int)
-                    as core::ffi::c_short;
+                    + core::ffi::c_int::from(
+                        (u64::from(*count.add(s)) * step).wrapping_sub((proba as u64) << scale)
+                            > restToBeat,
+                    )) as core::ffi::c_short;
             }
             if proba > largestP {
                 largestP = proba;

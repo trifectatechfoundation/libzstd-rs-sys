@@ -324,7 +324,7 @@ pub unsafe fn HUF_readCTable(
         &mut tableLog,
         src,
     )?;
-    *hasZeroWeights = (rankVal[0] > 0) as c_int as c_uint;
+    *hasZeroWeights = c_uint::from(rankVal[0] > 0);
 
     /* check result */
     if tableLog > HUF_TABLELOG_MAX as u32 {
@@ -1136,7 +1136,7 @@ unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
-    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
+    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + size_t::from(nbBits > 0)
 }
 
 #[inline(always)]

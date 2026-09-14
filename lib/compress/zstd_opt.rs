@@ -127,7 +127,7 @@ unsafe fn ZSTD_downscaleStats(
         let base = (if base1 != 0 {
             1
         } else {
-            (*table.offset(s as isize) > 0) as core::ffi::c_int
+            core::ffi::c_int::from(*table.offset(s as isize) > 0)
         }) as core::ffi::c_uint;
         let newStat = base.wrapping_add(*table.offset(s as isize) >> shift);
         sum = (sum as core::ffi::c_uint).wrapping_add(newStat);
@@ -1389,9 +1389,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 - ZSTD_litLengthPrice((1 - 1) as u32, &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int)
                                 < 0
-                            && (ip.offset(cur as isize) < iend) as core::ffi::c_int
-                                as core::ffi::c_long
-                                != 0
+                            && ip.offset(cur as isize) < iend
                         {
                             // check next position, in case it would be cheaper
                             let with1literal = prevMatch.price

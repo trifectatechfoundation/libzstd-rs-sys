@@ -182,9 +182,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     ];
 
     // init
-    ip = ip.offset(
-        (ip.offset_from(prefixLowest) as core::ffi::c_long == 0) as core::ffi::c_int as isize,
-    );
+    ip = ip.offset(isize::from(
+        ip.offset_from(prefixLowest) as core::ffi::c_long == 0,
+    ));
     let current = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let windowLow = ZSTD_getLowestPrefixIndex(ms, current, cParams.windowLog);
     let maxRep = current.wrapping_sub(windowLow);

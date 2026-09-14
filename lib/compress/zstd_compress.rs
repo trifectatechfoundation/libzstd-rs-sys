@@ -1697,7 +1697,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         202 => {
             (*CCtxParams).fParams.noDictIDFlag = core::ffi::c_int::from(value == 0);
-            ((*CCtxParams).fParams.noDictIDFlag == 0) as core::ffi::c_int as size_t
+            size_t::from((*CCtxParams).fParams.noDictIDFlag == 0)
         }
         1000 => {
             (*CCtxParams).forceWindow = core::ffi::c_int::from(value != 0);
@@ -1942,7 +1942,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
             *value = (*CCtxParams).fParams.checksumFlag;
         }
         202 => {
-            *value = ((*CCtxParams).fParams.noDictIDFlag == 0) as core::ffi::c_int;
+            *value = core::ffi::c_int::from((*CCtxParams).fParams.noDictIDFlag == 0);
         }
         1000 => {
             *value = (*CCtxParams).forceWindow;
@@ -5064,9 +5064,9 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     wkspSize: size_t,
 ) -> Result<(), Error> {
     let litSize = (seqStorePtr.lit).offset_from(seqStorePtr.litStart) as size_t;
-    let huf_useOptDepth = (cctxParams.cParams.strategy
-        >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let huf_useOptDepth = core::ffi::c_int::from(
+        cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint,
+    );
     let hufFlags = if huf_useOptDepth != 0 {
         HUF_flags_optimalDepth as core::ffi::c_int
     } else {
@@ -5110,9 +5110,9 @@ unsafe fn ZSTD_estimateBlockSize_literal(
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
-    let literalSectionHeaderSize =
-        (3 + (litSize >= (1 << 10) as size_t) as core::ffi::c_int
-            + (litSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
+    let literalSectionHeaderSize = 3
+        + size_t::from(litSize >= (1 << 10) as size_t)
+        + size_t::from(litSize >= (16 * (1 << 10)) as size_t);
     let singleStream = litSize < 256;
 
     if hufMetadata.hType == SymbolEncodingType::Basic {
@@ -6176,10 +6176,10 @@ unsafe fn ZSTD_writeFrameHeader(
     } else {
         dictIDSizeCodeLength
     };
-    let checksumFlag = (params.fParams.checksumFlag > 0) as core::ffi::c_int as u32;
+    let checksumFlag = u32::from(params.fParams.checksumFlag > 0);
     let windowSize = 1 << params.cParams.windowLog;
-    let singleSegment = (params.fParams.contentSizeFlag != 0 && windowSize as u64 >= pledgedSrcSize)
-        as core::ffi::c_int as u32;
+    let singleSegment =
+        u32::from(params.fParams.contentSizeFlag != 0 && windowSize as u64 >= pledgedSrcSize);
     let windowLogByte = ((params.cParams.windowLog)
         .wrapping_sub(ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint)
         << 3) as u8;
@@ -7077,9 +7077,11 @@ unsafe fn ZSTD_writeEpilogue(
 
 pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
     if (*cctx).traceCtx != 0 {
-        let streaming = ((*cctx).inBuffSize > 0
-            || (*cctx).outBuffSize > 0
-            || (*cctx).appliedParams.nbWorkers > 0) as core::ffi::c_int;
+        let streaming = core::ffi::c_int::from(
+            (*cctx).inBuffSize > 0
+                || (*cctx).outBuffSize > 0
+                || (*cctx).appliedParams.nbWorkers > 0,
+        );
         let mut trace = ZSTD_Trace::default();
         trace.version = ZSTD_VERSION_NUMBER as core::ffi::c_uint;
         trace.streaming = streaming;
@@ -8292,9 +8294,9 @@ unsafe fn ZSTD_compressStream_generic(
                     match current_block_156 {
                         16754622181974910496 => {}
                         _ => {
-                            let inputBuffered = ((*zcs).appliedParams.inBufferMode
-                                == ZSTD_bm_buffered)
-                                as core::ffi::c_int;
+                            let inputBuffered = core::ffi::c_int::from(
+                                (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered,
+                            );
                             let cDst;
                             let cSize_0: size_t;
                             let mut oSize = oend.offset_from_unsigned(op);
@@ -8639,9 +8641,8 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         if (*cctx).appliedParams.inBufferMode == ZSTD_bm_buffered {
             // for small input: avoid automatic flush on reaching end of block, since
             // it would require to add a 3-bytes null block to end frame
-            (*cctx).inBuffTarget = ((*cctx).blockSizeMax).wrapping_add(
-                ((*cctx).blockSizeMax as u64 == pledgedSrcSize) as core::ffi::c_int as size_t,
-            );
+            (*cctx).inBuffTarget = ((*cctx).blockSizeMax)
+                .wrapping_add(size_t::from((*cctx).blockSizeMax as u64 == pledgedSrcSize));
         } else {
             (*cctx).inBuffTarget = 0;
         }
@@ -9223,7 +9224,7 @@ unsafe fn blockSize_explicitDelimiter(
     let mut blockSize = 0usize;
 
     for spos in (seqPos.idx as size_t)..inSeqsSize {
-        end = ((*inSeqs.add(spos)).offset == 0) as core::ffi::c_int;
+        end = core::ffi::c_int::from((*inSeqs.add(spos)).offset == 0);
         blockSize = blockSize.wrapping_add(
             ((*inSeqs.add(spos)).litLength).wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
         );
@@ -9959,7 +9960,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
 }
 
 unsafe fn inBuffer_forEndFlush(zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
-    let stableInput = ((*zcs).appliedParams.inBufferMode == ZSTD_bm_stable) as core::ffi::c_int;
+    let stableInput = core::ffi::c_int::from((*zcs).appliedParams.inBufferMode == ZSTD_bm_stable);
     if stableInput != 0 {
         (*zcs).expectedInBuffer
     } else {
@@ -11154,9 +11155,9 @@ fn ZSTD_getCParams_internal(
     mode: CParamMode,
 ) -> ZSTD_compressionParameters {
     let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
-    let tableID = ((rSize <= (256 * (1 << 10)) as u64) as core::ffi::c_int
-        + (rSize <= (128 * (1 << 10)) as u64) as core::ffi::c_int
-        + (rSize <= (16 * (1 << 10)) as u64) as core::ffi::c_int) as u32;
+    let tableID = u32::from(rSize <= (256 * (1 << 10)) as u64)
+        + u32::from(rSize <= (128 * (1 << 10)) as u64)
+        + u32::from(rSize <= (16 * (1 << 10)) as u64);
 
     let row = if compressionLevel == 0 {
         ZSTD_CLEVEL_DEFAULT
