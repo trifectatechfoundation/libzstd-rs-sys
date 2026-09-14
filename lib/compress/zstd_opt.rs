@@ -1546,8 +1546,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                                     (*opt.offset(last_pos as isize)).price =
                                                         ZSTD_MAX_PRICE;
                                                     // just needs to be != 0, to mean "not an end of match
-                                                    (*opt.offset(last_pos as isize)).litlen =
-                                                        (0 == 0) as core::ffi::c_int as u32;
+                                                    (*opt.offset(last_pos as isize)).litlen = 1;
                                                 }
                                                 (*opt.offset(pos_0 as isize)).mlen = mlen;
                                                 (*opt.offset(pos_0 as isize)).off = offset;
