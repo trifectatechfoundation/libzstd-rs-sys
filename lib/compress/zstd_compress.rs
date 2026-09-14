@@ -3928,7 +3928,7 @@ fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
     cctxParams.postBlockSplitter == ParamSwitch::Enable
 }
 
-/// Returns a ZSTD_symbolEncodingTypeStats_t, or a zstd error code in the `size` field.
+/// Returns a ZSTD_symbolEncodingTypeStats_t, or a zstd error.
 /// Modifies `nextEntropy` to have the appropriate values as a side effect.
 /// nbSeq must be greater than 0.
 ///
@@ -3944,7 +3944,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     countWorkspace: *mut core::ffi::c_uint,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
-) -> ZSTD_symbolEncodingTypeStats_t {
+) -> Result<ZSTD_symbolEncodingTypeStats_t, Error> {
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
@@ -3983,7 +3983,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         DefaultPolicy::Allowed,
         strategy,
     );
-    let countSize = match ZSTD_buildCTable(
+    let countSize = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.litlengthCTable,
@@ -3999,13 +3999,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.litlengthCTable,
         entropyWorkspace,
         entropyWkspSize,
-    ) {
-        Ok(countSize) => countSize,
-        Err(err) => {
-            stats.size = err.to_error_code();
-            return stats;
-        }
-    };
+    )?;
     if stats.LLtype == SymbolEncodingType::Compressed {
         stats.lastCountSize = countSize;
     }
@@ -4042,7 +4036,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         defaultPolicy,
         strategy,
     );
-    let countSize = match ZSTD_buildCTable(
+    let countSize = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.offcodeCTable,
@@ -4058,13 +4052,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.offcodeCTable,
         entropyWorkspace,
         entropyWkspSize,
-    ) {
-        Ok(countSize) => countSize,
-        Err(err) => {
-            stats.size = err.to_error_code();
-            return stats;
-        }
-    };
+    )?;
     if stats.Offtype == SymbolEncodingType::Compressed {
         stats.lastCountSize = countSize;
     }
@@ -4095,7 +4083,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         DefaultPolicy::Allowed,
         strategy,
     );
-    let countSize = match ZSTD_buildCTable(
+    let countSize = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.matchlengthCTable,
@@ -4111,13 +4099,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.matchlengthCTable,
         entropyWorkspace,
         entropyWkspSize,
-    ) {
-        Ok(countSize) => countSize,
-        Err(err) => {
-            stats.size = err.to_error_code();
-            return stats;
-        }
-    };
+    )?;
     if stats.MLtype == SymbolEncodingType::Compressed {
         stats.lastCountSize = countSize;
     }
@@ -4125,7 +4107,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
 
     stats.size = op.offset_from_unsigned(ostart);
 
-    stats
+    Ok(stats)
 }
 
 pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: core::ffi::c_int = 20;
@@ -4223,7 +4205,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let seqHead = op;
     op = op.add(1);
     // build stats for sequences
-    let stats = ZSTD_buildSequencesStatistics(
+    let stats = match ZSTD_buildSequencesStatistics(
         seqStorePtr,
         nbSeq,
         &prevEntropy.fse,
@@ -4234,11 +4216,10 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         count,
         entropyWorkspace,
         entropyWkspSize,
-    );
-    let err_code_0 = stats.size;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    ) {
+        Ok(stats) => stats,
+        Err(err) => return err.to_error_code(),
+    };
     *seqHead = ((stats.LLtype as u32) << 6)
         .wrapping_add((stats.Offtype as u32) << 4)
         .wrapping_add((stats.MLtype as u32) << 2) as u8;
@@ -4989,7 +4970,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
     hufFlags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let wkspStart = workspace as *mut u8;
     let wkspEnd = wkspStart.add(wkspSize);
     let countWkspStart = wkspStart;
@@ -5007,7 +4988,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
 
     if literalsCompressionIsDisabled {
         hufMetadata.hType = SymbolEncodingType::Basic;
-        return 0;
+        return Ok(0);
     }
 
     // small ? don't even attempt compression (speed opt)
@@ -5018,30 +4999,27 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }) as size_t;
     if srcSize <= minLitSize {
         hufMetadata.hType = SymbolEncodingType::Basic;
-        return 0;
+        return Ok(0);
     }
 
     // Scan input and build symbol stats
-    let largest = match HIST_count_wksp(
+    let largest = HIST_count_wksp(
         countWksp,
         &mut maxSymbolValue,
         src as *const u8 as *const core::ffi::c_void,
         srcSize,
         workspace,
         wkspSize,
-    ) {
-        Ok(largest) => largest as usize,
-        Err(err) => return err.to_error_code(),
-    };
+    )? as usize;
     if largest == srcSize {
         // only one literal symbol
         hufMetadata.hType = SymbolEncodingType::Rle;
-        return 0;
+        return Ok(0);
     }
     if largest <= (srcSize >> 7).wrapping_add(4) {
         // heuristic: likely not compressible
         hufMetadata.hType = SymbolEncodingType::Basic;
-        return 0;
+        return Ok(0);
     }
 
     // Validate the previous Huffman table
@@ -5063,17 +5041,14 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         countWksp,
         hufFlags,
     );
-    let maxBits = match HUF_buildCTable_wksp(
+    let maxBits = HUF_buildCTable_wksp(
         &mut nextHuf.CTable,
         countWksp,
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-    ) {
-        Ok(maxBits) => maxBits,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     huffLog = maxBits as u32;
     // Build and write the CTable
     let newCSize = HUF_estimateCompressedSize(&nextHuf.CTable, countWksp, maxSymbolValue);
@@ -5094,18 +5069,18 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         {
             core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
             hufMetadata.hType = SymbolEncodingType::Repeat;
-            return 0;
+            return Ok(0);
         }
     }
     if newCSize.wrapping_add(hSize) >= srcSize {
         core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         hufMetadata.hType = SymbolEncodingType::Basic;
-        return 0;
+        return Ok(0);
     }
     hufMetadata.hType = SymbolEncodingType::Compressed;
     nextHuf.repeatMode = HUF_repeat::Check;
 
-    hSize
+    Ok(hSize)
 }
 
 pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
@@ -5137,7 +5112,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     fseMetadata: &mut ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let strategy = cctxParams.cParams.strategy;
     let nbSeq = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart) as size_t;
     let ostart = (fseMetadata.fseTablesBuffer).as_mut_ptr();
@@ -5160,32 +5135,23 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
             countWorkspace,
             entropyWorkspace as *mut core::ffi::c_void,
             entropyWorkspaceSize,
-        )
+        )?
     } else {
         ZSTD_buildDummySequencesStatistics(nextEntropy)
     };
-    let err_code = stats.size;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
 
     fseMetadata.llType = stats.LLtype;
     fseMetadata.ofType = stats.Offtype;
     fseMetadata.mlType = stats.MLtype;
     fseMetadata.lastCountSize = stats.lastCountSize;
 
-    stats.size
+    Ok(stats.size)
 }
 
 /// Builds entropy for the block.
 /// Requires workspace size ENTROPY_WORKSPACE_SIZE
 ///
 /// Note: also employed in superblock
-///
-/// # Returns
-///
-/// - 0 on success
-/// - Or an error code
 pub unsafe fn ZSTD_buildBlockEntropyStats(
     seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
@@ -5194,7 +5160,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-) -> size_t {
+) -> Result<(), Error> {
     let litSize = (seqStorePtr.lit).offset_from(seqStorePtr.litStart) as size_t;
     let huf_useOptDepth = (cctxParams.cParams.strategy
         >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint)
@@ -5215,11 +5181,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         workspace,
         wkspSize,
         hufFlags,
-    );
-    let err_code = (*entropyMetadata).hufMetadata.hufDesSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    )?;
 
     (*entropyMetadata).fseMetadata.fseTablesSize = ZSTD_buildBlockEntropyStats_sequences(
         seqStorePtr,
@@ -5229,13 +5191,9 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         &mut (*entropyMetadata).fseMetadata,
         workspace,
         wkspSize,
-    );
-    let err_code_0 = (*entropyMetadata).fseMetadata.fseTablesSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    )?;
 
-    0
+    Ok(())
 }
 
 /// Returns the size estimate for the literals section (header + content) of a block
@@ -5462,7 +5420,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
 ) -> size_t {
     let entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t =
         &mut (*zc).blockSplitCtx.entropyMetadata;
-    let err_code = ZSTD_buildBlockEntropyStats(
+    if let Err(err) = ZSTD_buildBlockEntropyStats(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5470,9 +5428,8 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
 
     ZSTD_estimateBlockSize(

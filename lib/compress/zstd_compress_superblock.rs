@@ -963,7 +963,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
 ) -> size_t {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
 
-    let err_code = ZSTD_buildBlockEntropyStats(
+    if let Err(err) = ZSTD_buildBlockEntropyStats(
         &(*zc).seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -971,9 +971,8 @@ pub unsafe fn ZSTD_compressSuperBlock(
         &mut entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
 
     ZSTD_compressSubBlock_multi(
