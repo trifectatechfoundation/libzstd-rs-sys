@@ -1688,19 +1688,19 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).cParams.strategy as size_t
         }
         200 => {
-            (*CCtxParams).fParams.contentSizeFlag = (value != 0) as core::ffi::c_int;
+            (*CCtxParams).fParams.contentSizeFlag = core::ffi::c_int::from(value != 0);
             (*CCtxParams).fParams.contentSizeFlag as size_t
         }
         201 => {
-            (*CCtxParams).fParams.checksumFlag = (value != 0) as core::ffi::c_int;
+            (*CCtxParams).fParams.checksumFlag = core::ffi::c_int::from(value != 0);
             (*CCtxParams).fParams.checksumFlag as size_t
         }
         202 => {
-            (*CCtxParams).fParams.noDictIDFlag = (value == 0) as core::ffi::c_int;
+            (*CCtxParams).fParams.noDictIDFlag = core::ffi::c_int::from(value == 0);
             ((*CCtxParams).fParams.noDictIDFlag == 0) as core::ffi::c_int as size_t
         }
         1000 => {
-            (*CCtxParams).forceWindow = (value != 0) as core::ffi::c_int;
+            (*CCtxParams).forceWindow = core::ffi::c_int::from(value != 0);
             (*CCtxParams).forceWindow as size_t
         }
         1001 => {
@@ -1749,7 +1749,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).rsyncable as size_t
         }
         1005 => {
-            (*CCtxParams).enableDedicatedDictSearch = (value != 0) as core::ffi::c_int;
+            (*CCtxParams).enableDedicatedDictSearch = core::ffi::c_int::from(value != 0);
             (*CCtxParams).enableDedicatedDictSearch as size_t
         }
         160 => {
@@ -1857,7 +1857,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             if !ZSTD_cParameter::ZSTD_c_deterministicRefPrefix.within_bounds(value) {
                 return Error::parameter_outOfBound.to_error_code();
             }
-            (*CCtxParams).deterministicRefPrefix = (value != 0) as core::ffi::c_int;
+            (*CCtxParams).deterministicRefPrefix = core::ffi::c_int::from(value != 0);
             (*CCtxParams).deterministicRefPrefix as size_t
         }
         1013 => {
@@ -2128,7 +2128,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_cParameter::ZSTD_c_contentSizeFlag,
-        (fparams.contentSizeFlag != 0) as core::ffi::c_int,
+        core::ffi::c_int::from(fparams.contentSizeFlag != 0),
     );
     if ERR_isError(err_code) {
         return err_code;
@@ -2136,7 +2136,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code_0 = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_cParameter::ZSTD_c_checksumFlag,
-        (fparams.checksumFlag != 0) as core::ffi::c_int,
+        core::ffi::c_int::from(fparams.checksumFlag != 0),
     );
     if ERR_isError(err_code_0) {
         return err_code_0;
@@ -2144,7 +2144,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code_1 = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_cParameter::ZSTD_c_dictIDFlag,
-        (fparams.noDictIDFlag == 0) as core::ffi::c_int,
+        core::ffi::c_int::from(fparams.noDictIDFlag == 0),
     );
     if ERR_isError(err_code_1) {
         return err_code_1;
@@ -2426,7 +2426,7 @@ fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_compressio
 /// Condition for correct operation: hashLog > 1.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cycleLog))]
 pub extern "C" fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
-    let btScale = (strat >= ZSTD_btlazy2) as u32;
+    let btScale = u32::from(strat >= ZSTD_btlazy2);
     hashLog.wrapping_sub(btScale)
 }
 
@@ -3310,7 +3310,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     // init params
     (*zc).blockState.matchState.cParams = params.cParams;
     (*zc).blockState.matchState.prefetchCDictTables =
-        (params.prefetchCDictTables == ParamSwitch::Enable) as core::ffi::c_int;
+        core::ffi::c_int::from(params.prefetchCDictTables == ParamSwitch::Enable);
     (*zc).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1) as core::ffi::c_ulonglong;
     (*zc).consumedSrcSize = 0;
     (*zc).producedCSize = 0;
@@ -3739,7 +3739,7 @@ pub unsafe extern "C" fn ZSTD_copyCCtx(
     if pledgedSrcSize == 0 {
         pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    fParams.contentSizeFlag = (pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN) as core::ffi::c_int;
+    fParams.contentSizeFlag = core::ffi::c_int::from(pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN);
 
     ZSTD_copyCCtx_internal(dstCCtx, srcCCtx, fParams, pledgedSrcSize, zbuff)
 }
@@ -5219,9 +5219,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     writeEntropy: bool,
 ) -> size_t {
     let sequencesSectionHeaderSize =
-        (1 + 1
-            + (nbSeq >= 128) as core::ffi::c_int
-            + (nbSeq >= LONGNBSEQ as size_t) as core::ffi::c_int) as size_t;
+        1 + 1 + usize::from(nbSeq >= 128) + usize::from(nbSeq >= LONGNBSEQ as size_t);
     let mut cSeqSizeEstimate = 0usize;
 
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
@@ -6171,9 +6169,8 @@ unsafe fn ZSTD_writeFrameHeader(
     dictID: u32,
 ) -> size_t {
     let op = dst as *mut u8;
-    let dictIDSizeCodeLength = ((dictID > 0) as core::ffi::c_int
-        + (dictID >= 256) as core::ffi::c_int
-        + (dictID >= 65536) as core::ffi::c_int) as u32;
+    let dictIDSizeCodeLength =
+        u32::from(dictID > 0) + u32::from(dictID >= 256) + u32::from(dictID >= 65536);
     let dictIDSizeCode = if params.fParams.noDictIDFlag != 0 {
         0
     } else {
@@ -6186,13 +6183,13 @@ unsafe fn ZSTD_writeFrameHeader(
     let windowLogByte = ((params.cParams.windowLog)
         .wrapping_sub(ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint)
         << 3) as u8;
-    let fcsCode = (if params.fParams.contentSizeFlag != 0 {
-        (pledgedSrcSize >= 256) as core::ffi::c_int
-            + (pledgedSrcSize >= (65536 + 256) as u64) as core::ffi::c_int
-            + (pledgedSrcSize >= 0xffffffff as core::ffi::c_uint as u64) as core::ffi::c_int
+    let fcsCode = if params.fParams.contentSizeFlag != 0 {
+        u32::from(pledgedSrcSize >= 256)
+            + u32::from(pledgedSrcSize >= (65536 + 256) as u64)
+            + u32::from(pledgedSrcSize >= 0xffffffff as core::ffi::c_uint as u64)
     } else {
         0
-    }) as u32;
+    };
     let frameHeaderDescriptionByte = dictIDSizeCode
         .wrapping_add(checksumFlag << 2)
         .wrapping_add(singleSegment << 5)

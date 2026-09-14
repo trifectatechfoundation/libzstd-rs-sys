@@ -215,7 +215,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     let hashTable = ms.hashTable;
     let hlog = cParams.hashLog;
     let stepSize = (cParams.targetLength)
-        .wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint)
+        .wrapping_add(u32::from(cParams.targetLength == 0))
         .wrapping_add(1) as size_t; // min 2
     let base = ms.window.base;
     let istart = src as *const u8;
@@ -545,8 +545,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let hashTable = ms.hashTable;
     let hlog = cParams.hashLog;
     // support stepSize of 0
-    let stepSize =
-        (cParams.targetLength).wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint);
+    let stepSize = (cParams.targetLength).wrapping_add(u32::from(cParams.targetLength == 0));
     let base = ms.window.base;
     let istart = src as *const u8;
     let mut ip0 = istart;
@@ -857,7 +856,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
     let hlog = cParams.hashLog;
     // support stepSize of 0
     let stepSize = (cParams.targetLength)
-        .wrapping_add((cParams.targetLength == 0) as core::ffi::c_uint)
+        .wrapping_add(u32::from(cParams.targetLength == 0))
         .wrapping_add(1) as size_t;
     let base = ms.window.base;
     let dictBase = ms.window.dictBase;
