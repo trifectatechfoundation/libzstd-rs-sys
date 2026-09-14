@@ -2162,7 +2162,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         }
 
         if dictMode == DictMode::NoDict {
-            while (ip <= ilimit) as core::ffi::c_int & (offset_2 > 0) as core::ffi::c_int != 0
+            while (ip <= ilimit) & (offset_2 > 0)
                 && MEM_read32(ip as *const core::ffi::c_void)
                     == MEM_read32(ip.sub(offset_2 as usize) as *const core::ffi::c_void)
             {
