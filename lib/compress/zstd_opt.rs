@@ -851,10 +851,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             (*matches.offset(mnum as isize)).off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
             (*matches.offset(mnum as isize)).len = repLen;
             mnum = mnum.wrapping_add(1);
-            if (repLen > sufficient_len) as core::ffi::c_int
-                | (ip.offset(repLen as isize) == iLimit) as core::ffi::c_int
-                != 0
-            {
+            if (repLen > sufficient_len) | (ip.offset(repLen as isize) == iLimit) {
                 return mnum;
             }
         }
@@ -884,10 +881,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 (*matches).off = curr.wrapping_sub(matchIndex3).wrapping_add(ZSTD_REP_NUM);
                 (*matches).len = mlen as u32;
                 mnum = 1;
-                if (mlen > sufficient_len as size_t) as core::ffi::c_int
-                    | (ip.add(mlen) == iLimit) as core::ffi::c_int
-                    != 0
-                {
+                if (mlen > sufficient_len as size_t) | (ip.add(mlen) == iLimit) {
                     ms.nextToUpdate = curr.wrapping_add(1); // skip insertion
                     return 1;
                 }
@@ -944,10 +938,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             (*matches.offset(mnum as isize)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
             // equal: no way to know if inf or sup
-            if (matchLength > ZSTD_OPT_NUM as size_t) as core::ffi::c_int
-                | (ip.add(matchLength) == iLimit) as core::ffi::c_int
-                != 0
-            {
+            if (matchLength > ZSTD_OPT_NUM as size_t) | (ip.add(matchLength) == iLimit) {
                 if dictMode == DictMode::DictMatchState {
                     nbCompares = 0; // break should also skip searching dms
                 }
@@ -1021,10 +1012,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
                 // equal: no way to know if inf or sup
-                if (matchLength_0 > ZSTD_OPT_NUM as size_t) as core::ffi::c_int
-                    | (ip.add(matchLength_0) == iLimit) as core::ffi::c_int
-                    != 0
-                {
+                if (matchLength_0 > ZSTD_OPT_NUM as size_t) | (ip.add(matchLength_0) == iLimit) {
                     break; // drop, to guarantee consistency (miss a little bit of compression)
                 }
             }

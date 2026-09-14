@@ -1018,10 +1018,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                 let lastBlockSize1 =
                                                     (*job).src.size & chunkSize.wrapping_sub(1);
                                                 let lastBlockSize = if (lastBlockSize1 == 0)
-                                                    as core::ffi::c_int
                                                     & ((*job).src.size >= chunkSize)
-                                                        as core::ffi::c_int
-                                                    != 0
                                                 {
                                                     chunkSize
                                                 } else {
