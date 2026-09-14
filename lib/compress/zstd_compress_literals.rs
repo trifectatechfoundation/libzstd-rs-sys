@@ -33,13 +33,13 @@ pub unsafe fn ZSTD_noCompressLiterals(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
     let flSize =
         (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
 
     if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     match flSize {
@@ -70,7 +70,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
 
     core::ptr::copy_nonoverlapping(src.cast::<u8>(), ostart.offset(flSize as isize), srcSize);
 
-    srcSize.wrapping_add(flSize as size_t)
+    Ok(srcSize.wrapping_add(flSize as size_t))
 }
 
 unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
@@ -88,10 +88,9 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
-    let flSize =
-        (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
+    let flSize = 1 + usize::from(srcSize > 31) + usize::from(srcSize > 4095);
 
     assert!(dstCapacity >= 4);
     assert!(allBytesIdentical(src, srcSize));
@@ -122,8 +121,8 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
         _ => {} // not necessary : flSize is {1,2,3}
     }
 
-    *ostart.offset(flSize as isize) = *(src as *const u8);
-    flSize.wrapping_add(1) as size_t
+    *ostart.add(flSize) = *(src as *const u8);
+    Ok(flSize + 1)
 }
 
 /// # Returns
@@ -156,7 +155,7 @@ pub unsafe fn ZSTD_compressLiterals(
     disableLiteralCompression: bool,
     suspectUncompressible: bool,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let lhSize = (3
         + (srcSize >= (1 << 10) as size_t) as core::ffi::c_int
         + (srcSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
@@ -177,7 +176,7 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     if dstCapacity < lhSize.wrapping_add(1) {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     let mut repeat = prevHuf.repeatMode;
@@ -279,5 +278,5 @@ pub unsafe fn ZSTD_compressLiterals(
         _ => {} // not possible : lhSize is {3,4,5}
     }
 
-    lhSize.wrapping_add(cLitSize)
+    Ok(lhSize.wrapping_add(cLitSize))
 }

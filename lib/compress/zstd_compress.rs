@@ -4157,7 +4157,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let suspectUncompressible = numSequences == 0
         || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
 
-    let cSize = ZSTD_compressLiterals(
+    let cSize = match ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,
         dstCapacity,
         literals,
@@ -4170,11 +4170,10 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         ZSTD_literalsCompressionIsDisabled(cctxParams),
         suspectUncompressible,
         bmi2,
-    );
-    let err_code = cSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(cSize) => cSize,
+        Err(err) => return err.to_error_code(),
+    };
     op = op.add(cSize);
 
     // Sequences Header
