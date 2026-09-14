@@ -397,7 +397,7 @@ pub type ZSTD_SequenceCopier_f = unsafe fn(
     *const core::ffi::c_void,
     size_t,
     ParamSwitch,
-) -> size_t;
+) -> Result<size_t, Error>;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -4644,7 +4644,7 @@ unsafe fn ZSTD_buildSeqStore(
             if seqLenSum > srcSize {
                 return Error::externalSequences_invalid.to_error_code();
             }
-            let err_code_0 = ZSTD_transferSequences_wBlockDelim(
+            if let Err(err) = ZSTD_transferSequences_wBlockDelim(
                 zc,
                 &mut seqPos,
                 (*zc).extSeqBuf,
@@ -4652,9 +4652,8 @@ unsafe fn ZSTD_buildSeqStore(
                 src,
                 srcSize,
                 (*zc).appliedParams.searchForExternalRepcodes,
-            );
-            if ERR_isError(err_code_0) {
-                return err_code_0;
+            ) {
+                return err.to_error_code();
             }
             ms.ldmSeqStore = core::ptr::null();
             return BuildSeqStore::Compress as size_t;
@@ -8991,7 +8990,7 @@ pub unsafe extern "C" fn ZSTD_compress2(
 ///
 /// # Returns
 ///
-/// 0, or a ZSTD error code if sequence is not valid
+/// A ZSTD error if sequence is not valid
 fn ZSTD_validateSequence(
     offBase: u32,
     matchLength: u32,
@@ -9000,7 +8999,7 @@ fn ZSTD_validateSequence(
     windowLog: u32,
     dictSize: size_t,
     useSequenceProducer: bool,
-) -> size_t {
+) -> Result<(), Error> {
     let windowSize = 1 << windowLog;
     // posInSrc represents the amount of data the decoder would decode up to this point.
     // As long as the amount of data decoded is less than or equal to window size, offsets may be
@@ -9018,15 +9017,15 @@ fn ZSTD_validateSequence(
     }) as size_t;
 
     if offBase as size_t > offsetBound.wrapping_add(3) {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
     // Validate maxNbSeq is large enough for the given matchLength and minMatch
     if (matchLength as size_t) < matchLenLowerBound {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
-    0
+    Ok(())
 }
 
 /// Returns an offset code, given a sequence's raw offset, the ongoing repcode array, and whether
@@ -9061,7 +9060,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     src: *const core::ffi::c_void,
     blockSize: size_t,
     externalRepSearch: ParamSwitch,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut idx = seqPos.idx;
     let startIdx = idx;
     let mut ip = src as *const u8;
@@ -9097,7 +9096,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
             seqPos.posInSrc = seqPos
                 .posInSrc
                 .wrapping_add(litLength.wrapping_add(matchLength) as size_t);
-            let err_code = ZSTD_validateSequence(
+            ZSTD_validateSequence(
                 offBase,
                 matchLength,
                 (*cctx).appliedParams.cParams.minMatch,
@@ -9105,13 +9104,10 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize as size_t,
                 ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
-            );
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            )?;
         }
         if idx.wrapping_sub(seqPos.idx) as size_t >= (*cctx).seqStore.maxNbSeq {
-            return Error::externalSequences_invalid.to_error_code();
+            return Err(Error::externalSequences_invalid);
         }
         ZSTD_storeSeq(
             &mut (*cctx).seqStore,
@@ -9126,7 +9122,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     }
 
     if idx as size_t == inSeqsSize {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
     // If we skipped repcode search while parsing, we need to update repcodes now
@@ -9164,12 +9160,12 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     }
 
     if ip != iend {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
     seqPos.idx = idx.wrapping_add(1);
 
-    blockSize
+    Ok(blockSize)
 }
 
 /// This function attempts to scan through @blockSize bytes in @src
@@ -9190,7 +9186,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     src: *const core::ffi::c_void,
     blockSize: size_t,
     externalRepSearch: ParamSwitch,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut idx = seqPos.idx;
     let mut startPosInSequence = seqPos.posInSequence;
     let mut endPosInSequence = seqPos.posInSequence.wrapping_add(blockSize as u32);
@@ -9286,7 +9282,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
             seqPos.posInSrc = seqPos
                 .posInSrc
                 .wrapping_add(litLength.wrapping_add(matchLength) as size_t);
-            let err_code = ZSTD_validateSequence(
+            ZSTD_validateSequence(
                 offBase,
                 matchLength,
                 (*cctx).appliedParams.cParams.minMatch,
@@ -9294,14 +9290,11 @@ unsafe fn ZSTD_transferSequences_noDelim(
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize,
                 ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
-            );
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            )?;
         }
 
         if idx.wrapping_sub(seqPos.idx) as size_t >= (*cctx).seqStore.maxNbSeq {
-            return Error::externalSequences_invalid.to_error_code();
+            return Err(Error::externalSequences_invalid);
         }
 
         ZSTD_storeSeq(
@@ -9331,7 +9324,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
         seqPos.posInSrc = seqPos.posInSrc.wrapping_add(lastLLSize as size_t);
     }
 
-    iend.offset_from_unsigned(istart)
+    Ok(iend.offset_from_unsigned(istart))
 }
 
 /// @seqPos represents a position within @inSeqs,
@@ -9464,7 +9457,7 @@ unsafe fn ZSTD_compressSequences_internal(
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        blockSize = sequenceCopier(
+        blockSize = match sequenceCopier(
             cctx,
             &mut seqPos,
             inSeqs,
@@ -9472,11 +9465,10 @@ unsafe fn ZSTD_compressSequences_internal(
             ip as *const core::ffi::c_void,
             blockSize,
             (*cctx).appliedParams.searchForExternalRepcodes,
-        );
-        let err_code_0 = blockSize;
-        if ERR_isError(err_code_0) {
-            return err_code_0;
-        }
+        ) {
+            Ok(blockSize) => blockSize,
+            Err(err) => return err.to_error_code(),
+        };
 
         // If blocks are too small, emit as a nocompress block
         if blockSize
