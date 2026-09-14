@@ -4917,8 +4917,7 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
 unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
     let ip = src;
     let value = *ip;
-    let valueST = (value as u64 as core::ffi::c_ulonglong)
-        .wrapping_mul(0x101010101010101 as core::ffi::c_ulonglong) as size_t;
+    let valueST = u64::from(value).wrapping_mul(0x101010101010101) as size_t;
     let unrollSize = size_of::<size_t>().wrapping_mul(4);
     let unrollMask = unrollSize.wrapping_sub(1);
     let prefixLength = length & unrollMask;
@@ -4934,9 +4933,10 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
         return false;
     }
 
-    for i in (prefixLength..length).step_by(unrollSize) {
+    for chunk in 0..(length - prefixLength) / unrollSize {
+        let i = prefixLength + chunk * unrollSize;
         for u in (0..unrollSize).step_by(size_of::<size_t>()) {
-            if MEM_readST(ip.add(i).add(u) as *const core::ffi::c_void) != valueST {
+            if MEM_readST(ip.add(i).add(u).cast::<core::ffi::c_void>()) != valueST {
                 return false;
             }
         }
