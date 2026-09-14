@@ -710,11 +710,12 @@ fn ZSTD_buildFSETable_body<const N: usize>(
             sv = sv.wrapping_add(add);
         }
 
+        debug_assert!(tableSize.is_multiple_of(2));
         let mut position = 0usize;
-        for s in (0..tableSize).step_by(2) {
-            for u in 0..2 {
+        for pair in wksp.spread[..tableSize].as_chunks::<2>().0 {
+            for (u, &sym) in pair.iter().enumerate() {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                tableDecode[uPosition].baseValue = wksp.spread[s + u] as u32;
+                tableDecode[uPosition].baseValue = sym as u32;
             }
             position = position.wrapping_add(2 * step) & tableMask;
         }
