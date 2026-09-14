@@ -683,19 +683,19 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 pub(crate) unsafe fn FSE_compress_usingCTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     ct: &[FSE_CTable],
 ) -> size_t {
     let fast = dstSize
-        >= srcSize
-            .wrapping_add(srcSize >> 7)
+        >= src
+            .len()
+            .wrapping_add(src.len() >> 7)
             .wrapping_add(4)
             .wrapping_add(size_of::<size_t>());
 
     if fast {
-        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, srcSize, ct)
+        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src.as_ptr().cast(), src.len(), ct)
     } else {
-        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src, srcSize, ct)
+        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src.as_ptr().cast(), src.len(), ct)
     }
 }
