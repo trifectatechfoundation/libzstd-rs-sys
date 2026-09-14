@@ -3834,14 +3834,13 @@ pub const ZSTD_ROWSIZE: core::ffi::c_int = 16;
 
 /// Reduce table indexes by `reducerValue`, or squash to zero.
 /// PreserveMark preserves "unsorted mark" for btlazy2 strategy.
-/// It must be set to a clear 0/1 value, to remove branch during inlining.
 /// Presume table size is a multiple of ZSTD_ROWSIZE to help auto-vectorization.
 #[inline(always)]
 unsafe fn ZSTD_reduceTable_internal(
     table: *mut u32,
     size: u32,
     reducerValue: u32,
-    preserveMark: core::ffi::c_int,
+    preserveMark: bool,
 ) {
     let nbRows = size as core::ffi::c_int / ZSTD_ROWSIZE;
     let mut cellNb = 0;
@@ -3850,7 +3849,7 @@ unsafe fn ZSTD_reduceTable_internal(
 
     for _rowNb in 0..nbRows {
         for _column in 0..ZSTD_ROWSIZE {
-            let newVal = if preserveMark != 0
+            let newVal = if preserveMark
                 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
             {
                 ZSTD_DUBT_UNSORTED_MARK as u32
@@ -3866,11 +3865,11 @@ unsafe fn ZSTD_reduceTable_internal(
 }
 
 unsafe fn ZSTD_reduceTable(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, 0);
+    ZSTD_reduceTable_internal(table, size, reducerValue, false);
 }
 
 unsafe fn ZSTD_reduceTable_btlazy2(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, 1);
+    ZSTD_reduceTable_internal(table, size, reducerValue, true);
 }
 
 /// Rescale all indexes to avoid future overflow (indexes are U32).
