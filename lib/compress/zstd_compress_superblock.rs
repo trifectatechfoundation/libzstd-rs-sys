@@ -202,7 +202,7 @@ unsafe fn ZSTD_seqDecompressedSize(
     sequences: *const SeqDef,
     nbSeqs: size_t,
     litSize: size_t,
-    lastSubBlock: core::ffi::c_int,
+    lastSubBlock: bool,
 ) -> size_t {
     let mut matchLengthSum = 0usize;
     let mut litLengthSum = 0usize;
@@ -212,7 +212,7 @@ unsafe fn ZSTD_seqDecompressedSize(
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
     }
 
-    if lastSubBlock == 0 {
+    if !lastSubBlock {
         assert_eq!(litLengthSum, litSize);
     } else {
         assert!(litLengthSum <= litSize);
@@ -805,7 +805,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
             let mut litEntropyWritten = false;
             let mut seqEntropyWritten = false;
             let litSize = countLiterals(seqStorePtr, sp, seqCount);
-            let decompressedSize = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, 0);
+            let decompressedSize =
+                ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, false);
             let cSize = ZSTD_compressSubBlock(
                 &(*nextCBlock).entropy,
                 entropyMetadata,
@@ -858,7 +859,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut seqEntropyWritten = false;
     let litSize_0 = lend.offset_from_unsigned(lp);
     let seqCount_0 = send.offset_from_unsigned(sp);
-    let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, 1);
+    let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, true);
     let cSize_0 = ZSTD_compressSubBlock(
         &(*nextCBlock).entropy,
         entropyMetadata,
