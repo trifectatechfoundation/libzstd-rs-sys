@@ -539,7 +539,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    hasStep: u32,
+    hasStep: bool,
 ) -> size_t {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
@@ -828,18 +828,18 @@ pub unsafe fn ZSTD_compressBlock_fast_dictMatchState(
 ) -> size_t {
     let mls = ms.cParams.minMatch;
     match mls {
-        5 => {
-            ZSTD_compressBlock_fast_dictMatchState_generic::<5>(ms, seqStore, rep, src, srcSize, 0)
-        }
-        6 => {
-            ZSTD_compressBlock_fast_dictMatchState_generic::<6>(ms, seqStore, rep, src, srcSize, 0)
-        }
-        7 => {
-            ZSTD_compressBlock_fast_dictMatchState_generic::<7>(ms, seqStore, rep, src, srcSize, 0)
-        }
-        _ => {
-            ZSTD_compressBlock_fast_dictMatchState_generic::<4>(ms, seqStore, rep, src, srcSize, 0)
-        }
+        5 => ZSTD_compressBlock_fast_dictMatchState_generic::<5>(
+            ms, seqStore, rep, src, srcSize, false,
+        ),
+        6 => ZSTD_compressBlock_fast_dictMatchState_generic::<6>(
+            ms, seqStore, rep, src, srcSize, false,
+        ),
+        7 => ZSTD_compressBlock_fast_dictMatchState_generic::<7>(
+            ms, seqStore, rep, src, srcSize, false,
+        ),
+        _ => ZSTD_compressBlock_fast_dictMatchState_generic::<4>(
+            ms, seqStore, rep, src, srcSize, false,
+        ),
     }
 }
 
@@ -849,7 +849,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    hasStep: u32,
+    hasStep: bool,
 ) -> size_t {
     let mut current_block: u64;
     let cParams = &ms.cParams;
@@ -1204,9 +1204,9 @@ pub unsafe fn ZSTD_compressBlock_fast_extDict(
 ) -> size_t {
     let mls = ms.cParams.minMatch;
     match mls {
-        5 => ZSTD_compressBlock_fast_extDict_generic::<5>(ms, seqStore, rep, src, srcSize, 0),
-        6 => ZSTD_compressBlock_fast_extDict_generic::<6>(ms, seqStore, rep, src, srcSize, 0),
-        7 => ZSTD_compressBlock_fast_extDict_generic::<7>(ms, seqStore, rep, src, srcSize, 0),
-        _ => ZSTD_compressBlock_fast_extDict_generic::<4>(ms, seqStore, rep, src, srcSize, 0),
+        5 => ZSTD_compressBlock_fast_extDict_generic::<5>(ms, seqStore, rep, src, srcSize, false),
+        6 => ZSTD_compressBlock_fast_extDict_generic::<6>(ms, seqStore, rep, src, srcSize, false),
+        7 => ZSTD_compressBlock_fast_extDict_generic::<7>(ms, seqStore, rep, src, srcSize, false),
+        _ => ZSTD_compressBlock_fast_extDict_generic::<4>(ms, seqStore, rep, src, srcSize, false),
     }
 }
