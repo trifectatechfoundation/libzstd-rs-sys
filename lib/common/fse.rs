@@ -22,7 +22,6 @@ pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
     /* additional 8 bytes for potential table overwrite */
 }
 
-#[expect(dead_code)] // TODO: Remove when used
 pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE(
     maxSymbolValue: usize,
     tableLog: usize,
@@ -71,7 +70,7 @@ pub(crate) struct FSE_symbolCompressionTransform {
 
 /// Pack two consecutive `u16` values into one `u32`.
 #[inline]
-pub(crate) fn FSE_writeU16Pair(first: u16, second: u16) -> FSE_CTable {
+pub(crate) const fn FSE_writeU16Pair(first: u16, second: u16) -> FSE_CTable {
     let [a, b] = first.to_ne_bytes();
     let [c, d] = second.to_ne_bytes();
 
