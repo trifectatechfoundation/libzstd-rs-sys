@@ -435,10 +435,10 @@ unsafe fn ZSTD_rleCompressBlock(
     dstCapacity: size_t,
     src: u8,
     srcSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
     let op = dst as *mut u8;
-    let cBlockHeader = lastBlock
+    let cBlockHeader = u32::from(lastBlock)
         .wrapping_add((BlockType::Rle as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if dstCapacity < 4 {
@@ -4962,14 +4962,14 @@ unsafe fn writeBlockHeader(
     op: *mut core::ffi::c_void,
     cSize: size_t,
     blockSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) {
     let cBlockHeader = if cSize == 1 {
-        lastBlock
+        u32::from(lastBlock)
             .wrapping_add((BlockType::Rle as u32) << 1)
             .wrapping_add((blockSize << 3) as u32)
     } else {
-        lastBlock
+        u32::from(lastBlock)
             .wrapping_add((BlockType::Compressed as u32) << 1)
             .wrapping_add((cSize << 3) as u32)
     };
@@ -5635,7 +5635,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
     isPartition: bool,
 ) -> size_t {
     let rleMaxLength = 25;
@@ -5826,7 +5826,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     mut dstCapacity: size_t,
     src: *const core::ffi::c_void,
     blockSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
     nbSeq: u32,
 ) -> size_t {
     let mut cSize = 0usize;
@@ -5869,7 +5869,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as size_t);
     for i in 0..numSplits + 1 {
         let lastPartition = i == numSplits;
-        let mut lastBlockEntireSrc = 0;
+        let mut lastBlockEntireSrc = false;
         let mut srcBytes = (ZSTD_countSeqStoreLiteralsBytes(currSeqStore))
             .wrapping_add(ZSTD_countSeqStoreMatchBytes(currSeqStore));
         srcBytesTotal = srcBytesTotal.wrapping_add(srcBytes);
@@ -5922,7 +5922,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
@@ -6038,7 +6038,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     bss: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
     if bss == BuildSeqStore::Compress as size_t {
         if (*zc).isFirstBlock == 0
@@ -6079,7 +6079,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
@@ -6227,7 +6227,7 @@ unsafe fn ZSTD_compress_frameChunk(
             (*cctx).appliedParams.cParams.strategy,
             savings,
         );
-        let lastBlock = (lastFrameChunk && blockSize == remaining) as u32;
+        let lastBlock = lastFrameChunk && blockSize == remaining;
 
         if dstCapacity
             < ZSTD_BLOCKHEADERSIZE
@@ -6318,11 +6318,11 @@ unsafe fn ZSTD_compress_frameChunk(
                 }
             } else {
                 let cBlockHeader = if cSize == 1 {
-                    lastBlock
+                    u32::from(lastBlock)
                         .wrapping_add((BlockType::Rle as u32) << 1)
                         .wrapping_add((blockSize << 3) as u32)
                 } else {
-                    lastBlock
+                    u32::from(lastBlock)
                         .wrapping_add((BlockType::Compressed as u32) << 1)
                         .wrapping_add((cSize << 3) as u32)
                 };
@@ -8576,10 +8576,8 @@ unsafe fn ZSTD_compressStream_generic(
                                 }
                                 (*zcs).inToCompress = (*zcs).inBuffPos;
                             } else {
-                                let lastBlock_0 = (flushMode == ZSTD_e_end && ip.add(iSize) == iend)
-                                    as core::ffi::c_int
-                                    as core::ffi::c_uint;
-                                cSize_0 = if lastBlock_0 != 0 {
+                                let lastBlock_0 = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
+                                cSize_0 = if lastBlock_0 {
                                     ZSTD_compressEnd_public(
                                         zcs,
                                         cDst,
@@ -8603,8 +8601,8 @@ unsafe fn ZSTD_compressStream_generic(
                                 if ERR_isError(err_code_1) {
                                     return err_code_1;
                                 }
-                                (*zcs).frameEnded = lastBlock_0;
-                                if lastBlock_0 != 0 {
+                                (*zcs).frameEnded = u32::from(lastBlock_0);
+                                if lastBlock_0 {
                                     assert_eq!(ip, iend);
                                 }
                             }
@@ -9556,7 +9554,7 @@ unsafe fn ZSTD_compressSequences_internal(
             inSeqsSize,
             seqPos,
         );
-        let lastBlock = (blockSize == remaining) as core::ffi::c_int as u32;
+        let lastBlock = blockSize == remaining;
         let err_code = blockSize;
         if ERR_isError(err_code) {
             return err_code;
@@ -9674,7 +9672,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 }
 
                 // Write block header into beginning of block
-                let cBlockHeader = lastBlock
+                let cBlockHeader = u32::from(lastBlock)
                     .wrapping_add((BlockType::Compressed as u32) << 1)
                     .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
@@ -9683,7 +9681,7 @@ unsafe fn ZSTD_compressSequences_internal(
 
             cSize = cSize.wrapping_add(cBlockSize);
 
-            if lastBlock != 0 {
+            if lastBlock {
                 break;
             }
             ip = ip.add(blockSize);
@@ -10053,7 +10051,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
 
     while nbSequences != 0 {
         let block = ZSTD_get1BlockSummary(inSeqs, nbSequences);
-        let lastBlock = (block.nbSequences == nbSequences) as core::ffi::c_int as u32;
+        let lastBlock = block.nbSequences == nbSequences;
         let err_code = block.nbSequences;
         if ERR_isError(err_code) {
             return err_code;
@@ -10133,7 +10131,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         }
 
         // Write block header into beginning of block
-        let cBlockHeader = lastBlock
+        let cBlockHeader = u32::from(lastBlock)
             .wrapping_add((BlockType::Compressed as u32) << 1)
             .wrapping_add((compressedSeqsSize << 3) as u32);
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
@@ -10144,7 +10142,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
         (*cctx).isFirstBlock = 0;
 
-        if lastBlock != 0 {
+        if lastBlock {
             break;
         }
     }

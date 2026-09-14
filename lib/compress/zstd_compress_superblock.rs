@@ -372,7 +372,7 @@ unsafe fn ZSTD_compressSubBlock(
     writeSeqEntropy: bool,
     litEntropyWritten: &mut bool,
     seqEntropyWritten: &mut bool,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
@@ -424,7 +424,7 @@ unsafe fn ZSTD_compressSubBlock(
 
     // Write block header
     let cSize = (op.offset_from_unsigned(ostart)).wrapping_sub(ZSTD_BLOCKHEADERSIZE);
-    let cBlockHeader24 = lastBlock
+    let cBlockHeader24 = u32::from(lastBlock)
         .wrapping_add((BlockType::Compressed as u32) << 1)
         .wrapping_add((cSize << 3) as u32);
     MEM_writeLE24(ostart as *mut core::ffi::c_void, cBlockHeader24);
@@ -725,7 +725,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     bmi2: core::ffi::c_int,
-    lastBlock: u32,
+    lastBlock: bool,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
@@ -825,7 +825,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 writeSeqEntropy,
                 &mut litEntropyWritten,
                 &mut seqEntropyWritten,
-                0,
+                false,
             );
             let err_code = cSize;
             if ERR_isError(err_code) {
@@ -957,7 +957,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    lastBlock: core::ffi::c_uint,
+    lastBlock: bool,
 ) -> size_t {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
 
