@@ -904,14 +904,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 }
 
 /// Reduce table indexes by `reducerValue`
-unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: u32) {
-    for u in 0..size {
-        if (*table.offset(u as isize)).offset < reducerValue {
-            (*table.offset(u as isize)).offset = 0;
-        } else {
-            let fresh4 = &mut (*table.offset(u as isize)).offset;
-            *fresh4 = (*fresh4).wrapping_sub(reducerValue);
-        }
+fn ZSTD_ldm_reduceTable(table: &mut [ldmEntry_t], reducerValue: u32) {
+    for entry in table {
+        entry.offset = entry.offset.saturating_sub(reducerValue);
     }
 }
 
@@ -952,14 +947,15 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart as *const core::ffi::c_void,
             chunkEnd as *const core::ffi::c_void,
         ) {
-            let ldmHSize = 1 << params.hashLog;
+            let ldmHSize = 1usize << params.hashLog;
             let correction = ZSTD_window_correctOverflow(
                 &mut ldmState.window,
                 0,
                 maxDist,
                 chunkStart as *const core::ffi::c_void,
             );
-            ZSTD_ldm_reduceTable(ldmState.hashTable, ldmHSize, correction);
+            let ldmTable = unsafe { core::slice::from_raw_parts_mut(ldmState.hashTable, ldmHSize) };
+            ZSTD_ldm_reduceTable(ldmTable, correction);
             // invalidate dictionaries on overflow correction
             ldmState.loadedDictEnd = 0;
         }
