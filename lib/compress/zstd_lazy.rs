@@ -1803,11 +1803,9 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         }
         if current_block == 14136749492126903395 {
             if dictMode == DictMode::NoDict
-                && (offset_1 > 0) as core::ffi::c_int
+                && (offset_1 > 0)
                     & (MEM_read32(ip.add(1).sub(offset_1 as usize) as *const core::ffi::c_void)
                         == MEM_read32(ip.add(1) as *const core::ffi::c_void))
-                        as core::ffi::c_int
-                    != 0
             {
                 matchLength = (ZSTD_count(
                     ip.add(1).add(4),
@@ -1861,12 +1859,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 ip = ip.add(1);
                                 if dictMode == DictMode::NoDict
                                     && offBase != 0
-                                    && (offset_1 > 0) as core::ffi::c_int
+                                    && (offset_1 > 0)
                                         & (MEM_read32(ip as *const core::ffi::c_void)
                                             == MEM_read32(ip.sub(offset_1 as usize)
                                                 as *const core::ffi::c_void))
-                                            as core::ffi::c_int
-                                        != 0
                                 {
                                     let mlRep = (ZSTD_count(
                                         ip.add(4),
@@ -1956,12 +1952,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     ip = ip.add(1);
                                     if dictMode == DictMode::NoDict
                                         && offBase != 0
-                                        && (offset_1 > 0) as core::ffi::c_int
+                                        && (offset_1 > 0)
                                             & (MEM_read32(ip as *const core::ffi::c_void)
                                                 == MEM_read32(ip.sub(offset_1 as usize)
                                                     as *const core::ffi::c_void))
-                                                as core::ffi::c_int
-                                            != 0
                                     {
                                         let mlRep_1 = (ZSTD_count(
                                             ip.add(4),
@@ -2055,11 +2049,9 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                         // catch up
                         if offBase > ZSTD_REP_NUM {
                             if dictMode == DictMode::NoDict {
-                                while (start > anchor) as core::ffi::c_int
+                                while (start > anchor)
                                     & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
                                         > prefixLowest)
-                                        as core::ffi::c_int
-                                    != 0
                                     && *start.sub(1) as core::ffi::c_int
                                         == *start
                                             .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
