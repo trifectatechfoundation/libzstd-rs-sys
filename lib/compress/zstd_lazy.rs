@@ -1850,7 +1850,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                         // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
                         // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
                         // triggered once we've gone 2KB without finding any matches.
-                        ms.lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
+                        ms.lazySkipping =
+                            core::ffi::c_int::from(step > kLazySkippingStep as size_t);
                         continue;
                     } else {
                         // let's try to find a better solution
@@ -2522,7 +2523,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                 // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
                 // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
                 // triggered once we've gone 2KB without finding any matches.
-                ms.lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
+                ms.lazySkipping = core::ffi::c_int::from(step > kLazySkippingStep as size_t);
                 continue;
             } else {
                 // let's try to find a better solution

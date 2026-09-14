@@ -71,10 +71,9 @@ unsafe fn ZSTD_compressSubBlock_literal(
     entropyWritten: &mut bool,
 ) -> Result<size_t, Error> {
     let header = (if writeEntropy { 200 } else { 0 }) as size_t;
-    let lhSize = (3
-        + (litSize >= ((1 << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
-        + (litSize >= ((16 * (1 << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
-        as size_t;
+    let lhSize = 3
+        + size_t::from(litSize >= ((1 << 10) as size_t).wrapping_sub(header))
+        + size_t::from(litSize >= ((16 * (1 << 10)) as size_t).wrapping_sub(header));
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
@@ -153,8 +152,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
     if lhSize
-        < (3 + (cLitSize >= (1 << 10) as size_t) as core::ffi::c_int
-            + (cLitSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t
+        < 3 + size_t::from(cLitSize >= (1 << 10) as size_t)
+            + size_t::from(cLitSize >= (16 * (1 << 10)) as size_t)
     {
         return ZSTD_noCompressLiterals(
             dst,

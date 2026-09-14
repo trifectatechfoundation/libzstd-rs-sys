@@ -35,8 +35,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
     srcSize: size_t,
 ) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
-    let flSize =
-        (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
+    let flSize = 1 + u32::from(srcSize > 31) + u32::from(srcSize > 4095);
 
     if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
         return Err(Error::dstSize_tooSmall);
@@ -156,9 +155,9 @@ pub unsafe fn ZSTD_compressLiterals(
     suspectUncompressible: bool,
     bmi2: bool,
 ) -> Result<size_t, Error> {
-    let lhSize = (3
-        + (srcSize >= (1 << 10) as size_t) as core::ffi::c_int
-        + (srcSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
+    let lhSize = 3
+        + size_t::from(srcSize >= (1 << 10) as size_t)
+        + size_t::from(srcSize >= (16 * (1 << 10)) as size_t);
     let ostart = dst as *mut u8;
     let mut singleStream = srcSize < 256;
     let mut hType = SymbolEncodingType::Compressed;
