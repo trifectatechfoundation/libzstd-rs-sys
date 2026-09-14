@@ -5637,7 +5637,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastBlock: u32,
-    isPartition: u32,
+    isPartition: bool,
 ) -> size_t {
     let rleMaxLength = 25;
     let op = dst as *mut u8;
@@ -5645,7 +5645,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     // In case of an RLE or raw block, the simulated decompression repcode history must be reset
     let dRepOriginal = *dRep;
-    if isPartition != 0 {
+    if isPartition {
         ZSTD_seqStore_resolveOffCodes(
             dRep,
             cRep,
@@ -5858,7 +5858,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             ip as *const core::ffi::c_void,
             blockSize,
             lastBlock,
-            0,
+            false,
         );
         let err_code = cSizeSingleBlock;
         if ERR_isError(err_code) {
@@ -5897,7 +5897,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             ip as *const core::ffi::c_void,
             srcBytes,
             lastBlockEntireSrc,
-            1,
+            true,
         );
         let err_code_0 = cSizeChunk;
         if ERR_isError(err_code_0) {
