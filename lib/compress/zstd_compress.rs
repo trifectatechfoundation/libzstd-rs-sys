@@ -2729,14 +2729,14 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
 fn ZSTD_sizeof_matchState(
     cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ParamSwitch,
-    enableDedicatedDictSearch: core::ffi::c_int,
+    enableDedicatedDictSearch: bool,
     forCCtx: bool,
 ) -> size_t {
     // chain table size should be 0 for fast or row-hash strategies
     let chainSize = if ZSTD_allocateChainTable(
         cParams.strategy,
         useRowMatchFinder,
-        enableDedicatedDictSearch != 0 && !forCCtx,
+        enableDedicatedDictSearch && !forCCtx,
     ) {
         (1 as size_t) << cParams.chainLog
     } else {
@@ -2837,7 +2837,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
     );
     let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(size_of::<ZSTD_compressedBlockState_t>());
-    let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, 0, true);
+    let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, false, true);
 
     let ldmSpace = ZSTD_ldm_getTableSize(*ldmParams);
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
@@ -7520,7 +7520,7 @@ pub extern "C" fn ZSTD_estimateCDictSize_advanced(
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &cParams),
-            1,
+            true,
             false,
         ))
         .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
@@ -7649,7 +7649,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             useRowMatchFinder,
-            enableDedicatedDictSearch,
+            enableDedicatedDictSearch != 0,
             false,
         ))
         .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
@@ -7874,7 +7874,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
 ) -> *const ZSTD_CDict {
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &cParams);
     // enableDedicatedDictSearch == 1 ensures matchstate is not too small in case this CDict will be used for DDS + row hash
-    let matchStateSize = ZSTD_sizeof_matchState(&cParams, useRowMatchFinder, 1, false);
+    let matchStateSize = ZSTD_sizeof_matchState(&cParams, useRowMatchFinder, true, false);
     let neededSize = (ZSTD_cwksp_alloc_size(size_of::<ZSTD_CDict>()))
         .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
             0
