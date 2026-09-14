@@ -2813,7 +2813,7 @@ fn ZSTD_maxNbSeq(
 fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     cParams: &ZSTD_compressionParameters,
     ldmParams: &ldmParams_t,
-    isStatic: core::ffi::c_int,
+    isStatic: bool,
     useRowMatchFinder: ParamSwitch,
     buffInSize: size_t,
     buffOutSize: size_t,
@@ -2849,7 +2849,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 
     let bufferSpace =
         (ZSTD_cwksp_alloc_size(buffInSize)).wrapping_add(ZSTD_cwksp_alloc_size(buffOutSize));
-    let cctxSpace = if isStatic != 0 {
+    let cctxSpace = if isStatic {
         ZSTD_cwksp_alloc_size(size_of::<ZSTD_CCtx>())
     } else {
         0
@@ -2895,7 +2895,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
     ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &cParams,
         &(*params).ldmParams,
-        1,
+        true,
         useRowMatchFinder,
         0,
         0,
@@ -2985,7 +2985,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &cParams,
         &(*params).ldmParams,
-        1,
+        true,
         useRowMatchFinder,
         inBuffSize,
         outBuffSize,
@@ -3318,7 +3318,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     let neededSpace = ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &params.cParams,
         &params.ldmParams,
-        ((*zc).staticSize != 0) as core::ffi::c_int,
+        (*zc).staticSize != 0,
         params.useRowMatchFinder,
         buffInSize,
         buffOutSize,
