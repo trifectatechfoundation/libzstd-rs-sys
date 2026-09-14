@@ -247,7 +247,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     bmi2: bool,
     writeEntropy: bool,
     entropyWritten: &mut bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let longOffsets = cctxParams.cParams.windowLog > STREAM_ACCUMULATOR_MIN;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
@@ -256,7 +256,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     *entropyWritten = false;
     // Sequences Header
     if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if nbSeq < 128 {
         *op = nbSeq as u8;
@@ -274,7 +274,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         op = op.add(3);
     }
     if nbSeq == 0 {
-        return op.offset_from_unsigned(ostart);
+        return Ok(op.offset_from_unsigned(ostart));
     }
 
     // seqHead : flags for FSE encoding type
@@ -301,7 +301,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
             .wrapping_add(repeat << 2) as u8;
     }
 
-    let bitstreamSize = match ZSTD_encodeSequences(
+    let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &fseTables.matchlengthCTable,
@@ -314,10 +314,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         nbSeq,
         longOffsets,
         bmi2,
-    ) {
-        Ok(bitstreamSize) => bitstreamSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     op = op.add(bitstreamSize);
     // zstd versions <= 1.3.4 mistakenly report corruption when
     // FSE_readNCount() receives a buffer < 4 bytes.
@@ -330,7 +327,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         && fseMetadata.lastCountSize != 0
         && (fseMetadata.lastCountSize).wrapping_add(bitstreamSize) < 4
     {
-        return 0;
+        return Ok(0);
     }
 
     // zstd versions <= 1.4.0 mistakenly report error when
@@ -340,11 +337,11 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // with rle mode and the current block's sequences section is compressed
     // with repeat mode where sequences section body size can be 1 byte.
     if (op.offset_from(seqHead) as core::ffi::c_long) < 4 {
-        return 0;
+        return Ok(0);
     }
 
     *entropyWritten = true;
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 /// Compresses a single sub-block.
@@ -372,12 +369,12 @@ unsafe fn ZSTD_compressSubBlock(
     litEntropyWritten: &mut bool,
     seqEntropyWritten: &mut bool,
     lastBlock: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart.add(ZSTD_BLOCKHEADERSIZE);
 
-    let cLitSize = match ZSTD_compressSubBlock_literal(
+    let cLitSize = ZSTD_compressSubBlock_literal(
         &entropy.huf.CTable,
         &entropyMetadata.hufMetadata,
         literals,
@@ -387,12 +384,9 @@ unsafe fn ZSTD_compressSubBlock(
         bmi2,
         writeLitEntropy,
         litEntropyWritten,
-    ) {
-        Ok(cLitSize) => cLitSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if cLitSize == 0 {
-        return 0;
+        return Ok(0);
     }
     op = op.add(cLitSize);
 
@@ -410,13 +404,9 @@ unsafe fn ZSTD_compressSubBlock(
         bmi2,
         writeSeqEntropy,
         seqEntropyWritten,
-    );
-    let err_code_0 = cSeqSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    )?;
     if cSeqSize == 0 {
-        return 0;
+        return Ok(0);
     }
     op = op.add(cSeqSize);
 
@@ -427,7 +417,7 @@ unsafe fn ZSTD_compressSubBlock(
         .wrapping_add((cSize << 3) as u32);
     MEM_writeLE24(ostart as *mut core::ffi::c_void, cBlockHeader24);
 
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 unsafe fn ZSTD_estimateSubBlockSize_literal(
@@ -728,7 +718,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     lastBlock: bool,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let sstart: *const SeqDef = seqStorePtr.sequencesStart;
     let send: *const SeqDef = seqStorePtr.sequences;
     let mut sp = sstart; // tracks progresses within seqStorePtr->sequences
@@ -782,7 +772,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         // simplification: if estimates states that the full superblock doesn't compress, just bail out immediately
         // this will result in the production of a single uncompressed block covering srcSize.
         if ebs.estBlockSize > srcSize {
-            return 0;
+            return Ok(0);
         }
 
         // compress and write sub-blocks
@@ -826,11 +816,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 &mut litEntropyWritten,
                 &mut seqEntropyWritten,
                 false,
-            );
-            let err_code = cSize;
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            )?;
 
             // check compressibility, update state components
             if cSize > 0 && cSize < decompressedSize {
@@ -879,11 +865,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         &mut litEntropyWritten,
         &mut seqEntropyWritten,
         lastBlock,
-    );
-    let err_code_0 = cSize_0;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    )?;
 
     // update pointers, the nb of literals borrowed from next sequence must be preserved
     if cSize_0 > 0 && cSize_0 < decompressedSize_0 {
@@ -913,7 +895,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     if writeSeqEntropy && ZSTD_needSequenceEntropyTables(&entropyMetadata.fseMetadata) {
         // If we haven't written our entropy tables, then we've violated our contract and
         // must emit an uncompressed block.
-        return 0;
+        return Ok(0);
     }
 
     if ip < iend {
@@ -925,11 +907,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             ip as *const core::ffi::c_void,
             rSize,
             lastBlock,
-        );
-        let err_code_1 = cSize_1;
-        if ERR_isError(err_code_1) {
-            return err_code_1;
-        }
+        )?;
         op = op.add(cSize_1);
 
         // We have to regenerate the repcodes because we've skipped some sequences
@@ -948,7 +926,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         }
     }
 
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 pub unsafe fn ZSTD_compressSuperBlock(
@@ -958,10 +936,10 @@ pub unsafe fn ZSTD_compressSuperBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastBlock: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
 
-    if let Err(err) = ZSTD_buildBlockEntropyStats(
+    ZSTD_buildBlockEntropyStats(
         &(*zc).seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -969,9 +947,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
         &mut entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     ZSTD_compressSubBlock_multi(
         &(*zc).seqStore,
