@@ -1,4 +1,5 @@
 use core::ffi::{c_int, c_uint, c_void};
+use core::marker::PhantomData;
 
 use libc::size_t;
 
@@ -1010,23 +1011,37 @@ pub const HUF_BITS_IN_CONTAINER: size_t = size_t::BITS as usize;
 ///   3. The bitstream has two bit containers. You can add
 ///      bits to the second container and merge them into
 ///      the first container.
-#[repr(C)]
-pub struct HUF_CStream_t {
-    pub bitContainer: [size_t; 2],
-    pub bitPos: [size_t; 2],
-    pub startPtr: *mut u8,
-    pub ptr: *mut u8,
-    pub endPtr: *mut u8,
+///
+/// Just like [`BIT_CStream_t`], this is a raw pointer range rather than a slice, and the
+/// private fields uphold the same invariant:
+///
+/// * `startPtr <= ptr <= endPtr`, all three within the same allocation, and
+/// * the `size_of::<size_t>()` bytes at `endPtr` are writable.
+///
+/// Together those mean a whole `size_t` may always be written at `ptr`, which is what
+/// makes [`HUF_flushBits`] and [`HUF_closeCStream`] safe.
+pub struct HUF_CStream_t<'a> {
+    bitContainer: [size_t; 2],
+    bitPos: [size_t; 2],
+    startPtr: *mut u8,
+    ptr: *mut u8,
+    endPtr: *mut u8,
+    _marker: PhantomData<&'a mut [u8]>,
 }
 
-impl HUF_CStream_t {
+impl<'a> HUF_CStream_t<'a> {
+    /// # Safety
+    ///
+    /// `startPtr` must point to `dstCapacity` bytes that may be written for as long as
+    /// the returned [`HUF_CStream_t`] is alive.
     pub unsafe fn new(startPtr: *mut c_void, dstCapacity: size_t) -> Result<Self, Error> {
         if dstCapacity <= size_of::<size_t>() {
             return Err(Error::dstSize_tooSmall);
         }
 
         let startPtr = startPtr as *mut u8;
-        let endPtr = startPtr.add(dstCapacity).sub(size_of::<size_t>());
+        // `dstCapacity > size_of::<size_t>()`, so this stays within the buffer.
+        let endPtr = unsafe { startPtr.add(dstCapacity - size_of::<size_t>()) };
 
         Ok(HUF_CStream_t {
             bitContainer: [0; 2],
@@ -1034,7 +1049,29 @@ impl HUF_CStream_t {
             startPtr,
             ptr: startPtr,
             endPtr,
+            _marker: PhantomData,
         })
+    }
+
+    /// Whether the invariant that a whole `size_t` fits at `ptr` still holds.
+    #[inline]
+    fn has_room(&self) -> bool {
+        self.ptr <= self.endPtr
+    }
+
+    /// Writes the bit container at `ptr` and advances `ptr` by `nbBytes`, which may leave
+    /// `ptr` past `endPtr`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must restore `ptr <= endPtr` before the stream is used again.
+    #[inline]
+    unsafe fn write_container(&mut self, bitContainer: size_t, nbBytes: size_t) {
+        debug_assert!(self.has_room());
+        unsafe {
+            MEM_writeLEST(self.ptr as *mut c_void, bitContainer);
+            self.ptr = self.ptr.add(nbBytes);
+        }
     }
 }
 
@@ -1103,7 +1140,34 @@ fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
 ///
 /// bitPos will be < 8.
 #[inline(always)]
-unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
+fn HUF_flushBits(bitC: &mut HUF_CStream_t) {
+    let (bitContainer, nbBytes) = HUF_takeBits(bitC);
+    // SAFETY: the clamp below restores `ptr <= endPtr` before anything else observes it.
+    unsafe { bitC.write_container(bitContainer, nbBytes) };
+    if !bitC.has_room() {
+        bitC.ptr = bitC.endPtr;
+    }
+}
+
+/// Like [`HUF_flushBits`], but without the clamp that keeps `ptr <= endPtr`.
+///
+/// # Safety
+///
+/// The bitstream must have room for the flush: after it, `ptr <= endPtr` must still hold.
+#[inline(always)]
+unsafe fn HUF_flushBitsFast(bitC: &mut HUF_CStream_t) {
+    let (bitContainer, nbBytes) = HUF_takeBits(bitC);
+    unsafe { bitC.write_container(bitContainer, nbBytes) };
+    debug_assert!(bitC.has_room());
+}
+
+/// Takes the pending bits out of the bit container @ index 0, returning the value to
+/// write and how many bytes of it are live.
+///
+/// `bitContainer` doesn't need to be modified because the leftover bits are already the
+/// top `bitPos` bits, and we don't care about noise in the lower values.
+#[inline(always)]
+fn HUF_takeBits(bitC: &mut HUF_CStream_t) -> (size_t, size_t) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
     let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     let nbBytes = nbBits >> 3;
@@ -1113,17 +1177,7 @@ unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
     bitC.bitPos[0] &= 7;
     debug_assert!(nbBits > 0);
     debug_assert!(nbBits <= size_t::BITS as usize);
-    debug_assert!(bitC.ptr <= bitC.endPtr);
-    MEM_writeLEST(bitC.ptr as *mut c_void, bitContainer);
-    bitC.ptr = (bitC.ptr).add(nbBytes);
-    debug_assert!(kFast == 0 || bitC.ptr <= bitC.endPtr);
-    if kFast == 0 && bitC.ptr > bitC.endPtr {
-        bitC.ptr = bitC.endPtr;
-    }
-    /* bitContainer doesn't need to be modified because the leftover
-     * bits are already the top bitPos bits. And we don't care about
-     * noise in the lower values.
-     */
+    (bitContainer, nbBytes)
 }
 
 /// # Returns
@@ -1139,14 +1193,16 @@ fn HUF_endMark() -> HUF_CElt {
 /// # Returns
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
-unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
+fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), 0, 0);
-    HUF_flushBits(bitC, 0);
+    HUF_flushBits(bitC);
     let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
-    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
+    // SAFETY: `startPtr <= ptr`, and both are within the same allocation.
+    let written = unsafe { bitC.ptr.offset_from_unsigned(bitC.startPtr) };
+    written + ((nbBits > 0) as c_int as size_t)
 }
 
 #[inline(always)]
@@ -1158,6 +1214,19 @@ fn HUF_encodeSymbol(
     fast: c_int,
 ) {
     HUF_addBits(bitCPtr, CTable[symbol as usize], idx, fast);
+}
+
+/// # Safety
+///
+/// When `kFast` is set, the bitstream must have room for the flush; see
+/// [`HUF_flushBitsFast`].
+#[inline(always)]
+unsafe fn HUF_flushBitsMaybeFast(bitC: &mut HUF_CStream_t, kFast: c_int) {
+    if kFast != 0 {
+        unsafe { HUF_flushBitsFast(bitC) }
+    } else {
+        HUF_flushBits(bitC);
+    }
 }
 
 #[inline(always)]
@@ -1178,7 +1247,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
             n -= 1;
             HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, 0, 0);
         }
-        HUF_flushBits(bitC, kFastFlush);
+        HUF_flushBitsMaybeFast(bitC, kFastFlush);
     }
     debug_assert_eq!(n % kUnroll, 0);
 
@@ -1194,7 +1263,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
             0,
             kLastFast,
         );
-        HUF_flushBits(bitC, kFastFlush);
+        HUF_flushBitsMaybeFast(bitC, kFastFlush);
         n -= kUnroll;
     }
     debug_assert_eq!(n % (2 * kUnroll), 0);
@@ -1214,7 +1283,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
             0,
             kLastFast,
         );
-        HUF_flushBits(bitC, kFastFlush);
+        HUF_flushBitsMaybeFast(bitC, kFastFlush);
         /* Encode kUnroll symbols into the bitstream @ index 1.
          * This allows us to start filling the bit container
          * without any data dependencies.
@@ -1240,7 +1309,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         );
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
         HUF_mergeIndex1(bitC);
-        HUF_flushBits(bitC, kFastFlush);
+        HUF_flushBitsMaybeFast(bitC, kFastFlush);
         n -= 2 * kUnroll;
     }
     debug_assert_eq!(n, 0);
@@ -1319,7 +1388,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
             }
         }
     }
-    debug_assert!(bitC.ptr <= bitC.endPtr);
+    debug_assert!(bitC.has_room());
     HUF_closeCStream(&mut bitC)
 }
 
