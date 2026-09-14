@@ -137,16 +137,16 @@ unsafe fn HUF_compressWeights(
 
     /* Write table description header */
     {
-        let hSize = FSE_writeNCount(
+        let hSize = match FSE_writeNCount(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             &(*wksp).norm,
             maxSymbolValue,
             tableLog,
-        );
-        if ERR_isError(hSize) {
-            return hSize;
-        }
+        ) {
+            Ok(hSize) => hSize,
+            Err(err) => return err.to_error_code(),
+        };
         op = op.add(hSize);
     }
 
