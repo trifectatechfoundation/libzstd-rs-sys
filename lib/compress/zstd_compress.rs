@@ -7641,7 +7641,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     cParams: ZSTD_compressionParameters,
     useRowMatchFinder: ParamSwitch,
-    enableDedicatedDictSearch: core::ffi::c_int,
+    enableDedicatedDictSearch: bool,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let workspaceSize = (ZSTD_cwksp_alloc_size(size_of::<ZSTD_CDict>()))
@@ -7649,7 +7649,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             useRowMatchFinder,
-            enableDedicatedDictSearch != 0,
+            enableDedicatedDictSearch,
             false,
         ))
         .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
@@ -7745,7 +7745,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         dictLoadMethod,
         cctxParams.cParams,
         cctxParams.useRowMatchFinder,
-        cctxParams.enableDedicatedDictSearch,
+        cctxParams.enableDedicatedDictSearch != 0,
         customMem,
     );
 
