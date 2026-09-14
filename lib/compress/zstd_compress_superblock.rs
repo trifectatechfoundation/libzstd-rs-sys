@@ -66,7 +66,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     litSize: size_t,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
     writeEntropy: bool,
     entropyWritten: &mut bool,
 ) -> size_t {
@@ -113,7 +113,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         cLitSize = cLitSize.wrapping_add(hufMetadata.hufDesSize);
     }
 
-    let flags = if bmi2 != 0 {
+    let flags = if bmi2 {
         HUF_flags_bmi2 as core::ffi::c_int
     } else {
         0
@@ -244,7 +244,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
     writeEntropy: bool,
     entropyWritten: &mut bool,
 ) -> size_t {
@@ -367,7 +367,7 @@ unsafe fn ZSTD_compressSubBlock(
     cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
     writeLitEntropy: bool,
     writeSeqEntropy: bool,
     litEntropyWritten: &mut bool,
@@ -724,7 +724,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
     lastBlock: bool,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
@@ -984,7 +984,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
         dstCapacity,
         src,
         srcSize,
-        (*zc).bmi2,
+        (*zc).bmi2 != 0,
         lastBlock,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
