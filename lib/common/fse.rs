@@ -54,7 +54,6 @@ pub(crate) const FSE_repeat_check: FSE_repeat = 1;
 pub(crate) const FSE_repeat_valid: FSE_repeat = 2;
 
 #[repr(C)]
-#[derive(Default)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,
     pub stateTable: *const core::ffi::c_void,
@@ -90,7 +89,7 @@ fn FSE_readU16(ct: &[FSE_CTable], index: usize) -> u16 {
 }
 
 #[inline]
-pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
+pub(crate) fn FSE_initCState(ct: &[FSE_CTable]) -> FSE_CState_t {
     // the table header occupies the first two bytes of `ct`
     let tableLog = FSE_readU16(ct, 0) as u32;
 
@@ -98,10 +97,12 @@ pub(crate) fn FSE_initCState(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable]) {
     let stateTable = &ct[1..];
     let symbolTT = &ct[FSE_symbolTTIndex(tableLog)..];
 
-    statePtr.value = 1 << tableLog;
-    statePtr.stateTable = stateTable.as_ptr().cast::<core::ffi::c_void>();
-    statePtr.symbolTT = symbolTT.as_ptr().cast::<core::ffi::c_void>();
-    statePtr.stateLog = tableLog;
+    FSE_CState_t {
+        value: 1 << tableLog,
+        stateTable: stateTable.as_ptr().cast::<core::ffi::c_void>(),
+        symbolTT: symbolTT.as_ptr().cast::<core::ffi::c_void>(),
+        stateLog: tableLog,
+    }
 }
 
 #[inline]
@@ -130,8 +131,8 @@ fn FSE_readSymbolTT(
 }
 
 #[inline]
-pub(crate) fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], symbol: u32) {
-    FSE_initCState(statePtr, ct);
+pub(crate) fn FSE_initCState2(ct: &[FSE_CTable], symbol: u32) -> FSE_CState_t {
+    let mut statePtr = FSE_initCState(ct);
     let symbolTT = FSE_readSymbolTT(ct, statePtr.stateLog, symbol);
     let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
     let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
@@ -139,6 +140,7 @@ pub(crate) fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: &[FSE_CTable], sy
     // the state table starts at the third `u16` of `ct`
     let index = 2 + (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
     statePtr.value = FSE_readU16(ct, index as usize) as ptrdiff_t;
+    statePtr
 }
 
 #[inline]

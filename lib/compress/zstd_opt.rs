@@ -24,7 +24,7 @@ pub const base_0possible: base_directive_e = 0;
 use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
-use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits, FSE_initCState};
+use crate::lib::common::fse::{FSE_getMaxNbBits, FSE_initCState};
 use crate::lib::common::huf::HUF_repeat;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{
@@ -203,8 +203,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 }
             }
 
-            let mut llstate = FSE_CState_t::default();
-            FSE_initCState(&mut llstate, &(*opt_state.symbolCosts).fse.litlengthCTable);
+            let llstate = FSE_initCState(&(*opt_state.symbolCosts).fse.litlengthCTable);
             opt_state.litLengthSum = 0;
             for ll in 0..=MaxLL {
                 let scaleLog_0 = 10u32; // scale to 1K
@@ -219,11 +218,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     .wrapping_add(*(opt_state.litLengthFreq).offset(ll as isize));
             }
 
-            let mut mlstate = FSE_CState_t::default();
-            FSE_initCState(
-                &mut mlstate,
-                &(*opt_state.symbolCosts).fse.matchlengthCTable,
-            );
+            let mlstate = FSE_initCState(&(*opt_state.symbolCosts).fse.matchlengthCTable);
             opt_state.matchLengthSum = 0;
             for ml in 0..=MaxML {
                 let scaleLog_1 = 10u32;
@@ -238,8 +233,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     .wrapping_add(*(opt_state.matchLengthFreq).offset(ml as isize));
             }
 
-            let mut ofstate = FSE_CState_t::default();
-            FSE_initCState(&mut ofstate, &(*opt_state.symbolCosts).fse.offcodeCTable);
+            let ofstate = FSE_initCState(&(*opt_state.symbolCosts).fse.offcodeCTable);
             opt_state.offCodeSum = 0;
             for of in 0..=MaxOff {
                 let scaleLog_2 = 10u32;
