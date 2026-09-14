@@ -114,11 +114,11 @@ fuzz_target!(|input: HufRoundTripInput| {
             input.data[..size].as_ptr().cast(),
             size,
         )
+        .unwrap()
     };
-    assert!(!ERR_isError(most_frequent), "HIST_count failed");
 
     // Skip RLE (all bytes the same)
-    if most_frequent == size {
+    if most_frequent as usize == size {
         return;
     }
 
@@ -170,9 +170,8 @@ fuzz_target!(|input: HufRoundTripInput| {
             workspace.as_mut_ptr().cast(),
             HUF_WORKSPACE_SIZE,
         )
+        .unwrap()
     };
-
-    assert!(!ERR_isError(table_log), "HUF_buildCTable_wksp failed");
 
     // Step 6: Write compression table to buffer
     let table_size = unsafe {
