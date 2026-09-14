@@ -16,35 +16,49 @@ pub(crate) const STREAM_ACCUMULATOR_MIN: u32 = match size_of::<usize>() {
     _ => unreachable!(),
 };
 
-#[repr(C)]
-#[derive(Default)]
-pub(crate) struct BIT_CStream_t {
-    // FIXME make all fields private to this module
-    pub(crate) bitContainer: BitContainerType,
-    pub(crate) bitPos: core::ffi::c_uint,
-    pub(crate) startPtr: *mut core::ffi::c_char,
-    pub(crate) ptr: *mut core::ffi::c_char,
-    pub(crate) endPtr: *mut core::ffi::c_char,
+/// Bitstream encoder.
+///
+/// Just like [`Reader`](crate::lib::common::reader::Reader), this is a raw pointer range
+/// rather than a slice, so that it does not impose slice aliasing requirements on the
+/// output buffer. The fields are private, and the following invariant holds for every
+/// value that safe code can observe:
+///
+/// * `startPtr <= ptr <= endPtr`, all three within the same allocation, and
+/// * the `size_of::<BitContainerType>()` bytes at `endPtr` are writable.
+///
+/// Together those mean a whole [`BitContainerType`] may always be written at `ptr`, which
+/// is what makes [`BIT_flushBits`] and [`BIT_closeCStream`] safe.
+pub(crate) struct BIT_CStream_t<'a> {
+    bitContainer: BitContainerType,
+    bitPos: core::ffi::c_uint,
+    startPtr: *mut u8,
+    ptr: *mut u8,
+    endPtr: *mut u8,
+    _marker: PhantomData<&'a mut [u8]>,
 }
 
+/// # Safety
+///
+/// `startPtr` must point to `dstCapacity` bytes that may be written for as long as the
+/// returned [`BIT_CStream_t`] is alive.
 #[inline]
-pub(crate) fn BIT_initCStream(
+pub(crate) unsafe fn BIT_initCStream<'a>(
     startPtr: *mut core::ffi::c_void,
     dstCapacity: size_t,
-) -> Result<BIT_CStream_t, Error> {
+) -> Result<BIT_CStream_t<'a>, Error> {
     if dstCapacity <= size_of::<BitContainerType>() {
         return Err(Error::dstSize_tooSmall);
     }
 
-    let startPtr = startPtr as *mut core::ffi::c_char;
+    let startPtr = startPtr as *mut u8;
     Ok(BIT_CStream_t {
         bitContainer: 0,
         bitPos: 0,
         startPtr,
         ptr: startPtr,
-        endPtr: startPtr
-            .wrapping_add(dstCapacity)
-            .wrapping_sub(size_of::<BitContainerType>()),
+        // `dstCapacity > size_of::<BitContainerType>()`, so this stays within the buffer.
+        endPtr: unsafe { startPtr.add(dstCapacity - size_of::<BitContainerType>()) },
+        _marker: PhantomData,
     })
 }
 
@@ -85,10 +99,15 @@ fn BIT_addBitsFast(bitC: &mut BIT_CStream_t, value: BitContainerType, nbBits: co
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
+pub(crate) fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
     let nbBytes = (bitC.bitPos >> 3) as size_t;
-    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
-    bitC.ptr = bitC.ptr.add(nbBytes);
+    // SAFETY: a whole bit container fits at `ptr`, and `nbBytes` is at most that many
+    // bytes, so the new `ptr` is at worst one past `endPtr`; the clamp restores the
+    // invariant before anything else can observe it.
+    unsafe {
+        MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
+        bitC.ptr = bitC.ptr.add(nbBytes);
+    }
     if bitC.ptr > bitC.endPtr {
         bitC.ptr = bitC.endPtr;
     }
@@ -96,23 +115,32 @@ pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
     bitC.bitContainer >>= nbBytes * 8;
 }
 
+/// Like [`BIT_flushBits`], but without the clamp that keeps `ptr <= endPtr`.
+///
+/// # Safety
+///
+/// The bitstream must have room for the flush: after it, `ptr <= endPtr` must still hold.
 #[inline]
 pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
     let nbBytes = (bitC.bitPos >> 3) as size_t;
-    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
-    bitC.ptr = bitC.ptr.add(nbBytes);
+    unsafe {
+        MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
+        bitC.ptr = bitC.ptr.add(nbBytes);
+    }
     bitC.bitPos &= 7;
     bitC.bitContainer >>= nbBytes * 8;
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
+pub(crate) fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
     BIT_addBitsFast(bitC, 1, 1);
     BIT_flushBits(bitC);
     if bitC.ptr >= bitC.endPtr {
         return 0;
     }
-    (bitC.ptr.offset_from(bitC.startPtr) as usize).wrapping_add((bitC.bitPos > 0) as usize)
+    // SAFETY: `startPtr <= ptr`, and both are within the same allocation.
+    let written = unsafe { bitC.ptr.offset_from_unsigned(bitC.startPtr) };
+    written.wrapping_add((bitC.bitPos > 0) as usize)
 }
 
 /// Bitstream decoder
