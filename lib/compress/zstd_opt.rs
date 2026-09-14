@@ -787,13 +787,12 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         if repOffset.wrapping_sub(1) < curr.wrapping_sub(dictLimit) {
             // We must validate the repcode offset because when we're using a dictionary the
             // valid offset range shrinks when the dictionary goes out of bounds.
-            if (repIndex >= windowLow) as core::ffi::c_int
+            if (repIndex >= windowLow)
                 & (ZSTD_readMINMATCH(ip as *const core::ffi::c_void, minMatch)
                     == ZSTD_readMINMATCH(
                         ip.sub(repOffset as usize) as *const core::ffi::c_void,
                         minMatch,
-                    )) as core::ffi::c_int
-                != 0
+                    ))
             {
                 repLen = (ZSTD_count(
                     ip.offset(minMatch as isize),
@@ -866,10 +865,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     if mls == 3 && bestLength < mls as size_t {
         let matchIndex3 = ZSTD_insertAndFindFirstIndexHash3(ms, nextToUpdate3, ip);
         // heuristic: longer distance likely too expensive
-        if (matchIndex3 >= matchLow) as core::ffi::c_int
-            & (curr.wrapping_sub(matchIndex3) < (1 << 18) as u32) as core::ffi::c_int
-            != 0
-        {
+        if (matchIndex3 >= matchLow) & (curr.wrapping_sub(matchIndex3) < (1 << 18) as u32) {
             let mut mlen: size_t = 0;
             if dictMode == DictMode::NoDict
                 || dictMode == DictMode::DictMatchState
