@@ -4,7 +4,7 @@ use crate::lib::common::bitstream::{
     BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
     STREAM_ACCUMULATOR_MIN,
 };
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_initCState, FSE_initCState2,
     FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
@@ -253,38 +253,33 @@ pub unsafe fn ZSTD_buildCTable(
     prevCTable: &[FSE_CTable],
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWorkspaceSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let op = dst as *mut u8;
     let oend: *const u8 = op.add(dstCapacity);
 
     match type_0 {
         SymbolEncodingType::Rle => {
-            let err_code = FSE_buildCTable_rle(nextCTable, max);
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            FSE_buildCTable_rle(nextCTable, max);
             if dstCapacity == 0 {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
             *op = *codeTable;
-            1
+            Ok(1)
         }
         SymbolEncodingType::Repeat => {
             nextCTable[..prevCTable.len()].copy_from_slice(prevCTable);
-            0
+            Ok(0)
         }
         SymbolEncodingType::Basic => {
-            if let Err(err) = FSE_buildCTable_wksp(
+            FSE_buildCTable_wksp(
                 nextCTable,
                 defaultNorm,
                 defaultMax,
                 defaultNormLog,
                 entropyWorkspace,
                 entropyWorkspaceSize,
-            ) {
-                return err.to_error_code();
-            }
-            0
+            )?;
+            Ok(0)
         }
         SymbolEncodingType::Compressed => {
             let wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
@@ -295,37 +290,30 @@ pub unsafe fn ZSTD_buildCTable(
                 *fresh0 = (*fresh0).wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
-            if let Err(err) = FSE_normalizeCount(
+            FSE_normalizeCount(
                 &mut (*wksp).norm,
                 tableLog,
                 count,
                 nbSeq_1,
                 max,
                 ZSTD_useLowProbCount(nbSeq_1),
-            ) {
-                return err.to_error_code();
-            }
-            let nCountSize = match FSE_writeNCount(
+            )?;
+            let nCountSize = FSE_writeNCount(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
                 &(*wksp).norm,
                 max,
                 tableLog,
-            ) {
-                Ok(nCountSize) => nCountSize,
-                Err(err) => return err.to_error_code(),
-            };
-            if let Err(err) = FSE_buildCTable_wksp(
+            )?;
+            FSE_buildCTable_wksp(
                 nextCTable,
                 &(*wksp).norm,
                 max,
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
                 size_of::<[u32; 285]>(),
-            ) {
-                return err.to_error_code();
-            }
-            nCountSize
+            )?;
+            Ok(nCountSize)
         }
     }
 }

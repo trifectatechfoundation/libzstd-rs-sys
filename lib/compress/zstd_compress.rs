@@ -3983,7 +3983,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         DefaultPolicy::Allowed,
         strategy,
     );
-    let countSize = ZSTD_buildCTable(
+    let countSize = match ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.litlengthCTable,
@@ -3999,11 +3999,13 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.litlengthCTable,
         entropyWorkspace,
         entropyWkspSize,
-    );
-    if ERR_isError(countSize) {
-        stats.size = countSize;
-        return stats;
-    }
+    ) {
+        Ok(countSize) => countSize,
+        Err(err) => {
+            stats.size = err.to_error_code();
+            return stats;
+        }
+    };
     if stats.LLtype == SymbolEncodingType::Compressed {
         stats.lastCountSize = countSize;
     }
@@ -4040,7 +4042,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         defaultPolicy,
         strategy,
     );
-    let countSize_0 = ZSTD_buildCTable(
+    let countSize = match ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.offcodeCTable,
@@ -4056,15 +4058,17 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.offcodeCTable,
         entropyWorkspace,
         entropyWkspSize,
-    );
-    if ERR_isError(countSize_0) {
-        stats.size = countSize_0;
-        return stats;
-    }
+    ) {
+        Ok(countSize) => countSize,
+        Err(err) => {
+            stats.size = err.to_error_code();
+            return stats;
+        }
+    };
     if stats.Offtype == SymbolEncodingType::Compressed {
-        stats.lastCountSize = countSize_0;
+        stats.lastCountSize = countSize;
     }
-    op = op.add(countSize_0);
+    op = op.add(countSize);
 
     // build CTable for MatchLengths
     let mut max_1 = MaxML;
@@ -4091,7 +4095,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         DefaultPolicy::Allowed,
         strategy,
     );
-    let countSize_1 = ZSTD_buildCTable(
+    let countSize = match ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &mut nextEntropy.matchlengthCTable,
@@ -4107,15 +4111,17 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &prevEntropy.matchlengthCTable,
         entropyWorkspace,
         entropyWkspSize,
-    );
-    if ERR_isError(countSize_1) {
-        stats.size = countSize_1;
-        return stats;
-    }
+    ) {
+        Ok(countSize) => countSize,
+        Err(err) => {
+            stats.size = err.to_error_code();
+            return stats;
+        }
+    };
     if stats.MLtype == SymbolEncodingType::Compressed {
-        stats.lastCountSize = countSize_1;
+        stats.lastCountSize = countSize;
     }
-    op = op.add(countSize_1);
+    op = op.add(countSize);
 
     stats.size = op.offset_from_unsigned(ostart);
 

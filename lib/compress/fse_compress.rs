@@ -571,7 +571,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
 }
 
 /// Fake FSE_CTable, for rle input (always same symbol).
-pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> size_t {
+pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) {
     // header: a tableLog of zero, and `symbolValue` as the maximum symbol value
     ct[0] = FSE_writeU16Pair(0, symbolValue as u16);
 
@@ -582,8 +582,6 @@ pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> siz
     let index = FSE_symbolTTIndex(0) + 2 * symbolValue as usize;
     ct[index] = 0; // deltaFindState
     ct[index + 1] = 0; // deltaNbBits
-
-    0
 }
 
 #[inline(always)]
