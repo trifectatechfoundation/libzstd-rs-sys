@@ -357,7 +357,7 @@ pub unsafe fn HUF_readCTable(
             let w = huffWeight[n_0 as usize] as u32;
             HUF_setNbBits(
                 &mut ct[n_0 as usize],
-                ((tableLog + 1 - w) as u8 as c_int & -((w != 0) as c_int) as c_int) as size_t,
+                ((tableLog + 1 - w) as u8 as c_int & -c_int::from(w != 0)) as size_t,
             );
         }
     }
