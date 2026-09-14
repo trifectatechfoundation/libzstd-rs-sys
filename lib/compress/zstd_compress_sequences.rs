@@ -557,9 +557,9 @@ pub unsafe fn ZSTD_encodeSequences(
     sequences: *const SeqDef,
     nbSeq: size_t,
     longOffsets: bool,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
-    if bmi2 != 0 {
+    if bmi2 {
         return ZSTD_encodeSequences_bmi2(
             dst,
             dstCapacity,

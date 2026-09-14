@@ -155,7 +155,7 @@ pub unsafe fn ZSTD_compressLiterals(
     strategy: ZSTD_strategy,
     disableLiteralCompression: bool,
     suspectUncompressible: bool,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
     let lhSize = (3
         + (srcSize >= (1 << 10) as size_t) as core::ffi::c_int
@@ -181,7 +181,7 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     let mut repeat = prevHuf.repeatMode;
-    let flags = (if bmi2 != 0 {
+    let flags = (if bmi2 {
         HUF_flags_bmi2 as core::ffi::c_int
     } else {
         0

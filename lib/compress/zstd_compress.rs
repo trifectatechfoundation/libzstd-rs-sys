@@ -4154,7 +4154,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     cctxParams: &ZSTD_CCtx_params,
     mut entropyWorkspace: *mut core::ffi::c_void,
     mut entropyWkspSize: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
     let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
@@ -4298,7 +4298,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     cctxParams: &ZSTD_CCtx_params,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
     let cSize = ZSTD_entropyCompressSeqStore_internal(
         dst,
@@ -4347,7 +4347,7 @@ unsafe fn ZSTD_entropyCompressSeqStore(
     srcSize: size_t,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
     ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         dst,
@@ -5666,7 +5666,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         srcSize,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-        (*zc).bmi2,
+        (*zc).bmi2 != 0,
     );
     let err_code = cSeqsSize;
     if ERR_isError(err_code) {
@@ -6002,7 +6002,7 @@ unsafe fn ZSTD_compressBlock_internal(
             srcSize,
             (*zc).tmpWorkspace,
             (*zc).tmpWkspSize,
-            (*zc).bmi2,
+            (*zc).bmi2 != 0,
         );
         if frame
             && (*zc).isFirstBlock == 0
@@ -9613,7 +9613,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 blockSize,
                 (*cctx).tmpWorkspace,
                 (*cctx).tmpWkspSize,
-                (*cctx).bmi2,
+                (*cctx).bmi2 != 0,
             );
             let err_code_2 = compressedSeqsSize;
             if ERR_isError(err_code_2) {
@@ -10091,7 +10091,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             &(*cctx).appliedParams,
             (*cctx).tmpWorkspace,
             (*cctx).tmpWkspSize,
-            (*cctx).bmi2,
+            (*cctx).bmi2 != 0,
         );
         let err_code_1 = compressedSeqsSize;
         if ERR_isError(err_code_1) {
