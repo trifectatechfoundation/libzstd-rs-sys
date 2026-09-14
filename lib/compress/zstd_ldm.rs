@@ -59,7 +59,7 @@ pub struct ldmRollingHashState_t {
 
 use libc::size_t;
 
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
@@ -679,7 +679,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     // LDM parameters
     let extDict = ZSTD_window_hasExtDict(ldmState.window);
     let minMatchLength = params.minMatchLength;
@@ -721,7 +721,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let mut ip = istart;
 
     if srcSize < minMatchLength as size_t {
-        return iend.offset_from_unsigned(anchor);
+        return Ok(iend.offset_from_unsigned(anchor));
     }
 
     // Initialize the rolling hash state with the first minMatchLength bytes
@@ -862,7 +862,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                     // Out of sequence storage
                     if rawSeqStore.size == rawSeqStore.capacity {
-                        return Error::dstSize_tooSmall.to_error_code();
+                        return Err(Error::dstSize_tooSmall);
                     }
                     (*seq).litLength = split.sub(backwardMatchLength).offset_from(anchor)
                         as core::ffi::c_long as u32;
@@ -900,7 +900,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         ip = ip.add(hashed);
     }
 
-    iend.offset_from_unsigned(anchor)
+    Ok(iend.offset_from_unsigned(anchor))
 }
 
 /// Reduce table indexes by `reducerValue`
@@ -921,7 +921,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<(), Error> {
     let maxDist = 1 << params.windowLog;
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
@@ -941,7 +941,6 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart.add(kMaxChunkSize)
         };
         let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
-        let mut newLeftoverSize: size_t = 0;
         let prevSize = sequences.size;
 
         // 1. Perform overflow correction if necessary.
@@ -987,16 +986,13 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         );
 
         // 3. Generate the sequences for the chunk, and get newLeftoverSize.
-        newLeftoverSize = ZSTD_ldm_generateSequences_internal(
+        let newLeftoverSize = ZSTD_ldm_generateSequences_internal(
             ldmState,
             sequences,
             params,
             chunkStart as *const core::ffi::c_void,
             chunkSize,
-        );
-        if ERR_isError(newLeftoverSize) {
-            return newLeftoverSize;
-        }
+        )?;
 
         // 4. We add the leftover literals from previous iterations to the first
         //    newly generated sequence, or add the `newLeftoverSize` if none are
@@ -1013,7 +1009,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         chunk = chunk.wrapping_add(1);
     }
 
-    0
+    Ok(())
 }
 
 pub unsafe fn ZSTD_ldm_skipSequences(
