@@ -473,9 +473,9 @@ pub unsafe fn ZSTD_noCompressBlock(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    lastBlock: u32,
+    lastBlock: bool,
 ) -> size_t {
-    let cBlockHeader24 = lastBlock
+    let cBlockHeader24 = u32::from(lastBlock)
         .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) > dstCapacity {
