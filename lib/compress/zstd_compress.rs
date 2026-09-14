@@ -4263,7 +4263,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let cSize = match ZSTD_entropyCompressSeqStore_internal(
         dst,
         dstCapacity,
@@ -4277,20 +4277,20 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         entropyWkspSize,
         bmi2,
     ) {
-        Ok(0) => return 0,
+        Ok(0) => return Ok(0),
         Ok(cSize) => cSize,
         // When srcSize <= dstCapacity, there is enough space to write a raw uncompressed block.
         // Since we ran out of space, block must be not compressible, so fall back to raw uncompressed block.
-        Err(Error::dstSize_tooSmall) if blockSize <= dstCapacity => return 0,
-        Err(err) => return err.to_error_code(),
+        Err(Error::dstSize_tooSmall) if blockSize <= dstCapacity => return Ok(0),
+        Err(err) => return Err(err),
     };
 
     // Check compressibility
     let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, cctxParams.cParams.strategy));
     if cSize >= maxCSize {
-        return 0;
+        return Ok(0);
     }
-    cSize
+    Ok(cSize)
 }
 
 unsafe fn ZSTD_entropyCompressSeqStore(
@@ -4304,7 +4304,7 @@ unsafe fn ZSTD_entropyCompressSeqStore(
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         dst,
         dstCapacity,
@@ -5580,7 +5580,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     if dstCapacity < ZSTD_BLOCKHEADERSIZE {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    let mut cSeqsSize = ZSTD_entropyCompressSeqStore(
+    let mut cSeqsSize = match ZSTD_entropyCompressSeqStore(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5591,11 +5591,10 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
         (*zc).bmi2 != 0,
-    );
-    let err_code = cSeqsSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(cSeqsSize) => cSeqsSize,
+        Err(err) => return err.to_error_code(),
+    };
 
     if (*zc).isFirstBlock == 0
         && cSeqsSize < rleMaxLength as size_t
@@ -5914,7 +5913,9 @@ unsafe fn ZSTD_compressBlock_internal(
             ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
             return 0;
         }
-        cSize = ZSTD_entropyCompressSeqStore(
+
+        // encode sequences and literals
+        cSize = match ZSTD_entropyCompressSeqStore(
             &(*zc).seqStore,
             &(*(*zc).blockState.prevCBlock).entropy,
             &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5925,7 +5926,14 @@ unsafe fn ZSTD_compressBlock_internal(
             (*zc).tmpWorkspace,
             (*zc).tmpWkspSize,
             (*zc).bmi2 != 0,
-        );
+        ) {
+            Ok(cSize) => cSize,
+            Err(err) => return err.to_error_code(),
+        };
+
+        // We don't want to emit our first block as a RLE even if it qualifies because
+        // doing so will cause the decoder (cli only) to throw a "should consume all input error."
+        // This is only an issue for zstd <= v1.4.3
         if frame
             && (*zc).isFirstBlock == 0
             && cSize < rleMaxLength as size_t
@@ -5935,10 +5943,13 @@ unsafe fn ZSTD_compressBlock_internal(
             *op = *ip;
         }
     }
-    if !ERR_isError(cSize) && cSize > 1 {
+    if cSize > 1 {
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
     }
 
+    // We check that dictionaries have offset codes available for the first
+    // block. After the first block, the offcode table might not have large
+    // enough codes to represent the offsets in the data.
     if (*(*zc).blockState.prevCBlock)
         .entropy
         .fse
@@ -9489,7 +9500,7 @@ unsafe fn ZSTD_compressSequences_internal(
             if dstCapacity < ZSTD_BLOCKHEADERSIZE {
                 return Error::dstSize_tooSmall.to_error_code();
             }
-            let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore(
+            let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore(
                 &(*cctx).seqStore,
                 &(*(*cctx).blockState.prevCBlock).entropy,
                 &mut (*(*cctx).blockState.nextCBlock).entropy,
@@ -9500,11 +9511,10 @@ unsafe fn ZSTD_compressSequences_internal(
                 (*cctx).tmpWorkspace,
                 (*cctx).tmpWkspSize,
                 (*cctx).bmi2 != 0,
-            );
-            let err_code_2 = compressedSeqsSize;
-            if ERR_isError(err_code_2) {
-                return err_code_2;
-            }
+            ) {
+                Ok(compressedSeqsSize) => compressedSeqsSize,
+                Err(err) => return err.to_error_code(),
+            };
 
             if (*cctx).isFirstBlock == 0
                 && ZSTD_maybeRLE(&(*cctx).seqStore)
