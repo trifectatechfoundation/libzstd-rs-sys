@@ -1035,21 +1035,20 @@ impl HUF_CStream_t {
 ///
 /// * `elt` - The element we're adding. This is a (nbBits, value) pair.
 ///   See the HUF_CStream_t docs for the format.
-/// * `idx` - Insert into the bitstream at this idx.
+/// * `idx` - Insert into bit container `0` (`false`) or `1` (`true`).
 /// * `kFast` - This is a template parameter. If the bitstream is guaranteed
 ///   to have at least 4 unused bits after this call it may be `true`,
 ///   otherwise it must be `false`. HUF_addBits() is faster when fast is set.
 #[inline(always)]
-fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: bool) {
-    debug_assert!(idx <= 1);
+fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: bool, kFast: bool) {
     debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
     /* This is efficient on x86-64 with BMI2 because shrx
      * only reads the low 6 bits of the register. The compiler
      * knows this and elides the mask. When fast is set,
      * every operation can use the same value loaded from elt.
      */
-    bitC.bitContainer[idx as usize] >>= HUF_getNbBits(elt);
-    bitC.bitContainer[idx as usize] |= if kFast {
+    bitC.bitContainer[usize::from(idx)] >>= HUF_getNbBits(elt);
+    bitC.bitContainer[usize::from(idx)] |= if kFast {
         HUF_getValueFast(elt)
     } else {
         HUF_getValue(elt)
@@ -1057,9 +1056,9 @@ fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: bool)
     /* We only read the low 8 bits of bitC->bitPos[idx] so it
      * doesn't matter that the high bits have noise from the value.
      */
-    let fresh21 = &mut bitC.bitPos[idx as usize];
+    let fresh21 = &mut bitC.bitPos[usize::from(idx)];
     *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
-    debug_assert!((bitC.bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+    debug_assert!((bitC.bitPos[usize::from(idx)] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     /* The last 4-bits of elt are dirty if fast is set,
      * so we must not be overwriting bits that have already been
      * inserted into the bit container.
@@ -1131,7 +1130,7 @@ fn HUF_endMark() -> HUF_CElt {
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
-    HUF_addBits(bitC, HUF_endMark(), 0, false);
+    HUF_addBits(bitC, HUF_endMark(), false, false);
     HUF_flushBits(bitC, false);
     let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     if bitC.ptr >= bitC.endPtr {
@@ -1145,7 +1144,7 @@ fn HUF_encodeSymbol(
     bitCPtr: &mut HUF_CStream_t,
     symbol: u32,
     CTable: &SymbolTable,
-    idx: c_int,
+    idx: bool,
     fast: bool,
 ) {
     HUF_addBits(bitCPtr, CTable[symbol as usize], idx, fast);
@@ -1167,7 +1166,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     if rem > 0 {
         for _ in (1..rem + 1).rev() {
             n -= 1;
-            HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, 0, false);
+            HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, false, false);
         }
         HUF_flushBits(bitC, kFastFlush);
     }
@@ -1176,13 +1175,13 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     /* Join to 2 * kUnroll */
     if n % (2 * kUnroll) != 0 {
         for u in 1..kUnroll {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, 0, true);
+            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, false, true);
         }
         HUF_encodeSymbol(
             bitC,
             *ip.offset((n - kUnroll) as isize) as u32,
             ct,
-            0,
+            false,
             kLastFast,
         );
         HUF_flushBits(bitC, kFastFlush);
@@ -1195,14 +1194,14 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         let mut u_0: c_int = 0;
         u_0 = 1;
         while u_0 < kUnroll {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u_0) as isize) as u32, ct, 0, true);
+            HUF_encodeSymbol(bitC, *ip.offset((n - u_0) as isize) as u32, ct, false, true);
             u_0 += 1;
         }
         HUF_encodeSymbol(
             bitC,
             *ip.offset((n - kUnroll) as isize) as u32,
             ct,
-            0,
+            false,
             kLastFast,
         );
         HUF_flushBits(bitC, kFastFlush);
@@ -1217,7 +1216,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
                 bitC,
                 *ip.offset((n - kUnroll - u_0) as isize) as u32,
                 ct,
-                1,
+                true,
                 true,
             );
             u_0 += 1;
@@ -1226,7 +1225,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
             bitC,
             *ip.offset((n - kUnroll - kUnroll) as isize) as u32,
             ct,
-            1,
+            true,
             kLastFast,
         );
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
