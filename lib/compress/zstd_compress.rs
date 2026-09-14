@@ -4443,13 +4443,13 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
     nbExternalSeqs: size_t,
     outSeqsCapacity: size_t,
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     if nbExternalSeqs > outSeqsCapacity {
-        return Error::sequenceProducer_failed.to_error_code();
+        return Err(Error::sequenceProducer_failed);
     }
 
     if nbExternalSeqs == 0 && srcSize > 0 {
-        return Error::sequenceProducer_failed.to_error_code();
+        return Err(Error::sequenceProducer_failed);
     }
 
     if srcSize == 0 {
@@ -4458,19 +4458,19 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
             0,
             size_of::<ZSTD_Sequence>(),
         );
-        return 1;
+        return Ok(1);
     }
 
     let lastSeq = *outSeqs.add(nbExternalSeqs.wrapping_sub(1));
     // We can return early if lastSeq is already a block delimiter.
     if lastSeq.offset == 0 && lastSeq.matchLength == 0 {
-        return nbExternalSeqs;
+        return Ok(nbExternalSeqs);
     }
 
     // This error condition is only possible if the external matchfinder
     // produced an invalid parse, by definition of ZSTD_sequenceBound().
     if nbExternalSeqs == outSeqsCapacity {
-        return Error::sequenceProducer_failed.to_error_code();
+        return Err(Error::sequenceProducer_failed);
     }
 
     // lastSeq is not a block delimiter, so we need to append one.
@@ -4479,7 +4479,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
         0,
         size_of::<ZSTD_Sequence>(),
     );
-    nbExternalSeqs.wrapping_add(1)
+    Ok(nbExternalSeqs.wrapping_add(1))
 }
 
 /// Returns sum(litLen) + sum(matchLen) + lastLits for *seqBuf*.
@@ -4519,7 +4519,7 @@ unsafe fn ZSTD_buildSeqStore(
     zc: *mut ZSTD_CCtx,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<BuildSeqStore, Error> {
     let ms: &mut ZSTD_MatchState_t = &mut (*zc).blockState.matchState;
     ZSTD_assertEqualCParams((*zc).appliedParams.cParams, ms.cParams);
     if srcSize
@@ -4538,7 +4538,7 @@ unsafe fn ZSTD_buildSeqStore(
             );
         }
         // don't even attempt compression below a certain srcSize
-        return BuildSeqStore::NoCompress as size_t;
+        return Ok(BuildSeqStore::NoCompress);
     }
     ZSTD_resetSeqStore(&mut (*zc).seqStore);
     // required for optimal parser to read stats from dictionary
@@ -4570,7 +4570,7 @@ unsafe fn ZSTD_buildSeqStore(
     }
     let lastLLSize: size_t = if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
-            return Error::parameter_combination_unsupported.to_error_code();
+            return Err(Error::parameter_combination_unsupported);
         }
 
         ZSTD_ldm_blockCompress(
@@ -4585,20 +4585,18 @@ unsafe fn ZSTD_buildSeqStore(
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore_t::default();
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
-            return Error::parameter_combination_unsupported.to_error_code();
+            return Err(Error::parameter_combination_unsupported);
         }
         ldmSeqStore.seq = (*zc).ldmSequences;
         ldmSeqStore.capacity = (*zc).maxNbLdmSequences;
 
-        if let Err(err) = ZSTD_ldm_generateSequences(
+        ZSTD_ldm_generateSequences(
             &mut (*zc).ldmState,
             &mut ldmSeqStore,
             &(*zc).appliedParams.ldmParams,
             src,
             srcSize,
-        ) {
-            return err.to_error_code();
-        }
+        )?;
 
         ZSTD_ldm_blockCompress(
             &mut ldmSeqStore,
@@ -4624,61 +4622,57 @@ unsafe fn ZSTD_buildSeqStore(
             windowSize as size_t,
         );
 
-        let nbPostProcessedSeqs = ZSTD_postProcessSequenceProducerResult(
+        match ZSTD_postProcessSequenceProducerResult(
             (*zc).extSeqBuf,
             nbExternalSeqs,
             (*zc).extSeqBufCapacity,
             srcSize,
-        );
-
-        // Return early if there is no error, since we don't need to worry about last literals
-        if !ERR_isError(nbPostProcessedSeqs) {
-            let mut seqPos = {
-                ZSTD_SequencePosition {
+        ) {
+            // Return early if there is no error, since we don't need to worry about last literals
+            Ok(nbPostProcessedSeqs) => {
+                let mut seqPos = ZSTD_SequencePosition {
                     idx: 0,
                     posInSequence: 0,
                     posInSrc: 0,
+                };
+                let seqLenSum = ZSTD_fastSequenceLengthSum((*zc).extSeqBuf, nbPostProcessedSeqs);
+                if seqLenSum > srcSize {
+                    return Err(Error::externalSequences_invalid);
                 }
-            };
-            let seqLenSum = ZSTD_fastSequenceLengthSum((*zc).extSeqBuf, nbPostProcessedSeqs);
-            if seqLenSum > srcSize {
-                return Error::externalSequences_invalid.to_error_code();
+                ZSTD_transferSequences_wBlockDelim(
+                    zc,
+                    &mut seqPos,
+                    (*zc).extSeqBuf,
+                    nbPostProcessedSeqs,
+                    src,
+                    srcSize,
+                    (*zc).appliedParams.searchForExternalRepcodes,
+                )?;
+                ms.ldmSeqStore = core::ptr::null();
+                return Ok(BuildSeqStore::Compress);
             }
-            if let Err(err) = ZSTD_transferSequences_wBlockDelim(
-                zc,
-                &mut seqPos,
-                (*zc).extSeqBuf,
-                nbPostProcessedSeqs,
-                src,
-                srcSize,
-                (*zc).appliedParams.searchForExternalRepcodes,
-            ) {
-                return err.to_error_code();
+            // Propagate the error if fallback is disabled
+            Err(err) if (*zc).appliedParams.enableMatchFinderFallback == 0 => {
+                return Err(err);
             }
-            ms.ldmSeqStore = core::ptr::null();
-            return BuildSeqStore::Compress as size_t;
+            // Fallback to software matchfinder
+            Err(_) => {
+                let blockCompressor = ZSTD_selectBlockCompressor(
+                    (*zc).appliedParams.cParams.strategy,
+                    (*zc).appliedParams.useRowMatchFinder,
+                    dictMode,
+                );
+                ms.ldmSeqStore = core::ptr::null();
+
+                blockCompressor.unwrap_unchecked()(
+                    ms,
+                    &mut (*zc).seqStore,
+                    &mut (*(*zc).blockState.nextCBlock).rep,
+                    src,
+                    srcSize,
+                )
+            }
         }
-
-        // Propagate the error if fallback is disabled
-        if (*zc).appliedParams.enableMatchFinderFallback == 0 {
-            return nbPostProcessedSeqs;
-        }
-
-        // Fallback to software matchfinder
-        let blockCompressor = ZSTD_selectBlockCompressor(
-            (*zc).appliedParams.cParams.strategy,
-            (*zc).appliedParams.useRowMatchFinder,
-            dictMode,
-        );
-        ms.ldmSeqStore = core::ptr::null();
-
-        blockCompressor.unwrap_unchecked()(
-            ms,
-            &mut (*zc).seqStore,
-            &mut (*(*zc).blockState.nextCBlock).rep,
-            src,
-            srcSize,
-        )
     } else {
         // not long range mode and no external matchfinder
         let blockCompressor_0 = ZSTD_selectBlockCompressor(
@@ -4701,7 +4695,7 @@ unsafe fn ZSTD_buildSeqStore(
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
 
     ZSTD_validateSeqStore(&(*zc).seqStore, &(*zc).appliedParams.cParams);
-    BuildSeqStore::Compress as size_t
+    Ok(BuildSeqStore::Compress)
 }
 
 unsafe fn ZSTD_copyBlockSequences(
@@ -5854,13 +5848,12 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     srcSize: size_t,
     lastBlock: bool,
 ) -> size_t {
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize);
-    let err_code = bss;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
+        Ok(bss) => bss,
+        Err(err) => return err.to_error_code(),
+    };
 
-    if bss == BuildSeqStore::NoCompress as size_t {
+    if bss == BuildSeqStore::NoCompress {
         if (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
@@ -5897,14 +5890,13 @@ unsafe fn ZSTD_compressBlock_internal(
     let ip = src as *const u8;
     let op = dst as *mut u8;
 
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize);
-    let err_code = bss;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
+        Ok(bss) => bss,
+        Err(err) => return err.to_error_code(),
+    };
 
     let mut cSize: size_t;
-    if bss == BuildSeqStore::NoCompress as size_t {
+    if bss == BuildSeqStore::NoCompress {
         if (*zc).seqCollector.collectSequences != 0 {
             return Error::sequenceProducer_failed.to_error_code();
         }
@@ -5967,10 +5959,10 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    bss: size_t,
+    bss: BuildSeqStore,
     lastBlock: bool,
 ) -> size_t {
-    if bss == BuildSeqStore::Compress as size_t {
+    if bss == BuildSeqStore::Compress {
         if (*zc).isFirstBlock == 0
             && ZSTD_maybeRLE(&(*zc).seqStore)
             && ZSTD_isRLE(src as *const u8, srcSize)
@@ -6011,11 +6003,10 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     srcSize: size_t,
     lastBlock: bool,
 ) -> size_t {
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize);
-    let err_code = bss;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
+        Ok(bss) => bss,
+        Err(err) => return err.to_error_code(),
+    };
 
     let cSize = ZSTD_compressBlock_targetCBlockSize_body(
         zc,
