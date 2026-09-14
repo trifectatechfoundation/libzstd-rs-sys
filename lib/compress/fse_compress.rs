@@ -660,7 +660,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
 
         // this test must be static
-        if BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 {
+        if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 } {
             FSE_flushBits::<FAST>(&mut bitC);
         }
 
@@ -668,7 +668,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
 
         // this test must be static
-        if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 {
+        if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 } {
             ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
             ip = ip.sub(1);
