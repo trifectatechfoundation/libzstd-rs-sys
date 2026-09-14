@@ -5958,7 +5958,7 @@ unsafe fn ZSTD_compressBlock_internal(
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    frame: u32,
+    frame: bool,
 ) -> size_t {
     // This is an estimated upper bound for the length of an rle block.
     // This isn't the actual upper bound.
@@ -6004,7 +6004,7 @@ unsafe fn ZSTD_compressBlock_internal(
             (*zc).tmpWkspSize,
             (*zc).bmi2,
         );
-        if frame != 0
+        if frame
             && (*zc).isFirstBlock == 0
             && cSize < rleMaxLength as size_t
             && ZSTD_isRLE(ip, srcSize)
@@ -6298,7 +6298,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
                 ip as *const core::ffi::c_void,
                 blockSize,
-                1,
+                true,
             );
             let err_code_1 = cSize;
             if ERR_isError(err_code_1) {
@@ -6572,7 +6572,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     let cSize = if frame != 0 {
         ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)
     } else {
-        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, 0)
+        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)
     };
     let err_code_0 = cSize;
     if ERR_isError(err_code_0) {
