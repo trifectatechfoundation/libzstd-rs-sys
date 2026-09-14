@@ -68,30 +68,25 @@ unsafe fn ZSTD_NCountCost(
     max: u8,
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut wksp: [u8; 512] = [0; 512];
     let mut norm: [i16; 53] = [0; 53];
     let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
-    if let Err(err) = FSE_normalizeCount(
+    FSE_normalizeCount(
         &mut norm,
         tableLog,
         count,
         nbSeq,
         max,
         ZSTD_useLowProbCount(nbSeq),
-    ) {
-        return err.to_error_code();
-    }
-    match FSE_writeNCount(
+    )?;
+    FSE_writeNCount(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; 512]>(),
         &norm,
         max,
         tableLog,
-    ) {
-        Ok(nCountSize) => nCountSize,
-        Err(err) => err.to_error_code(),
-    }
+    )
 }
 
 /// Returns the cost in bits of encoding the distribution described by count
@@ -220,14 +215,16 @@ pub unsafe fn ZSTD_selectEncodingType(
         } else {
             Error::GENERIC.to_error_code()
         };
-        let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
-        let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
+        let nCountCost = match ZSTD_NCountCost(count, max, nbSeq, FSELog) {
+            Ok(nCountCost) => nCountCost,
+            Err(_) => unreachable!(),
+        };
+        let compressedCost = (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert_eq!(ZSTD_isError(basicCost), 0);
             assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
         }
-        assert_eq!(ZSTD_isError(NCountCost), 0);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat_none;
             return SymbolEncodingType::Basic;
