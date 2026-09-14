@@ -436,17 +436,17 @@ unsafe fn ZSTD_rleCompressBlock(
     src: u8,
     srcSize: size_t,
     lastBlock: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let op = dst as *mut u8;
     let cBlockHeader = u32::from(lastBlock)
         .wrapping_add((BlockType::Rle as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if dstCapacity < 4 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
     *op.add(3) = src;
-    4
+    Ok(4)
 }
 
 #[inline]
@@ -4702,7 +4702,7 @@ unsafe fn ZSTD_copyBlockSequences(
     seqCollector: &mut SeqCollector,
     seqStore: *const SeqStore_t,
     prevRepcodes: &RepCodes,
-) -> size_t {
+) -> Result<(), Error> {
     let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
     let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
     let nbInLiterals = ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t;
@@ -4716,7 +4716,7 @@ unsafe fn ZSTD_copyBlockSequences(
     let mut nbOutLiterals = 0usize;
 
     if nbOutSequences > (seqCollector.maxSequences).wrapping_sub(seqCollector.seqIndex) {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     let mut repcodes = *prevRepcodes;
@@ -4775,7 +4775,7 @@ unsafe fn ZSTD_copyBlockSequences(
 
     seqCollector.seqIndex = (seqCollector.seqIndex).wrapping_add(nbOutSequences);
 
-    0
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sequenceBound))]
@@ -5561,7 +5561,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     srcSize: size_t,
     lastBlock: bool,
     isPartition: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let rleMaxLength = 25;
     let op = dst as *mut u8;
     let ip = src as *const u8;
@@ -5578,9 +5578,9 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     }
 
     if dstCapacity < ZSTD_BLOCKHEADERSIZE {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
-    let mut cSeqsSize = match ZSTD_entropyCompressSeqStore(
+    let mut cSeqsSize = ZSTD_entropyCompressSeqStore(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5591,10 +5591,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
         (*zc).bmi2 != 0,
-    ) {
-        Ok(cSeqsSize) => cSeqsSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
 
     if (*zc).isFirstBlock == 0
         && cSeqsSize < rleMaxLength as size_t
@@ -5608,12 +5605,9 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     // Sequence collection not supported when block splitting */
     if (*zc).seqCollector.collectSequences != 0 {
-        let err_code = ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal);
-        if ERR_isError(err_code) {
-            return err_code;
-        }
+        ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal)?;
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
-        return 0;
+        return Ok(0);
     }
 
     let cSize: size_t;
@@ -5624,11 +5618,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             ip as *const core::ffi::c_void,
             srcSize,
             lastBlock,
-        );
-        let err_code_1 = cSize;
-        if ERR_isError(err_code_1) {
-            return err_code_1;
-        }
+        )?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
     } else if cSeqsSize == 1 {
         cSize = ZSTD_rleCompressBlock(
@@ -5637,11 +5627,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             *ip,
             srcSize,
             lastBlock,
-        );
-        let err_code_2 = cSize;
-        if ERR_isError(err_code_2) {
-            return err_code_2;
-        }
+        )?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
     } else {
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
@@ -5661,7 +5647,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             .offcode_repeatMode = FSE_repeat_check;
     }
 
-    cSize
+    Ok(cSize)
 }
 
 pub const MIN_SEQUENCES_BLOCK_SPLITTING: usize = 300;
@@ -5751,7 +5737,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     blockSize: size_t,
     lastBlock: bool,
     nbSeq: u32,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut cSize = 0usize;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
@@ -5770,7 +5756,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     );
 
     if numSplits == 0 {
-        let cSizeSingleBlock = ZSTD_compressSeqStore_singleBlock(
+        return ZSTD_compressSeqStore_singleBlock(
             zc,
             &(*zc).seqStore,
             &mut dRep,
@@ -5782,11 +5768,6 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             lastBlock,
             false,
         );
-        let err_code = cSizeSingleBlock;
-        if ERR_isError(err_code) {
-            return err_code;
-        }
-        return cSizeSingleBlock;
     }
 
     ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as size_t);
@@ -5820,11 +5801,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             srcBytes,
             lastBlockEntireSrc,
             true,
-        );
-        let err_code_0 = cSizeChunk;
-        if ERR_isError(err_code_0) {
-            return err_code_0;
-        }
+        )?;
 
         ip = ip.add(srcBytes);
         op = op.add(cSizeChunk);
@@ -5836,7 +5813,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     // cRep and dRep may have diverged during the compression.
     // If so, we use the dRep repcodes for the next block.
     (*(*zc).blockState.prevCBlock).rep = dRep;
-    cSize
+    Ok(cSize)
 }
 
 unsafe fn ZSTD_compressBlock_splitBlock(
@@ -5846,11 +5823,8 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastBlock: bool,
-) -> size_t {
-    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
-        Ok(bss) => bss,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
 
     if bss == BuildSeqStore::NoCompress {
         if (*(*zc).blockState.prevCBlock)
@@ -5865,7 +5839,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
                 .offcode_repeatMode = FSE_repeat_check;
         }
         if (*zc).seqCollector.collectSequences != 0 {
-            return Error::sequenceProducer_failed.to_error_code();
+            return Err(Error::sequenceProducer_failed);
         }
         return ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
     }
@@ -5881,7 +5855,7 @@ unsafe fn ZSTD_compressBlock_internal(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     frame: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     // This is an estimated upper bound for the length of an rle block.
     // This isn't the actual upper bound.
     // Finding the real threshold needs further investigation.
@@ -5889,33 +5863,27 @@ unsafe fn ZSTD_compressBlock_internal(
     let ip = src as *const u8;
     let op = dst as *mut u8;
 
-    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
-        Ok(bss) => bss,
-        Err(err) => return err.to_error_code(),
-    };
+    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
 
     let mut cSize: size_t;
     if bss == BuildSeqStore::NoCompress {
         if (*zc).seqCollector.collectSequences != 0 {
-            return Error::sequenceProducer_failed.to_error_code();
+            return Err(Error::sequenceProducer_failed);
         }
         cSize = 0;
     } else {
         if (*zc).seqCollector.collectSequences != 0 {
-            let err_code_0 = ZSTD_copyBlockSequences(
+            ZSTD_copyBlockSequences(
                 &mut (*zc).seqCollector,
                 ZSTD_getSeqStore(zc),
                 &(*(*zc).blockState.prevCBlock).rep,
-            );
-            if ERR_isError(err_code_0) {
-                return err_code_0;
-            }
+            )?;
             ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
-            return 0;
+            return Ok(0);
         }
 
         // encode sequences and literals
-        cSize = match ZSTD_entropyCompressSeqStore(
+        cSize = ZSTD_entropyCompressSeqStore(
             &(*zc).seqStore,
             &(*(*zc).blockState.prevCBlock).entropy,
             &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5926,10 +5894,7 @@ unsafe fn ZSTD_compressBlock_internal(
             (*zc).tmpWorkspace,
             (*zc).tmpWkspSize,
             (*zc).bmi2 != 0,
-        ) {
-            Ok(cSize) => cSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
 
         // We don't want to emit our first block as a RLE even if it qualifies because
         // doing so will cause the decoder (cli only) to throw a "should consume all input error."
@@ -5961,7 +5926,7 @@ unsafe fn ZSTD_compressBlock_internal(
             .fse
             .offcode_repeatMode = FSE_repeat_check;
     }
-    cSize
+    Ok(cSize)
 }
 
 unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
@@ -5972,7 +5937,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     srcSize: size_t,
     bss: BuildSeqStore,
     lastBlock: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     if bss == BuildSeqStore::Compress {
         if (*zc).isFirstBlock == 0
             && ZSTD_maybeRLE(&(*zc).seqStore)
@@ -5986,19 +5951,18 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
                 lastBlock,
             );
         }
-        let cSize = ZSTD_compressSuperBlock(zc, dst, dstCapacity, src, srcSize, lastBlock);
-        if cSize != Error::dstSize_tooSmall.to_error_code() {
-            let maxCSize =
-                srcSize.wrapping_sub(ZSTD_minGain(srcSize, (*zc).appliedParams.cParams.strategy));
-            let err_code = cSize;
-            if ERR_isError(err_code) {
-                return err_code;
+        match ZSTD_compressSuperBlock(zc, dst, dstCapacity, src, srcSize, lastBlock) {
+            Ok(cSize) => {
+                let maxCSize = srcSize
+                    .wrapping_sub(ZSTD_minGain(srcSize, (*zc).appliedParams.cParams.strategy));
+                if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
+                    ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+                    return Ok(cSize);
+                }
             }
-            if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
-                ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
-                return cSize;
-            }
-        }
+            Err(Error::dstSize_tooSmall) => {} // continue to noCompressBlock
+            Err(err) => return Err(err),
+        };
     }
 
     // Superblock compression failed, attempt to emit a single no compress block.
@@ -6013,11 +5977,8 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastBlock: bool,
-) -> size_t {
-    let bss = match ZSTD_buildSeqStore(zc, src, srcSize) {
-        Ok(bss) => bss,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
 
     let cSize = ZSTD_compressBlock_targetCBlockSize_body(
         zc,
@@ -6027,11 +5988,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
         srcSize,
         bss,
         lastBlock,
-    );
-    let err_code_0 = cSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    )?;
 
     if (*(*zc).blockState.prevCBlock)
         .entropy
@@ -6045,7 +6002,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
             .offcode_repeatMode = FSE_repeat_check;
     }
 
-    cSize
+    Ok(cSize)
 }
 
 unsafe fn ZSTD_overflowCorrectIfNeeded(
@@ -6132,7 +6089,7 @@ unsafe fn ZSTD_compress_frameChunk(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastFrameChunk: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let blockSizeMax = (*cctx).blockSizeMax;
     let mut remaining = srcSize;
     let mut ip = src as *const u8;
@@ -6166,7 +6123,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 .wrapping_add((1 + 1) as size_t)
                 .wrapping_add(1)
         {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
 
         ZSTD_overflowCorrectIfNeeded(
@@ -6205,11 +6162,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 ip as *const core::ffi::c_void,
                 blockSize,
                 lastBlock,
-            );
-            let err_code = cSize;
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            )?;
         } else if ZSTD_blockSplitterEnabled(&(*cctx).appliedParams) {
             cSize = ZSTD_compressBlock_splitBlock(
                 cctx,
@@ -6218,11 +6171,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 ip as *const core::ffi::c_void,
                 blockSize,
                 lastBlock,
-            );
-            let err_code_0 = cSize;
-            if ERR_isError(err_code_0) {
-                return err_code_0;
-            }
+            )?;
         } else {
             cSize = ZSTD_compressBlock_internal(
                 cctx,
@@ -6231,11 +6180,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 ip as *const core::ffi::c_void,
                 blockSize,
                 true,
-            );
-            let err_code_1 = cSize;
-            if ERR_isError(err_code_1) {
-                return err_code_1;
-            }
+            )?;
             if cSize == 0 {
                 cSize = ZSTD_noCompressBlock(
                     op as *mut core::ffi::c_void,
@@ -6243,11 +6188,7 @@ unsafe fn ZSTD_compress_frameChunk(
                     ip as *const core::ffi::c_void,
                     blockSize,
                     lastBlock,
-                );
-                let err_code_2 = cSize;
-                if ERR_isError(err_code_2) {
-                    return err_code_2;
-                }
+                )?;
             } else {
                 let cBlockHeader = if cSize == 1 {
                     u32::from(lastBlock)
@@ -6290,7 +6231,7 @@ unsafe fn ZSTD_compress_frameChunk(
     if lastFrameChunk && op > ostart {
         (*cctx).stage = CompressionStage::Ending;
     }
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 unsafe fn ZSTD_writeFrameHeader(
@@ -6506,10 +6447,10 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     } else {
         ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)
     };
-    let err_code_0 = cSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    let cSize = match cSize {
+        Ok(cSize) => cSize,
+        Err(err) => return err.to_error_code(),
+    };
     (*cctx).consumedSrcSize =
         ((*cctx).consumedSrcSize).wrapping_add(srcSize as core::ffi::c_ulonglong);
     (*cctx).producedCSize =
@@ -9351,7 +9292,7 @@ unsafe fn blockSize_explicitDelimiter(
     inSeqs: *const ZSTD_Sequence,
     inSeqsSize: size_t,
     seqPos: ZSTD_SequencePosition,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut end = 0;
     let mut blockSize = 0usize;
 
@@ -9362,17 +9303,17 @@ unsafe fn blockSize_explicitDelimiter(
         );
         if end != 0 {
             if (*inSeqs.add(spos)).matchLength != 0 {
-                return Error::externalSequences_invalid.to_error_code();
+                return Err(Error::externalSequences_invalid);
             }
             break;
         }
     }
 
     if end == 0 {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
-    blockSize
+    Ok(blockSize)
 }
 
 unsafe fn determine_blockSize(
@@ -9382,24 +9323,20 @@ unsafe fn determine_blockSize(
     inSeqs: *const ZSTD_Sequence,
     inSeqsSize: size_t,
     seqPos: ZSTD_SequencePosition,
-) -> size_t {
+) -> Result<size_t, Error> {
     if mode == ZSTD_sf_noBlockDelimiters {
         // Note: more a "target" block size
-        return remaining.min(blockSize);
+        return Ok(remaining.min(blockSize));
     }
 
-    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, inSeqsSize, seqPos);
-    let err_code = explicitBlockSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, inSeqsSize, seqPos)?;
     if explicitBlockSize > blockSize {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
     if explicitBlockSize > remaining {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
-    explicitBlockSize
+    Ok(explicitBlockSize)
 }
 
 /// Compress all provided sequences, block-by-block.
@@ -9416,7 +9353,7 @@ unsafe fn ZSTD_compressSequences_internal(
     inSeqsSize: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut cSize = 0usize;
     let mut remaining = srcSize;
     let mut seqPos = {
@@ -9435,7 +9372,7 @@ unsafe fn ZSTD_compressSequences_internal(
     if remaining == 0 {
         let cBlockHeader24 = 1u32.wrapping_add((BlockType::Raw as u32) << 1);
         if dstCapacity < 4 {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         MEM_writeLE32(op as *mut core::ffi::c_void, cBlockHeader24);
         op = op.add(ZSTD_BLOCKHEADERSIZE);
@@ -9451,15 +9388,11 @@ unsafe fn ZSTD_compressSequences_internal(
             inSeqs,
             inSeqsSize,
             seqPos,
-        );
+        )?;
         let lastBlock = blockSize == remaining;
-        let err_code = blockSize;
-        if ERR_isError(err_code) {
-            return err_code;
-        }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        blockSize = match sequenceCopier(
+        blockSize = sequenceCopier(
             cctx,
             &mut seqPos,
             inSeqs,
@@ -9467,10 +9400,7 @@ unsafe fn ZSTD_compressSequences_internal(
             ip as *const core::ffi::c_void,
             blockSize,
             (*cctx).appliedParams.searchForExternalRepcodes,
-        ) {
-            Ok(blockSize) => blockSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
 
         // If blocks are too small, emit as a nocompress block
         if blockSize
@@ -9485,11 +9415,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 ip as *const core::ffi::c_void,
                 blockSize,
                 lastBlock,
-            );
-            let err_code_1 = cBlockSize;
-            if ERR_isError(err_code_1) {
-                return err_code_1;
-            }
+            )?;
 
             cSize = cSize.wrapping_add(cBlockSize);
             ip = ip.add(blockSize);
@@ -9498,9 +9424,9 @@ unsafe fn ZSTD_compressSequences_internal(
             dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
         } else {
             if dstCapacity < ZSTD_BLOCKHEADERSIZE {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
-            let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore(
+            let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore(
                 &(*cctx).seqStore,
                 &(*(*cctx).blockState.prevCBlock).entropy,
                 &mut (*(*cctx).blockState.nextCBlock).entropy,
@@ -9511,10 +9437,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 (*cctx).tmpWorkspace,
                 (*cctx).tmpWkspSize,
                 (*cctx).bmi2 != 0,
-            ) {
-                Ok(compressedSeqsSize) => compressedSeqsSize,
-                Err(err) => return err.to_error_code(),
-            };
+            )?;
 
             if (*cctx).isFirstBlock == 0
                 && ZSTD_maybeRLE(&(*cctx).seqStore)
@@ -9526,32 +9449,23 @@ unsafe fn ZSTD_compressSequences_internal(
                 compressedSeqsSize = 1;
             }
 
-            let cBlockSize: size_t;
-            if compressedSeqsSize == 0 {
+            let cBlockSize = if compressedSeqsSize == 0 {
                 // ZSTD_noCompressBlock writes the block header as well
-                cBlockSize = ZSTD_noCompressBlock(
+                ZSTD_noCompressBlock(
                     op as *mut core::ffi::c_void,
                     dstCapacity,
                     ip as *const core::ffi::c_void,
                     blockSize,
                     lastBlock,
-                );
-                let err_code_3 = cBlockSize;
-                if ERR_isError(err_code_3) {
-                    return err_code_3;
-                }
+                )?
             } else if compressedSeqsSize == 1 {
-                cBlockSize = ZSTD_rleCompressBlock(
+                ZSTD_rleCompressBlock(
                     op as *mut core::ffi::c_void,
                     dstCapacity,
                     *ip,
                     blockSize,
                     lastBlock,
-                );
-                let err_code_4 = cBlockSize;
-                if ERR_isError(err_code_4) {
-                    return err_code_4;
-                }
+                )?
             } else {
                 // Error checking and repcodes update
                 ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
@@ -9572,8 +9486,8 @@ unsafe fn ZSTD_compressSequences_internal(
                     .wrapping_add((BlockType::Compressed as u32) << 1)
                     .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-                cBlockSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize);
-            }
+                ZSTD_BLOCKHEADERSIZE.wrapping_add(compressedSeqsSize)
+            };
 
             cSize = cSize.wrapping_add(cBlockSize);
 
@@ -9588,7 +9502,7 @@ unsafe fn ZSTD_compressSequences_internal(
         }
     }
 
-    cSize
+    Ok(cSize)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequences))]
@@ -9630,7 +9544,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     }
 
     // Now generate compressed blocks
-    let cBlocksSize = ZSTD_compressSequences_internal(
+    let cBlocksSize = match ZSTD_compressSequences_internal(
         cctx,
         op as *mut core::ffi::c_void,
         dstCapacity,
@@ -9638,11 +9552,10 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
         inSeqsSize,
         src,
         srcSize,
-    );
-    let err_code_0 = cBlocksSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    ) {
+        Ok(cBlocksSize) => cBlocksSize,
+        Err(err) => return err.to_error_code(),
+    };
     cSize = cSize.wrapping_add(cBlocksSize);
     dstCapacity = dstCapacity.wrapping_sub(cBlocksSize);
 

@@ -474,12 +474,12 @@ pub unsafe fn ZSTD_noCompressBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     lastBlock: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let cBlockHeader24 = u32::from(lastBlock)
         .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) > dstCapacity {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     MEM_writeLE24(dst, cBlockHeader24);
     core::ptr::copy_nonoverlapping(
@@ -487,7 +487,7 @@ pub unsafe fn ZSTD_noCompressBlock(
         dst.byte_add(ZSTD_BLOCKHEADERSIZE).cast::<u8>(),
         srcSize,
     );
-    ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize)
+    Ok(ZSTD_BLOCKHEADERSIZE.wrapping_add(srcSize))
 }
 
 /// In 32-bit mode: we want to avoid crossing the 2 GB limit,
