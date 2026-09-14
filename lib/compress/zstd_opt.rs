@@ -1283,7 +1283,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
     // init
     ZSTD_rescaleFreqs(&mut ms.opt, src as *const u8, srcSize, OPT_LEVEL);
-    ip = ip.offset((ip == prefixStart) as core::ffi::c_int as isize);
+    ip = ip.add(usize::from(ip == prefixStart));
 
     // Match Loop
     while ip < ilimit {

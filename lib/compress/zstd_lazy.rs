@@ -1721,7 +1721,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         + dictEnd.offset_from(dictLowest) as core::ffi::c_long)
         as u32;
 
-    ip = ip.offset((dictAndPrefixLength == 0) as core::ffi::c_int as isize);
+    ip = ip.add(usize::from(dictAndPrefixLength == 0));
     if dictMode == DictMode::NoDict {
         let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, ms.cParams.windowLog);
@@ -2453,7 +2453,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
     ms.lazySkipping = 0;
 
     // init
-    ip = ip.offset((ip == prefixStart) as core::ffi::c_int as isize);
+    ip = ip.add(usize::from(ip == prefixStart));
     if searchMethod == SearchMethod::RowHash {
         ZSTD_row_fillHashCache(ms, base, rowLog, mls, ms.nextToUpdate, ilimit);
     }
