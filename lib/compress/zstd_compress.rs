@@ -6518,7 +6518,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     mut dstCapacity: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    frame: u32,
+    frame: bool,
     lastFrameChunk: u32,
 ) -> size_t {
     let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
@@ -6528,7 +6528,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         return Error::stage_wrong.to_error_code();
     }
 
-    if frame != 0 && (*cctx).stage == CompressionStage::Init {
+    if frame && (*cctx).stage == CompressionStage::Init {
         fhSize = ZSTD_writeFrameHeader(
             dst,
             dstCapacity,
@@ -6558,7 +6558,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         ZSTD_window_update(&mut (*cctx).ldmState.window, src, srcSize, false);
     }
 
-    if frame == 0 {
+    if !frame {
         // Overflow check and correction for block mode
         ZSTD_overflowCorrectIfNeeded(
             ms,
@@ -6569,7 +6569,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         );
     }
 
-    let cSize = if frame != 0 {
+    let cSize = if frame {
         ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)
     } else {
         ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)
@@ -6599,7 +6599,7 @@ pub unsafe extern "C" fn ZSTD_compressContinue_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 0)
+    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, 0)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue))]
@@ -6639,7 +6639,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
         return Error::srcSize_wrong.to_error_code();
     }
 
-    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 0, 0)
+    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, false, 0)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock))]
@@ -7331,7 +7331,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 1);
+    let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, 1);
     let err_code = cSize;
     if ERR_isError(err_code) {
         return err_code;
