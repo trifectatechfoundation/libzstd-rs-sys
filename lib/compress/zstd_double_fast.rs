@@ -541,7 +541,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     }
 
     // init
-    ip = ip.offset((dictAndPrefixLength == 0) as core::ffi::c_int as isize);
+    ip = ip.add(usize::from(dictAndPrefixLength == 0));
 
     // Main Search Loop (< instead of <=, because repcode check at ip+1)
     while ip < ilimit {

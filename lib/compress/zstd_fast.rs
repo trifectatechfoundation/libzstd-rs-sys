@@ -258,7 +258,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
         ZSTD_match4Found_branch
     };
 
-    ip0 = ip0.offset((ip0 == prefixStart) as core::ffi::c_int as isize);
+    ip0 = ip0.add(usize::from(ip0 == prefixStart));
     let curr = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, cParams.windowLog);
     let maxRep = curr.wrapping_sub(windowLow);
@@ -597,7 +597,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     }
 
     // init
-    ip0 = ip0.offset((dictAndPrefixLength == 0) as core::ffi::c_int as isize);
+    ip0 = ip0.add(usize::from(dictAndPrefixLength == 0));
 
     // Outer search loop
     's_135: while ip1 <= ilimit {
