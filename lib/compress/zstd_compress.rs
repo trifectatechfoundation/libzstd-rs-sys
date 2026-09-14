@@ -4178,9 +4178,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         .sequences
         .offset_from(seqStorePtr.sequencesStart) as size_t;
     // Base suspicion of uncompressibility on ratio of literals to sequences
-    let suspectUncompressible = (numSequences == 0
-        || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t)
-        as core::ffi::c_int;
+    let suspectUncompressible = numSequences == 0
+        || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
 
     let cSize = ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,

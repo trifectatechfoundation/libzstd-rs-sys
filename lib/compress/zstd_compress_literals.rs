@@ -154,7 +154,7 @@ pub unsafe fn ZSTD_compressLiterals(
     nextHuf: &mut ZSTD_hufCTables_t,
     strategy: ZSTD_strategy,
     disableLiteralCompression: bool,
-    suspectUncompressible: core::ffi::c_int,
+    suspectUncompressible: bool,
     bmi2: core::ffi::c_int,
 ) -> size_t {
     let lhSize = (3
@@ -193,7 +193,7 @@ pub unsafe fn ZSTD_compressLiterals(
         HUF_flags_optimalDepth as core::ffi::c_int
     } else {
         0
-    }) | (if suspectUncompressible != 0 {
+    }) | (if suspectUncompressible {
         HUF_flags_suspectUncompressible as core::ffi::c_int
     } else {
         0
