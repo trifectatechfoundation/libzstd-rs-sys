@@ -730,16 +730,14 @@ unsafe fn ZSTDMT_serialState_genSequences(
                 src.size,
                 false,
             );
-            let error = ZSTD_ldm_generateSequences(
+            ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
                 seqStore,
                 &(*serialState).params.ldmParams,
                 src.start,
                 src.size,
-            );
-
-            // We provide a large enough buffer to never fail.
-            assert!(!ERR_isError(error));
+            )
+            .expect("We provide a large enough buffer to never fail.");
 
             // Update ldmWindow to match the ldmState.window and signal the main
             // thread if it is waiting for a buffer.

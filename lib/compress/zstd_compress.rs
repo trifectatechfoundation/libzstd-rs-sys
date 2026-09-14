@@ -4590,15 +4590,14 @@ unsafe fn ZSTD_buildSeqStore(
         ldmSeqStore.seq = (*zc).ldmSequences;
         ldmSeqStore.capacity = (*zc).maxNbLdmSequences;
 
-        let err_code = ZSTD_ldm_generateSequences(
+        if let Err(err) = ZSTD_ldm_generateSequences(
             &mut (*zc).ldmState,
             &mut ldmSeqStore,
             &(*zc).appliedParams.ldmParams,
             src,
             srcSize,
-        );
-        if ERR_isError(err_code) {
-            return err_code;
+        ) {
+            return err.to_error_code();
         }
 
         ZSTD_ldm_blockCompress(
