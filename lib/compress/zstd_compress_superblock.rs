@@ -69,7 +69,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     bmi2: bool,
     writeEntropy: bool,
     entropyWritten: &mut bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let header = (if writeEntropy { 200 } else { 0 }) as size_t;
     let lhSize = (3
         + (litSize >= ((1 << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
@@ -140,7 +140,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     op = op.add(cSize);
     cLitSize = cLitSize.wrapping_add(cSize);
     if cSize == 0 || ERR_isError(cSize) {
-        return 0;
+        return Ok(0);
     }
     // If we expand and we aren't writing a header then emit uncompressed.
     if !writeEntropy && cLitSize >= litSize {
@@ -194,7 +194,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         _ => {} // not possible : lhSize is {3,4,5}
     }
     *entropyWritten = true;
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 unsafe fn ZSTD_seqDecompressedSize(
@@ -378,7 +378,7 @@ unsafe fn ZSTD_compressSubBlock(
     let oend = ostart.add(dstCapacity);
     let mut op = ostart.add(ZSTD_BLOCKHEADERSIZE);
 
-    let cLitSize = ZSTD_compressSubBlock_literal(
+    let cLitSize = match ZSTD_compressSubBlock_literal(
         &entropy.huf.CTable,
         &entropyMetadata.hufMetadata,
         literals,
@@ -388,11 +388,10 @@ unsafe fn ZSTD_compressSubBlock(
         bmi2,
         writeLitEntropy,
         litEntropyWritten,
-    );
-    let err_code = cLitSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(cLitSize) => cLitSize,
+        Err(err) => return err.to_error_code(),
+    };
     if cLitSize == 0 {
         return 0;
     }
