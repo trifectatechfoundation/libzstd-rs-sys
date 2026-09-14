@@ -4131,7 +4131,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     mut entropyWorkspace: *mut core::ffi::c_void,
     mut entropyWkspSize: size_t,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
     let sequences: *const SeqDef = seqStorePtr.sequencesStart;
@@ -4157,7 +4157,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let suspectUncompressible = numSequences == 0
         || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
 
-    let cSize = match ZSTD_compressLiterals(
+    let cSize = ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,
         dstCapacity,
         literals,
@@ -4170,15 +4170,12 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         ZSTD_literalsCompressionIsDisabled(cctxParams),
         suspectUncompressible,
         bmi2,
-    ) {
-        Ok(cSize) => cSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     op = op.add(cSize);
 
     // Sequences Header
     if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if nbSeq < 128 {
         *op = nbSeq as u8;
@@ -4198,13 +4195,13 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     if nbSeq == 0 {
         // Copy the old tables over as if we repeated them
         core::ptr::copy_nonoverlapping(&raw const prevEntropy.fse, &raw mut nextEntropy.fse, 1);
-        return op.offset_from_unsigned(ostart);
+        return Ok(op.offset_from_unsigned(ostart));
     }
 
     let seqHead = op;
     op = op.add(1);
     // build stats for sequences
-    let stats = match ZSTD_buildSequencesStatistics(
+    let stats = ZSTD_buildSequencesStatistics(
         seqStorePtr,
         nbSeq,
         &prevEntropy.fse,
@@ -4215,10 +4212,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         count,
         entropyWorkspace,
         entropyWkspSize,
-    ) {
-        Ok(stats) => stats,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     *seqHead = ((stats.LLtype as u32) << 6)
         .wrapping_add((stats.Offtype as u32) << 4)
         .wrapping_add((stats.MLtype as u32) << 2) as u8;
@@ -4239,11 +4233,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         nbSeq,
         longOffsets,
         bmi2,
-    );
-    let err_code_1 = bitstreamSize;
-    if ERR_isError(err_code_1) {
-        return err_code_1;
-    }
+    )?;
     op = op.add(bitstreamSize);
     // zstd versions <= 1.3.4 mistakenly report corruption when
     // FSE_readNCount() receives a buffer < 4 bytes.
@@ -4254,10 +4244,10 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     // block, since it isn't worth optimizing.
     if lastCountSize != 0 && lastCountSize.wrapping_add(bitstreamSize) < 4 {
         // lastCountSize >= 2 && bitstreamSize > 0 ==> lastCountSize == 3
-        return 0;
+        return Ok(0);
     }
 
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
@@ -4274,7 +4264,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     entropyWkspSize: size_t,
     bmi2: bool,
 ) -> size_t {
-    let cSize = ZSTD_entropyCompressSeqStore_internal(
+    let cSize = match ZSTD_entropyCompressSeqStore_internal(
         dst,
         dstCapacity,
         literals,
@@ -4286,22 +4276,14 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         entropyWorkspace,
         entropyWkspSize,
         bmi2,
-    );
-    if cSize == 0 {
-        return 0;
-    }
-    // When srcSize <= dstCapacity, there is enough space to write a raw uncompressed block.
-    // Since we ran out of space, block must be not compressible, so fall back to raw uncompressed block.
-    if (cSize == Error::dstSize_tooSmall.to_error_code()) as core::ffi::c_int
-        & (blockSize <= dstCapacity) as core::ffi::c_int
-        != 0
-    {
-        return 0; // block not compressed
-    }
-    let err_code = cSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(0) => return 0,
+        Ok(cSize) => cSize,
+        // When srcSize <= dstCapacity, there is enough space to write a raw uncompressed block.
+        // Since we ran out of space, block must be not compressible, so fall back to raw uncompressed block.
+        Err(Error::dstSize_tooSmall) if blockSize <= dstCapacity => return 0,
+        Err(err) => return err.to_error_code(),
+    };
 
     // Check compressibility
     let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, cctxParams.cParams.strategy));
@@ -10002,7 +9984,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             return Error::dstSize_tooSmall.to_error_code();
         }
 
-        let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
+        let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore_internal(
             op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
             literals,
@@ -10014,11 +9996,10 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             (*cctx).tmpWorkspace,
             (*cctx).tmpWkspSize,
             (*cctx).bmi2 != 0,
-        );
-        let err_code_1 = compressedSeqsSize;
-        if ERR_isError(err_code_1) {
-            return err_code_1;
-        }
+        ) {
+            Ok(compressedSeqsSize) => compressedSeqsSize,
+            Err(err) => return err.to_error_code(),
+        };
         // Note: the spec forbids for any compressed block to be larger than maximum block size
         if compressedSeqsSize > (*cctx).blockSizeMax {
             compressedSeqsSize = 0;

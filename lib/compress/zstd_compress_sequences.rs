@@ -330,9 +330,9 @@ unsafe fn ZSTD_encodeSequences_body(
     sequences: *const SeqDef,
     nbSeq: size_t,
     longOffsets: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let Ok(mut blockStream) = BIT_initCStream(dst, dstCapacity) else {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     };
 
     // first symbols
@@ -467,9 +467,9 @@ unsafe fn ZSTD_encodeSequences_body(
 
     let streamSize = BIT_closeCStream(&mut blockStream);
     if streamSize == 0 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
-    streamSize
+    Ok(streamSize)
 }
 
 unsafe fn ZSTD_encodeSequences_default(
@@ -484,7 +484,7 @@ unsafe fn ZSTD_encodeSequences_default(
     sequences: *const SeqDef,
     nbSeq: size_t,
     longOffsets: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
@@ -512,7 +512,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     sequences: *const SeqDef,
     nbSeq: size_t,
     longOffsets: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
@@ -541,7 +541,7 @@ pub unsafe fn ZSTD_encodeSequences(
     nbSeq: size_t,
     longOffsets: bool,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     if bmi2 {
         return ZSTD_encodeSequences_bmi2(
             dst,

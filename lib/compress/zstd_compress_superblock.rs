@@ -301,7 +301,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
             .wrapping_add(repeat << 2) as u8;
     }
 
-    let bitstreamSize = ZSTD_encodeSequences(
+    let bitstreamSize = match ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &fseTables.matchlengthCTable,
@@ -314,11 +314,10 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         nbSeq,
         longOffsets,
         bmi2,
-    );
-    let err_code = bitstreamSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ) {
+        Ok(bitstreamSize) => bitstreamSize,
+        Err(err) => return err.to_error_code(),
+    };
     op = op.add(bitstreamSize);
     // zstd versions <= 1.3.4 mistakenly report corruption when
     // FSE_readNCount() receives a buffer < 4 bytes.
