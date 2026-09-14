@@ -82,13 +82,16 @@ unsafe fn ZSTD_NCountCost(
     ) {
         return err.to_error_code();
     }
-    FSE_writeNCount(
+    match FSE_writeNCount(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; 512]>(),
         &norm,
         max,
         tableLog,
-    )
+    ) {
+        Ok(nCountSize) => nCountSize,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 /// Returns the cost in bits of encoding the distribution described by count
@@ -305,17 +308,16 @@ pub unsafe fn ZSTD_buildCTable(
             ) {
                 return err.to_error_code();
             }
-            let NCountSize = FSE_writeNCount(
+            let nCountSize = match FSE_writeNCount(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
                 &(*wksp).norm,
                 max,
                 tableLog,
-            );
-            let err_code_2 = NCountSize;
-            if ERR_isError(err_code_2) {
-                return err_code_2;
-            }
+            ) {
+                Ok(nCountSize) => nCountSize,
+                Err(err) => return err.to_error_code(),
+            };
             if let Err(err) = FSE_buildCTable_wksp(
                 nextCTable,
                 &(*wksp).norm,
@@ -326,7 +328,7 @@ pub unsafe fn ZSTD_buildCTable(
             ) {
                 return err.to_error_code();
             }
-            NCountSize
+            nCountSize
         }
     }
 }

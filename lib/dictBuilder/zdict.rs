@@ -982,13 +982,12 @@ unsafe fn analyze_entropy_internal(
         &offcodeNCount,
         OFFCODE_MAX,
         offLog,
-    );
-    if let Some(err) = Error::from_error_code(ohSize) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_writeNCount error with offcodeNCount");
         }
-        return Err(err);
-    }
+    })?;
     dstPtr = dstPtr.add(ohSize);
     maxDstSize = maxDstSize.wrapping_sub(ohSize);
     eSize = eSize.wrapping_add(ohSize);
@@ -999,13 +998,12 @@ unsafe fn analyze_entropy_internal(
         &matchLengthNCount,
         MaxML,
         mlLog,
-    );
-    if let Some(err) = Error::from_error_code(mhSize) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_writeNCount error with matchLengthNCount ");
         }
-        return Err(err);
-    }
+    })?;
     dstPtr = dstPtr.add(mhSize);
     maxDstSize = maxDstSize.wrapping_sub(mhSize);
     eSize = eSize.wrapping_add(mhSize);
@@ -1016,13 +1014,12 @@ unsafe fn analyze_entropy_internal(
         &litLengthNCount,
         MaxLL,
         llLog,
-    );
-    if let Some(err) = Error::from_error_code(lhSize) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("FSE_writeNCount error with litlengthNCount ");
         }
-        return Err(err);
-    }
+    })?;
     dstPtr = dstPtr.add(lhSize);
     maxDstSize = maxDstSize.wrapping_sub(lhSize);
     eSize = eSize.wrapping_add(lhSize);
