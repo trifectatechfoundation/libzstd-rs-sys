@@ -8564,7 +8564,7 @@ unsafe fn ZSTD_compressStream_generic(
                                 if ERR_isError(err_code_0) {
                                     return err_code_0;
                                 }
-                                (*zcs).frameEnded = lastBlock as u32;
+                                (*zcs).frameEnded = u32::from(lastBlock);
                                 (*zcs).inBuffTarget =
                                     ((*zcs).inBuffPos).wrapping_add((*zcs).blockSizeMax);
                                 if (*zcs).inBuffTarget > (*zcs).inBuffSize {
