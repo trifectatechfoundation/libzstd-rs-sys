@@ -1046,10 +1046,10 @@ impl HUF_CStream_t {
 ///   See the HUF_CStream_t docs for the format.
 /// * `idx` - Insert into the bitstream at this idx.
 /// * `kFast` - This is a template parameter. If the bitstream is guaranteed
-///   to have at least 4 unused bits after this call it may be 1,
-///   otherwise it must be 0. HUF_addBits() is faster when fast is set.
+///   to have at least 4 unused bits after this call it may be `true`,
+///   otherwise it must be `false`. HUF_addBits() is faster when fast is set.
 #[inline(always)]
-fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
+fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: bool) {
     debug_assert!(idx <= 1);
     debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
     /* This is efficient on x86-64 with BMI2 because shrx
@@ -1058,7 +1058,7 @@ fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int
      * every operation can use the same value loaded from elt.
      */
     bitC.bitContainer[idx as usize] >>= HUF_getNbBits(elt);
-    bitC.bitContainer[idx as usize] |= if kFast != 0 {
+    bitC.bitContainer[idx as usize] |= if kFast {
         HUF_getValueFast(elt)
     } else {
         HUF_getValue(elt)
@@ -1103,7 +1103,7 @@ fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
 ///
 /// bitPos will be < 8.
 #[inline(always)]
-unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
+unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: bool) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
     let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     let nbBytes = nbBits >> 3;
@@ -1116,8 +1116,8 @@ unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
     debug_assert!(bitC.ptr <= bitC.endPtr);
     MEM_writeLEST(bitC.ptr as *mut c_void, bitContainer);
     bitC.ptr = (bitC.ptr).add(nbBytes);
-    debug_assert!(kFast == 0 || bitC.ptr <= bitC.endPtr);
-    if kFast == 0 && bitC.ptr > bitC.endPtr {
+    debug_assert!(!kFast || bitC.ptr <= bitC.endPtr);
+    if !kFast && bitC.ptr > bitC.endPtr {
         bitC.ptr = bitC.endPtr;
     }
     /* bitContainer doesn't need to be modified because the leftover
@@ -1140,8 +1140,8 @@ fn HUF_endMark() -> HUF_CElt {
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
-    HUF_addBits(bitC, HUF_endMark(), 0, 0);
-    HUF_flushBits(bitC, 0);
+    HUF_addBits(bitC, HUF_endMark(), 0, false);
+    HUF_flushBits(bitC, false);
     let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
@@ -1155,7 +1155,7 @@ fn HUF_encodeSymbol(
     symbol: u32,
     CTable: &SymbolTable,
     idx: c_int,
-    fast: c_int,
+    fast: bool,
 ) {
     HUF_addBits(bitCPtr, CTable[symbol as usize], idx, fast);
 }
@@ -1167,8 +1167,8 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     srcSize: size_t,
     ct: &SymbolTable,
     kUnroll: c_int,
-    kFastFlush: c_int,
-    kLastFast: c_int,
+    kFastFlush: bool,
+    kLastFast: bool,
 ) {
     /* Join to kUnroll */
     let mut n = srcSize as c_int;
@@ -1176,7 +1176,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     if rem > 0 {
         for _ in (1..rem + 1).rev() {
             n -= 1;
-            HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, 0, 0);
+            HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, 0, false);
         }
         HUF_flushBits(bitC, kFastFlush);
     }
@@ -1185,7 +1185,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     /* Join to 2 * kUnroll */
     if n % (2 * kUnroll) != 0 {
         for u in 1..kUnroll {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, 0, 1);
+            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, 0, true);
         }
         HUF_encodeSymbol(
             bitC,
@@ -1204,7 +1204,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         let mut u_0: c_int = 0;
         u_0 = 1;
         while u_0 < kUnroll {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u_0) as isize) as u32, ct, 0, 1);
+            HUF_encodeSymbol(bitC, *ip.offset((n - u_0) as isize) as u32, ct, 0, true);
             u_0 += 1;
         }
         HUF_encodeSymbol(
@@ -1227,7 +1227,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
                 *ip.offset((n - kUnroll - u_0) as isize) as u32,
                 ct,
                 1,
-                1,
+                true,
             );
             u_0 += 1;
         }
@@ -1282,40 +1282,58 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
             srcSize,
             ct,
             if MEM_32bits() { 2 } else { 4 },
-            0,
-            0,
+            false,
+            false,
         );
     } else if MEM_32bits() {
         match tableLog {
             11 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 2, 1, 0);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 2, true, false,
+                );
             }
             8..=10 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 2, 1, 1);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 2, true, true,
+                );
             }
             7 | _ => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 3, 1, 1);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 3, true, true,
+                );
             }
         }
     } else {
         match tableLog {
             11 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 5, 1, 0);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 5, true, false,
+                );
             }
             10 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 5, 1, 1);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 5, true, true,
+                );
             }
             9 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 6, 1, 0);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 6, true, false,
+                );
             }
             8 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 7, 1, 0);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 7, true, false,
+                );
             }
             7 => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 8, 1, 0);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 8, true, false,
+                );
             }
             6 | _ => {
-                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 9, 1, 1);
+                HUF_compress1X_usingCTable_internal_body_loop(
+                    &mut bitC, ip, srcSize, ct, 9, true, true,
+                );
             }
         }
     }
