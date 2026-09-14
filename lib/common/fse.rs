@@ -159,7 +159,7 @@ pub(crate) fn FSE_encodeSymbol(
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t<'_>) {
+pub(crate) fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t<'_>) {
     BIT_addBits(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
     BIT_flushBits(bitC);
 }

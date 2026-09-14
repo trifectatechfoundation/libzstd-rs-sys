@@ -589,10 +589,14 @@ pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) -> siz
     0
 }
 
+/// # Safety
+///
+/// When `FAST` is set, the bitstream must have room for the flush; see
+/// [`BIT_flushBitsFast`].
 #[inline(always)]
 unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
     if FAST {
-        BIT_flushBitsFast(bitC);
+        unsafe { BIT_flushBitsFast(bitC) }
     } else {
         BIT_flushBits(bitC);
     }
