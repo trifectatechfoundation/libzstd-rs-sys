@@ -776,9 +776,9 @@ pub(crate) fn ZSTD_getLowestMatchIndex(
     } else {
         lowestValid
     };
-    let isDictionary = (ms.loadedDictEnd != 0) as core::ffi::c_int as u32;
+    let isDictionary = ms.loadedDictEnd != 0;
 
-    if isDictionary != 0 {
+    if isDictionary {
         lowestValid
     } else {
         withinWindow
@@ -798,9 +798,9 @@ pub(crate) fn ZSTD_getLowestPrefixIndex(
     } else {
         lowestValid
     };
-    let isDictionary = (ms.loadedDictEnd != 0) as core::ffi::c_int as u32;
+    let isDictionary = ms.loadedDictEnd != 0;
 
-    if isDictionary != 0 {
+    if isDictionary {
         lowestValid
     } else {
         withinWindow
