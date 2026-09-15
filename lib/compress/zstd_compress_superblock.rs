@@ -652,9 +652,8 @@ unsafe fn countLiterals(seqStore: &SeqStore_t, sp: *const SeqDef, seqCount: size
 
 pub const BYTESCALE: core::ffi::c_int = 256;
 
-unsafe fn sizeBlockSequences(
-    sp: *const SeqDef,
-    nbSeqs: size_t,
+fn sizeBlockSequences(
+    seqs: &[SeqDef],
     targetBudget: size_t,
     avgLitCost: size_t,
     avgSeqCost: size_t,
@@ -667,22 +666,21 @@ unsafe fn sizeBlockSequences(
     budget = budget.wrapping_add(headerSize);
 
     // first sequence => at least one sequence
-    budget = budget.wrapping_add(((*sp).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
+    budget =
+        budget.wrapping_add((seqs[0].litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
     if budget > targetBudget {
         return 1;
     }
     let mut inSize =
-        usize::from((*sp).litLength) + usize::from((*sp).mlBase) + usize::from(MINMATCH);
+        usize::from(seqs[0].litLength) + usize::from(seqs[0].mlBase) + usize::from(MINMATCH);
 
     // loop over sequences
     let mut n = 1;
-    while n < nbSeqs {
-        let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
+    while n < seqs.len() {
+        let currentCost = (seqs[n].litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
         inSize = inSize.wrapping_add(
-            usize::from((*sp.add(n)).litLength)
-                + usize::from((*sp.add(n)).mlBase)
-                + usize::from(MINMATCH),
+            usize::from(seqs[n].litLength) + usize::from(seqs[n].mlBase) + usize::from(MINMATCH),
         );
         // stop when sub-block budget is reached,
         // though continue to expand until the sub-block is deemed compressible
@@ -779,8 +777,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         for n in 0..nbSubBlocks.wrapping_sub(1) {
             // determine nb of sequences for current sub-block + nbLiterals from next sequence
             let seqCount = sizeBlockSequences(
-                sp,
-                send.offset_from_unsigned(sp),
+                core::slice::from_raw_parts(sp, send.offset_from_unsigned(sp)),
                 avgBlockBudget.wrapping_add(blockBudgetSupp),
                 avgLitCost,
                 avgSeqCost,
