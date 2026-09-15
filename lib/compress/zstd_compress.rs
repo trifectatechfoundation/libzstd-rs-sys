@@ -3750,40 +3750,29 @@ pub const ZSTD_ROWSIZE: core::ffi::c_int = 16;
 /// PreserveMark preserves "unsorted mark" for btlazy2 strategy.
 /// Presume table size is a multiple of ZSTD_ROWSIZE to help auto-vectorization.
 #[inline(always)]
-unsafe fn ZSTD_reduceTable_internal(
-    table: *mut u32,
-    size: u32,
-    reducerValue: u32,
-    preserveMark: bool,
-) {
-    let nbRows = size as core::ffi::c_int / ZSTD_ROWSIZE;
-    let mut cellNb = 0;
+fn ZSTD_reduceTable_internal(table: &mut [u32], reducerValue: u32, preserveMark: bool) {
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
 
-    for _rowNb in 0..nbRows {
-        for _column in 0..ZSTD_ROWSIZE {
-            let newVal = if preserveMark
-                && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
-            {
+    for row in table.as_chunks_mut::<{ ZSTD_ROWSIZE as usize }>().0 {
+        for cell in row {
+            *cell = if preserveMark && *cell == ZSTD_DUBT_UNSORTED_MARK as u32 {
                 ZSTD_DUBT_UNSORTED_MARK as u32
-            } else if *table.offset(cellNb as isize) < reducerThreshold {
+            } else if *cell < reducerThreshold {
                 0
             } else {
-                (*table.offset(cellNb as isize)).wrapping_sub(reducerValue)
+                (*cell).wrapping_sub(reducerValue)
             };
-            *table.offset(cellNb as isize) = newVal;
-            cellNb += 1;
         }
     }
 }
 
-unsafe fn ZSTD_reduceTable(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, false);
+fn ZSTD_reduceTable(table: &mut [u32], reducerValue: u32) {
+    ZSTD_reduceTable_internal(table, reducerValue, false);
 }
 
-unsafe fn ZSTD_reduceTable_btlazy2(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, true);
+fn ZSTD_reduceTable_btlazy2(table: &mut [u32], reducerValue: u32) {
+    ZSTD_reduceTable_internal(table, reducerValue, true);
 }
 
 /// Rescale all indexes to avoid future overflow (indexes are U32).
@@ -3792,25 +3781,32 @@ unsafe fn ZSTD_reduceIndex(
     params: &ZSTD_CCtx_params,
     reducerValue: u32,
 ) {
-    let hSize = 1 << params.cParams.hashLog;
-    ZSTD_reduceTable(ms.hashTable, hSize, reducerValue);
+    let hSize = 1usize << params.cParams.hashLog;
+    ZSTD_reduceTable(
+        core::slice::from_raw_parts_mut(ms.hashTable, hSize),
+        reducerValue,
+    );
 
     if ZSTD_allocateChainTable(
         params.cParams.strategy,
         params.useRowMatchFinder,
         ms.dedicatedDictSearch != 0,
     ) {
-        let chainSize = 1 << params.cParams.chainLog;
+        let chainSize = 1usize << params.cParams.chainLog;
+        let chainTable = core::slice::from_raw_parts_mut(ms.chainTable, chainSize);
         if params.cParams.strategy == ZSTD_btlazy2 {
-            ZSTD_reduceTable_btlazy2(ms.chainTable, chainSize, reducerValue);
+            ZSTD_reduceTable_btlazy2(chainTable, reducerValue);
         } else {
-            ZSTD_reduceTable(ms.chainTable, chainSize, reducerValue);
+            ZSTD_reduceTable(chainTable, reducerValue);
         }
     }
 
     if ms.hashLog3 != 0 {
-        let h3Size = 1 << ms.hashLog3;
-        ZSTD_reduceTable(ms.hashTable3, h3Size, reducerValue);
+        let h3Size = 1usize << ms.hashLog3;
+        ZSTD_reduceTable(
+            core::slice::from_raw_parts_mut(ms.hashTable3, h3Size),
+            reducerValue,
+        );
     }
 }
 
