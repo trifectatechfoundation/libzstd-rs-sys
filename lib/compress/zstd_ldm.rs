@@ -373,30 +373,26 @@ fn ZSTD_ldm_gear_init(params: &ldmParams_t) -> ldmRollingHashState_t {
     }
 }
 
-/// Feeds [data, data + minMatchLength) into the hash without registering any
-/// splits. This effectively resets the hash state. This is used when skipping
-/// over data, either at the beginning of a block, or skipping sections.
-unsafe fn ZSTD_ldm_gear_reset(
-    state: &mut ldmRollingHashState_t,
-    data: *const u8,
-    minMatchLength: size_t,
-) {
+/// Feeds `data` into the hash without registering any splits. This effectively
+/// resets the hash state. This is used when skipping over data, either at the
+/// beginning of a block, or skipping sections.
+fn ZSTD_ldm_gear_reset(state: &mut ldmRollingHashState_t, data: &[u8]) {
     let mut hash = state.rolling;
     let mut n = 0usize;
 
-    while n.wrapping_add(3) < minMatchLength {
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+    while n.wrapping_add(3) < data.len() {
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
         n = n.wrapping_add(1);
     }
 
-    for n in n..minMatchLength {
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+    for n in n..data.len() {
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
     }
 }
 
@@ -723,7 +719,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ZSTD_ldm_gear_init(params);
-    ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
+    ZSTD_ldm_gear_reset(
+        &mut hashState,
+        core::slice::from_raw_parts(ip, minMatchLength as usize),
+    );
     ip = ip.offset(minMatchLength as isize);
 
     while ip < ilimit {
@@ -882,8 +881,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if anchor > ip.add(hashed) {
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
-                            anchor.sub(minMatchLength as usize),
-                            minMatchLength as size_t,
+                            core::slice::from_raw_parts(
+                                anchor.sub(minMatchLength as usize),
+                                minMatchLength as usize,
+                            ),
                         );
                         // Continue the outer loop at anchor (ip + hashed == anchor).
                         ip = anchor.sub(hashed as usize);
