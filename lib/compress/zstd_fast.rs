@@ -27,7 +27,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     let hBits = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let mls = cParams.minMatch;
     let base = ms.window.base;
-    let mut ip = base.offset(ms.nextToUpdate as isize);
+    let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
@@ -66,12 +66,12 @@ unsafe fn ZSTD_fillHashTableForCCtx(
     let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash table.
     // Insert the other positions if their hash entry is empty.
-    while ip.offset(fastHashFillStep as isize) < iend.add(2) {
+    while ip.wrapping_offset(fastHashFillStep as isize) < iend.wrapping_add(2) {
         let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let hash0 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         *hashTable.add(hash0) = curr;
@@ -89,7 +89,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
                 }
             }
         }
-        ip = ip.offset(fastHashFillStep as isize);
+        ip = ip.wrapping_offset(fastHashFillStep as isize);
     }
 }
 
@@ -223,7 +223,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     let prefixStartIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
 
     let mut anchor = istart;
     let mut ip0 = istart;
@@ -378,7 +378,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                     // calculate step
                     if ip2 >= nextStep {
                         step = step.wrapping_add(1);
-                        nextStep = nextStep.add(kStepIncr);
+                        nextStep = nextStep.wrapping_add(kStepIncr);
                     }
 
                     if ip3 >= ilimit {
@@ -549,9 +549,9 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let mut ip1 = ip0.offset(stepSize as isize); // we assert below that stepSize >= 1
     let mut anchor = istart;
     let prefixStartIndex = ms.window.dictLimit;
-    let prefixStart = base.offset(prefixStartIndex as isize);
+    let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
     let mut offset_1 = rep[0];
     let mut offset_2 = rep[1];
 
@@ -560,7 +560,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let dictHashTable: *const u32 = (*dms).hashTable;
     let dictStartIndex = (*dms).window.dictLimit;
     let dictBase = (*dms).window.base;
-    let dictStart = dictBase.offset(dictStartIndex as isize);
+    let dictStart = dictBase.wrapping_offset(dictStartIndex as isize);
     let dictEnd = (*dms).window.nextSrc;
     let dictIndexDelta =
         prefixStartIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
@@ -616,12 +616,12 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
 
         // Inner search loop
         loop {
-            let mut match_0 = base.offset(matchIndex as isize);
+            let mut match_0 = base.wrapping_offset(matchIndex as isize);
             let repIndex = curr.wrapping_add(1).wrapping_sub(offset_1);
             let repMatch = if repIndex < prefixStartIndex {
-                dictBase.offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
+                dictBase.wrapping_offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
             } else {
-                base.offset(repIndex as isize)
+                base.wrapping_offset(repIndex as isize)
             };
             let hash1 = ZSTD_hashPtr(ip1 as *const core::ffi::c_void, hlog, MLS);
             let dictHashAndTag1 = ZSTD_hashPtr(ip1 as *const core::ffi::c_void, dictHBits, MLS);
@@ -658,7 +658,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                 if dictTagsMatch {
                     // Found a possible dict match
                     let dictMatchIndex = dictMatchIndexAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
-                    let mut dictMatch = dictBase.offset(dictMatchIndex as isize);
+                    let mut dictMatch = dictBase.wrapping_offset(dictMatchIndex as isize);
                     // To replicate extDict parse behavior, we only use dict matches when the normal matchIndex is invalid
                     if dictMatchIndex > dictStartIndex
                         && MEM_read32(dictMatch as *const core::ffi::c_void)
@@ -730,7 +730,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
 
                     if ip1 >= nextStep {
                         step = step.wrapping_add(1);
-                        nextStep = nextStep.add(kStepIncr);
+                        nextStep = nextStep.wrapping_add(kStepIncr);
                     }
                     ip0 = ip1;
                     ip1 = ip1.add(step);
@@ -751,7 +751,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
         if ip0 <= ilimit {
             // Fill Table
             *hashTable.add(ZSTD_hashPtr(
-                base.offset(curr as isize).add(2) as *const core::ffi::c_void,
+                base.wrapping_offset(curr as isize).add(2) as *const core::ffi::c_void,
                 hlog,
                 MLS,
             )) = curr.wrapping_add(2); // here because curr+2 could be > iend-8
@@ -770,7 +770,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                         .sub(dictIndexDelta as usize)
                         .offset(repIndex2 as isize)
                 } else {
-                    base.offset(repIndex2 as isize)
+                    base.wrapping_offset(repIndex2 as isize)
                 };
                 if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2)
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
@@ -864,7 +864,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let dictEnd = dictBase.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(8);
+    let ilimit = iend.wrapping_sub(8);
     let mut offset_1 = rep[0];
     let mut offset_2 = rep[1];
     let mut offsetSaved1 = 0;
@@ -1043,7 +1043,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                     // calculate step
                     if ip2 >= nextStep {
                         step = step.wrapping_add(1);
-                        nextStep = nextStep.add(kStepIncr);
+                        nextStep = nextStep.wrapping_add(kStepIncr);
                     }
                     if ip3 >= ilimit {
                         break '__start;
@@ -1127,7 +1127,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 let repIndex2 = (ip0.wrapping_offset_from(base) as core::ffi::c_long as u32)
                     .wrapping_sub(offset_2);
                 let repMatch2 = if repIndex2 < prefixStartIndex {
-                    dictBase.offset(repIndex2 as isize)
+                    dictBase.wrapping_offset(repIndex2 as isize)
                 } else {
                     base.wrapping_offset(repIndex2 as isize)
                 };

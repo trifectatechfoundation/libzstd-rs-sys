@@ -6501,7 +6501,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         ls.loadedDictEnd = if params.forceWindow != 0 {
             0
         } else {
-            iend.offset_from(ls.window.base) as core::ffi::c_long as u32
+            iend.wrapping_offset_from(ls.window.base) as u32
         };
         ZSTD_ldm_fillHashTable(ls, ip, iend, &params.ldmParams);
     }
