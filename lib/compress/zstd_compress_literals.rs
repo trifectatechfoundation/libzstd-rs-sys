@@ -72,14 +72,11 @@ pub unsafe fn ZSTD_noCompressLiterals(
     Ok(srcSize.wrapping_add(flSize as size_t))
 }
 
-unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
-    let b = *(src as *const u8);
-    for p in 1..srcSize {
-        if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
-            return false;
-        }
-    }
-    true
+fn allBytesIdentical(src: &[u8]) -> bool {
+    let Some((&first, rest)) = src.split_first() else {
+        return true;
+    };
+    rest.iter().all(|&byte| byte == first)
 }
 
 pub unsafe fn ZSTD_compressRleLiteralsBlock(
@@ -92,7 +89,10 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     let flSize = 1 + usize::from(srcSize > 31) + usize::from(srcSize > 4095);
 
     assert!(dstCapacity >= 4);
-    assert!(allBytesIdentical(src, srcSize));
+    assert!(allBytesIdentical(core::slice::from_raw_parts(
+        src.cast::<u8>(),
+        srcSize
+    )));
 
     match flSize {
         1 => {
@@ -233,7 +233,10 @@ pub unsafe fn ZSTD_compressLiterals(
     // For that outcome to have a chance to happen, it's necessary that `srcSize < 8`.
     // (it's also necessary to not generate statistics).
     // Therefore, in such a case, actively check that all bytes are identical.
-    if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src, srcSize)) {
+    if cLitSize == 1
+        && (srcSize >= 8
+            || allBytesIdentical(core::slice::from_raw_parts(src.cast::<u8>(), srcSize)))
+    {
         core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
     }
