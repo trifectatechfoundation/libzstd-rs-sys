@@ -373,47 +373,36 @@ fn ZSTD_ldm_gear_init(params: &ldmParams_t) -> ldmRollingHashState_t {
     }
 }
 
-/// Feeds [data, data + minMatchLength) into the hash without registering any
-/// splits. This effectively resets the hash state. This is used when skipping
-/// over data, either at the beginning of a block, or skipping sections.
-unsafe fn ZSTD_ldm_gear_reset(
-    state: &mut ldmRollingHashState_t,
-    data: *const u8,
-    minMatchLength: size_t,
-) {
+/// Feeds `data` into the hash without registering any splits. This effectively
+/// resets the hash state. This is used when skipping over data, either at the
+/// beginning of a block, or skipping sections.
+fn ZSTD_ldm_gear_reset(state: &mut ldmRollingHashState_t, data: &[u8]) {
     let mut hash = state.rolling;
-    let mut n = 0usize;
+    let (chunks, rest) = data.as_chunks::<4>();
 
-    while n.wrapping_add(3) < minMatchLength {
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
-        n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
-        n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
-        n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
-        n = n.wrapping_add(1);
+    for chunk in chunks {
+        for &byte in chunk {
+            hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
+        }
     }
 
-    for n in n..minMatchLength {
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+    for &byte in rest {
+        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
     }
 }
 
-/// Registers in the splits array all the split points found in the first
-/// size bytes following the data pointer. This function terminates when
-/// either all the data has been processed or LDM_BATCH_SIZE splits are
-/// present in the splits array.
+/// Registers in the splits array all the split points found in `data`.
+/// This function terminates when either all the data has been processed or
+/// LDM_BATCH_SIZE splits are present in the splits array.
 ///
 /// Precondition: The splits array must not be full.
 ///
 /// # Returns
 ///
 /// The number of bytes processed.
-unsafe fn ZSTD_ldm_gear_feed(
+fn ZSTD_ldm_gear_feed(
     state: &mut ldmRollingHashState_t,
-    data: *const u8,
-    size: size_t,
+    data: &[u8],
     splits: &mut [size_t; LDM_BATCH_SIZE],
     numSplits: &mut usize,
 ) -> size_t {
@@ -421,10 +410,12 @@ unsafe fn ZSTD_ldm_gear_feed(
     let mask = state.stopMask;
     let mut n = 0usize;
 
+    let (chunks, rest) = data.as_chunks::<4>();
+
     'done: {
         macro_rules! gear_iter_once {
-            () => {
-                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+            ($byte:expr) => {
+                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from($byte)]);
                 n += 1;
                 if unlikely(hash & mask == 0) {
                     splits[*numSplits] = n;
@@ -436,14 +427,14 @@ unsafe fn ZSTD_ldm_gear_feed(
             };
         }
 
-        while n + 3 < size {
-            gear_iter_once!();
-            gear_iter_once!();
-            gear_iter_once!();
-            gear_iter_once!();
+        for &[b0, b1, b2, b3] in chunks {
+            gear_iter_once!(b0);
+            gear_iter_once!(b1);
+            gear_iter_once!(b2);
+            gear_iter_once!(b3);
         }
-        while n < size {
-            gear_iter_once!();
+        for &byte in rest {
+            gear_iter_once!(byte);
         }
     }
 
@@ -627,8 +618,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         let mut numSplits = 0;
         let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
-            ip,
-            iend.offset_from_unsigned(ip),
+            core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
             &mut ldmState.splitIndices,
             &mut numSplits,
         );
@@ -726,15 +716,17 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ZSTD_ldm_gear_init(params);
-    ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
+    ZSTD_ldm_gear_reset(
+        &mut hashState,
+        core::slice::from_raw_parts(ip, minMatchLength as usize),
+    );
     ip = ip.offset(minMatchLength as isize);
 
     while ip < ilimit {
         let mut numSplits = 0;
         let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
-            ip,
-            ilimit.offset_from_unsigned(ip),
+            core::slice::from_raw_parts(ip, ilimit.offset_from_unsigned(ip)),
             &mut ldmState.splitIndices,
             &mut numSplits,
         );
@@ -886,8 +878,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if anchor > ip.add(hashed) {
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
-                            anchor.sub(minMatchLength as usize),
-                            minMatchLength as size_t,
+                            core::slice::from_raw_parts(
+                                anchor.sub(minMatchLength as usize),
+                                minMatchLength as usize,
+                            ),
                         );
                         // Continue the outer loop at anchor (ip + hashed == anchor).
                         ip = anchor.sub(hashed as usize);
@@ -904,14 +898,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 }
 
 /// Reduce table indexes by `reducerValue`
-unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: u32) {
-    for u in 0..size {
-        if (*table.offset(u as isize)).offset < reducerValue {
-            (*table.offset(u as isize)).offset = 0;
-        } else {
-            let fresh4 = &mut (*table.offset(u as isize)).offset;
-            *fresh4 = (*fresh4).wrapping_sub(reducerValue);
-        }
+fn ZSTD_ldm_reduceTable(table: &mut [ldmEntry_t], reducerValue: u32) {
+    for entry in table {
+        entry.offset = entry.offset.saturating_sub(reducerValue);
     }
 }
 
@@ -952,14 +941,15 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart as *const core::ffi::c_void,
             chunkEnd as *const core::ffi::c_void,
         ) {
-            let ldmHSize = 1 << params.hashLog;
+            let ldmHSize = 1usize << params.hashLog;
             let correction = ZSTD_window_correctOverflow(
                 &mut ldmState.window,
                 0,
                 maxDist,
                 chunkStart as *const core::ffi::c_void,
             );
-            ZSTD_ldm_reduceTable(ldmState.hashTable, ldmHSize, correction);
+            let ldmTable = unsafe { core::slice::from_raw_parts_mut(ldmState.hashTable, ldmHSize) };
+            ZSTD_ldm_reduceTable(ldmTable, correction);
             // invalidate dictionaries on overflow correction
             ldmState.loadedDictEnd = 0;
         }
