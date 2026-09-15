@@ -380,10 +380,7 @@ impl ZSTD_cParameter {
             Self::ZSTD_c_jobSize => Ok((0, ZSTDMT_JOBSIZE_MAX)),
             Self::ZSTD_c_overlapLog => Ok((ZSTD_OVERLAPLOG_MIN, ZSTD_OVERLAPLOG_MAX)),
             Self::ZSTD_c_enableDedicatedDictSearch => Ok((0, 1)),
-            Self::ZSTD_c_enableLongDistanceMatching => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_enableLongDistanceMatching => Ok(ParamSwitch::BOUNDS),
             Self::ZSTD_c_ldmHashLog => Ok((ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHLOG_MAX)),
             Self::ZSTD_c_ldmMinMatch => Ok((ZSTD_LDM_MINMATCH_MIN, ZSTD_LDM_MINMATCH_MAX)),
             Self::ZSTD_c_ldmBucketSizeLog => {
@@ -400,10 +397,7 @@ impl ZSTD_cParameter {
                 ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int,
                 ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int,
             )),
-            Self::ZSTD_c_literalCompressionMode => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_literalCompressionMode => Ok(ParamSwitch::BOUNDS),
             Self::ZSTD_c_targetCBlockSize => {
                 Ok((ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETCBLOCKSIZE_MAX))
             }
@@ -417,26 +411,14 @@ impl ZSTD_cParameter {
                 ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int,
             )),
             Self::ZSTD_c_validateSequences => Ok((0, 1)),
-            Self::ZSTD_c_splitAfterSequences => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_splitAfterSequences => Ok(ParamSwitch::BOUNDS),
             Self::ZSTD_c_blockSplitterLevel => Ok((0, ZSTD_BLOCKSPLITTER_LEVEL_MAX)),
-            Self::ZSTD_c_useRowMatchFinder => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_useRowMatchFinder => Ok(ParamSwitch::BOUNDS),
             Self::ZSTD_c_deterministicRefPrefix => Ok((0, 1)),
-            Self::ZSTD_c_prefetchCDictTables => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_prefetchCDictTables => Ok(ParamSwitch::BOUNDS),
             Self::ZSTD_c_enableSeqProducerFallback => Ok((0, 1)),
             Self::ZSTD_c_maxBlockSize => Ok((ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_BLOCKSIZE_MAX)),
-            Self::ZSTD_c_repcodeResolution => Ok((
-                ParamSwitch::Auto as core::ffi::c_int,
-                ParamSwitch::Disable as core::ffi::c_int,
-            )),
+            Self::ZSTD_c_repcodeResolution => Ok(ParamSwitch::BOUNDS),
             _ => Err(Error::parameter_unsupported),
         }
     }

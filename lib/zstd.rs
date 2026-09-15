@@ -677,6 +677,9 @@ pub enum ParamSwitch {
 }
 
 impl ParamSwitch {
+    /// The lower and upper bound of this enum
+    pub const BOUNDS: (core::ffi::c_int, core::ffi::c_int) = (Self::Auto as _, Self::Disable as _);
+
     pub fn to_i32(self) -> i32 {
         self as i32
     }
