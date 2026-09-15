@@ -112,53 +112,39 @@ fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: core::ffi::c_int) {
     };
 }
 
-unsafe fn sum_u32(table: *const core::ffi::c_uint, nbElts: size_t) -> u32 {
+fn sum_u32(table: &[core::ffi::c_uint]) -> u32 {
     let mut total = 0;
-    for n in 0..nbElts {
-        total = (total as core::ffi::c_uint).wrapping_add(*table.add(n));
+    for &elt in table {
+        total = (total as core::ffi::c_uint).wrapping_add(elt);
     }
     total
 }
 
-unsafe fn ZSTD_downscaleStats(
-    table: *mut core::ffi::c_uint,
-    lastEltIndex: u32,
-    shift: u32,
-    base1: BaseDirective,
-) -> u32 {
-    let mut sum = 0;
-    for s in 0..lastEltIndex.wrapping_add(1) {
-        let base = (if base1 == BaseDirective::Guaranteed {
-            1
-        } else {
-            core::ffi::c_int::from(*table.offset(s as isize) > 0)
-        }) as core::ffi::c_uint;
-        let newStat = base.wrapping_add(*table.offset(s as isize) >> shift);
-        sum = (sum as core::ffi::c_uint).wrapping_add(newStat);
-        *table.offset(s as isize) = newStat;
+fn ZSTD_downscaleStats(table: &mut [core::ffi::c_uint], shift: u32, base1: BaseDirective) -> u32 {
+    let mut sum = 0u32;
+    for elt in table {
+        let base = match base1 {
+            BaseDirective::Guaranteed => true,
+            BaseDirective::Possible => *elt > 0,
+        };
+        let newStat = u32::from(base) + (*elt >> shift);
+        sum = sum.wrapping_add(newStat);
+        *elt = newStat;
     }
     sum
 }
 
 /// Reduce all elt frequencies in table if sum too large.
 /// Returns the resulting sum of elements.
-unsafe fn ZSTD_scaleStats(table: *mut core::ffi::c_uint, lastEltIndex: u32, logTarget: u32) -> u32 {
-    let prevsum = sum_u32(
-        table as *const core::ffi::c_uint,
-        lastEltIndex.wrapping_add(1) as size_t,
-    );
+fn ZSTD_scaleStats(table: &mut [core::ffi::c_uint], logTarget: u32) -> u32 {
+    let prevsum = sum_u32(table);
     let factor = prevsum >> logTarget;
 
     if factor <= 1 {
         return prevsum;
     }
 
-    ZSTD_downscaleStats(
-        table,
-        lastEltIndex,
-        ZSTD_highbit32(factor),
-        BaseDirective::Guaranteed,
-    )
+    ZSTD_downscaleStats(table, ZSTD_highbit32(factor), BaseDirective::Guaranteed)
 }
 
 /// if first block (detected by opt_state->litLengthSum == 0): init statistics
@@ -263,8 +249,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     srcSize, // use raw first block to init statistics
                 );
                 opt_state.litSum = ZSTD_downscaleStats(
-                    opt_state.litFreq,
-                    u32::from(MaxLit),
+                    core::slice::from_raw_parts_mut(opt_state.litFreq, usize::from(MaxLit) + 1),
                     8,
                     BaseDirective::Possible,
                 );
@@ -300,11 +285,23 @@ unsafe fn ZSTD_rescaleFreqs(
     } else {
         // new block: scale down accumulated statistics
         if compressedLiterals {
-            opt_state.litSum = ZSTD_scaleStats(opt_state.litFreq, u32::from(MaxLit), 12);
+            opt_state.litSum = ZSTD_scaleStats(
+                core::slice::from_raw_parts_mut(opt_state.litFreq, usize::from(MaxLit) + 1),
+                12,
+            );
         }
-        opt_state.litLengthSum = ZSTD_scaleStats(opt_state.litLengthFreq, u32::from(MaxLL), 11);
-        opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq, u32::from(MaxML), 11);
-        opt_state.offCodeSum = ZSTD_scaleStats(opt_state.offCodeFreq, u32::from(MaxOff), 11);
+        opt_state.litLengthSum = ZSTD_scaleStats(
+            core::slice::from_raw_parts_mut(opt_state.litLengthFreq, usize::from(MaxLL) + 1),
+            11,
+        );
+        opt_state.matchLengthSum = ZSTD_scaleStats(
+            core::slice::from_raw_parts_mut(opt_state.matchLengthFreq, usize::from(MaxML) + 1),
+            11,
+        );
+        opt_state.offCodeSum = ZSTD_scaleStats(
+            core::slice::from_raw_parts_mut(opt_state.offCodeFreq, usize::from(MaxOff) + 1),
+            11,
+        );
     }
 
     ZSTD_setBasePrices(opt_state, optLevel);
