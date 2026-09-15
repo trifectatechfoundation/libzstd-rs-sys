@@ -4414,12 +4414,12 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
 /// except it doesn't check for a block delimiter to end summation.
 /// Removing the early exit allows the compiler to auto-vectorize.
 /// This function can be deleted and replaced by determine_blockSize after we resolve issue #3456.
-unsafe fn ZSTD_fastSequenceLengthSum(seqBuf: *const ZSTD_Sequence, seqBufSize: size_t) -> size_t {
+fn ZSTD_fastSequenceLengthSum(seqBuf: &[ZSTD_Sequence]) -> size_t {
     let mut matchLenSum: size_t = 0;
     let mut litLenSum: size_t = 0;
-    for i in 0..seqBufSize {
-        litLenSum = litLenSum.wrapping_add((*seqBuf.add(i)).litLength as size_t);
-        matchLenSum = matchLenSum.wrapping_add((*seqBuf.add(i)).matchLength as size_t);
+    for seq in seqBuf {
+        litLenSum = litLenSum.wrapping_add(seq.litLength as size_t);
+        matchLenSum = matchLenSum.wrapping_add(seq.matchLength as size_t);
     }
     litLenSum.wrapping_add(matchLenSum)
 }
@@ -4562,7 +4562,10 @@ unsafe fn ZSTD_buildSeqStore(
                     posInSequence: 0,
                     posInSrc: 0,
                 };
-                let seqLenSum = ZSTD_fastSequenceLengthSum((*zc).extSeqBuf, nbPostProcessedSeqs);
+                let seqLenSum = ZSTD_fastSequenceLengthSum(core::slice::from_raw_parts(
+                    (*zc).extSeqBuf,
+                    nbPostProcessedSeqs,
+                ));
                 if seqLenSum > srcSize {
                     return Err(Error::externalSequences_invalid);
                 }
