@@ -3192,7 +3192,7 @@ fn ZSTD_dictTooBig(loadedDictSize: size_t) -> bool {
 /// Note: `params` are assumed fully validated at this stage.
 unsafe fn ZSTD_resetCCtx_internal(
     zc: *mut ZSTD_CCtx,
-    mut params: &ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     loadedDictSize: size_t,
     crp: ZSTD_compResetPolicy_e,
@@ -3202,15 +3202,17 @@ unsafe fn ZSTD_resetCCtx_internal(
 
     (*zc).isFirstBlock = 1;
 
-    // Set applied params early so we can modify them for LDM,
-    // and point params at the applied params.
+    // Set applied params early so we can modify them for LDM.
     (*zc).appliedParams = *params;
-    params = &mut (*zc).appliedParams;
 
-    if params.ldmParams.enableLdm == ParamSwitch::Enable {
+    if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         // Adjust long distance matching parameters
-        ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &params.cParams);
+        let cParams = (*zc).appliedParams.cParams;
+        ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &cParams);
     }
+
+    // Point params at the applied params, now that LDM has modified them.
+    let params = &(*zc).appliedParams;
 
     let windowSize = ((1 as size_t) << params.cParams.windowLog)
         .min(pledgedSrcSize as size_t) // pledgedSrcSize can be 0, so .clamp() would panic
