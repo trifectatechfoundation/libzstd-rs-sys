@@ -440,6 +440,22 @@ impl ZSTD_cParameter {
             _ => Err(Error::parameter_unsupported),
         }
     }
+
+    /// Clamps the value into the bounded range of the cParam
+    #[inline]
+    fn clamp_bounds(&self, value: &mut core::ffi::c_int) -> Result<(), Error> {
+        let (lowerBound, upperBound) = self.get_bounds()?;
+        *value = (*value).clamp(lowerBound, upperBound);
+        Ok(())
+    }
+
+    /// Same as [`Self::clamp_bounds`], but for unsigned valued
+    #[inline]
+    fn clamp_bounds_unsigned(&self, value: &mut core::ffi::c_uint) -> Result<(), Error> {
+        let (lowerBound, upperBound) = self.get_bounds()?;
+        *value = (*value as core::ffi::c_int).clamp(lowerBound, upperBound) as core::ffi::c_uint;
+        Ok(())
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -1531,18 +1547,6 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
     ZSTD_bounds::from(param)
 }
 
-/// Clamps the value into the bounded range.
-fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: &mut core::ffi::c_int) -> size_t {
-    let bounds = ZSTD_cParam_getBounds(cParam);
-    if ERR_isError(bounds.error) {
-        return bounds.error;
-    }
-
-    *value = (*value).clamp(bounds.lowerBound, bounds.upperBound);
-
-    0
-}
-
 fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> bool {
     match param {
         ZSTD_cParameter::ZSTD_c_compressionLevel
@@ -1643,9 +1647,8 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).format as size_t
         }
         100 => {
-            let err_code = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code) {
-                return err_code;
+            if let Err(err) = param.clamp_bounds(&mut value) {
+                return err.to_error_code();
             }
             if value == 0 {
                 (*CCtxParams).compressionLevel = ZSTD_CLEVEL_DEFAULT;
@@ -1737,9 +1740,8 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).literalCompressionMode as size_t
         }
         400 => {
-            let err_code_0 = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code_0) {
-                return err_code_0;
+            if let Err(err) = param.clamp_bounds(&mut value) {
+                return err.to_error_code();
             }
             (*CCtxParams).nbWorkers = value;
             (*CCtxParams).nbWorkers as size_t
@@ -1748,27 +1750,22 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             if value != 0 && value < ZSTDMT_JOBSIZE_MIN {
                 value = ZSTDMT_JOBSIZE_MIN;
             }
-            let err_code_1 = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code_1) {
-                return err_code_1;
+            if let Err(err) = param.clamp_bounds(&mut value) {
+                return err.to_error_code();
             }
             (*CCtxParams).jobSize = value as size_t;
             (*CCtxParams).jobSize
         }
         402 => {
-            let err_code_2 =
-                ZSTD_cParam_clampBounds(ZSTD_cParameter::ZSTD_c_overlapLog, &mut value);
-            if ERR_isError(err_code_2) {
-                return err_code_2;
+            if let Err(err) = param.clamp_bounds(&mut value) {
+                return err.to_error_code();
             }
             (*CCtxParams).overlapLog = value;
             (*CCtxParams).overlapLog as size_t
         }
         500 => {
-            let err_code_3 =
-                ZSTD_cParam_clampBounds(ZSTD_cParameter::ZSTD_c_overlapLog, &mut value);
-            if ERR_isError(err_code_3) {
-                return err_code_3;
+            if let Err(err) = param.clamp_bounds(&mut value) {
+                return err.to_error_code();
             }
             (*CCtxParams).rsyncable = value;
             (*CCtxParams).rsyncable as size_t
@@ -2452,48 +2449,27 @@ pub extern "C" fn ZSTD_checkCParams(cParams: ZSTD_compressionParameters) -> size
 
 /// Make CParam values within valid range.
 fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_compressionParameters {
-    let bounds = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_windowLog);
-    if (cParams.windowLog as core::ffi::c_int) < bounds.lowerBound {
-        cParams.windowLog = bounds.lowerBound as core::ffi::c_uint;
-    } else if cParams.windowLog as core::ffi::c_int > bounds.upperBound {
-        cParams.windowLog = bounds.upperBound as core::ffi::c_uint;
-    }
-    let bounds_0 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_chainLog);
-    if (cParams.chainLog as core::ffi::c_int) < bounds_0.lowerBound {
-        cParams.chainLog = bounds_0.lowerBound as core::ffi::c_uint;
-    } else if cParams.chainLog as core::ffi::c_int > bounds_0.upperBound {
-        cParams.chainLog = bounds_0.upperBound as core::ffi::c_uint;
-    }
-    let bounds_1 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_hashLog);
-    if (cParams.hashLog as core::ffi::c_int) < bounds_1.lowerBound {
-        cParams.hashLog = bounds_1.lowerBound as core::ffi::c_uint;
-    } else if cParams.hashLog as core::ffi::c_int > bounds_1.upperBound {
-        cParams.hashLog = bounds_1.upperBound as core::ffi::c_uint;
-    }
-    let bounds_2 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_searchLog);
-    if (cParams.searchLog as core::ffi::c_int) < bounds_2.lowerBound {
-        cParams.searchLog = bounds_2.lowerBound as core::ffi::c_uint;
-    } else if cParams.searchLog as core::ffi::c_int > bounds_2.upperBound {
-        cParams.searchLog = bounds_2.upperBound as core::ffi::c_uint;
-    }
-    let bounds_3 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_minMatch);
-    if (cParams.minMatch as core::ffi::c_int) < bounds_3.lowerBound {
-        cParams.minMatch = bounds_3.lowerBound as core::ffi::c_uint;
-    } else if cParams.minMatch as core::ffi::c_int > bounds_3.upperBound {
-        cParams.minMatch = bounds_3.upperBound as core::ffi::c_uint;
-    }
-    let bounds_4 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_targetLength);
-    if (cParams.targetLength as core::ffi::c_int) < bounds_4.lowerBound {
-        cParams.targetLength = bounds_4.lowerBound as core::ffi::c_uint;
-    } else if cParams.targetLength as core::ffi::c_int > bounds_4.upperBound {
-        cParams.targetLength = bounds_4.upperBound as core::ffi::c_uint;
-    }
-    let bounds_5 = ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_strategy);
-    if (cParams.strategy as core::ffi::c_int) < bounds_5.lowerBound {
-        cParams.strategy = bounds_5.lowerBound as ZSTD_strategy;
-    } else if cParams.strategy as core::ffi::c_int > bounds_5.upperBound {
-        cParams.strategy = bounds_5.upperBound as ZSTD_strategy;
-    }
+    ZSTD_cParameter::ZSTD_c_windowLog
+        .clamp_bounds_unsigned(&mut cParams.windowLog)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_chainLog
+        .clamp_bounds_unsigned(&mut cParams.chainLog)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_hashLog
+        .clamp_bounds_unsigned(&mut cParams.hashLog)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_searchLog
+        .clamp_bounds_unsigned(&mut cParams.searchLog)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_minMatch
+        .clamp_bounds_unsigned(&mut cParams.minMatch)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_targetLength
+        .clamp_bounds_unsigned(&mut cParams.targetLength)
+        .unwrap();
+    ZSTD_cParameter::ZSTD_c_strategy
+        .clamp_bounds_unsigned(&mut cParams.strategy)
+        .unwrap();
     cParams
 }
 
