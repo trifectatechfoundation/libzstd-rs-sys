@@ -400,20 +400,18 @@ unsafe fn ZSTD_ldm_gear_reset(
     }
 }
 
-/// Registers in the splits array all the split points found in the first
-/// size bytes following the data pointer. This function terminates when
-/// either all the data has been processed or LDM_BATCH_SIZE splits are
-/// present in the splits array.
+/// Registers in the splits array all the split points found in `data`.
+/// This function terminates when either all the data has been processed or
+/// LDM_BATCH_SIZE splits are present in the splits array.
 ///
 /// Precondition: The splits array must not be full.
 ///
 /// # Returns
 ///
 /// The number of bytes processed.
-unsafe fn ZSTD_ldm_gear_feed(
+fn ZSTD_ldm_gear_feed(
     state: &mut ldmRollingHashState_t,
-    data: *const u8,
-    size: size_t,
+    data: &[u8],
     splits: &mut [size_t; LDM_BATCH_SIZE],
     numSplits: &mut usize,
 ) -> size_t {
@@ -424,7 +422,7 @@ unsafe fn ZSTD_ldm_gear_feed(
     'done: {
         macro_rules! gear_iter_once {
             () => {
-                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(*data.add(n))]);
+                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(data[n])]);
                 n += 1;
                 if unlikely(hash & mask == 0) {
                     splits[*numSplits] = n;
@@ -436,13 +434,13 @@ unsafe fn ZSTD_ldm_gear_feed(
             };
         }
 
-        while n + 3 < size {
+        while n + 3 < data.len() {
             gear_iter_once!();
             gear_iter_once!();
             gear_iter_once!();
             gear_iter_once!();
         }
-        while n < size {
+        while n < data.len() {
             gear_iter_once!();
         }
     }
@@ -627,8 +625,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         let mut numSplits = 0;
         let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
-            ip,
-            iend.offset_from_unsigned(ip),
+            core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
             &mut ldmState.splitIndices,
             &mut numSplits,
         );
@@ -733,8 +730,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         let mut numSplits = 0;
         let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
-            ip,
-            ilimit.offset_from_unsigned(ip),
+            core::slice::from_raw_parts(ip, ilimit.offset_from_unsigned(ip)),
             &mut ldmState.splitIndices,
             &mut numSplits,
         );
