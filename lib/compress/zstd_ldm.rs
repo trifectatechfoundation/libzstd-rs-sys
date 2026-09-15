@@ -1,4 +1,4 @@
-use crate::lib::polyfill::unlikely;
+use crate::lib::polyfill::{unlikely, PointerExt};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -645,7 +645,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                 );
                 let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
                 let entry = ldmEntry_t {
-                    offset: split.offset_from(base) as core::ffi::c_long as u32,
+                    offset: split.wrapping_offset_from(base) as u32,
                     checksum: (xxhash >> 32) as u32,
                 };
 
@@ -661,7 +661,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
 /// if it is far way
 /// (after a long match, only update tables a limited amount).
 unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u8) {
-    let curr = anchor.offset_from(ms.window.base) as core::ffi::c_long as u32;
+    let curr = anchor.wrapping_offset_from(ms.window.base) as u32;
     if curr > (ms.nextToUpdate).wrapping_add(1024) {
         ms.nextToUpdate = curr.wrapping_sub(
             if (512) < curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024) {
@@ -700,16 +700,16 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         core::ptr::null()
     };
     let dictStart = if extDict {
-        dictBase.offset(lowestIndex as isize)
+        dictBase.wrapping_offset(lowestIndex as isize)
     } else {
         core::ptr::null()
     };
     let dictEnd = if extDict {
-        dictBase.offset(dictLimit as isize)
+        dictBase.wrapping_offset(dictLimit as isize)
     } else {
         core::ptr::null()
     };
-    let lowPrefixPtr = base.offset(dictLimit as isize);
+    let lowPrefixPtr = base.wrapping_offset(dictLimit as isize);
 
     // Input bounds
     let istart = src as *const u8;
@@ -773,7 +773,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
             let mut bestEntry = core::ptr::null();
             let newEntry = ldmEntry_t {
-                offset: split.offset_from(base) as core::ffi::c_long as u32,
+                offset: split.wrapping_offset_from(base) as u32,
                 checksum,
             };
 
@@ -796,7 +796,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         } else {
                             base
                         };
-                        let pMatch = curMatchBase.offset((*cur).offset as isize);
+                        let pMatch = curMatchBase.wrapping_offset((*cur).offset as isize);
                         let matchEnd = if (*cur).offset < dictLimit {
                             dictEnd
                         } else {
@@ -825,7 +825,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                         (forward, backward)
                     } else {
-                        let pMatch = base.offset((*cur).offset as isize);
+                        let pMatch = base.wrapping_offset((*cur).offset as isize);
 
                         let forward = ZSTD_count(split, pMatch, iend);
                         if forward < minMatchLength as size_t {
@@ -854,8 +854,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
                 } else {
                     // Match found
-                    offset = (split.offset_from(base) as core::ffi::c_long as u32)
-                        .wrapping_sub((*bestEntry).offset);
+                    offset =
+                        (split.wrapping_offset_from(base) as u32).wrapping_sub((*bestEntry).offset);
                     mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
                     let seq = (rawSeqStore.seq).add(rawSeqStore.size);
