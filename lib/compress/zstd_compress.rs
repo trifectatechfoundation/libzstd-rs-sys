@@ -361,6 +361,87 @@ pub struct ZSTD_cpuid_t {
     pub f7c: u32,
 }
 
+impl ZSTD_cParameter {
+    /// Get the upper and lower bound
+    const fn get_bounds(&self) -> Result<(core::ffi::c_int, core::ffi::c_int), Error> {
+        match *self {
+            Self::ZSTD_c_compressionLevel => Ok((ZSTD_minCLevel(), ZSTD_maxCLevel())),
+            Self::ZSTD_c_windowLog => Ok((ZSTD_WINDOWLOG_MIN, ZSTD_WINDOWLOG_MAX)),
+            Self::ZSTD_c_hashLog => Ok((ZSTD_HASHLOG_MIN, ZSTD_HASHLOG_MAX)),
+            Self::ZSTD_c_chainLog => Ok((ZSTD_CHAINLOG_MIN, ZSTD_CHAINLOG_MAX)),
+            Self::ZSTD_c_searchLog => Ok((ZSTD_SEARCHLOG_MIN, ZSTD_SEARCHLOG_MAX)),
+            Self::ZSTD_c_minMatch => Ok((ZSTD_MINMATCH_MIN, ZSTD_MINMATCH_MAX)),
+            Self::ZSTD_c_targetLength => Ok((ZSTD_TARGETLENGTH_MIN, ZSTD_TARGETLENGTH_MAX)),
+            Self::ZSTD_c_strategy => Ok((ZSTD_STRATEGY_MIN, ZSTD_STRATEGY_MAX)),
+            Self::ZSTD_c_contentSizeFlag => Ok((0, 1)),
+            Self::ZSTD_c_checksumFlag => Ok((0, 1)),
+            Self::ZSTD_c_dictIDFlag => Ok((0, 1)),
+            Self::ZSTD_c_nbWorkers => Ok((0, ZSTDMT_NBWORKERS_MAX)),
+            Self::ZSTD_c_jobSize => Ok((0, ZSTDMT_JOBSIZE_MAX)),
+            Self::ZSTD_c_overlapLog => Ok((ZSTD_OVERLAPLOG_MIN, ZSTD_OVERLAPLOG_MAX)),
+            Self::ZSTD_c_enableDedicatedDictSearch => Ok((0, 1)),
+            Self::ZSTD_c_enableLongDistanceMatching => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_ldmHashLog => Ok((ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHLOG_MAX)),
+            Self::ZSTD_c_ldmMinMatch => Ok((ZSTD_LDM_MINMATCH_MIN, ZSTD_LDM_MINMATCH_MAX)),
+            Self::ZSTD_c_ldmBucketSizeLog => {
+                Ok((ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX))
+            }
+            Self::ZSTD_c_ldmHashRateLog => Ok((ZSTD_LDM_HASHRATELOG_MIN, ZSTD_LDM_HASHRATELOG_MAX)),
+            Self::ZSTD_c_rsyncable => Ok((0, 1)),
+            Self::ZSTD_c_forceMaxWindow => Ok((0, 1)),
+            Self::ZSTD_c_format => Ok((
+                Format::ZSTD_f_zstd1 as core::ffi::c_int,
+                Format::ZSTD_f_zstd1_magicless as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_forceAttachDict => Ok((
+                ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int,
+                ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_literalCompressionMode => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_targetCBlockSize => {
+                Ok((ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETCBLOCKSIZE_MAX))
+            }
+            Self::ZSTD_c_srcSizeHint => Ok((ZSTD_SRCSIZEHINT_MIN, ZSTD_SRCSIZEHINT_MAX)),
+            Self::ZSTD_c_stableInBuffer | Self::ZSTD_c_stableOutBuffer => Ok((
+                ZSTD_bm_buffered as core::ffi::c_int,
+                ZSTD_bm_stable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_blockDelimiters => Ok((
+                ZSTD_sf_noBlockDelimiters as core::ffi::c_int,
+                ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_validateSequences => Ok((0, 1)),
+            Self::ZSTD_c_splitAfterSequences => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_blockSplitterLevel => Ok((0, ZSTD_BLOCKSPLITTER_LEVEL_MAX)),
+            Self::ZSTD_c_useRowMatchFinder => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_deterministicRefPrefix => Ok((0, 1)),
+            Self::ZSTD_c_prefetchCDictTables => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            Self::ZSTD_c_enableSeqProducerFallback => Ok((0, 1)),
+            Self::ZSTD_c_maxBlockSize => Ok((ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_BLOCKSIZE_MAX)),
+            Self::ZSTD_c_repcodeResolution => Ok((
+                ParamSwitch::Auto as core::ffi::c_int,
+                ParamSwitch::Disable as core::ffi::c_int,
+            )),
+            _ => Err(Error::parameter_unsupported),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_bounds {
@@ -369,20 +450,19 @@ pub struct ZSTD_bounds {
     pub upperBound: core::ffi::c_int,
 }
 
-impl ZSTD_bounds {
-    pub fn new(lowerBound: core::ffi::c_int, upperBound: core::ffi::c_int) -> Self {
-        ZSTD_bounds {
-            error: 0,
-            lowerBound,
-            upperBound,
-        }
-    }
-
-    pub fn error(error: size_t) -> Self {
-        ZSTD_bounds {
-            error,
-            lowerBound: 0,
-            upperBound: 0,
+impl From<ZSTD_cParameter> for ZSTD_bounds {
+    fn from(param: ZSTD_cParameter) -> Self {
+        match param.get_bounds() {
+            Ok((lowerBound, upperBound)) => ZSTD_bounds {
+                error: 0,
+                lowerBound,
+                upperBound,
+            },
+            Err(err) => ZSTD_bounds {
+                error: err.to_error_code(),
+                lowerBound: 0,
+                upperBound: 0,
+            },
         }
     }
 }
@@ -416,17 +496,10 @@ pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 /// `true` if value is within cParam bounds
 #[inline]
 fn ZSTD_cParam_withinBounds(cParam: ZSTD_cParameter, value: core::ffi::c_int) -> bool {
-    let bounds = ZSTD_cParam_getBounds(cParam);
-    if ERR_isError(bounds.error) {
+    let Ok((lowerBound, upperBound)) = cParam.get_bounds() else {
         return false;
-    }
-    if value < bounds.lowerBound {
-        return false;
-    }
-    if value > bounds.upperBound {
-        return false;
-    }
-    true
+    };
+    value >= lowerBound && value <= upperBound
 }
 
 #[inline]
@@ -1455,77 +1528,7 @@ fn ZSTD_CCtxParams_setZstdParams(cctxParams: &mut ZSTD_CCtx_params, params: &ZST
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
 pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
-    match param.0 {
-        100 => ZSTD_bounds::new(ZSTD_minCLevel(), ZSTD_maxCLevel()),
-        101 => ZSTD_bounds::new(ZSTD_WINDOWLOG_MIN, ZSTD_WINDOWLOG_MAX),
-        102 => ZSTD_bounds::new(ZSTD_HASHLOG_MIN, ZSTD_HASHLOG_MAX),
-        103 => ZSTD_bounds::new(ZSTD_CHAINLOG_MIN, ZSTD_CHAINLOG_MAX),
-        104 => ZSTD_bounds::new(ZSTD_SEARCHLOG_MIN, ZSTD_SEARCHLOG_MAX),
-        105 => ZSTD_bounds::new(ZSTD_MINMATCH_MIN, ZSTD_MINMATCH_MAX),
-        106 => ZSTD_bounds::new(ZSTD_TARGETLENGTH_MIN, ZSTD_TARGETLENGTH_MAX),
-        107 => ZSTD_bounds::new(ZSTD_STRATEGY_MIN, ZSTD_STRATEGY_MAX),
-        200 => ZSTD_bounds::new(0, 1),
-        201 => ZSTD_bounds::new(0, 1),
-        202 => ZSTD_bounds::new(0, 1),
-        400 => ZSTD_bounds::new(0, ZSTDMT_NBWORKERS_MAX),
-        401 => ZSTD_bounds::new(0, ZSTDMT_JOBSIZE_MAX),
-        402 => ZSTD_bounds::new(ZSTD_OVERLAPLOG_MIN, ZSTD_OVERLAPLOG_MAX),
-        1005 => ZSTD_bounds::new(0, 1),
-        160 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        161 => ZSTD_bounds::new(ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHLOG_MAX),
-        162 => ZSTD_bounds::new(ZSTD_LDM_MINMATCH_MIN, ZSTD_LDM_MINMATCH_MAX),
-        163 => ZSTD_bounds::new(ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX),
-        164 => ZSTD_bounds::new(ZSTD_LDM_HASHRATELOG_MIN, ZSTD_LDM_HASHRATELOG_MAX),
-        500 => ZSTD_bounds::new(0, 1),
-        1000 => ZSTD_bounds::new(0, 1),
-        10 => ZSTD_bounds::new(
-            Format::ZSTD_f_zstd1 as core::ffi::c_int,
-            Format::ZSTD_f_zstd1_magicless as core::ffi::c_int,
-        ),
-        1001 => ZSTD_bounds::new(
-            ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int,
-            ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int,
-        ),
-        1002 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        130 => ZSTD_bounds::new(ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETCBLOCKSIZE_MAX),
-        1004 => ZSTD_bounds::new(ZSTD_SRCSIZEHINT_MIN, ZSTD_SRCSIZEHINT_MAX),
-        1006 | 1007 => ZSTD_bounds::new(
-            ZSTD_bm_buffered as core::ffi::c_int,
-            ZSTD_bm_stable as core::ffi::c_int,
-        ),
-        1008 => ZSTD_bounds::new(
-            ZSTD_sf_noBlockDelimiters as core::ffi::c_int,
-            ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int,
-        ),
-        1009 => ZSTD_bounds::new(0, 1),
-        1010 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        1017 => ZSTD_bounds::new(0, ZSTD_BLOCKSPLITTER_LEVEL_MAX),
-        1011 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        1012 => ZSTD_bounds::new(0, 1),
-        1013 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        1014 => ZSTD_bounds::new(0, 1),
-        1015 => ZSTD_bounds::new(ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_BLOCKSIZE_MAX),
-        1016 => ZSTD_bounds::new(
-            ParamSwitch::Auto as core::ffi::c_int,
-            ParamSwitch::Disable as core::ffi::c_int,
-        ),
-        _ => ZSTD_bounds::error(Error::parameter_unsupported.to_error_code()),
-    }
+    ZSTD_bounds::from(param)
 }
 
 /// Clamps the value into the bounded range.
