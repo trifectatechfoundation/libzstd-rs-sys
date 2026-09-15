@@ -5064,10 +5064,9 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     wkspSize: size_t,
 ) -> Result<(), Error> {
     let litSize = (seqStorePtr.lit).offset_from(seqStorePtr.litStart) as size_t;
-    let huf_useOptDepth = core::ffi::c_int::from(
-        cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint,
-    );
-    let hufFlags = if huf_useOptDepth != 0 {
+    let huf_useOptDepth =
+        cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint;
+    let hufFlags = if huf_useOptDepth {
         HUF_flags_optimalDepth as core::ffi::c_int
     } else {
         0
@@ -8294,13 +8293,12 @@ unsafe fn ZSTD_compressStream_generic(
                     match current_block_156 {
                         16754622181974910496 => {}
                         _ => {
-                            let inputBuffered = core::ffi::c_int::from(
-                                (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered,
-                            );
+                            let inputBuffered =
+                                (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered;
                             let cDst;
                             let cSize_0: size_t;
                             let mut oSize = oend.offset_from_unsigned(op);
-                            let iSize = if inputBuffered != 0 {
+                            let iSize = if inputBuffered {
                                 ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
                             } else if (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax {
                                 iend.offset_from_unsigned(ip)
@@ -8315,7 +8313,7 @@ unsafe fn ZSTD_compressStream_generic(
                                 cDst = (*zcs).outBuff as *mut core::ffi::c_void;
                                 oSize = (*zcs).outBuffSize;
                             }
-                            if inputBuffered != 0 {
+                            if inputBuffered {
                                 let lastBlock = flushMode == ZSTD_e_end && ip == iend;
                                 cSize_0 = if lastBlock {
                                     ZSTD_compressEnd_public(
@@ -9220,15 +9218,15 @@ unsafe fn blockSize_explicitDelimiter(
     inSeqsSize: size_t,
     seqPos: ZSTD_SequencePosition,
 ) -> Result<size_t, Error> {
-    let mut end = 0;
+    let mut end = false;
     let mut blockSize = 0usize;
 
     for spos in (seqPos.idx as size_t)..inSeqsSize {
-        end = core::ffi::c_int::from((*inSeqs.add(spos)).offset == 0);
+        end = (*inSeqs.add(spos)).offset == 0;
         blockSize = blockSize.wrapping_add(
             ((*inSeqs.add(spos)).litLength).wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
         );
-        if end != 0 {
+        if end {
             if (*inSeqs.add(spos)).matchLength != 0 {
                 return Err(Error::externalSequences_invalid);
             }
@@ -9236,7 +9234,7 @@ unsafe fn blockSize_explicitDelimiter(
         }
     }
 
-    if end == 0 {
+    if !end {
         return Err(Error::externalSequences_invalid);
     }
 
@@ -9960,8 +9958,8 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
 }
 
 unsafe fn inBuffer_forEndFlush(zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
-    let stableInput = core::ffi::c_int::from((*zcs).appliedParams.inBufferMode == ZSTD_bm_stable);
-    if stableInput != 0 {
+    let stableInput = (*zcs).appliedParams.inBufferMode == ZSTD_bm_stable;
+    if stableInput {
         (*zcs).expectedInBuffer
     } else {
         ZSTD_inBuffer_s::default()
