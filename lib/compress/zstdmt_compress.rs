@@ -218,25 +218,18 @@ fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
 const ZSTD_ROLL_HASH_CHAR_OFFSET: core::ffi::c_int = 10;
 
 /// Add the buffer to the hash value
-unsafe fn ZSTD_rollingHash_append(
-    mut hash: u64,
-    buf: *const core::ffi::c_void,
-    size: size_t,
-) -> u64 {
-    let istart = buf as *const u8;
-    for pos in 0..size {
+fn ZSTD_rollingHash_append(mut hash: u64, buf: &[u8]) -> u64 {
+    for &byte in buf {
         hash = hash.wrapping_mul(prime8bytes);
-        hash = hash.wrapping_add(
-            (*istart.add(pos) as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64,
-        );
+        hash = hash.wrapping_add((byte as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64);
     }
     hash
 }
 
 /// Compute the rolling hash value of the buffer.
 #[inline]
-unsafe fn ZSTD_rollingHash_compute(buf: *const core::ffi::c_void, size: size_t) -> u64 {
-    ZSTD_rollingHash_append(0, buf, size)
+fn ZSTD_rollingHash_compute(buf: &[u8]) -> u64 {
+    ZSTD_rollingHash_append(0, buf)
 }
 
 /// Compute the primePower to be passed to ZSTD_rollingHash_rotate() for a hash
@@ -2119,16 +2112,16 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         if pos >= RSYNC_LENGTH as size_t {
             prev = istart.add(pos).sub(RSYNC_LENGTH as usize);
             hash =
-                ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
+                ZSTD_rollingHash_compute(core::slice::from_raw_parts(prev, RSYNC_LENGTH as usize));
         } else {
             prev = ((*mtctx).inBuff.buffer.start as *const u8)
                 .add((*mtctx).inBuff.filled)
                 .sub(RSYNC_LENGTH as usize);
-            hash = ZSTD_rollingHash_compute(
-                prev.add(pos) as *const core::ffi::c_void,
+            hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(
+                prev.add(pos),
                 (RSYNC_LENGTH as size_t).wrapping_sub(pos),
-            );
-            hash = ZSTD_rollingHash_append(hash, istart as *const core::ffi::c_void, pos);
+            ));
+            hash = ZSTD_rollingHash_append(hash, core::slice::from_raw_parts(istart, pos));
         }
     } else {
         // We have enough bytes buffered to initialize the hash,
@@ -2138,7 +2131,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         prev = ((*mtctx).inBuff.buffer.start as *const u8)
             .add((*mtctx).inBuff.filled)
             .sub(RSYNC_LENGTH as usize);
-        hash = ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
+        hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(prev, RSYNC_LENGTH as usize));
         if hash & hitMask == hitMask {
             // We're already at a sync point so don't load any more until
             // we're able to flush this sync point.
