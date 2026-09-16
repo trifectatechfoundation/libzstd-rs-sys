@@ -1275,7 +1275,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
                     &mut bitC, ip, srcSize, ct, 2, true, true,
                 );
             }
-            7 | _ => {
+            _ => {
                 HUF_compress1X_usingCTable_internal_body_loop(
                     &mut bitC, ip, srcSize, ct, 3, true, true,
                 );
@@ -1308,7 +1308,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
                     &mut bitC, ip, srcSize, ct, 8, true, false,
                 );
             }
-            6 | _ => {
+            _ => {
                 HUF_compress1X_usingCTable_internal_body_loop(
                     &mut bitC, ip, srcSize, ct, 9, true, true,
                 );

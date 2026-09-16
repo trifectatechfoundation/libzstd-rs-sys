@@ -759,7 +759,7 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
         6 => ZSTD_hash64PtrS::<6>(p, hBits, hashSalt),
         7 => ZSTD_hash64PtrS::<7>(p, hBits, hashSalt),
         8 => ZSTD_hash64PtrS::<8>(p, hBits, hashSalt),
-        4 | _ => ZSTD_hash32PtrS::<4>(p, hBits, hashSalt as u32),
+        _ => ZSTD_hash32PtrS::<4>(p, hBits, hashSalt as u32),
     }
 }
 

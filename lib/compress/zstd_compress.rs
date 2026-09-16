@@ -6229,7 +6229,7 @@ unsafe fn ZSTD_writeFrameHeader(
             MEM_writeLE32(op.add(pos) as *mut core::ffi::c_void, dictID);
             pos = pos.wrapping_add(4);
         }
-        0 | _ => {}
+        _ => {}
     }
     match fcsCode {
         1 => {
@@ -6247,7 +6247,7 @@ unsafe fn ZSTD_writeFrameHeader(
             MEM_writeLE64(op.add(pos) as *mut core::ffi::c_void, pledgedSrcSize);
             pos = pos.wrapping_add(8);
         }
-        0 | _ => {
+        _ => {
             if singleSegment != 0 {
                 *op.add(pos) = pledgedSrcSize as u8;
                 pos = pos.wrapping_add(1);
