@@ -436,18 +436,18 @@ fn ZDICT_tryMerge(
             return u as u32;
         }
 
-        if buf[table[u].pos as usize..][..8] == buf[elt.pos as usize + 1..][..8] {
-            if isIncluded(
+        if buf[table[u].pos as usize..][..8] == buf[elt.pos as usize + 1..][..8]
+            && isIncluded(
                 &buf[table[u].pos as usize..],
                 &buf[elt.pos as usize + 1..],
                 table[u].length as usize,
-            ) {
-                let addedLength = Ord::max(1, elt.length.checked_sub(table[u].length).unwrap_or(1));
-                table[u].pos = elt.pos;
-                table[u].savings += elt.savings * addedLength / elt.length;
-                table[u].length = Ord::min(elt.length, table[u].length + 1);
-                return u as u32;
-            }
+            )
+        {
+            let addedLength = Ord::max(1, elt.length.checked_sub(table[u].length).unwrap_or(1));
+            table[u].pos = elt.pos;
+            table[u].savings += elt.savings * addedLength / elt.length;
+            table[u].length = Ord::min(elt.length, table[u].length + 1);
+            return u as u32;
         }
 
         u = u.wrapping_add(1);

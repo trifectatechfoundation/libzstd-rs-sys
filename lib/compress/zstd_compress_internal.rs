@@ -951,10 +951,10 @@ pub(crate) unsafe fn ZSTD_window_needOverflowCorrection(
     src: *const core::ffi::c_void,
     srcEnd: *const core::ffi::c_void,
 ) -> bool {
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
-        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) {
-            return true;
-        }
+    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0
+        && ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src)
+    {
+        return true;
     }
 
     let curr = srcEnd.addr() - window.base.addr();
