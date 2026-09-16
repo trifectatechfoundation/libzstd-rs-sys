@@ -123,10 +123,9 @@ fn FSE_buildDTable_internal(
         let mut sv = 0u64;
 
         for s_0 in 0..maxSV1 {
-            let mut i: core::ffi::c_int = 0;
             let n = normalizedCounter[s_0 as usize] as core::ffi::c_int;
             spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
-            i = 8;
+            let mut i = 8;
             while i < n {
                 spread[pos as usize..][i as usize..][..8].copy_from_slice(&sv.to_le_bytes());
                 i += 8;
@@ -136,9 +135,8 @@ fn FSE_buildDTable_internal(
         }
 
         let mut position = 0 as size_t;
-        let mut s_1: size_t = 0;
         let unroll = 2;
-        s_1 = 0;
+        let mut s_1 = 0;
         while s_1 < tableSize as size_t {
             for u in 0..unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;

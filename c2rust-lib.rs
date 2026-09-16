@@ -44,7 +44,6 @@
 
 pub mod lib {
     pub mod common {
-        #![allow(unused_assignments)]
         pub(crate) mod allocations;
         pub(crate) mod bits;
         pub(crate) mod bitstream;
