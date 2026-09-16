@@ -73,11 +73,10 @@ pub(crate) unsafe fn POOL_create_advanced(
     queueSize: size_t,
     customMem: ZSTD_customMem,
 ) -> *mut POOL_ctx {
-    let mut ctx = core::ptr::null_mut::<POOL_ctx>();
     if numThreads == 0 {
         return core::ptr::null_mut();
     }
-    ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
+    let ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
     if ctx.is_null() {
         return core::ptr::null_mut();
     }
