@@ -356,9 +356,14 @@ pub enum CompResetPolicy {
     LeaveDirty = 1,
 }
 
-pub type ZSTD_resetTarget_e = core::ffi::c_uint;
-pub const ZSTD_resetTarget_CCtx: ZSTD_resetTarget_e = 1;
-pub const ZSTD_resetTarget_CDict: ZSTD_resetTarget_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum ResetTarget {
+    #[default]
+    CDict = 0,
+    CCtx = 1,
+}
+
 pub type ZSTD_indexResetPolicy_e = core::ffi::c_uint;
 pub const ZSTDirp_reset: ZSTD_indexResetPolicy_e = 1;
 pub const ZSTDirp_continue: ZSTD_indexResetPolicy_e = 0;
@@ -3068,20 +3073,20 @@ unsafe fn ZSTD_reset_matchState(
     useRowMatchFinder: ParamSwitch,
     crp: CompResetPolicy,
     forceResetIndex: ZSTD_indexResetPolicy_e,
-    forWho: ZSTD_resetTarget_e,
+    forWho: ResetTarget,
 ) -> Result<(), Error> {
     // disable chain table allocation for fast or row-based strategies
     let chainSize = if ZSTD_allocateChainTable(
         cParams.strategy,
         useRowMatchFinder,
-        ms.dedicatedDictSearch != 0 && forWho == ZSTD_resetTarget_CDict,
+        ms.dedicatedDictSearch != 0 && forWho == ResetTarget::CDict,
     ) {
         (1 as size_t) << cParams.chainLog
     } else {
         0
     };
     let hSize = (1 as size_t) << cParams.hashLog;
-    let hashLog3 = if forWho == ZSTD_resetTarget_CCtx && cParams.minMatch == 3 {
+    let hashLog3 = if forWho == ResetTarget::CCtx && cParams.minMatch == 3 {
         cParams.windowLog.min(ZSTD_HASHLOG3_MAX)
     } else {
         0
@@ -3123,7 +3128,7 @@ unsafe fn ZSTD_reset_matchState(
         let tagTableSize = hSize;
         // We want to generate a new salt in case we reset a Cctx, but we always want to use
         // 0 when we reset a Cdict
-        if forWho == ZSTD_resetTarget_CCtx {
+        if forWho == ResetTarget::CCtx {
             ms.tagTable = ZSTD_cwksp_reserve_aligned_init_once(ws, tagTableSize) as *mut u8;
             ZSTD_advanceHashSalt(ms);
         } else {
@@ -3139,7 +3144,7 @@ unsafe fn ZSTD_reset_matchState(
     }
 
     // opt parser space
-    if forWho == ZSTD_resetTarget_CCtx && cParams.strategy >= ZSTD_btopt {
+    if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
         ms.opt.litFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
             ((1 << Litbits) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>()),
@@ -3343,7 +3348,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         params.useRowMatchFinder,
         crp,
         needsIndexReset,
-        ZSTD_resetTarget_CCtx,
+        ResetTarget::CCtx,
     )?;
 
     (*zc).seqStore.sequencesStart =
@@ -7375,7 +7380,7 @@ unsafe fn ZSTD_initCDict_internal(
         params.useRowMatchFinder,
         CompResetPolicy::MakeClean,
         ZSTDirp_reset,
-        ZSTD_resetTarget_CDict,
+        ResetTarget::CDict,
     ) {
         return err.to_error_code();
     }
