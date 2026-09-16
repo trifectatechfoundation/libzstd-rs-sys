@@ -84,9 +84,6 @@ pub struct ZSTD_cpuid_t {
 }
 type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
-type XXH_errorcode = core::ffi::c_uint;
-pub const XXH_ERROR: XXH_errorcode = 1;
-pub const XXH_OK: XXH_errorcode = 0;
 
 #[derive(Default)]
 #[repr(C)]
