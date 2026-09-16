@@ -4961,10 +4961,11 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return Ok(0);
     }
 
+    // `HIST_count_wksp` has filled every entry of the count table.
+    let count = core::slice::from_raw_parts(countWksp, HUF_SYMBOLVALUE_MAX as usize + 1);
+
     // Validate the previous Huffman table
-    if repeat == HUF_repeat::Check
-        && !HUF_validateCTable(&prevHuf.CTable, countWksp, maxSymbolValue)
-    {
+    if repeat == HUF_repeat::Check && !HUF_validateCTable(&prevHuf.CTable, count, maxSymbolValue) {
         repeat = HUF_repeat::None;
     }
 
@@ -4977,12 +4978,12 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
         &mut nextHuf.CTable,
-        countWksp,
+        count,
         hufFlags,
     );
     let maxBits = HUF_buildCTable_wksp(
         &mut nextHuf.CTable,
-        countWksp,
+        count,
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
@@ -4990,7 +4991,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     )?;
     huffLog = maxBits as u32;
     // Build and write the CTable
-    let newCSize = HUF_estimateCompressedSize(&nextHuf.CTable, countWksp, maxSymbolValue);
+    let newCSize = HUF_estimateCompressedSize(&nextHuf.CTable, count, maxSymbolValue);
     let hSize = HUF_writeCTable_wksp(
         (hufMetadata.hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; ZSTD_MAX_HUF_HEADER_SIZE]>(),
@@ -5002,7 +5003,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     )?;
     // Check against repeating the previous CTable
     if repeat != HUF_repeat::None {
-        let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, countWksp, maxSymbolValue);
+        let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, count, maxSymbolValue);
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
@@ -5167,8 +5168,10 @@ unsafe fn ZSTD_estimateBlockSize_literal(
             {
                 return litSize;
             };
+            // `HIST_count_wksp` has filled every entry of the count table.
+            let count = core::slice::from_raw_parts(countWksp, HUF_SYMBOLVALUE_MAX as usize + 1);
             let mut cLitSizeEstimate =
-                HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
+                HUF_estimateCompressedSize(&huf.CTable, count, maxSymbolValue);
             if writeEntropy {
                 cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
             }

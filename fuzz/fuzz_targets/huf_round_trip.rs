@@ -154,7 +154,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             workspace.as_mut_ptr().cast(),
             HUF_WORKSPACE_SIZE,
             &mut ct,
-            count.as_ptr(),
+            &count,
             flags,
         )
     };
@@ -164,7 +164,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     let table_log = unsafe {
         lib::compress::huf_compress::HUF_buildCTable_wksp(
             &mut ct,
-            count.as_ptr(),
+            &count,
             max_symbol,
             table_log,
             workspace.as_mut_ptr().cast(),
