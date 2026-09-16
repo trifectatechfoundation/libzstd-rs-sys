@@ -8273,11 +8273,8 @@ unsafe fn ZSTD_compressStream_generic(
                         if !ip.is_null() {
                             ip = ip.add(loaded);
                         }
-                        if flushMode == ZSTD_e_continue && (*zcs).inBuffPos < (*zcs).inBuffTarget {
-                            someMoreWork = false;
-                            current_block_156 = 16754622181974910496;
-                        } else if flushMode == ZSTD_e_flush
-                            && (*zcs).inBuffPos == (*zcs).inToCompress
+                        if flushMode == ZSTD_e_continue && (*zcs).inBuffPos < (*zcs).inBuffTarget
+                            || flushMode == ZSTD_e_flush && (*zcs).inBuffPos == (*zcs).inToCompress
                         {
                             someMoreWork = false;
                             current_block_156 = 16754622181974910496;
