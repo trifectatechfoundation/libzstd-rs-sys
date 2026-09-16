@@ -5149,38 +5149,34 @@ unsafe fn ZSTD_estimateBlockSize_literal(
         + size_t::from(litSize >= (16 * (1 << 10)) as size_t);
     let singleStream = litSize < 256;
 
-    if hufMetadata.hType == SymbolEncodingType::Basic {
-        return litSize;
-    } else if hufMetadata.hType == SymbolEncodingType::Rle {
-        return 1;
-    } else if hufMetadata.hType == SymbolEncodingType::Compressed
-        || hufMetadata.hType == SymbolEncodingType::Repeat
-    {
-        if HIST_count_wksp(
-            countWksp,
-            &mut maxSymbolValue,
-            literals as *const core::ffi::c_void,
-            litSize,
-            workspace,
-            wkspSize,
-        )
-        .is_err()
-        {
-            return litSize;
-        };
-        let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
-        if writeEntropy {
-            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
+    match hufMetadata.hType {
+        SymbolEncodingType::Basic => litSize,
+        SymbolEncodingType::Rle => 1,
+        SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
+            if HIST_count_wksp(
+                countWksp,
+                &mut maxSymbolValue,
+                literals as *const core::ffi::c_void,
+                litSize,
+                workspace,
+                wkspSize,
+            )
+            .is_err()
+            {
+                return litSize;
+            };
+            let mut cLitSizeEstimate =
+                HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
+            if writeEntropy {
+                cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
+            }
+            if !singleStream {
+                // multi-stream huffman uses 6-byte jump table
+                cLitSizeEstimate = cLitSizeEstimate.wrapping_add(6);
+            }
+            cLitSizeEstimate.wrapping_add(literalSectionHeaderSize)
         }
-        if !singleStream {
-            // multi-stream huffman uses 6-byte jump table
-            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(6);
-        }
-        return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
     }
-
-    0
 }
 
 /// Returns the size estimate for the FSE-compressed symbols (of, ml, ll) of a block
