@@ -558,3 +558,67 @@ mod long_distance_matching {
         assert!(compressed.len() < input.len());
     }
 }
+
+/// The sequence-level APIs: extracting sequences from an input, and compressing sequences that
+/// were produced elsewhere.
+mod sequences {
+    use crate::assert_eq_rs_c;
+    use std::ffi::c_void;
+
+    #[cfg(miri)]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-tiny.dat");
+    #[cfg(not(miri))]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-small.dat");
+
+    macro_rules! generate {
+        ($input:expr, $level:expr) => {{
+            let cctx = ZSTD_createCCtx();
+            assert!(!cctx.is_null());
+
+            let err =
+                ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_compressionLevel, $level);
+            assert_eq!(ZSTD_isError(err), 0);
+
+            let mut seqs = vec![
+                ZSTD_Sequence {
+                    offset: 0,
+                    litLength: 0,
+                    matchLength: 0,
+                    rep: 0,
+                };
+                ZSTD_sequenceBound($input.len())
+            ];
+
+            let count = ZSTD_generateSequences(
+                cctx,
+                seqs.as_mut_ptr(),
+                seqs.len(),
+                $input.as_ptr() as *const c_void,
+                $input.len(),
+            );
+            assert_eq!(ZSTD_isError(count), 0);
+            seqs.truncate(count);
+
+            ZSTD_freeCCtx(cctx);
+
+            seqs
+        }};
+    }
+
+    #[cfg(not(miri))]
+    const LEVELS: [i32; 3] = [1, 3, 9];
+    #[cfg(miri)]
+    const LEVELS: [i32; 1] = [1];
+
+    #[test]
+    fn generate_sequences() {
+        for level in LEVELS {
+            assert_eq_rs_c!({
+                generate!(INPUT, level)
+                    .iter()
+                    .map(|seq| (seq.offset, seq.litLength, seq.matchLength, seq.rep))
+                    .collect::<Vec<_>>()
+            });
+        }
+    }
+}
