@@ -91,10 +91,9 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let mut pos = 0usize;
         let mut sv = 0u64;
         for s in 0..maxSV1 {
-            let mut i: core::ffi::c_int = 0;
             let n = normalizedCounter[s as usize] as core::ffi::c_int;
             MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
-            i = 8;
+            let mut i = 8;
             while i < n {
                 MEM_write64(
                     spread.add(pos).offset(i as isize) as *mut core::ffi::c_void,
@@ -110,9 +109,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         // we don't need variable sized inner loop, so we can unroll the loop and
         // reduce branch misses.
         let mut position = 0usize;
-        let mut s_0: size_t = 0;
         let unroll = 2; // Experimentally determined optimal unroll
-        s_0 = 0;
+        let mut s_0 = 0;
         while s_0 < tableSize as size_t {
             for u_0 in 0..unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
@@ -124,9 +122,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     } else {
         let mut position_0 = 0u32;
         for symbol in 0..maxSV1 {
-            let mut nbOccurrences: core::ffi::c_int = 0;
             let freq = normalizedCounter[symbol as usize] as core::ffi::c_int;
-            nbOccurrences = 0;
+            let mut nbOccurrences = 0;
             while nbOccurrences < freq {
                 *tableSymbol.offset(position_0 as isize) = symbol as u8;
                 position_0 = position_0.wrapping_add(step) & tableMask;
@@ -206,10 +203,7 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     let ostart = header as *mut u8;
     let mut out = ostart;
     let oend = ostart.add(headerBufferSize);
-    let mut nbBits: core::ffi::c_int = 0;
     let tableSize = 1 << tableLog;
-    let mut remaining: core::ffi::c_int = 0;
-    let mut threshold: core::ffi::c_int = 0;
     let mut bitStream = 0;
     let mut bitCount: core::ffi::c_uint = 0;
     let mut symbol = 0;
@@ -222,9 +216,9 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     bitCount += 4;
 
     // Init
-    remaining = tableSize + 1; // +1 for extra accuracy
-    threshold = tableSize;
-    nbBits = tableLog as core::ffi::c_int + 1;
+    let mut remaining = tableSize + 1; // +1 for extra accuracy
+    let mut threshold = tableSize;
+    let mut nbBits = tableLog as core::ffi::c_int + 1;
 
     // stops at 1
     while symbol < alphabetSize && remaining > 1 {
@@ -397,9 +391,7 @@ unsafe fn FSE_normalizeM2(
 ) -> Result<(), Error> {
     let maxSV1 = usize::from(maxSymbolValue) + 1;
     const NOT_YET_ASSIGNED: i16 = -2;
-    let mut s = 0;
     let mut distributed = 0usize;
-    let mut ToDistribute = 0;
 
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
@@ -422,7 +414,7 @@ unsafe fn FSE_normalizeM2(
             NOT_YET_ASSIGNED
         }
     }
-    ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
+    let mut ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
 
     if ToDistribute == 0 {
         return Ok(());
@@ -459,7 +451,7 @@ unsafe fn FSE_normalizeM2(
 
     if total == 0 {
         // all of the symbols were low enough for the lowOne or lowThreshold
-        s = 0;
+        let mut s = 0;
         while ToDistribute > 0 {
             if norm[s] > 0 {
                 ToDistribute = ToDistribute.wrapping_sub(1);

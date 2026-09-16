@@ -866,11 +866,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
     // update pointers, the nb of literals borrowed from next sequence must be preserved
     if cSize_0 > 0 && cSize_0 < decompressedSize_0 {
         ip = ip.add(decompressedSize_0);
-        lp = lp.add(litSize_0);
         op = op.add(cSize_0);
-        llCodePtr = llCodePtr.add(seqCount_0);
-        mlCodePtr = mlCodePtr.add(seqCount_0);
-        ofCodePtr = ofCodePtr.add(seqCount_0);
+
         // Entropy only needs to be written once
         if litEntropyWritten {
             writeLitEntropy = false;

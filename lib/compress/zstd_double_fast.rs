@@ -143,27 +143,27 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
 
     let mut mLength: size_t = 0;
     let mut offset: u32 = 0;
-    let mut curr: u32 = 0;
+    let mut curr: u32;
 
     // how many positions to search before increasing step size
     let kStepIncr = (1 << kSearchStrength) as size_t;
     // the position at which to increment the step size if no match is found
-    let mut nextStep = core::ptr::null::<u8>();
-    let mut step: size_t = 0; // the current step size
+    let mut nextStep;
+    let mut step: size_t; // the current step size
 
-    let mut hl0: size_t = 0; // the long hash at ip
+    let mut hl0: size_t; // the long hash at ip
     let mut hl1: size_t = 0; // the long hash at ip1
 
-    let mut idxl0: u32 = 0; // the long match index for ip
+    let mut idxl0: u32; // the long match index for ip
     let mut idxl1: u32 = 0; // the long match index for ip1
 
-    let mut matchl0 = core::ptr::null::<u8>(); // the long match for ip
-    let mut matchs0 = core::ptr::null::<u8>(); // the short match for ip
+    let mut matchl0; // the long match for ip
+    let mut matchs0; // the short match for ip
     let mut matchl1 = core::ptr::null::<u8>(); // the long match for ip1
-    let mut matchs0_safe = core::ptr::null::<u8>(); // matchs0 or safe address
+    let mut matchs0_safe; // matchs0 or safe address
 
     let mut ip = istart; // the current position
-    let mut ip1 = core::ptr::null::<u8>(); // the next position
+    let mut ip1; // the next position
 
     // Array of ~random data, should have low probability of matching data.
     // We load from here instead of from tables if matchl0/matchl1 are
@@ -1003,7 +1003,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
             base
         };
         let repMatch = repBase.wrapping_offset(repIndex as isize);
-        let mut mLength: size_t = 0;
+        let mut mLength: size_t;
         // update hash table
         let fresh4 = &mut (*hashLong.add(hLong));
         *fresh4 = curr;
@@ -1051,11 +1051,10 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
             } else {
                 prefixStart
             };
-            let mut offset: u32 = 0;
             mLength =
                 (ZSTD_count_2segments(ip.add(8), matchLong.add(8), iend, matchEnd, prefixStart))
                     .wrapping_add(8);
-            offset = curr.wrapping_sub(matchLongIndex);
+            let offset = curr.wrapping_sub(matchLongIndex);
             while (ip > anchor) & (matchLong > lowMatchPtr)
                 && *ip.sub(1) as core::ffi::c_int == *matchLong.sub(1) as core::ffi::c_int
             {
@@ -1085,9 +1084,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 base
             };
             let mut match3 = match3Base.wrapping_offset(matchIndex3 as isize);
-            let mut offset_0: u32 = 0;
             *hashLong.add(h3) = curr.wrapping_add(1);
 
+            let offset_0: u32;
             if matchIndex3 > dictStartIndex
                 && MEM_read64(match3 as *const core::ffi::c_void)
                     == MEM_read64(ip.add(1) as *const core::ffi::c_void)

@@ -150,12 +150,11 @@ unsafe fn ZSTD_match4Found_branch(
     // using a branch instead of a cmov,
     // because it's faster in scenarios where matchIdx >= idxLowLimit is generally true,
     // aka almost all candidates are within range
-    let mut mval: u32 = 0;
-    if matchIdx >= idxLowLimit {
-        mval = MEM_read32(matchAddress as *const core::ffi::c_void);
+    let mval = if matchIdx >= idxLowLimit {
+        MEM_read32(matchAddress as *const core::ffi::c_void)
     } else {
-        mval = MEM_read32(currentPtr as *const core::ffi::c_void) ^ 1;
-    }
+        MEM_read32(currentPtr as *const core::ffi::c_void) ^ 1
+    };
     MEM_read32(currentPtr as *const core::ffi::c_void) == mval
 }
 
@@ -227,19 +226,19 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
 
     let mut anchor = istart;
     let mut ip0 = istart;
-    let mut ip1 = core::ptr::null::<u8>();
-    let mut ip2 = core::ptr::null::<u8>();
-    let mut ip3 = core::ptr::null::<u8>();
-    let mut current0: u32 = 0;
+    let mut ip1;
+    let mut ip2;
+    let mut ip3;
+    let mut current0: u32;
 
     let mut rep_offset1 = rep[0];
     let mut rep_offset2 = rep[1];
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
 
-    let mut hash0: size_t = 0; // hash for ip0
-    let mut hash1: size_t = 0; // hash for ip1
-    let mut matchIdx: u32 = 0; // match idx for ip0
+    let mut hash0: size_t; // hash for ip0
+    let mut hash1: size_t; // hash for ip1
+    let mut matchIdx: u32; // match idx for ip0
 
     let mut offcode: u32 = 0;
     let mut match0 = core::ptr::null::<u8>();
@@ -249,8 +248,8 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     // uncompressibility acceleration is applied to every other position,
     // matching the behavior of #1562. step therefore represents the gap
     // between pairs of positions, from ip0 to ip2 or ip1 to ip3.
-    let mut step: size_t = 0;
-    let mut nextStep = core::ptr::null::<u8>();
+    let mut step: size_t;
+    let mut nextStep;
     let kStepIncr = (1 << (kSearchStrength - 1)) as size_t;
     let matchFound: ZSTD_match4Found = if USE_CMOV {
         ZSTD_match4Found_cmov
@@ -599,7 +598,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     // Outer search loop
     's_135: while ip1 <= ilimit {
         // repcode check at (ip0 + 1) is safe because ip0 < ip1
-        let mut mLength: size_t = 0;
+        let mut mLength: size_t;
         let mut hash0 = ZSTD_hashPtr(ip0 as *const core::ffi::c_void, hlog, MLS);
 
         let dictHashAndTag0 = ZSTD_hashPtr(ip0 as *const core::ffi::c_void, dictHBits, MLS);
@@ -871,23 +870,23 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
     let mut offsetSaved2 = 0;
 
     let mut ip0 = istart;
-    let mut ip1 = core::ptr::null::<u8>();
-    let mut ip2 = core::ptr::null::<u8>();
-    let mut ip3 = core::ptr::null::<u8>();
-    let mut current0: u32 = 0;
+    let mut ip1;
+    let mut ip2;
+    let mut ip3;
+    let mut current0: u32;
 
-    let mut hash0: size_t = 0; // hash for ip0
-    let mut hash1: size_t = 0; // hash for ip1
-    let mut idx: u32 = 0; // match idx for ip0
-    let mut idxBase = core::ptr::null::<u8>(); // base pointer for idx
+    let mut hash0: size_t; // hash for ip0
+    let mut hash1: size_t; // hash for ip1
+    let mut idx: u32; // match idx for ip0
+    let mut idxBase; // base pointer for idx
 
     let mut offcode: u32 = 0;
     let mut match0 = core::ptr::null::<u8>();
     let mut mLength: size_t = 0;
     let mut matchEnd = core::ptr::null::<u8>(); // initialize to avoid warning, assert != 0 later
 
-    let mut step: size_t = 0;
-    let mut nextStep = core::ptr::null::<u8>();
+    let mut step: size_t;
+    let mut nextStep;
     let kStepIncr = (1 << (kSearchStrength - 1)) as size_t;
 
     let _ = hasStep; // not currently specialized on whether it's accelerated
@@ -941,16 +940,13 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
             } else {
                 base
             };
-            let mut rval: u32 = 0;
-            if (prefixStartIndex.wrapping_sub(repIndex) >= 4) // intentional underflow
+            let rval = if (prefixStartIndex.wrapping_sub(repIndex) >= 4) // intentional underflow
                 & (offset_1 > 0)
             {
-                rval = MEM_read32(
-                    repBase.wrapping_offset(repIndex as isize) as *const core::ffi::c_void
-                );
+                MEM_read32(repBase.wrapping_offset(repIndex as isize) as *const core::ffi::c_void)
             } else {
-                rval = MEM_read32(ip2 as *const core::ffi::c_void) ^ 1; // guaranteed to not match.
-            }
+                MEM_read32(ip2 as *const core::ffi::c_void) ^ 1 // guaranteed to not match.
+            };
 
             // write back hash table entry
             current0 = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;

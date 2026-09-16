@@ -67,7 +67,6 @@ pub mod lib {
         #![allow(clippy::if_same_then_else)]
         #![allow(clippy::collapsible_if)]
         #![allow(clippy::eq_op)]
-        #![allow(unused_assignments)]
         pub mod fse_compress;
         pub mod hist;
         pub mod huf_compress;

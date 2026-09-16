@@ -6530,7 +6530,6 @@ unsafe fn ZSTD_loadDictionaryContent(
         });
     if srcSize > maxDictSize_0 as size_t {
         ip = iend.sub(maxDictSize_0 as usize);
-        src = ip as *const core::ffi::c_void;
         srcSize = maxDictSize_0 as size_t;
     }
 
@@ -9948,7 +9947,6 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
         return err_code_0;
     }
     cSize = cSize.wrapping_add(cBlocksSize);
-    dstCapacity = dstCapacity.wrapping_sub(cBlocksSize);
 
     cSize
 }

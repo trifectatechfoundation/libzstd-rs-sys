@@ -753,8 +753,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
-            let mut mLength: size_t = 0;
-            let mut offset: u32 = 0;
 
             let ldmMatchCandidate_t {
                 split,
@@ -846,9 +844,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
                 } else {
                     // Match found
-                    offset =
+                    let offset =
                         (split.wrapping_offset_from(base) as u32).wrapping_sub((*bestEntry).offset);
-                    mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
+                    let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
                     let seq = (rawSeqStore.seq).add(rawSeqStore.size);
 
@@ -917,10 +915,9 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let kMaxChunkSize = (1 << 20) as size_t;
     let nbChunks = (srcSize / kMaxChunkSize)
         .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
-    let mut chunk: size_t = 0;
     let mut leftoverSize = 0;
 
-    chunk = 0;
+    let mut chunk = 0;
     while chunk < nbChunks && sequences.size < sequences.capacity {
         let chunkStart = istart.add(chunk * kMaxChunkSize);
         let remaining = iend.offset_from_unsigned(chunkStart);
@@ -1114,9 +1111,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
 
     // If using opt parser, use LDMs only as candidates rather than always accepting them
     if cParams.strategy >= ZSTD_btopt {
-        let mut lastLLSize: size_t = 0;
         ms.ldmSeqStore = rawSeqStore;
-        lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
+        let lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
         return lastLLSize;
     }

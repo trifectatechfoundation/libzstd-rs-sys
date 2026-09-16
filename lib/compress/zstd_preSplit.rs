@@ -146,7 +146,6 @@ unsafe fn ZSTD_splitBlock_byChunks(
     let fpstats = workspace as *mut FPStats;
     let p = blockStart as *const c_char;
     let mut penalty = THRESHOLD_PENALTY;
-    let mut pos = 0;
 
     debug_assert_eq!(blockSize, (128 << 10));
     debug_assert!(!workspace.is_null());
@@ -160,7 +159,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
         p as *const c_void,
         CHUNKSIZE as size_t,
     );
-    pos = CHUNKSIZE as size_t;
+    let mut pos = CHUNKSIZE as size_t;
     while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
         record_f(
             &mut (*fpstats).newEvents,
