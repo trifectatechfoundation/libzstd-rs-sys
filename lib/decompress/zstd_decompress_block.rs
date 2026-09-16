@@ -31,17 +31,6 @@ use crate::lib::decompress::{
 use crate::lib::polyfill::{cfg_select, likely, prefetch_read_data, unlikely, Locality};
 use crate::lib::zstd::{ZSTD_BLOCKSIZE_MAX, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
-pub type BIT_DStream_status = core::ffi::c_uint;
-pub const BIT_DStream_overflow: BIT_DStream_status = 3;
-pub const BIT_DStream_completed: BIT_DStream_status = 2;
-pub const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
-pub const BIT_DStream_unfinished: BIT_DStream_status = 0;
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-
-pub type streaming_operation = core::ffi::c_uint;
-pub const is_streaming: streaming_operation = 1;
-pub const not_streaming: streaming_operation = 0;
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum StreamingOperation {
     NotStreaming = 0,

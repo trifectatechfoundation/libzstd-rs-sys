@@ -71,8 +71,6 @@ pub struct SymbolTable<const N: usize> {
     symbols: [ZSTD_seqSymbol; N],
 }
 
-pub type ZSTD_dStage = core::ffi::c_uint;
-
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DecompressStage {
