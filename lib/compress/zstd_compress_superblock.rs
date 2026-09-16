@@ -432,33 +432,30 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     let mut maxSymbolValue = u8::MAX;
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
-    if hufMetadata.hType == SymbolEncodingType::Basic {
-        return litSize;
-    } else if hufMetadata.hType == SymbolEncodingType::Rle {
-        return 1;
-    } else if hufMetadata.hType == SymbolEncodingType::Compressed
-        || hufMetadata.hType == SymbolEncodingType::Repeat
-    {
-        if HIST_count_wksp(
-            countWksp,
-            &mut maxSymbolValue,
-            literals as *const core::ffi::c_void,
-            litSize,
-            workspace,
-            wkspSize,
-        )
-        .is_err()
-        {
-            return litSize;
-        };
-        let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
-        if writeEntropy {
-            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
+    match hufMetadata.hType {
+        SymbolEncodingType::Basic => litSize,
+        SymbolEncodingType::Rle => 1,
+        SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
+            if HIST_count_wksp(
+                countWksp,
+                &mut maxSymbolValue,
+                literals as *const core::ffi::c_void,
+                litSize,
+                workspace,
+                wkspSize,
+            )
+            .is_err()
+            {
+                return litSize;
+            };
+            let mut cLitSizeEstimate =
+                HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
+            if writeEntropy {
+                cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
+            }
+            cLitSizeEstimate.wrapping_add(literalSectionHeaderSize)
         }
-        return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
     }
-    0
 }
 
 unsafe fn ZSTD_estimateSubBlockSize_symbolType(
