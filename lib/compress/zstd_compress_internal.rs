@@ -262,7 +262,7 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
 ) -> ZSTD_SequenceLength {
     let mut seqLen = ZSTD_SequenceLength {
         litLength: u32::from((*seq).litLength),
-        matchLength: u32::from((*seq).mlBase) + MINMATCH as u32,
+        matchLength: u32::from((*seq).mlBase) + u32::from(MINMATCH),
     };
 
     if seqStore.longLengthPos == seq.offset_from(seqStore.sequencesStart) as u32 {
@@ -521,7 +521,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     }
     (*(seqStorePtr.sequences)).litLength = litLength as u16;
     (*(seqStorePtr.sequences)).offBase = offBase;
-    let mlBase = matchLength.wrapping_sub(MINMATCH as usize);
+    let mlBase = matchLength.wrapping_sub(usize::from(MINMATCH));
     if mlBase > 0xffff {
         seqStorePtr.longLengthType = LongLengthType::Match;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)

@@ -389,7 +389,7 @@ unsafe fn ZSTD_getMatchPrice(
 ) -> u32 {
     let mut price: u32 = 0;
     let offCode = ZSTD_highbit32(offBase);
-    let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
+    let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
 
     if opt_state.priceType == OptPrice::Predef {
         // fixed scheme, does not use statistics
@@ -458,7 +458,7 @@ unsafe fn ZSTD_updateStats(
     opt_state.offCodeSum = (opt_state.offCodeSum).wrapping_add(1);
 
     // match Length
-    let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
+    let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
     let mlCode = ZSTD_MLcode(mlBase);
     let matchLengthFreq = &mut *opt_state.matchLengthFreq.add(mlCode as usize);
     *matchLengthFreq = matchLengthFreq.wrapping_add(1);
