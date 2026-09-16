@@ -477,7 +477,7 @@ unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u3
                 MEM_read32(memPtr) >> 8
             }
         }
-        4 | _ => MEM_read32(memPtr),
+        _ => MEM_read32(memPtr),
     }
 }
 

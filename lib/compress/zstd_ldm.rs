@@ -75,8 +75,8 @@ use crate::lib::compress::zstd_compress_internal::{
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::{
-    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_HASHLOG_MAX,
-    ZSTD_HASHLOG_MIN,
+    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_dfast, ZSTD_fast,
+    ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN,
 };
 
 pub const LDM_BATCH_SIZE: usize = 64;
@@ -578,7 +578,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
     let iend = end as *const u8;
 
     match ms.cParams.strategy as core::ffi::c_uint {
-        1 => {
+        ZSTD_fast => {
             ZSTD_fillHashTable(
                 ms,
                 iend as *const core::ffi::c_void,
@@ -586,7 +586,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
                 TableFillPurpose::ForCCtx,
             );
         }
-        2 => {
+        ZSTD_dfast => {
             ZSTD_fillDoubleHashTable(
                 ms,
                 iend as *const core::ffi::c_void,
@@ -594,7 +594,7 @@ unsafe fn ZSTD_ldm_fillFastTables(
                 TableFillPurpose::ForCCtx,
             );
         }
-        3 | 4 | 5 | 6 | 7 | 8 | 9 | _ => {}
+        _ => {}
     }
 
     0

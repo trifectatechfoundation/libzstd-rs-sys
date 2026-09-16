@@ -63,7 +63,6 @@ pub mod lib {
     } // mod common
     pub mod compress {
         // FIXME
-        #![allow(clippy::wildcard_in_or_patterns)]
         #![allow(clippy::if_same_then_else)]
         #![allow(clippy::collapsible_if)]
         pub mod fse_compress;
