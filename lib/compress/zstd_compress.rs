@@ -5559,17 +5559,11 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         cSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(cSeqsSize);
     }
 
-    if (*(*zc).blockState.prevCBlock)
+    (*(*zc).blockState.prevCBlock)
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat::Valid
-    {
-        (*(*zc).blockState.prevCBlock)
-            .entropy
-            .fse
-            .offcode_repeatMode = FSE_repeat::Check;
-    }
+        .require_check();
 
     Ok(cSize)
 }
@@ -5751,17 +5745,11 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
 
     if bss == BuildSeqStore::NoCompress {
-        if (*(*zc).blockState.prevCBlock)
+        (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
             .offcode_repeatMode
-            == FSE_repeat::Valid
-        {
-            (*(*zc).blockState.prevCBlock)
-                .entropy
-                .fse
-                .offcode_repeatMode = FSE_repeat::Check;
-        }
+            .require_check();
         if (*zc).seqCollector.collectSequences != 0 {
             return Err(Error::sequenceProducer_failed);
         }
@@ -5839,17 +5827,12 @@ unsafe fn ZSTD_compressBlock_internal(
     // We check that dictionaries have offset codes available for the first
     // block. After the first block, the offcode table might not have large
     // enough codes to represent the offsets in the data.
-    if (*(*zc).blockState.prevCBlock)
+    (*(*zc).blockState.prevCBlock)
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat::Valid
-    {
-        (*(*zc).blockState.prevCBlock)
-            .entropy
-            .fse
-            .offcode_repeatMode = FSE_repeat::Check;
-    }
+        .require_check();
+
     Ok(cSize)
 }
 
@@ -5914,17 +5897,11 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
         lastBlock,
     )?;
 
-    if (*(*zc).blockState.prevCBlock)
+    (*(*zc).blockState.prevCBlock)
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat::Valid
-    {
-        (*(*zc).blockState.prevCBlock)
-            .entropy
-            .fse
-            .offcode_repeatMode = FSE_repeat::Check;
-    }
+        .require_check();
 
     Ok(cSize)
 }
@@ -9392,17 +9369,11 @@ unsafe fn ZSTD_compressSequences_internal(
             } else {
                 // Error checking and repcodes update
                 ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
-                if (*(*cctx).blockState.prevCBlock)
+                (*(*cctx).blockState.prevCBlock)
                     .entropy
                     .fse
                     .offcode_repeatMode
-                    == FSE_repeat::Valid
-                {
-                    (*(*cctx).blockState.prevCBlock)
-                        .entropy
-                        .fse
-                        .offcode_repeatMode = FSE_repeat::Check;
-                }
+                    .require_check();
 
                 // Write block header into beginning of block
                 let cBlockHeader = u32::from(lastBlock)
@@ -9849,17 +9820,11 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
 
         // Error checking and repcodes update
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
-        if (*(*cctx).blockState.prevCBlock)
+        (*(*cctx).blockState.prevCBlock)
             .entropy
             .fse
             .offcode_repeatMode
-            == FSE_repeat::Valid
-        {
-            (*(*cctx).blockState.prevCBlock)
-                .entropy
-                .fse
-                .offcode_repeatMode = FSE_repeat::Check;
-        }
+            .require_check();
 
         // Write block header into beginning of block
         let cBlockHeader = u32::from(lastBlock)

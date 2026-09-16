@@ -57,6 +57,16 @@ pub enum FSE_repeat {
     Valid = 2,
 }
 
+impl FSE_repeat {
+    /// Downgrades [`FSE_repeat::Valid`] to [`FSE_repeat::Check`], leaves other states unchanged
+    #[inline]
+    pub(crate) fn require_check(&mut self) {
+        if *self == FSE_repeat::Valid {
+            *self = FSE_repeat::Check;
+        }
+    }
+}
+
 #[repr(C)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,
