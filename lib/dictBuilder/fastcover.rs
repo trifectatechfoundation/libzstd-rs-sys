@@ -9,8 +9,8 @@ use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hash64Ptr_array;
 use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
-    COVER_dictSelectionError, COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t,
-    COVER_selectDict, COVER_warnOnSmallCorpus,
+    COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict,
+    COVER_warnOnSmallCorpus,
 };
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
@@ -150,8 +150,7 @@ fn FASTCOVER_selectSegment(
         segmentFreqs[delIndex_0] -= 1;
         activeSegment.begin += 1;
     }
-    let mut pos: u32 = 0;
-    pos = bestSegment.begin;
+    let mut pos = bestSegment.begin;
     while pos != bestSegment.end {
         let i = FASTCOVER_hashPtrToIndex(samples[pos as usize..][..8].try_into().unwrap(), f, d);
         freqs[i] = 0;
@@ -327,18 +326,16 @@ fn FASTCOVER_buildDictionary<'a>(
     let displayLevel = ctx.displayLevel;
     let mut zeroScoreRun = 0 as size_t;
     let mut last_update_time = Instant::now();
-    let mut epoch: size_t = 0;
     if displayLevel >= 2 {
         eprintln!(
             "Breaking content into {} epochs of size {}",
             epochs.num, epochs.size,
         );
     }
-    epoch = 0;
+    let mut epoch: size_t = 0;
     while tail > 0 {
         let epochBegin = (epoch * epochs.size as size_t) as u32;
         let epochEnd = epochBegin.wrapping_add(epochs.size);
-        let mut segmentSize: size_t = 0;
         let segment =
             FASTCOVER_selectSegment(ctx, freqs, epochBegin, epochEnd, parameters, segmentFreqs);
         if segment.score == 0 {
@@ -349,7 +346,7 @@ fn FASTCOVER_buildDictionary<'a>(
         } else {
             zeroScoreRun = 0;
             /* Trim the segment if necessary and if it is too small then we are done */
-            segmentSize = Ord::min(
+            let segmentSize = Ord::min(
                 (segment.end - segment.begin + parameters.d - 1) as usize,
                 tail,
             );
@@ -389,10 +386,8 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     let ctx = data.ctx;
     let parameters = data.parameters;
     let dictBufferCapacity = data.dictBufferCapacity;
-    let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << ctx.f]);
     let mut dict: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dictBufferCapacity);
-    let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
 
     let displayLevel = ctx.displayLevel;
     let mut freqs = ctx.freqs.clone();
@@ -401,7 +396,7 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
         FASTCOVER_buildDictionary(ctx, &mut freqs, &mut dict, parameters, &mut segmentFreqs);
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
-    selection = COVER_selectDict(
+    let selection = COVER_selectDict(
         dict_tail,
         dictBufferCapacity,
         ctx.samples,
@@ -411,7 +406,6 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
         ctx.nbSamples,
         parameters,
         &ctx.offsets,
-        totalCompressedSize,
     );
     if COVER_dictSelectionIsError(&selection) && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
