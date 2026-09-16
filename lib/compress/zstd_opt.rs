@@ -17,9 +17,13 @@ pub struct ZSTD_optLdm_t {
     pub offset: u32,
 }
 
-pub type base_directive_e = core::ffi::c_uint;
-pub const base_1guaranteed: base_directive_e = 1;
-pub const base_0possible: base_directive_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum BaseDirective {
+    #[default]
+    Possible = 0,
+    Guaranteed = 1,
+}
 
 use libc::size_t;
 
@@ -120,11 +124,11 @@ unsafe fn ZSTD_downscaleStats(
     table: *mut core::ffi::c_uint,
     lastEltIndex: u32,
     shift: u32,
-    base1: base_directive_e,
+    base1: BaseDirective,
 ) -> u32 {
     let mut sum = 0;
     for s in 0..lastEltIndex.wrapping_add(1) {
-        let base = (if base1 != 0 {
+        let base = (if base1 == BaseDirective::Guaranteed {
             1
         } else {
             core::ffi::c_int::from(*table.offset(s as isize) > 0)
@@ -153,7 +157,7 @@ unsafe fn ZSTD_scaleStats(table: *mut core::ffi::c_uint, lastEltIndex: u32, logT
         table,
         lastEltIndex,
         ZSTD_highbit32(factor),
-        base_1guaranteed,
+        BaseDirective::Guaranteed,
     )
 }
 
@@ -258,8 +262,12 @@ unsafe fn ZSTD_rescaleFreqs(
                     src as *const core::ffi::c_void,
                     srcSize, // use raw first block to init statistics
                 );
-                opt_state.litSum =
-                    ZSTD_downscaleStats(opt_state.litFreq, u32::from(MaxLit), 8, base_0possible);
+                opt_state.litSum = ZSTD_downscaleStats(
+                    opt_state.litFreq,
+                    u32::from(MaxLit),
+                    8,
+                    BaseDirective::Possible,
+                );
             }
 
             let baseLLfreqs: [u32; MaxLL as usize + 1] = [
