@@ -188,26 +188,24 @@ fn ZDICT_analyzePos(
     }
 
     // look forward
-    let mut length: size_t = 0;
     loop {
         end = end.wrapping_add(1);
-        length = ZDICT_count(&buffer[pos..], &buffer[suffix(end as usize) as usize..]);
+        let length = ZDICT_count(&buffer[pos..], &buffer[suffix(end as usize) as usize..]);
         if length < MINMATCHLENGTH {
             break;
         }
     }
 
     // look backward
-    let mut length_0: size_t = 0;
     loop {
-        length_0 = ZDICT_count(
+        let length = ZDICT_count(
             &buffer[pos..],
             &buffer[suffix((start as usize).wrapping_sub(1)) as usize..],
         );
-        if length_0 >= MINMATCHLENGTH {
+        if length >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
-        if length_0 < MINMATCHLENGTH {
+        if length < MINMATCHLENGTH {
             break;
         }
     }
@@ -220,8 +218,6 @@ fn ZDICT_analyzePos(
         return solution;
     }
 
-    let mut i: core::ffi::c_int = 0;
-    let mut mml: u32 = 0;
     let mut refinedStart = start;
     let mut refinedEnd = end;
 
@@ -236,7 +232,7 @@ fn ZDICT_analyzePos(
         eprintln!();
     }
 
-    mml = MINMATCHLENGTH as u32;
+    let mut mml = MINMATCHLENGTH as u32;
     loop {
         let mut currentChar = 0;
         let mut currentCount = 0u32;
@@ -306,14 +302,13 @@ fn ZDICT_analyzePos(
     // largest useful length
     let mut cumulLength = [0u32; LLIMIT];
     cumulLength[maxLength.wrapping_sub(1)] = lengthList[maxLength - 1];
-    i = maxLength.wrapping_sub(2) as core::ffi::c_int;
+    let mut i = maxLength.wrapping_sub(2) as core::ffi::c_int;
     while i >= 0 {
         cumulLength[i as usize] =
             (cumulLength[(i + 1) as usize]).wrapping_add(lengthList[i as usize]);
         i -= 1;
     }
-    let mut u_0: core::ffi::c_uint = 0;
-    u_0 = (LLIMIT - 1) as core::ffi::c_uint;
+    let mut u_0 = (LLIMIT - 1) as core::ffi::c_uint;
     while u_0 >= MINMATCHLENGTH as core::ffi::c_uint {
         if cumulLength[u_0 as usize] >= minRatio as u32 {
             break;
@@ -358,19 +353,14 @@ fn ZDICT_analyzePos(
 
     // mark positions done
     for id_0 in start..end {
-        let mut pEnd: u32 = 0;
-        let mut length_3: u32 = 0;
-        let testedPos = suffix(id_0 as usize);
-        if testedPos as size_t == pos {
-            length_3 = solution.length;
+        let testedPos = suffix(id_0 as usize) as usize;
+        let length = if testedPos == pos {
+            solution.length as usize
         } else {
-            length_3 = ZDICT_count(&buffer[pos..], &buffer[testedPos as usize..]) as u32;
-            if length_3 > solution.length {
-                length_3 = solution.length;
-            }
-        }
-        pEnd = testedPos.wrapping_add(length_3);
-        doneMarks[testedPos as usize..pEnd as usize].fill(true);
+            ZDICT_count(&buffer[pos..], &buffer[testedPos..]).min(solution.length as usize)
+        };
+        let pEnd = testedPos.wrapping_add(length);
+        doneMarks[testedPos..pEnd].fill(true);
     }
 
     solution
@@ -496,12 +486,11 @@ fn ZDICT_insertDictItem(table: &mut [DictItem], elt: DictItem, buffer: &[u8]) {
     }
 
     // insert
-    let mut current: u32 = 0;
     let mut nextElt = table[0].pos;
     if nextElt >= maxSize {
         nextElt = maxSize.wrapping_sub(1);
     }
-    current = nextElt.wrapping_sub(1);
+    let mut current = nextElt.wrapping_sub(1);
     while (table[current as usize]).savings < elt.savings {
         table[current.wrapping_add(1) as usize] = table[current as usize];
         current = current.wrapping_sub(1);

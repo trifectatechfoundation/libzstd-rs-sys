@@ -87,7 +87,6 @@ pub mod lib {
     pub(crate) mod polyfill;
     pub(crate) mod dictBuilder {
         #![allow(clippy::collapsible_if)]
-        #![allow(unused_assignments)]
         pub(crate) mod cover;
         pub(crate) mod divsufsort;
         pub(crate) mod fastcover;
