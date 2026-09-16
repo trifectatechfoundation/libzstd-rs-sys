@@ -128,7 +128,6 @@ unsafe fn ZSTD_insertDUBT1(
     };
     let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
     let prefixStart = base.wrapping_offset(dictLimit as isize);
-    let mut match_0 = core::ptr::null::<u8>();
     let mut smallerPtr = bt.offset((2 * (curr & btMask)) as isize);
     let mut largerPtr = smallerPtr.add(1);
     let mut matchIndex = *smallerPtr; // this candidate is unsorted: next sorted candidate is reached through *smallerPtr, while *largerPtr contains previous unsorted candidate (which is already saved and can be overwritten)
@@ -149,6 +148,7 @@ unsafe fn ZSTD_insertDUBT1(
         // but it's still possible to have nextPtr[1] == ZSTD_DUBT_UNSORTED_MARK
         // when a real index has the same value as ZSTD_DUBT_UNSORTED_MARK
 
+        let mut match_0: *const u8;
         if dictMode != DictMode::ExtDict
             || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t
             || curr < dictLimit
@@ -403,8 +403,8 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     while nbCompares != 0 && matchIndex > windowLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
         let mut matchLength = commonLengthSmaller.min(commonLengthLarger); // guaranteed minimum nb of common bytes
-        let mut match_0 = core::ptr::null::<u8>();
 
+        let mut match_0: *const u8;
         if dictMode != DictMode::ExtDict
             || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t
         {
@@ -543,7 +543,6 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     } else {
         idx
     };
-    let mut hashIdx: u32 = 0;
 
     // fill conventional hash table and conventional chain table
     for idx in idx..target {
@@ -561,12 +560,11 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
 
     // sort chains into DDSS chain table
     let mut chainPos = 0u32;
-    hashIdx = 0;
+    let mut hashIdx = 0u32;
     while hashIdx < 1 << hashLog {
-        let mut count: u32 = 0;
         let mut countBeyondMinChain = 0u32;
         let mut i = *tmpHashTable.offset(hashIdx as isize);
-        count = 0;
+        let mut count = 0;
         while i >= tmpMinChain && count < cacheSize {
             // skip through the chain to the first position that won't be
             // in the hash cache bucket
@@ -636,8 +634,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
             ms.cParams.minMatch,
         ) as u32)
             << ZSTD_LAZY_DDSS_BUCKET_LOG;
-        let mut i_1: u32 = 0;
-        i_1 = cacheSize.wrapping_sub(1);
+        let mut i_1: u32 = cacheSize.wrapping_sub(1);
         // Shift hash cache down 1
         while i_1 != 0 {
             *hashTable.offset(h_0.wrapping_add(i_1) as isize) =
@@ -672,10 +669,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
     let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
-    let mut ddsAttempt: u32 = 0;
-    let mut matchIndex: u32 = 0;
 
-    ddsAttempt = 0;
+    let mut ddsAttempt = 0;
     while ddsAttempt < bucketSize.wrapping_sub(1) {
         ddsAttempt = ddsAttempt.wrapping_add(1);
 
@@ -699,9 +694,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     ddsAttempt = 0;
     while ddsAttempt < bucketLimit {
         let mut currentMl = 0;
-        let mut match_0 = core::ptr::null::<u8>();
-        matchIndex = *((*dms).hashTable).add(ddsIdx.wrapping_add(ddsAttempt as size_t));
-        match_0 = ddsBase.offset(matchIndex as isize);
+        let matchIndex = *((*dms).hashTable).add(ddsIdx.wrapping_add(ddsAttempt as size_t));
+        let match_0 = ddsBase.offset(matchIndex as isize);
 
         if matchIndex == 0 {
             return ml;
@@ -740,9 +734,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let chainLength = chainPackedPointer_0 & 0xff as core::ffi::c_int as u32;
     let chainAttempts = nbAttempts.wrapping_sub(ddsAttempt);
     let chainLimit = chainAttempts.min(chainLength);
-    let mut chainAttempt: u32 = 0;
 
-    chainAttempt = 0;
+    let mut chainAttempt = 0;
     while chainAttempt < chainLimit {
         chainAttempt = chainAttempt.wrapping_add(1);
     }
@@ -750,9 +743,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     chainAttempt = 0;
     while chainAttempt < chainLimit {
         let mut currentMl_0 = 0;
-        let mut match_1 = core::ptr::null::<u8>();
-        matchIndex = *((*dms).chainTable).offset(chainIndex_0 as isize);
-        match_1 = ddsBase.offset(matchIndex as isize);
+        let matchIndex = *((*dms).chainTable).offset(chainIndex_0 as isize);
+        let match_1 = ddsBase.offset(matchIndex as isize);
 
         if MEM_read32(match_1 as *const core::ffi::c_void)
             == MEM_read32(ip as *const core::ffi::c_void)
@@ -869,15 +861,13 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         0
     };
 
-    let mut matchIndex: u32 = 0;
-
     if dictMode == DictMode::DedicatedDictSearch {
         let entry: *const u32 = &mut *((*dms).hashTable).add(ddsIdx) as *mut u32;
         prefetch_read_data(entry, Locality::L1);
     }
 
     // HC4 match finder
-    matchIndex = ZSTD_insertAndFindFirstIndex_internal(ms, ip, MLS, ms.lazySkipping as u32);
+    let mut matchIndex = ZSTD_insertAndFindFirstIndex_internal(ms, ip, MLS, ms.lazySkipping as u32);
 
     while (matchIndex >= lowLimit) && (nbAttempts > 0) {
         let mut currentMl = 0;
@@ -1369,7 +1359,6 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let hashSalt = ms.hashSalt;
     let mut nbAttempts = (1 as core::ffi::c_uint) << cappedSearchLog;
     let mut ml = (4 - 1) as size_t;
-    let mut hash: u32 = 0;
 
     // DMS/DDS variables that may be referenced later
     let dms = ms.dictMatchState;
@@ -1413,9 +1402,9 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     }
 
     // Update the hashTable and tagTable up to (but not including) ip
-    if ms.lazySkipping == 0 {
+    let hash = if ms.lazySkipping == 0 {
         ZSTD_row_update_internal(ms, ip, MLS, ROW_LOG, rowMask, true);
-        hash = ZSTD_row_nextCachedHash(
+        ZSTD_row_nextCachedHash(
             &mut ms.hashCache,
             hashTable,
             tagTable,
@@ -1425,18 +1414,19 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
             ROW_LOG,
             MLS,
             hashSalt,
-        );
+        )
     } else {
         // Stop inserting every position when in the lazy skipping mode.
         // The hash cache is also not kept up to date in this mode.
-        hash = ZSTD_hashPtrSalted(
+        let hash = ZSTD_hashPtrSalted(
             ip as *const core::ffi::c_void,
             hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
             hashSalt,
         ) as u32;
         ms.nextToUpdate = curr;
-    }
+        hash
+    };
     ms.hashSaltEntropy = (ms.hashSaltEntropy).wrapping_add(hash); // collect salt entropy
 
     // Get the hash for ip, compute the appropriate row

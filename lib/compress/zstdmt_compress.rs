@@ -358,9 +358,8 @@ unsafe fn ZSTDMT_expandBufferPool(
     // need a larger buffer pool
     let cMem = (*srcBufPool).cMem;
     let bSize = (*srcBufPool).bufferSize; // forward parameters
-    let mut newBufPool = core::ptr::null_mut::<ZSTDMT_bufferPool>();
     ZSTDMT_freeBufferPool(srcBufPool);
-    newBufPool = ZSTDMT_createBufferPool(maxNbBuffers, cMem);
+    let newBufPool = ZSTDMT_createBufferPool(maxNbBuffers, cMem);
     if newBufPool.is_null() {
         return newBufPool;
     }
@@ -957,7 +956,6 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                     let ostart = dstBuff.start as *mut u8;
                                     let mut op = ostart;
                                     let oend = op.add(dstBuff.capacity);
-                                    let mut chunkNb: core::ffi::c_int = 0;
 
                                     if size_of::<size_t>() > size_of::<i32>() {
                                         /* check overflow */
@@ -968,7 +966,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                     }
                                     assert_eq!((*job).cSize, 0);
 
-                                    chunkNb = 1;
+                                    let mut chunkNb = 1;
                                     loop {
                                         if chunkNb >= nbChunks {
                                             current_block = 851619935621435220;
@@ -1108,12 +1106,11 @@ unsafe fn ZSTDMT_freeJobsTable(
     nbJobs: u32,
     cMem: ZSTD_customMem,
 ) {
-    let mut jobNb: u32 = 0;
     if jobTable.is_null() {
         return;
     }
 
-    jobNb = 0;
+    let mut jobNb = 0;
     while jobNb < nbJobs {
         core::ptr::drop_in_place(core::ptr::addr_of_mut!(
             (*jobTable.offset(jobNb as isize)).job_mutex
@@ -1139,7 +1136,6 @@ unsafe fn ZSTDMT_createJobsTable(
 ) -> *mut ZSTDMT_jobDescription {
     let nbJobsLog2 = (ZSTD_highbit32(*nbJobsPtr)).wrapping_add(1);
     let nbJobs = (1 << nbJobsLog2) as u32;
-    let mut jobNb: u32 = 0;
 
     let jobTable = ZSTD_customCalloc(
         (nbJobs as usize).wrapping_mul(size_of::<ZSTDMT_jobDescription>()),
@@ -1150,7 +1146,7 @@ unsafe fn ZSTDMT_createJobsTable(
     }
 
     *nbJobsPtr = nbJobs;
-    jobNb = 0;
+    let mut jobNb = 0;
     while jobNb < nbJobs {
         core::ptr::write(
             core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_mutex),
@@ -1429,9 +1425,8 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         nbActiveWorkers: 0,
     };
 
-    let mut jobNb: core::ffi::c_uint = 0;
     let lastJobNb = ((*mtctx).nextJobID).wrapping_add((*mtctx).jobReady as core::ffi::c_uint);
-    jobNb = (*mtctx).doneJobID;
+    let mut jobNb = (*mtctx).doneJobID;
     while jobNb < lastJobNb {
         let wJobID = jobNb & (*mtctx).jobIDMask;
         let jobPtr: *mut ZSTDMT_jobDescription =
@@ -1457,7 +1452,6 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
 }
 
 pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
-    let mut toFlush: size_t = 0;
     let jobID = (*mtctx).doneJobID;
     if jobID == (*mtctx).nextJobID {
         return 0; // no active job => nothing to flush
@@ -1476,7 +1470,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     } else {
         (*jobPtr).dstFlushed
     };
-    toFlush = produced.wrapping_sub(flushed);
+    let toFlush = produced.wrapping_sub(flushed);
     // if toFlush==0, nothing is available to flush.
     // However, jobID is expected to still be active:
     // if jobID was already completed and fully flushed,
@@ -1490,17 +1484,16 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
 }
 
 fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
-    let mut jobLog: core::ffi::c_uint = 0;
-    if params.ldmParams.enableLdm == ParamSwitch::Enable {
+    let jobLog = if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on cycleLog instead.
-        jobLog = (ZSTD_cycleLog(params.cParams.chainLog, params.cParams.strategy))
+        (ZSTD_cycleLog(params.cParams.chainLog, params.cParams.strategy))
             .wrapping_add(3)
-            .max(21);
+            .max(21)
     } else {
-        jobLog = (params.cParams.windowLog).wrapping_add(2).max(20);
-    }
+        (params.cParams.windowLog).wrapping_add(2).max(20)
+    };
     jobLog.min(ZSTDMT_JOBLOG_MAX)
 }
 
@@ -1934,7 +1927,6 @@ unsafe fn ZSTDMT_flushProduced(
 unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
     let firstJobID = (*mtctx).doneJobID;
     let lastJobID = (*mtctx).nextJobID;
-    let mut jobID: core::ffi::c_uint = 0;
 
     // no need to check during first round
     let roundBuffCapacity = (*mtctx).roundBuff.capacity;
@@ -1943,16 +1935,15 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
         return Range::default();
     }
 
-    jobID = firstJobID;
+    let mut jobID = firstJobID;
     while jobID < lastJobID {
         let wJobID = jobID & (*mtctx).jobIDMask;
-        let mut consumed: size_t = 0;
 
         let guard = (*((*mtctx).jobs).offset(wJobID as isize))
             .job_mutex
             .lock()
             .unwrap();
-        consumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed;
+        let consumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed;
         drop(guard);
 
         if consumed < (*((*mtctx).jobs).offset(wJobID as isize)).src.size {
@@ -2070,9 +2061,6 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         toLoad: 0,
         flush: 0,
     };
-    let mut hash: u64 = 0;
-    let mut prev = core::ptr::null::<u8>();
-    let mut pos: size_t = 0;
 
     syncPoint.toLoad = (input.size)
         .wrapping_sub(input.pos)
@@ -2102,6 +2090,9 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     }
 
     // Initialize the loop variables.
+    let mut hash: u64;
+    let prev: *const u8;
+    let pos: size_t;
     if (*mtctx).inBuff.filled < RSYNC_MIN_BLOCK_SIZE as size_t {
         // We don't need to scan the first RSYNC_MIN_BLOCK_SIZE positions
         // because they can't possibly be a sync point. So we can start
