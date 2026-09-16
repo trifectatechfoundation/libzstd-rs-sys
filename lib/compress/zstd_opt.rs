@@ -112,24 +112,20 @@ fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: core::ffi::c_int) {
     };
 }
 
-fn sum_u32(table: &[core::ffi::c_uint]) -> u32 {
-    let mut total = 0;
-    for &elt in table {
-        total = (total as core::ffi::c_uint).wrapping_add(elt);
-    }
-    total
-}
-
-fn ZSTD_downscaleStats(table: &mut [core::ffi::c_uint], shift: u32, base1: BaseDirective) -> u32 {
+fn ZSTD_downscaleStats(
+    table: &mut [core::ffi::c_uint],
+    shift: u32,
+    base_directive: BaseDirective,
+) -> u32 {
     let mut sum = 0u32;
     for elt in table {
-        let base = match base1 {
+        let base = match base_directive {
             BaseDirective::Guaranteed => true,
             BaseDirective::Possible => *elt > 0,
         };
-        let newStat = u32::from(base) + (*elt >> shift);
-        sum = sum.wrapping_add(newStat);
-        *elt = newStat;
+        let new_stat = u32::from(base) + (*elt >> shift);
+        sum += new_stat;
+        *elt = new_stat;
     }
     sum
 }
@@ -137,7 +133,7 @@ fn ZSTD_downscaleStats(table: &mut [core::ffi::c_uint], shift: u32, base1: BaseD
 /// Reduce all elt frequencies in table if sum too large.
 /// Returns the resulting sum of elements.
 fn ZSTD_scaleStats(table: &mut [core::ffi::c_uint], logTarget: u32) -> u32 {
-    let prevsum = sum_u32(table);
+    let prevsum = table.iter().sum();
     let factor = prevsum >> logTarget;
 
     if factor <= 1 {
