@@ -1,19 +1,14 @@
 use libc::size_t;
 
 use crate::lib::common::fse::{
-    FSE_DTableHeader, FSE_decode_t, FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG,
+    FSE_DTableHeader, FSE_decode_t, FSE_DECOMPRESS_WKSP_SIZE, FSE_MAX_SYMBOL_VALUE,
+    FSE_MAX_TABLELOG,
 };
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
     entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
     error_private::Error,
 };
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-#[repr(C, align(4))]
-pub(crate) struct FSE_DTable {
-    pub header: FSE_DTableHeader,
-}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
@@ -285,13 +280,9 @@ fn FSE_decompress_wksp_body(
     workspace: &mut Workspace,
     bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
-    let mut wkspSize = size_of::<Workspace>();
-
     let mut tableLog: core::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE;
-    if wkspSize < size_of::<FSE_DecompressWksp>() {
-        return Err(Error::GENERIC);
-    }
+    const { assert!(size_of::<Workspace>() >= size_of::<FSE_DecompressWksp>()) };
     let NCountLength = FSE_readNCount_bmi2(
         &mut workspace.a.ncount,
         &mut maxSymbolValue,
@@ -304,37 +295,11 @@ fn FSE_decompress_wksp_body(
         return Err(Error::tableLog_tooLarge);
     }
     let ip = &cSrc[NCountLength as usize..];
-    if ((1 + (1 << tableLog) + 1) as core::ffi::c_ulonglong)
-        .wrapping_add(
-            ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-                .wrapping_mul(u32::from(maxSymbolValue).wrapping_add(1) as core::ffi::c_ulong)
-                as core::ffi::c_ulonglong)
-                .wrapping_add(1 << tableLog)
-                .wrapping_add(8)
-                .wrapping_add(
-                    size_of::<core::ffi::c_uint>() as core::ffi::c_ulong
-                        as core::ffi::c_ulonglong,
-                )
-                .wrapping_sub(1)
-                .wrapping_div(
-                    size_of::<core::ffi::c_uint>() as core::ffi::c_ulong
-                        as core::ffi::c_ulonglong,
-                ),
-        )
-        .wrapping_add(FSE_MAX_SYMBOL_VALUE.div_ceil(2) as core::ffi::c_ulonglong)
-        .wrapping_add(1)
-        .wrapping_mul(
-            size_of::<core::ffi::c_uint>() as core::ffi::c_ulong
-                as core::ffi::c_ulonglong,
-        )
-        > wkspSize as core::ffi::c_ulonglong
+
+    if FSE_DECOMPRESS_WKSP_SIZE(tableLog as usize, maxSymbolValue as usize) > size_of::<Workspace>()
     {
         return Err(Error::tableLog_tooLarge);
     }
-    wkspSize = wkspSize.wrapping_sub(
-        size_of::<FSE_DecompressWksp>()
-            .wrapping_add((1usize + (1 << tableLog)).wrapping_mul(size_of::<FSE_DTable>())),
-    );
 
     let () = FSE_buildDTable_internal(
         &mut workspace.dtable,
