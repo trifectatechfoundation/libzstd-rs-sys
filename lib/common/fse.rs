@@ -45,6 +45,10 @@ pub(crate) const fn FSE_DECOMPRESS_WKSP_SIZE_U32(
         + 1
 }
 
+pub(crate) const fn FSE_DECOMPRESS_WKSP_SIZE(maxTableLog: usize, maxSymbolValue: usize) -> usize {
+    size_of::<core::ffi::c_uint>() * FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog, maxSymbolValue)
+}
+
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum FSE_repeat {
