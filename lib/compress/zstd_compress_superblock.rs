@@ -671,8 +671,8 @@ unsafe fn sizeBlockSequences(
     if budget > targetBudget {
         return 1;
     }
-    let mut inSize = ((*sp).litLength as core::ffi::c_int
-        + ((*sp).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
+    let mut inSize =
+        usize::from((*sp).litLength) + usize::from((*sp).mlBase) + usize::from(MINMATCH);
 
     // loop over sequences
     let mut n = 1;
@@ -680,8 +680,9 @@ unsafe fn sizeBlockSequences(
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
         inSize = inSize.wrapping_add(
-            ((*sp.add(n)).litLength as core::ffi::c_int
-                + ((*sp.add(n)).mlBase as core::ffi::c_int + MINMATCH)) as size_t,
+            usize::from((*sp.add(n)).litLength)
+                + usize::from((*sp.add(n)).mlBase)
+                + usize::from(MINMATCH),
         );
         // stop when sub-block budget is reached,
         // though continue to expand until the sub-block is deemed compressible

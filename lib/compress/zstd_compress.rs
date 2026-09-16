@@ -4649,8 +4649,7 @@ unsafe fn ZSTD_copyBlockSequences(
     let mut repcodes = *prevRepcodes;
     for i in 0..nbInSequences {
         (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
-        (*outSeqs.add(i)).matchLength =
-            ((*inSeqs.add(i)).mlBase as core::ffi::c_int + MINMATCH) as core::ffi::c_uint;
+        (*outSeqs.add(i)).matchLength = u32::from((*inSeqs.add(i)).mlBase) + u32::from(MINMATCH);
         (*outSeqs.add(i)).rep = 0;
 
         // Handle the possible single length >= 64K
@@ -5367,7 +5366,7 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: &SeqStore_t) -> size_t {
     let nbSeqs = (seqStore.sequences).offset_from(seqStore.sequencesStart) as size_t;
     for i in 0..nbSeqs {
         let seq = *(seqStore.sequencesStart).add(i);
-        matchBytes = matchBytes.wrapping_add((seq.mlBase as core::ffi::c_int + MINMATCH) as size_t);
+        matchBytes = matchBytes.wrapping_add(usize::from(seq.mlBase) + usize::from(MINMATCH));
         if i == seqStore.longLengthPos as size_t && seqStore.longLengthType == LongLengthType::Match
         {
             matchBytes = matchBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
@@ -9521,7 +9520,7 @@ pub unsafe fn convertSequences_noRepcodes(
         (*dstSeqs.add(n)).offBase = ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM);
         (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
         (*dstSeqs.add(n)).mlBase =
-            ((*inSeqs.add(n)).matchLength).wrapping_sub(MINMATCH as core::ffi::c_uint) as u16;
+            ((*inSeqs.add(n)).matchLength).wrapping_sub(u32::from(MINMATCH)) as u16;
         // Check for long length > 65535
         if (*inSeqs.add(n)).matchLength > 65535 + 3 {
             longLen = n.wrapping_add(1);
