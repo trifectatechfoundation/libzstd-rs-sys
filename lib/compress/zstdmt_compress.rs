@@ -2188,12 +2188,10 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     // fill input buffer
     if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
         // support NULL input
-        if ((*mtctx).inBuff.buffer.start).is_null() {
-            if !ZSTDMT_tryGetInputRange(mtctx) {
-                // It is only possible for this operation to fail if there are
-                // still compression jobs ongoing.
-                assert_ne!((*mtctx).doneJobID, (*mtctx).nextJobID);
-            }
+        if ((*mtctx).inBuff.buffer.start).is_null() && !ZSTDMT_tryGetInputRange(mtctx) {
+            // It is only possible for this operation to fail if there are
+            // still compression jobs ongoing.
+            assert_ne!((*mtctx).doneJobID, (*mtctx).nextJobID);
         }
         if !((*mtctx).inBuff.buffer.start).is_null() {
             let syncPoint = findSynchronizationPoint(mtctx, *input);
