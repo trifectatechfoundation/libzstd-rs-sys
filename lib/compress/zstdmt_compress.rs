@@ -1092,7 +1092,7 @@ const kNullRoundBuff: RoundBuff_t = RoundBuff_t {
     pos: 0,
 };
 
-const RSYNC_LENGTH: core::ffi::c_int = 32;
+const RSYNC_LENGTH: u8 = 32;
 
 /// Don't create chunks smaller than the zstd block size.
 /// This stops us from regressing compression ratio too much,
@@ -1611,7 +1611,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         // expected job size is at least 4x larger.
         (*mtctx).rsync.hash = 0;
         (*mtctx).rsync.hitMask = (1u64 << rsyncBits).wrapping_sub(1);
-        (*mtctx).rsync.primePower = ZSTD_rollingHash_primePower(RSYNC_LENGTH as u32);
+        (*mtctx).rsync.primePower = ZSTD_rollingHash_primePower(u32::from(RSYNC_LENGTH));
     }
     if (*mtctx).targetSectionSize < (*mtctx).targetPrefixSize {
         (*mtctx).targetSectionSize = (*mtctx).targetPrefixSize; // job size must be >= overlap size
@@ -2091,7 +2091,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         // We don't have enough input to find a synchronization point, so don't look.
         return syncPoint;
     }
-    if ((*mtctx).inBuff.filled).wrapping_add(syncPoint.toLoad) < RSYNC_LENGTH as size_t {
+    if ((*mtctx).inBuff.filled).wrapping_add(syncPoint.toLoad) < usize::from(RSYNC_LENGTH) {
         // Not enough to compute the hash.
         // We will miss any synchronization points in this RSYNC_LENGTH byte
         // window. However, since it depends only in the internal buffers, if the
@@ -2107,17 +2107,19 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         // because they can't possibly be a sync point. So we can start
         // part way through the input buffer.
         pos = (RSYNC_MIN_BLOCK_SIZE as size_t).wrapping_sub((*mtctx).inBuff.filled);
-        if pos >= RSYNC_LENGTH as size_t {
-            prev = istart.add(pos).sub(RSYNC_LENGTH as usize);
-            hash =
-                ZSTD_rollingHash_compute(core::slice::from_raw_parts(prev, RSYNC_LENGTH as usize));
+        if pos >= usize::from(RSYNC_LENGTH) {
+            prev = istart.add(pos).sub(usize::from(RSYNC_LENGTH));
+            hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(
+                prev,
+                usize::from(RSYNC_LENGTH),
+            ));
         } else {
             prev = ((*mtctx).inBuff.buffer.start as *const u8)
                 .add((*mtctx).inBuff.filled)
-                .sub(RSYNC_LENGTH as usize);
+                .sub(usize::from(RSYNC_LENGTH));
             hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(
                 prev.add(pos),
-                (RSYNC_LENGTH as size_t).wrapping_sub(pos),
+                (usize::from(RSYNC_LENGTH)).wrapping_sub(pos),
             ));
             hash = ZSTD_rollingHash_append(hash, core::slice::from_raw_parts(istart, pos));
         }
@@ -2128,8 +2130,9 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         pos = 0;
         prev = ((*mtctx).inBuff.buffer.start as *const u8)
             .add((*mtctx).inBuff.filled)
-            .sub(RSYNC_LENGTH as usize);
-        hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(prev, RSYNC_LENGTH as usize));
+            .sub(usize::from(RSYNC_LENGTH));
+        hash =
+            ZSTD_rollingHash_compute(core::slice::from_raw_parts(prev, usize::from(RSYNC_LENGTH)));
         if hash & hitMask == hitMask {
             // We're already at a sync point so don't load any more until
             // we're able to flush this sync point.
@@ -2149,11 +2152,11 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     // then a block will be emitted anyways, but this is okay, since if we
     // are already synchronized we will remain synchronized.
     for pos in pos..syncPoint.toLoad {
-        let toRemove = (if pos < RSYNC_LENGTH as size_t {
-            *prev.add(pos) as core::ffi::c_int
+        let toRemove = if pos < usize::from(RSYNC_LENGTH) {
+            *prev.add(pos)
         } else {
-            *istart.add(pos.wrapping_sub(RSYNC_LENGTH as size_t)) as core::ffi::c_int
-        }) as u8;
+            *istart.add(pos.wrapping_sub(usize::from(RSYNC_LENGTH)))
+        };
         hash = ZSTD_rollingHash_rotate(hash, toRemove, *istart.add(pos), primePower);
         if hash & hitMask == hitMask {
             syncPoint.toLoad = pos.wrapping_add(1);
