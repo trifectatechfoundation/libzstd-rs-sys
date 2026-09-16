@@ -32,10 +32,11 @@ use crate::lib::compress::zstd_ldm::{
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
-    ParamSwitch, ZSTD_EndDirective, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto,
-    ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue,
-    ZSTD_e_end, ZSTD_e_flush, ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer_s,
-    ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_UNKNOWN,
+    ParamSwitch, ZSTD_EndDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2,
+    ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e,
+    ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush,
+    ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_lazy2, ZSTD_outBuffer_s, ZSTD_strategy,
+    ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_UNKNOWN,
 };
 
 #[repr(C)]
@@ -1498,13 +1499,12 @@ fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
 }
 
 fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
-    match strat as core::ffi::c_uint {
-        9 => return 9,
-        8 | 7 => return 8,
-        6 | 5 => return 7,
-        4 | 3 | 2 | 1 | _ => {}
+    match strat {
+        ZSTD_btultra2 => 9,
+        ZSTD_btultra | ZSTD_btopt => 8,
+        ZSTD_btlazy2 | ZSTD_lazy2 => 7,
+        _ => 6,
     }
-    6
 }
 
 fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi::c_int {
