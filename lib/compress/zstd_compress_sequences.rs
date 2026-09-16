@@ -7,7 +7,7 @@ use crate::lib::common::bitstream::{
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_initCState, FSE_initCState2,
-    FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
+    FSE_repeat,
 };
 use crate::lib::common::mem::MEM_32bits;
 use crate::lib::common::zstd_internal::{
@@ -173,7 +173,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     strategy: ZSTD_strategy,
 ) -> SymbolEncodingType {
     if mostFrequent == nbSeq {
-        *repeatMode = FSE_repeat_none;
+        *repeatMode = FSE_repeat::None;
         if isDefaultAllowed == DefaultPolicy::Allowed && nbSeq <= 2 {
             // Prefer SymbolEncodingType::Basic over SymbolEncodingType::Rle when there are 2 or fewer symbols,
             // since RLE uses 1 byte, but SymbolEncodingType::Basic uses 5-6 bits per symbol.
@@ -189,7 +189,7 @@ pub unsafe fn ZSTD_selectEncodingType(
                 (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
-            if *repeatMode == FSE_repeat_valid && nbSeq < staticFse_nbSeq_max {
+            if *repeatMode == FSE_repeat::Valid && nbSeq < staticFse_nbSeq_max {
                 return SymbolEncodingType::Repeat;
             }
             if nbSeq < dynamicFse_nbSeq_min
@@ -200,7 +200,7 @@ pub unsafe fn ZSTD_selectEncodingType(
                 // to confuse these tables with dictionaries. When running more careful
                 // analysis, we don't need to waste time checking both repeating tables
                 // and default tables.
-                *repeatMode = FSE_repeat_none;
+                *repeatMode = FSE_repeat::None;
                 return SymbolEncodingType::Basic;
             }
         }
@@ -210,7 +210,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         } else {
             Error::GENERIC.to_error_code()
         };
-        let repeatCost = if *repeatMode != FSE_repeat_none {
+        let repeatCost = if *repeatMode != FSE_repeat::None {
             ZSTD_fseBitCost(prevCTable, count, max)
         } else {
             Error::GENERIC.to_error_code()
@@ -223,17 +223,17 @@ pub unsafe fn ZSTD_selectEncodingType(
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert_eq!(ZSTD_isError(basicCost), 0);
-            assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
+            assert!(!(*repeatMode == FSE_repeat::Valid && ZSTD_isError(repeatCost) != 0));
         }
         if basicCost <= repeatCost && basicCost <= compressedCost {
-            *repeatMode = FSE_repeat_none;
+            *repeatMode = FSE_repeat::None;
             return SymbolEncodingType::Basic;
         }
         if repeatCost <= compressedCost {
             return SymbolEncodingType::Repeat;
         }
     }
-    *repeatMode = FSE_repeat_check;
+    *repeatMode = FSE_repeat::Check;
     SymbolEncodingType::Compressed
 }
 

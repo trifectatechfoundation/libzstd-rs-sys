@@ -565,9 +565,7 @@ use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::fse::{
-    FSE_CTable, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
-};
+use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{
     CTable, HUF_flags_optimalDepth, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
@@ -3024,9 +3022,9 @@ pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState
         (*bs).rep[i as usize] = repStartValue[i as usize];
     }
     (*bs).entropy.huf.repeatMode = HUF_repeat::None;
-    (*bs).entropy.fse.offcode_repeatMode = FSE_repeat_none;
-    (*bs).entropy.fse.matchlength_repeatMode = FSE_repeat_none;
-    (*bs).entropy.fse.litlength_repeatMode = FSE_repeat_none;
+    (*bs).entropy.fse.offcode_repeatMode = FSE_repeat::None;
+    (*bs).entropy.fse.matchlength_repeatMode = FSE_repeat::None;
+    (*bs).entropy.fse.litlength_repeatMode = FSE_repeat::None;
 }
 
 /// Invalidate all the matches in the match finder tables.
@@ -4992,9 +4990,9 @@ pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
 fn ZSTD_buildDummySequencesStatistics(
     nextEntropy: &mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
-    nextEntropy.litlength_repeatMode = FSE_repeat_none;
-    nextEntropy.offcode_repeatMode = FSE_repeat_none;
-    nextEntropy.matchlength_repeatMode = FSE_repeat_none;
+    nextEntropy.litlength_repeatMode = FSE_repeat::None;
+    nextEntropy.offcode_repeatMode = FSE_repeat::None;
+    nextEntropy.matchlength_repeatMode = FSE_repeat::None;
 
     ZSTD_symbolEncodingTypeStats_t::default()
 }
@@ -5565,12 +5563,12 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat_valid
+        == FSE_repeat::Valid
     {
         (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
-            .offcode_repeatMode = FSE_repeat_check;
+            .offcode_repeatMode = FSE_repeat::Check;
     }
 
     Ok(cSize)
@@ -5757,12 +5755,12 @@ unsafe fn ZSTD_compressBlock_splitBlock(
             .entropy
             .fse
             .offcode_repeatMode
-            == FSE_repeat_valid
+            == FSE_repeat::Valid
         {
             (*(*zc).blockState.prevCBlock)
                 .entropy
                 .fse
-                .offcode_repeatMode = FSE_repeat_check;
+                .offcode_repeatMode = FSE_repeat::Check;
         }
         if (*zc).seqCollector.collectSequences != 0 {
             return Err(Error::sequenceProducer_failed);
@@ -5845,12 +5843,12 @@ unsafe fn ZSTD_compressBlock_internal(
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat_valid
+        == FSE_repeat::Valid
     {
         (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
-            .offcode_repeatMode = FSE_repeat_check;
+            .offcode_repeatMode = FSE_repeat::Check;
     }
     Ok(cSize)
 }
@@ -5920,12 +5918,12 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
         .entropy
         .fse
         .offcode_repeatMode
-        == FSE_repeat_valid
+        == FSE_repeat::Valid
     {
         (*(*zc).blockState.prevCBlock)
             .entropy
             .fse
-            .offcode_repeatMode = FSE_repeat_check;
+            .offcode_repeatMode = FSE_repeat::Check;
     }
 
     Ok(cSize)
@@ -6574,7 +6572,7 @@ unsafe fn ZSTD_loadDictionaryContent(
 }
 
 /// Dictionaries that assign zero probability to symbols that show up causes problems when FSE
-/// encoding. Mark dictionaries with zero probability symbols as FSE_repeat_check and only
+/// encoding. Mark dictionaries with zero probability symbols as [`FSE_repeat::Check`] and only
 /// dictionaries with 100% valid symbols can be assumed valid.
 fn ZSTD_dictNCountRepeat(
     normalizedCounter: &[core::ffi::c_short],
@@ -6582,14 +6580,14 @@ fn ZSTD_dictNCountRepeat(
     maxSymbolValue: u8,
 ) -> FSE_repeat {
     if dictMaxSymbolValue < maxSymbolValue {
-        return FSE_repeat_check;
+        return FSE_repeat::Check;
     }
     for &count in &normalizedCounter[..usize::from(maxSymbolValue) + 1] {
         if count as core::ffi::c_int == 0 {
-            return FSE_repeat_check;
+            return FSE_repeat::Check;
         }
     }
-    FSE_repeat_valid
+    FSE_repeat::Valid
 }
 
 pub unsafe fn ZSTD_loadCEntropy(
@@ -9398,12 +9396,12 @@ unsafe fn ZSTD_compressSequences_internal(
                     .entropy
                     .fse
                     .offcode_repeatMode
-                    == FSE_repeat_valid
+                    == FSE_repeat::Valid
                 {
                     (*(*cctx).blockState.prevCBlock)
                         .entropy
                         .fse
-                        .offcode_repeatMode = FSE_repeat_check;
+                        .offcode_repeatMode = FSE_repeat::Check;
                 }
 
                 // Write block header into beginning of block
@@ -9855,12 +9853,12 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             .entropy
             .fse
             .offcode_repeatMode
-            == FSE_repeat_valid
+            == FSE_repeat::Valid
         {
             (*(*cctx).blockState.prevCBlock)
                 .entropy
                 .fse
-                .offcode_repeatMode = FSE_repeat_check;
+                .offcode_repeatMode = FSE_repeat::Check;
         }
 
         // Write block header into beginning of block
