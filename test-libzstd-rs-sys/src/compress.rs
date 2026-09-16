@@ -869,3 +869,69 @@ mod external_sequence_producer {
         assert_roundtrips(&input, &compressed);
     }
 }
+
+/// Rescaling the match finder tables when the indexes threaten to overflow
+/// (see `ZSTD_reduceIndex`).
+#[cfg(target_pointer_width = "64")]
+mod index_overflow {
+    use crate::assert_eq_rs_c;
+    use std::ffi::c_void;
+
+    /// `ZSTD_CURRENT_MAX`: the index at which the tables must be rescaled. A prefix of this size
+    /// is cheap despite its length: only its final `1 << (hashLog + 3)` bytes are ever read, so
+    /// the pages in between are never faulted in.
+    const PREFIX_SIZE: usize = 3500 * (1 << 20);
+
+    macro_rules! compress_after_huge_prefix {
+        ($strategy:expr) => {{
+            let prefix = vec![0u8; PREFIX_SIZE];
+            let input = vec![0u8; 1 << 20];
+
+            let cctx = ZSTD_createCCtx();
+            assert!(!cctx.is_null());
+
+            // Keep the tables small: they are rescaled entry by entry.
+            for (parameter, value) in [
+                (ZSTD_cParameter::ZSTD_c_strategy, $strategy),
+                (ZSTD_cParameter::ZSTD_c_windowLog, 10),
+                (ZSTD_cParameter::ZSTD_c_hashLog, 10),
+                (ZSTD_cParameter::ZSTD_c_chainLog, 10),
+            ] {
+                let err = ZSTD_CCtx_setParameter(cctx, parameter, value);
+                assert_eq!(ZSTD_isError(err), 0);
+            }
+
+            // Loading the prefix moves the indexes up to `ZSTD_CURRENT_MAX`, so that compressing
+            // anything at all afterwards overflows them.
+            let err = ZSTD_CCtx_refPrefix(cctx, prefix.as_ptr() as *const c_void, prefix.len());
+            assert_eq!(ZSTD_isError(err), 0);
+
+            let bound = ZSTD_compressBound(input.len());
+            let mut dst = vec![0u8; bound];
+
+            let written = ZSTD_compress2(
+                cctx,
+                dst.as_mut_ptr() as *mut c_void,
+                dst.len(),
+                input.as_ptr() as *const c_void,
+                input.len(),
+            );
+            assert_eq!(ZSTD_isError(written), 0);
+            dst.truncate(written);
+
+            ZSTD_freeCCtx(cctx);
+
+            dst
+        }};
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "allocates 3.5 GB")]
+    fn reduce_index() {
+        // btlazy2 rescales its chain table differently, and the opt strategies have a third
+        // (3-byte) hash table.
+        for strategy in 1..=9 {
+            assert_eq_rs_c!({ compress_after_huge_prefix!(strategy) });
+        }
+    }
+}
