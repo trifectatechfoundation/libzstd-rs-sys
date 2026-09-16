@@ -1,6 +1,5 @@
 #![no_main]
 
-use c2rust_out_fuzz::ArbitrarySamples;
 use libfuzzer_sys::{arbitrary, fuzz_target};
 use libzstd_rs_sys::{
     internal::ZSTD_XXH64,
@@ -14,6 +13,7 @@ use libzstd_rs_sys::{
         zstd::ZSTD_dct_auto,
     },
 };
+use libzstd_rs_sys_fuzz::ArbitrarySamples;
 
 macro_rules! zassert {
     ($expr:expr, $msg:literal) => {{
