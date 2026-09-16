@@ -813,6 +813,13 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
 }
 
 #[inline]
+pub(crate) fn ZSTD_window_isEmpty(window: ZSTD_window_t) -> bool {
+    window.dictLimit == ZSTD_WINDOW_START_INDEX as u32
+        && window.lowLimit == ZSTD_WINDOW_START_INDEX as u32
+        && (window.nextSrc).wrapping_offset_from(window.base) == ZSTD_WINDOW_START_INDEX as isize
+}
+
+#[inline]
 pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
     window.lowLimit < window.dictLimit
 }
