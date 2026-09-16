@@ -171,68 +171,62 @@ unsafe fn ZSTD_rescaleFreqs(
 
             if compressedLiterals {
                 // generate literals statistics from huffman table
-                opt_state.litSum = 0;
-                for lit in 0..=MaxLit {
+                let symbolCosts = opt_state.symbolCosts;
+                let mut litSum = 0u32;
+                for (lit, freq) in opt_state.litFreq_mut().iter_mut().enumerate() {
                     let scaleLog = 11u32; // scale to 2K
-                    let bitCost = HUF_getNbBitsFromCTable(
-                        &(*opt_state.symbolCosts).huf.CTable,
-                        u32::from(lit),
-                    );
-                    *(opt_state.litFreq).offset(lit as isize) = (if bitCost != 0 {
+                    let bitCost = HUF_getNbBitsFromCTable(&(*symbolCosts).huf.CTable, lit as u32);
+                    *freq = if bitCost != 0 {
                         1 << scaleLog.wrapping_sub(bitCost)
                     } else {
                         1 // minimum to calculate cost
-                    })
-                        as core::ffi::c_uint;
-                    opt_state.litSum = (opt_state.litSum as core::ffi::c_uint)
-                        .wrapping_add(*(opt_state.litFreq).offset(lit as isize));
+                    };
+                    litSum = litSum.wrapping_add(*freq);
                 }
+                opt_state.litSum = litSum;
             }
 
             let llstate = FSE_initCState(&(*opt_state.symbolCosts).fse.litlengthCTable);
-            opt_state.litLengthSum = 0;
-            for ll in 0..=MaxLL {
+            let mut litLengthSum = 0u32;
+            for (ll, freq) in opt_state.litLengthFreq_mut().iter_mut().enumerate() {
                 let scaleLog_0 = 10u32; // scale to 1K
-                let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, u32::from(ll));
-                *(opt_state.litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
+                let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll as u32);
+                *freq = if bitCost_0 != 0 {
                     1 << scaleLog_0.wrapping_sub(bitCost_0)
                 } else {
                     1 // minimum to calculate cost
-                })
-                    as core::ffi::c_uint;
-                opt_state.litLengthSum = (opt_state.litLengthSum as core::ffi::c_uint)
-                    .wrapping_add(*(opt_state.litLengthFreq).offset(ll as isize));
+                };
+                litLengthSum = litLengthSum.wrapping_add(*freq);
             }
+            opt_state.litLengthSum = litLengthSum;
 
             let mlstate = FSE_initCState(&(*opt_state.symbolCosts).fse.matchlengthCTable);
-            opt_state.matchLengthSum = 0;
-            for ml in 0..=MaxML {
+            let mut matchLengthSum = 0u32;
+            for (ml, freq) in opt_state.matchLengthFreq_mut().iter_mut().enumerate() {
                 let scaleLog_1 = 10u32;
-                let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, u32::from(ml));
-                *(opt_state.matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
+                let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml as u32);
+                *freq = if bitCost_1 != 0 {
                     1 << scaleLog_1.wrapping_sub(bitCost_1)
                 } else {
                     1 // minimum to calculate cost
-                })
-                    as core::ffi::c_uint;
-                opt_state.matchLengthSum = (opt_state.matchLengthSum as core::ffi::c_uint)
-                    .wrapping_add(*(opt_state.matchLengthFreq).offset(ml as isize));
+                };
+                matchLengthSum = matchLengthSum.wrapping_add(*freq);
             }
+            opt_state.matchLengthSum = matchLengthSum;
 
             let ofstate = FSE_initCState(&(*opt_state.symbolCosts).fse.offcodeCTable);
-            opt_state.offCodeSum = 0;
-            for of in 0..=MaxOff {
+            let mut offCodeSum = 0u32;
+            for (of, freq) in opt_state.offCodeFreq_mut().iter_mut().enumerate() {
                 let scaleLog_2 = 10u32;
-                let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, u32::from(of));
-                *(opt_state.offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
+                let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of as u32);
+                *freq = if bitCost_2 != 0 {
                     1 << scaleLog_2.wrapping_sub(bitCost_2)
                 } else {
                     1 // minimum to calculate cost
-                })
-                    as core::ffi::c_uint;
-                opt_state.offCodeSum = (opt_state.offCodeSum as core::ffi::c_uint)
-                    .wrapping_add(*(opt_state.offCodeFreq).offset(of as isize));
+                };
+                offCodeSum = offCodeSum.wrapping_add(*freq);
             }
+            opt_state.offCodeSum = offCodeSum;
         } else {
             // first block, no dictionary
             if compressedLiterals {
@@ -244,60 +238,35 @@ unsafe fn ZSTD_rescaleFreqs(
                     src as *const core::ffi::c_void,
                     srcSize, // use raw first block to init statistics
                 );
-                opt_state.litSum = ZSTD_downscaleStats(
-                    core::slice::from_raw_parts_mut(opt_state.litFreq, usize::from(MaxLit) + 1),
-                    8,
-                    BaseDirective::Possible,
-                );
+                opt_state.litSum =
+                    ZSTD_downscaleStats(opt_state.litFreq_mut(), 8, BaseDirective::Possible);
             }
 
             let baseLLfreqs: [u32; MaxLL as usize + 1] = [
                 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
             ];
-            core::ptr::copy_nonoverlapping(
-                baseLLfreqs.as_ptr(),
-                opt_state.litLengthFreq,
-                baseLLfreqs.len(),
-            );
+            opt_state.litLengthFreq_mut().copy_from_slice(&baseLLfreqs);
             opt_state.litLengthSum = baseLLfreqs.iter().sum();
 
-            for ml_0 in 0..MaxML + 1 {
-                *(opt_state.matchLengthFreq).offset(ml_0 as isize) = 1;
-            }
+            opt_state.matchLengthFreq_mut().fill(1);
             opt_state.matchLengthSum = u32::from(MaxML) + 1;
 
             let baseOFCfreqs: [u32; MaxOff as usize + 1] = [
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1,
             ];
-            core::ptr::copy_nonoverlapping(
-                baseOFCfreqs.as_ptr(),
-                opt_state.offCodeFreq,
-                baseOFCfreqs.len(),
-            );
+            opt_state.offCodeFreq_mut().copy_from_slice(&baseOFCfreqs);
             opt_state.offCodeSum = baseOFCfreqs.iter().sum();
         }
     } else {
         // new block: scale down accumulated statistics
         if compressedLiterals {
-            opt_state.litSum = ZSTD_scaleStats(
-                core::slice::from_raw_parts_mut(opt_state.litFreq, usize::from(MaxLit) + 1),
-                12,
-            );
+            opt_state.litSum = ZSTD_scaleStats(opt_state.litFreq_mut(), 12);
         }
-        opt_state.litLengthSum = ZSTD_scaleStats(
-            core::slice::from_raw_parts_mut(opt_state.litLengthFreq, usize::from(MaxLL) + 1),
-            11,
-        );
-        opt_state.matchLengthSum = ZSTD_scaleStats(
-            core::slice::from_raw_parts_mut(opt_state.matchLengthFreq, usize::from(MaxML) + 1),
-            11,
-        );
-        opt_state.offCodeSum = ZSTD_scaleStats(
-            core::slice::from_raw_parts_mut(opt_state.offCodeFreq, usize::from(MaxOff) + 1),
-            11,
-        );
+        opt_state.litLengthSum = ZSTD_scaleStats(opt_state.litLengthFreq_mut(), 11);
+        opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq_mut(), 11);
+        opt_state.offCodeSum = ZSTD_scaleStats(opt_state.offCodeFreq_mut(), 11);
     }
 
     ZSTD_setBasePrices(opt_state, optLevel);
