@@ -462,7 +462,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
 }
 
 unsafe fn ZSTD_estimateSubBlockSize_symbolType(
-    type_0: SymbolEncodingType,
+    encodingType: SymbolEncodingType,
     codeTable: *const u8,
     maxCode: u8,
     nbSeq: size_t,
@@ -478,7 +478,6 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     let mut ctp = codeTable;
     let ctStart = ctp;
     let ctEnd = ctStart.add(nbSeq);
-    let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
 
     HIST_countFast_wksp(
@@ -490,18 +489,20 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         wkspSize,
     )
     .expect("can't fail");
-    if type_0 == SymbolEncodingType::Basic {
-        // We selected this encoding type, so it must be valid.
-        cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
-        } else {
-            Error::GENERIC.to_error_code()
-        };
-    } else if type_0 == SymbolEncodingType::Rle {
-        cSymbolTypeSizeEstimateInBits = 0;
-    } else if type_0 == SymbolEncodingType::Compressed || type_0 == SymbolEncodingType::Repeat {
-        cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
-    }
+    let mut cSymbolTypeSizeEstimateInBits = match encodingType {
+        SymbolEncodingType::Basic => {
+            // We selected this encoding type, so it must be valid.
+            if max <= defaultMax {
+                ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
+            } else {
+                Error::GENERIC.to_error_code()
+            }
+        }
+        SymbolEncodingType::Rle => 0,
+        SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
+            ZSTD_fseBitCost(fseCTable, countWksp, max)
+        }
+    };
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
     }
