@@ -621,4 +621,86 @@ mod sequences {
             });
         }
     }
+
+    macro_rules! compress_sequences_and_literals {
+        ($input:expr, $level:expr, $repcode_resolution:expr) => {{
+            let seqs = generate!($input, $level);
+
+            // Everything the sequences do not cover with a match is a literal.
+            let mut literals = Vec::with_capacity($input.len());
+            let mut pos = 0;
+            for seq in &seqs {
+                literals.extend_from_slice(&$input[pos..][..seq.litLength as usize]);
+                pos += (seq.litLength + seq.matchLength) as usize;
+            }
+            assert_eq!(pos, $input.len());
+
+            // The literal buffer must have room for the wildcopy overread.
+            let lit_size = literals.len();
+            literals.resize(lit_size + 8, 0);
+
+            let cctx = ZSTD_createCCtx();
+            assert!(!cctx.is_null());
+
+            for (parameter, value) in [
+                (ZSTD_cParameter::ZSTD_c_compressionLevel, $level),
+                // ZSTD_c_blockDelimiters, set to ZSTD_sf_explicitBlockDelimiters
+                (ZSTD_cParameter::ZSTD_c_experimentalParam11, 1),
+                // ZSTD_c_repcodeResolution
+                (
+                    ZSTD_cParameter::ZSTD_c_experimentalParam19,
+                    $repcode_resolution,
+                ),
+            ] {
+                let err = ZSTD_CCtx_setParameter(cctx, parameter, value);
+                assert_eq!(ZSTD_isError(err), 0);
+            }
+
+            let bound = ZSTD_compressBound($input.len());
+            let mut dst = vec![0u8; bound];
+
+            let written = ZSTD_compressSequencesAndLiterals(
+                cctx,
+                dst.as_mut_ptr() as *mut c_void,
+                dst.len(),
+                seqs.as_ptr(),
+                seqs.len(),
+                literals.as_ptr() as *const c_void,
+                lit_size,
+                literals.len(),
+                $input.len(),
+            );
+            assert_eq!(ZSTD_isError(written), 0);
+            dst.truncate(written);
+
+            ZSTD_freeCCtx(cctx);
+
+            dst
+        }};
+    }
+
+    #[test]
+    fn compress_sequences_and_literals() {
+        for level in LEVELS {
+            // 1 = enable, 2 = disable. Only when repcode resolution is disabled are the
+            // sequences converted by `convertSequences_noRepcodes`.
+            for repcode_resolution in [1, 2] {
+                let compressed = assert_eq_rs_c!({
+                    compress_sequences_and_literals!(INPUT, level, repcode_resolution)
+                });
+
+                let mut decompressed = vec![0u8; INPUT.len()];
+                let written = unsafe {
+                    libzstd_rs_sys::ZSTD_decompress(
+                        decompressed.as_mut_ptr() as *mut c_void,
+                        decompressed.len(),
+                        compressed.as_ptr() as *const c_void,
+                        compressed.len(),
+                    )
+                };
+                assert_eq!(written, INPUT.len());
+                assert_eq!(decompressed, INPUT);
+            }
+        }
+    }
 }
