@@ -676,18 +676,19 @@ fn sizeBlockSequences(
 
     // loop over sequences
     let mut n = 1;
-    while n < seqs.len() {
-        let currentCost = (seqs[n].litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
+    for seq in &seqs[1..] {
+        let currentCost = (seq.litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
         inSize = inSize.wrapping_add(
-            usize::from(seqs[n].litLength) + usize::from(seqs[n].mlBase) + usize::from(MINMATCH),
+            usize::from(seq.litLength) + usize::from(seq.mlBase) + usize::from(MINMATCH),
         );
         // stop when sub-block budget is reached,
         // though continue to expand until the sub-block is deemed compressible
         if budget > targetBudget && budget < inSize * BYTESCALE as size_t {
             break;
         }
-        n = n.wrapping_add(1);
+
+        n += 1;
     }
 
     n
