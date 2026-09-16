@@ -1,7 +1,7 @@
 #![no_main]
 
-use c2rust_out_fuzz::{assert_eq_rs_c, ArbitrarySamples};
 use libfuzzer_sys::fuzz_target;
+use libzstd_rs_sys_fuzz::{assert_eq_rs_c, ArbitrarySamples};
 
 // COVER dictionary builder tests
 fuzz_target!(|samples: ArbitrarySamples| {

@@ -1,5 +1,5 @@
 [package]
-name = "c2rust_out-fuzz"
+name = "libzstd-rs-sys-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -24,42 +24,42 @@ doc = false
 bench = false
 
 [[bin]]
-name = "decompress_overlapping"
+name = "decompress-overlapping"
 path = "fuzz_targets/decompress_overlapping.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "dictionary_round_trip"
+name = "dictionary-round-trip"
 path = "fuzz_targets/dictionary_round_trip.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "dictionary_train"
+name = "dictionary-train"
 path = "fuzz_targets/dictionary_train.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "dictionary_train_fast"
+name = "dictionary-train-fast"
 path = "fuzz_targets/dictionary_train_fast.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "dictionary_train_legacy"
+name = "dictionary-train-legacy"
 path = "fuzz_targets/dictionary_train_legacy.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "huf_round_trip"
+name = "huf-round-trip"
 path = "fuzz_targets/huf_round_trip.rs"
 test = false
 doc = false

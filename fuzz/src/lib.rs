@@ -2,6 +2,9 @@ use std::cmp::{max, min};
 
 use libfuzzer_sys::arbitrary;
 
+mod error;
+pub use error::{to_result, Error};
+
 #[derive(Debug)]
 pub struct ArbitrarySamples {
     pub src: Vec<u8>,
