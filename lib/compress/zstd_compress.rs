@@ -364,9 +364,17 @@ pub enum ResetTarget {
     CCtx = 1,
 }
 
-pub type ZSTD_indexResetPolicy_e = core::ffi::c_uint;
-pub const ZSTDirp_reset: ZSTD_indexResetPolicy_e = 1;
-pub const ZSTDirp_continue: ZSTD_indexResetPolicy_e = 0;
+/// Controls, for this `matchState` reset, whether indexing can continue where it
+/// left off ([`Self::Continue`]), or whether it needs to be restarted from zero
+/// ([`Self::Reset`]).
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum IndexResetPolicy {
+    #[default]
+    Continue = 0,
+    Reset = 1,
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -3072,7 +3080,7 @@ unsafe fn ZSTD_reset_matchState(
     cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ParamSwitch,
     crp: CompResetPolicy,
-    forceResetIndex: ZSTD_indexResetPolicy_e,
+    forceResetIndex: IndexResetPolicy,
     forWho: ResetTarget,
 ) -> Result<(), Error> {
     // disable chain table allocation for fast or row-based strategies
@@ -3097,7 +3105,7 @@ unsafe fn ZSTD_reset_matchState(
         0
     };
 
-    if forceResetIndex == ZSTDirp_reset {
+    if forceResetIndex == IndexResetPolicy::Reset {
         ZSTD_window_init(&mut ms.window);
         ZSTD_cwksp_mark_tables_dirty(ws);
     }
@@ -3252,11 +3260,11 @@ unsafe fn ZSTD_resetCCtx_internal(
 
     let indexTooClose = ZSTD_indexTooCloseToMax((*zc).blockState.matchState.window);
     let dictTooBig = ZSTD_dictTooBig(loadedDictSize);
-    let mut needsIndexReset = (if indexTooClose || dictTooBig || (*zc).initialized == 0 {
-        ZSTDirp_reset as core::ffi::c_int
+    let mut needsIndexReset = if indexTooClose || dictTooBig || (*zc).initialized == 0 {
+        IndexResetPolicy::Reset
     } else {
-        ZSTDirp_continue as core::ffi::c_int
-    }) as ZSTD_indexResetPolicy_e;
+        IndexResetPolicy::Continue
+    };
 
     let neededSpace = ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &params.cParams,
@@ -3287,7 +3295,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         if (*zc).staticSize != 0 {
             return Err(Error::memory_allocation);
         }
-        needsIndexReset = ZSTDirp_reset;
+        needsIndexReset = IndexResetPolicy::Reset;
         ZSTD_cwksp_free(ws, (*zc).customMem);
         ZSTD_cwksp_create(ws, neededSpace, (*zc).customMem)?;
 
@@ -7379,7 +7387,7 @@ unsafe fn ZSTD_initCDict_internal(
         &params.cParams,
         params.useRowMatchFinder,
         CompResetPolicy::MakeClean,
-        ZSTDirp_reset,
+        IndexResetPolicy::Reset,
         ResetTarget::CDict,
     ) {
         return err.to_error_code();
