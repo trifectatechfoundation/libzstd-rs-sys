@@ -215,13 +215,13 @@ fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     power
 }
 
-const ZSTD_ROLL_HASH_CHAR_OFFSET: core::ffi::c_int = 10;
+const ZSTD_ROLL_HASH_CHAR_OFFSET: u64 = 10;
 
 /// Add the buffer to the hash value
 fn ZSTD_rollingHash_append(mut hash: u64, buf: &[u8]) -> u64 {
     for &byte in buf {
         hash = hash.wrapping_mul(prime8bytes);
-        hash = hash.wrapping_add((byte as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64);
+        hash = hash.wrapping_add(u64::from(byte) + ZSTD_ROLL_HASH_CHAR_OFFSET);
     }
     hash
 }
@@ -242,12 +242,10 @@ fn ZSTD_rollingHash_primePower(length: u32) -> u64 {
 /// Rotate the rolling hash by one byte.
 #[inline]
 fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u64) -> u64 {
-    hash = hash.wrapping_sub(
-        ((toRemove as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64)
-            .wrapping_mul(primePower),
-    );
+    hash = hash
+        .wrapping_sub((u64::from(toRemove) + ZSTD_ROLL_HASH_CHAR_OFFSET).wrapping_mul(primePower));
     hash = hash.wrapping_mul(prime8bytes);
-    hash = hash.wrapping_add((toAdd as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64);
+    hash = hash.wrapping_add(u64::from(toAdd) + ZSTD_ROLL_HASH_CHAR_OFFSET);
     hash
 }
 
