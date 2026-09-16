@@ -207,12 +207,11 @@ fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let mut result: size_t = 0;
             let zd = unsafe { ZSTDv06_createDCtx() };
             if zd.is_null() {
                 return Err(Error::memory_allocation);
             }
-            result = unsafe {
+            let result = unsafe {
                 ZSTDv06_decompress_usingDict(
                     zd,
                     dst,
@@ -506,14 +505,13 @@ unsafe fn ZSTD_DDictHashSet_expand(
     ) as *mut *const ZSTD_DDict;
     let oldTable = hashSet.ddictPtrTable;
     let oldTableSize = hashSet.ddictPtrTableSize;
-    let mut i: size_t = 0;
     if newTable.is_null() {
         return Error::memory_allocation.to_error_code();
     }
     hashSet.ddictPtrTable = newTable;
     hashSet.ddictPtrTableSize = newTableSize;
     hashSet.ddictPtrCount = 0;
-    i = 0;
+    let mut i = 0;
     while i < oldTableSize {
         if !(*oldTable.add(i)).is_null() {
             let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i));
@@ -2020,12 +2018,11 @@ pub unsafe extern "C" fn ZSTD_decompress(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let mut regenSize: size_t = 0;
     let dctx = ZSTD_createDCtx_internal(ZSTD_customMem::default());
     if dctx.is_null() {
         return Error::memory_allocation.to_error_code();
     }
-    regenSize = ZSTD_decompressDCtx(dctx, dst, dstCapacity, src, srcSize);
+    let regenSize = ZSTD_decompressDCtx(dctx, dst, dstCapacity, src, srcSize);
     ZSTD_freeDCtx(dctx);
     regenSize
 }
@@ -2173,32 +2170,32 @@ fn decompress_continue(
         }
 
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
-            let mut rSize: size_t = 0;
-            match dctx.bType {
+            let rSize = match dctx.bType {
                 BlockType::Compressed => {
                     debug_assert!(dctx.isFrameDecompression);
                     dctx.expected = 0; // streaming not supported
-                    rSize = ZSTD_decompressBlock_internal_help(
+                    ZSTD_decompressBlock_internal_help(
                         dctx,
                         dst.subslice(..),
                         src,
                         StreamingOperation::IsStreaming,
-                    )?;
+                    )?
                 }
                 BlockType::Raw => {
                     debug_assert!(src.len() <= dctx.expected);
-                    rSize = copy_raw_block_slice(dst.subslice(..), src)?;
+                    let rSize = copy_raw_block_slice(dst.subslice(..), src)?;
                     debug_assert_eq!(rSize, src.len());
                     dctx.expected = (dctx.expected).wrapping_sub(rSize);
+                    rSize
                 }
                 BlockType::Rle => {
                     dctx.expected = 0; // streaming not supported
-                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize)?;
+                    ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize)?
                 }
                 BlockType::Reserved => {
                     return Err(Error::corruption_detected);
                 }
-            }
+            };
             if rSize > dctx.fParams.blockSizeMax as size_t {
                 return Err(Error::corruption_detected);
             }

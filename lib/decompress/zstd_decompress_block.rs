@@ -1577,7 +1577,7 @@ fn ZSTD_decodeSequence(
     // it is deliberately not a debug_assert!.
     assert!(ofBits <= MaxOff);
 
-    let mut offset: size_t = 0;
+    let mut offset: size_t;
     if ofBits > 1 {
         const { assert!(Offset::Long as usize == 1) };
         const { assert!(LONG_OFFSETS_MAX_EXTRA_BITS_32 == 5) };

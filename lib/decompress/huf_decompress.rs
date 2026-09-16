@@ -340,11 +340,10 @@ pub fn HUF_readDTableX1_wksp(
 
     let mut tableLog = 0;
     let mut nbSymbols = 0;
-    let mut iSize: size_t = 0;
 
     let wksp = workSpace.as_x1_mut();
 
-    iSize = match HUF_readStats_wksp(
+    let iSize = match HUF_readStats_wksp(
         &mut wksp.huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankVal,
@@ -1043,7 +1042,6 @@ pub fn HUF_readDTableX2_wksp(
     let mut tableLog: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let mut maxTableLog = dtd.maxTableLog as u32;
-    let mut iSize: size_t = 0;
 
     let dt = DTable.data.as_x2_mut();
 
@@ -1055,7 +1053,7 @@ pub fn HUF_readDTableX2_wksp(
         return Error::tableLog_tooLarge.to_error_code();
     }
 
-    iSize = match HUF_readStats_wksp(
+    let iSize = match HUF_readStats_wksp(
         &mut wksp.weightList,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankStats,
@@ -1121,8 +1119,7 @@ pub fn HUF_readDTableX2_wksp(
     }
 
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
-    let mut consumed: u32 = 0;
-    consumed = minBits;
+    let mut consumed: u32 = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
         for w in 1..maxW.wrapping_add(1) as usize {
             wksp.rankVal[consumed as usize][w] = wksp.rankVal[0][w] >> consumed;
@@ -1459,8 +1456,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
     oend[3] = args.oend;
 
     'out: loop {
-        let mut olimit = core::ptr::null_mut::<u8>();
-
         /* Assert loop preconditions */
         if cfg!(debug_assertions) {
             for stream in 0..4 {
@@ -1496,7 +1491,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
          * at the expense of computing the remaining # of iterations
          * more frequently.
          */
-        olimit = op[3].add(iters * 5);
+        let olimit = op[3].add(iters * 5);
 
         /* Exit the fast decoding loop once we reach the end. */
         if op[3] == olimit {

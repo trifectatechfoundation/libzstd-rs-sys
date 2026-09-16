@@ -34,7 +34,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
-#![allow(unused_assignments)]
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(all(feature = "nightly", test), feature(test))]
 #![cfg_attr(feature = "nightly", feature(likely_unlikely))]
@@ -45,6 +44,7 @@
 
 pub mod lib {
     pub mod common {
+        #![allow(unused_assignments)]
         pub(crate) mod allocations;
         pub(crate) mod bits;
         pub(crate) mod bitstream;
@@ -68,6 +68,7 @@ pub mod lib {
         #![allow(clippy::if_same_then_else)]
         #![allow(clippy::collapsible_if)]
         #![allow(clippy::eq_op)]
+        #![allow(unused_assignments)]
         pub mod fse_compress;
         pub mod hist;
         pub mod huf_compress;
@@ -88,12 +89,14 @@ pub mod lib {
     pub(crate) mod polyfill;
     pub(crate) mod dictBuilder {
         #![allow(clippy::collapsible_if)]
+        #![allow(unused_assignments)]
         pub(crate) mod cover;
         pub(crate) mod divsufsort;
         pub(crate) mod fastcover;
         pub(crate) mod zdict;
     } // mod dictBuilder
     pub(crate) mod legacy {
+        #![allow(unused_assignments)]
         pub(crate) mod zstd_v05;
         pub(crate) mod zstd_v06;
         pub(crate) mod zstd_v07;
