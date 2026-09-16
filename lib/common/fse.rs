@@ -45,13 +45,17 @@ pub(crate) const fn FSE_DECOMPRESS_WKSP_SIZE_U32(
         + 1
 }
 
-pub(crate) type FSE_repeat = core::ffi::c_uint;
-/// Cannot use the previous table
-pub(crate) const FSE_repeat_none: FSE_repeat = 0;
-/// Can use the previous table but it must be checked
-pub(crate) const FSE_repeat_check: FSE_repeat = 1;
-/// Can use the previous table and it is assumed to be valid
-pub(crate) const FSE_repeat_valid: FSE_repeat = 2;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum FSE_repeat {
+    /// Cannot use the previous table
+    #[default]
+    None = 0,
+    /// Can use the previous table but it must be checked
+    Check = 1,
+    /// Can use the previous table and it is assumed to be valid
+    Valid = 2,
+}
 
 #[repr(C)]
 pub struct FSE_CState_t {
