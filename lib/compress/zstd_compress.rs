@@ -343,9 +343,19 @@ pub struct seqStoreSplits {
     pub idx: size_t,
 }
 
-pub type ZSTD_compResetPolicy_e = core::ffi::c_uint;
-pub const ZSTDcrp_leaveDirty: ZSTD_compResetPolicy_e = 1;
-pub const ZSTDcrp_makeClean: ZSTD_compResetPolicy_e = 0;
+/// Controls, for this `matchState` reset, whether the tables need to be cleared /
+/// prepared for the coming compression ([`Self::MakeClean`]), or whether the
+/// tables can be left unclean ([`Self::LeaveDirty`]), because we know that a
+/// subsequent operation will overwrite the table space anyways (e.g., copying
+/// the matchState contents in from a CDict).
+#[repr(u32)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub enum CompResetPolicy {
+    #[default]
+    MakeClean = 0,
+    LeaveDirty = 1,
+}
+
 pub type ZSTD_resetTarget_e = core::ffi::c_uint;
 pub const ZSTD_resetTarget_CCtx: ZSTD_resetTarget_e = 1;
 pub const ZSTD_resetTarget_CDict: ZSTD_resetTarget_e = 0;
@@ -3056,7 +3066,7 @@ unsafe fn ZSTD_reset_matchState(
     ws: &mut ZSTD_cwksp,
     cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ParamSwitch,
-    crp: ZSTD_compResetPolicy_e,
+    crp: CompResetPolicy,
     forceResetIndex: ZSTD_indexResetPolicy_e,
     forWho: ZSTD_resetTarget_e,
 ) -> Result<(), Error> {
@@ -3103,7 +3113,7 @@ unsafe fn ZSTD_reset_matchState(
         return Err(Error::memory_allocation);
     }
 
-    if crp != ZSTDcrp_leaveDirty {
+    if crp == CompResetPolicy::MakeClean {
         // reset tables only
         ZSTD_cwksp_clean_tables(ws);
     }
@@ -3193,7 +3203,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     loadedDictSize: size_t,
-    crp: ZSTD_compResetPolicy_e,
+    crp: CompResetPolicy,
     zbuff: BufferedPolicy,
 ) -> Result<(), Error> {
     let ws = &mut (*zc).workspace;
@@ -3465,7 +3475,14 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     );
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff)?;
+    ZSTD_resetCCtx_internal(
+        cctx,
+        &params,
+        pledgedSrcSize,
+        0,
+        CompResetPolicy::MakeClean,
+        zbuff,
+    )?;
 
     let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
         as core::ffi::c_long as u32;
@@ -3530,7 +3547,14 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     params.cParams = *cdict_cParams;
     params.cParams.windowLog = windowLog;
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
-    ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff)?;
+    ZSTD_resetCCtx_internal(
+        cctx,
+        &params,
+        pledgedSrcSize,
+        0,
+        CompResetPolicy::LeaveDirty,
+        zbuff,
+    )?;
 
     ZSTD_cwksp_mark_tables_dirty(&mut (*cctx).workspace);
 
@@ -3659,7 +3683,7 @@ unsafe fn ZSTD_copyCCtx_internal(
         &params,
         pledgedSrcSize,
         0,
-        ZSTDcrp_leaveDirty,
+        CompResetPolicy::LeaveDirty,
         zbuff,
     ) {
         return err.to_error_code();
@@ -6839,7 +6863,7 @@ unsafe fn ZSTD_compressBegin_internal(
         params,
         pledgedSrcSize,
         dictContentSize,
-        ZSTDcrp_makeClean,
+        CompResetPolicy::MakeClean,
         zbuff,
     )?;
 
@@ -7349,7 +7373,7 @@ unsafe fn ZSTD_initCDict_internal(
         &mut (*cdict).workspace,
         &params.cParams,
         params.useRowMatchFinder,
-        ZSTDcrp_makeClean,
+        CompResetPolicy::MakeClean,
         ZSTDirp_reset,
         ZSTD_resetTarget_CDict,
     ) {
