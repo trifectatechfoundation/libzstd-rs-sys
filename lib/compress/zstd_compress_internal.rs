@@ -319,16 +319,32 @@ pub struct optState_t {
 /// The statistics tables are reserved in the workspace by `ZSTD_reset_matchState`, and so
 /// are only valid when the strategy is at least `ZSTD_btopt`.
 impl optState_t {
+    pub(crate) unsafe fn litFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.litFreq, usize::from(MaxLit) + 1)
+    }
+
     pub(crate) unsafe fn litFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
         core::slice::from_raw_parts_mut(self.litFreq, usize::from(MaxLit) + 1)
+    }
+
+    pub(crate) unsafe fn litLengthFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.litLengthFreq, usize::from(MaxLL) + 1)
     }
 
     pub(crate) unsafe fn litLengthFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
         core::slice::from_raw_parts_mut(self.litLengthFreq, usize::from(MaxLL) + 1)
     }
 
+    pub(crate) unsafe fn matchLengthFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.matchLengthFreq, usize::from(MaxML) + 1)
+    }
+
     pub(crate) unsafe fn matchLengthFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
         core::slice::from_raw_parts_mut(self.matchLengthFreq, usize::from(MaxML) + 1)
+    }
+
+    pub(crate) unsafe fn offCodeFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.offCodeFreq, usize::from(MaxOff) + 1)
     }
 
     pub(crate) unsafe fn offCodeFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {

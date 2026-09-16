@@ -293,14 +293,14 @@ unsafe fn ZSTD_rawLiteralsCost(
     }
 
     // dynamic statistics
+    let litFreq = opt_state.litFreq();
     let mut price = opt_state.litSumBasePrice * litLength;
     let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
     for u in 0..litLength {
+        let freq = litFreq[usize::from(*literals.add(u as usize))];
         let mut litPrice = match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.litFreq).offset(*literals.offset(u as isize) as isize)),
-            _ => {
-                ZSTD_fracWeight(*(opt_state.litFreq).offset(*literals.offset(u as isize) as isize))
-            }
+            0 => ZSTD_bitWeight(freq),
+            _ => ZSTD_fracWeight(freq),
         };
         if litPrice > litPriceMax {
             litPrice = litPriceMax;
@@ -338,11 +338,12 @@ unsafe fn ZSTD_litLengthPrice(
 
     // dynamic statistics
     let llCode = ZSTD_LLcode(litLength);
+    let freq = opt_state.litLengthFreq()[llCode as usize];
     ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
         .wrapping_add(opt_state.litLengthSumBasePrice)
         .wrapping_sub(match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.litLengthFreq).offset(llCode as isize)),
-            _ => ZSTD_fracWeight(*(opt_state.litLengthFreq).offset(llCode as isize)),
+            0 => ZSTD_bitWeight(freq),
+            _ => ZSTD_fracWeight(freq),
         })
 }
 
@@ -370,10 +371,11 @@ unsafe fn ZSTD_getMatchPrice(
     }
 
     // dynamic statistics
+    let offCodeFreq = opt_state.offCodeFreq()[offCode as usize];
     let mut price = (offCode * BITCOST_MULTIPLIER as u32).wrapping_add(
         (opt_state.offCodeSumBasePrice).wrapping_sub(match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.offCodeFreq).offset(offCode as isize)),
-            _ => ZSTD_fracWeight(*(opt_state.offCodeFreq).offset(offCode as isize)),
+            0 => ZSTD_bitWeight(offCodeFreq),
+            _ => ZSTD_fracWeight(offCodeFreq),
         }),
     );
     if optLevel < 2 && offCode >= 20 {
@@ -383,11 +385,12 @@ unsafe fn ZSTD_getMatchPrice(
 
     // match Length
     let mlCode = ZSTD_MLcode(mlBase);
+    let matchLengthFreq = opt_state.matchLengthFreq()[mlCode as usize];
     price = price.wrapping_add(
         ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
             (opt_state.matchLengthSumBasePrice).wrapping_sub(match optLevel {
-                0 => ZSTD_bitWeight(*(opt_state.matchLengthFreq).offset(mlCode as isize)),
-                _ => ZSTD_fracWeight(*(opt_state.matchLengthFreq).offset(mlCode as isize)),
+                0 => ZSTD_bitWeight(matchLengthFreq),
+                _ => ZSTD_fracWeight(matchLengthFreq),
             }),
         ),
     );
@@ -407,30 +410,31 @@ unsafe fn ZSTD_updateStats(
 ) {
     // literals
     if ZSTD_compressedLiterals(opt_state) {
+        let litFreq = opt_state.litFreq_mut();
         for u in 0..litLength {
-            let litFreq = &mut *opt_state.litFreq.add(*literals.add(u as usize) as usize);
-            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
+            let freq = &mut litFreq[usize::from(*literals.add(u as usize))];
+            *freq = freq.wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
         }
         opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
     }
 
     // literal Length
     let llCode = ZSTD_LLcode(litLength);
-    let litLengthFreq = &mut *opt_state.litLengthFreq.add(llCode as usize);
-    *litLengthFreq = litLengthFreq.wrapping_add(1);
+    let freq = &mut opt_state.litLengthFreq_mut()[llCode as usize];
+    *freq = freq.wrapping_add(1);
     opt_state.litLengthSum = (opt_state.litLengthSum).wrapping_add(1);
 
     // offset code: follows storeSeq() numeric representation
     let offCode = ZSTD_highbit32(offBase);
-    let offCodeFreq = &mut *opt_state.offCodeFreq.add(offCode as usize);
-    *offCodeFreq = offCodeFreq.wrapping_add(1);
+    let freq = &mut opt_state.offCodeFreq_mut()[offCode as usize];
+    *freq = freq.wrapping_add(1);
     opt_state.offCodeSum = (opt_state.offCodeSum).wrapping_add(1);
 
     // match Length
     let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
     let mlCode = ZSTD_MLcode(mlBase);
-    let matchLengthFreq = &mut *opt_state.matchLengthFreq.add(mlCode as usize);
-    *matchLengthFreq = matchLengthFreq.wrapping_add(1);
+    let freq = &mut opt_state.matchLengthFreq_mut()[mlCode as usize];
+    *freq = freq.wrapping_add(1);
     opt_state.matchLengthSum = (opt_state.matchLengthSum).wrapping_add(1);
 }
 
