@@ -1381,8 +1381,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         if OPT_LEVEL >= 1
                             && prevMatch.litlen == 0
                             && (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
-                                - ZSTD_litLengthPrice((1 - 1) as u32, &ms.opt, OPT_LEVEL)
-                                    as core::ffi::c_int)
+                                - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int)
                                 < 0
                             && ip.offset(cur as isize) < iend
                         {
@@ -1395,7 +1394,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                     OPT_LEVEL,
                                 ) as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
-                                    - ZSTD_litLengthPrice((1 - 1) as u32, &ms.opt, OPT_LEVEL)
+                                    - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL)
                                         as core::ffi::c_int);
                             let withMoreLiterals = price
                                 + ZSTD_rawLiteralsCost(
