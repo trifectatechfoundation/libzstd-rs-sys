@@ -704,3 +704,168 @@ mod sequences {
         }
     }
 }
+
+/// Block-level external sequence producers (see `ZSTD_registerSequenceProducer`).
+mod external_sequence_producer {
+    use crate::assert_eq_rs_c;
+    use std::ffi::{c_int, c_void};
+
+    /// The input repeats every `UNIT` bytes, so a trivial parse exists: a literal run of `UNIT`
+    /// bytes, followed by matches of `UNIT` bytes at offset `UNIT`.
+    const UNIT: usize = 64;
+
+    #[cfg(miri)]
+    const SIZE: usize = 8 * UNIT;
+    #[cfg(not(miri))]
+    const SIZE: usize = 1 << 18;
+
+    fn periodic(len: usize) -> Vec<u8> {
+        let mut state = 1u64;
+        let unit: Vec<u8> = (0..UNIT)
+            .map(|_| {
+                state = state
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                (state >> 33) as u8
+            })
+            .collect();
+
+        unit.into_iter().cycle().take(len).collect()
+    }
+
+    macro_rules! compress_with_producer {
+        ($input:expr, $fail:expr, $fallback:expr) => {{
+            unsafe extern "C" fn sequence_producer(
+                state: *mut c_void,
+                out_seqs: *mut ZSTD_Sequence,
+                out_seqs_capacity: usize,
+                _src: *const c_void,
+                src_size: usize,
+                _dict: *const c_void,
+                _dict_size: usize,
+                _compression_level: c_int,
+                _window_size: usize,
+            ) -> usize {
+                if *(state as *const bool) {
+                    // Any value above the capacity is an error.
+                    return usize::MAX;
+                }
+
+                // Too short for a match: the whole block is trailing literals.
+                if src_size < 2 * UNIT {
+                    *out_seqs = ZSTD_Sequence {
+                        offset: 0,
+                        litLength: src_size as u32,
+                        matchLength: 0,
+                        rep: 0,
+                    };
+                    return 1;
+                }
+
+                let mut nb_seqs = 0;
+                let mut pos = UNIT;
+                while pos + UNIT <= src_size {
+                    assert!(nb_seqs < out_seqs_capacity);
+                    *out_seqs.add(nb_seqs) = ZSTD_Sequence {
+                        offset: UNIT as u32,
+                        litLength: if nb_seqs == 0 { UNIT as u32 } else { 0 },
+                        matchLength: UNIT as u32,
+                        rep: 0,
+                    };
+                    nb_seqs += 1;
+                    pos += UNIT;
+                }
+
+                // Trailing literals are a block delimiter. When there are none the parse does
+                // not end in a delimiter, and zstd has to append one itself.
+                if pos < src_size {
+                    assert!(nb_seqs < out_seqs_capacity);
+                    *out_seqs.add(nb_seqs) = ZSTD_Sequence {
+                        offset: 0,
+                        litLength: (src_size - pos) as u32,
+                        matchLength: 0,
+                        rep: 0,
+                    };
+                    nb_seqs += 1;
+                }
+
+                nb_seqs
+            }
+
+            let cctx = ZSTD_createCCtx();
+            assert!(!cctx.is_null());
+
+            let mut fail = $fail;
+            ZSTD_registerSequenceProducer(
+                cctx,
+                &mut fail as *mut bool as *mut c_void,
+                Some(sequence_producer),
+            );
+
+            for (parameter, value) in [
+                (ZSTD_cParameter::ZSTD_c_compressionLevel, 3),
+                // ZSTD_c_enableSeqProducerFallback
+                (ZSTD_cParameter::ZSTD_c_experimentalParam17, $fallback),
+            ] {
+                let err = ZSTD_CCtx_setParameter(cctx, parameter, value);
+                assert_eq!(ZSTD_isError(err), 0);
+            }
+
+            let bound = ZSTD_compressBound($input.len());
+            let mut dst = vec![0u8; bound];
+
+            let written = ZSTD_compress2(
+                cctx,
+                dst.as_mut_ptr() as *mut c_void,
+                dst.len(),
+                $input.as_ptr() as *const c_void,
+                $input.len(),
+            );
+
+            ZSTD_freeCCtx(cctx);
+
+            if ZSTD_isError(written) != 0 {
+                Err(written)
+            } else {
+                dst.truncate(written);
+                Ok(dst)
+            }
+        }};
+    }
+
+    #[track_caller]
+    fn assert_roundtrips(input: &[u8], compressed: &[u8]) {
+        let mut decompressed = vec![0u8; input.len()];
+        let written = unsafe {
+            libzstd_rs_sys::ZSTD_decompress(
+                decompressed.as_mut_ptr() as *mut c_void,
+                decompressed.len(),
+                compressed.as_ptr() as *const c_void,
+                compressed.len(),
+            )
+        };
+        assert_eq!(written, input.len());
+        assert_eq!(decompressed, input);
+    }
+
+    #[test]
+    fn external_parse() {
+        // The second input has trailing literals that don't fill a full match.
+        for input in [periodic(SIZE), periodic(SIZE + 200)] {
+            let compressed = assert_eq_rs_c!({ compress_with_producer!(input, false, 0) }).unwrap();
+            assert_roundtrips(&input, &compressed);
+        }
+    }
+
+    #[test]
+    fn producer_error() {
+        let input = periodic(SIZE);
+
+        // Without the fallback, the error of the sequence producer is fatal.
+        assert_eq_rs_c!({ compress_with_producer!(input, true, 0) }).unwrap_err();
+
+        // With the fallback, zstd compresses with its own match finder.
+        let compressed = assert_eq_rs_c!({ compress_with_producer!(input, true, 1) }).unwrap();
+        assert_roundtrips(&input, &compressed);
+    }
+}
