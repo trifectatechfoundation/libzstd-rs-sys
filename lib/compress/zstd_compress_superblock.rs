@@ -3,7 +3,7 @@ use libc::size_t;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
-use crate::lib::common::huf::{CTable, HUF_flags_bmi2};
+use crate::lib::common::huf::{CTable, HUF_flags_bmi2, HUF_SYMBOLVALUE_MAX};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
@@ -448,8 +448,10 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             {
                 return litSize;
             };
+            // `HIST_count_wksp` has filled every entry of the count table.
+            let count = core::slice::from_raw_parts(countWksp, HUF_SYMBOLVALUE_MAX as usize + 1);
             let mut cLitSizeEstimate =
-                HUF_estimateCompressedSize(&huf.CTable, countWksp, maxSymbolValue);
+                HUF_estimateCompressedSize(&huf.CTable, count, maxSymbolValue);
             if writeEntropy {
                 cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
             }

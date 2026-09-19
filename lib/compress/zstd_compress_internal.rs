@@ -9,8 +9,8 @@ use crate::lib::common::mem::{
     MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST, MEM_writeLE24,
 };
 use crate::lib::common::zstd_internal::{
-    BlockType, Overlap, RepCodes, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH,
-    ZSTD_BLOCKHEADERSIZE, ZSTD_REP_NUM,
+    BlockType, MaxLL, MaxLit, MaxML, MaxOff, Overlap, RepCodes, ZSTD_copy16, ZSTD_wildcopy,
+    MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_BLOCKHEADERSIZE, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
@@ -314,6 +314,42 @@ pub struct optState_t {
     pub priceType: OptPrice,
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ParamSwitch,
+}
+
+/// The statistics tables are reserved in the workspace by `ZSTD_reset_matchState`, and so
+/// are only valid when the strategy is at least `ZSTD_btopt`.
+impl optState_t {
+    pub(crate) unsafe fn litFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.litFreq, usize::from(MaxLit) + 1)
+    }
+
+    pub(crate) unsafe fn litFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
+        core::slice::from_raw_parts_mut(self.litFreq, usize::from(MaxLit) + 1)
+    }
+
+    pub(crate) unsafe fn litLengthFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.litLengthFreq, usize::from(MaxLL) + 1)
+    }
+
+    pub(crate) unsafe fn litLengthFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
+        core::slice::from_raw_parts_mut(self.litLengthFreq, usize::from(MaxLL) + 1)
+    }
+
+    pub(crate) unsafe fn matchLengthFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.matchLengthFreq, usize::from(MaxML) + 1)
+    }
+
+    pub(crate) unsafe fn matchLengthFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
+        core::slice::from_raw_parts_mut(self.matchLengthFreq, usize::from(MaxML) + 1)
+    }
+
+    pub(crate) unsafe fn offCodeFreq(&self) -> &[core::ffi::c_uint] {
+        core::slice::from_raw_parts(self.offCodeFreq, usize::from(MaxOff) + 1)
+    }
+
+    pub(crate) unsafe fn offCodeFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
+        core::slice::from_raw_parts_mut(self.offCodeFreq, usize::from(MaxOff) + 1)
+    }
 }
 
 #[repr(C)]

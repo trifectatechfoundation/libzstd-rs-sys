@@ -691,9 +691,9 @@ fn HUF_simpleQuickSort(arr: &mut [nodeElt], mut low: c_int, mut high: c_int) {
 /// * `count` - Histogram of the symbols.
 /// * `maxSymbolValue` - Maximum symbol value.
 /// * `rankPosition` - This is a scratch workspace. Must have RANK_POSITION_TABLE_SIZE entries.
-unsafe fn HUF_sort(
+fn HUF_sort(
     huffNode: &mut [nodeElt],
-    count: *const c_uint,
+    count: &[c_uint],
     maxSymbolValue: u8,
     rankPosition: &mut [rankPos; RANK_POSITION_TABLE_SIZE],
 ) {
@@ -705,8 +705,8 @@ unsafe fn HUF_sort(
      * each rank begins in the output, so for rank R we want to count ranks R+1 and above.
      */
     rankPosition.fill(rankPos { base: 0, curr: 0 });
-    for n in 0..maxSymbolValue1 {
-        let lowerRank = HUF_getIndex(*count.offset(n as isize));
+    for &c in &count[..maxSymbolValue1 as usize] {
+        let lowerRank = HUF_getIndex(c);
         debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
         rankPosition[lowerRank as usize].base += 1;
     }
@@ -721,8 +721,7 @@ unsafe fn HUF_sort(
     }
 
     /* Insert each symbol into their appropriate bucket, setting up rankPosition table. */
-    for n in 0..maxSymbolValue1 {
-        let c = *count.offset(n as isize);
+    for (n, &c) in count[..maxSymbolValue1 as usize].iter().enumerate() {
         let r = (HUF_getIndex(c)) + 1;
         let pos = rankPosition[r as usize].curr as u32;
         rankPosition[r as usize].curr += 1;
@@ -751,77 +750,73 @@ pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
 ///
 /// # Parameters
 ///
-/// * `huffNode` - The array sorted by HUF_sort(). Builds the Huffman tree in this array.
+/// * `huffNode` - The whole node table: slot 0 is the barrier entry, and the array sorted
+///   by HUF_sort() starts at slot 1. The Huffman tree is built in this array. Node indices
+///   (including `nonNullRank` and the `parent` fields) count from the sorted array, hence
+///   the `+ 1` on every access.
 /// * `maxSymbolValue` - The maximum symbol value.
 ///
 /// # Returns
 ///
 /// The smallest node in the Huffman tree (by count).
-unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
-    let huffNode0 = huffNode.sub(1);
+fn HUF_buildTree(huffNode: &mut huffNodeTable, maxSymbolValue: u8) -> c_int {
     let mut nodeNb = STARTNODE;
 
     /* init for parents */
     let mut nonNullRank = c_int::from(maxSymbolValue);
-    while (*huffNode.offset(nonNullRank as isize)).count == 0 {
+    while huffNode[(nonNullRank + 1) as usize].count == 0 {
         nonNullRank -= 1;
     }
     let mut lowS = nonNullRank;
     let nodeRoot = nodeNb + lowS - 1;
     let mut lowN = nodeNb;
-    (*huffNode.offset(nodeNb as isize)).count =
-        ((*huffNode.offset(lowS as isize)).count) + ((*huffNode.offset((lowS - 1) as isize)).count);
-    (*huffNode.offset((lowS - 1) as isize)).parent = nodeNb as u16;
-    (*huffNode.offset(lowS as isize)).parent = nodeNb as u16;
+    huffNode[(nodeNb + 1) as usize].count =
+        huffNode[(lowS + 1) as usize].count + huffNode[lowS as usize].count;
+    huffNode[lowS as usize].parent = nodeNb as u16;
+    huffNode[(lowS + 1) as usize].parent = nodeNb as u16;
     nodeNb += 1;
     lowS -= 2;
-    for n in nodeNb..nodeRoot + 1 {
-        (*huffNode.offset(n as isize)).count = 1 << 30;
+    for node in &mut huffNode[(nodeNb + 1) as usize..=(nodeRoot + 1) as usize] {
+        node.count = 1 << 30;
     }
-    (*huffNode0).count = 1 << 31; /* fake entry, strong barrier */
+    huffNode[0].count = 1 << 31; /* fake entry, strong barrier */
 
     /* create parents */
     while nodeNb <= nodeRoot {
-        let n1 =
-            if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let val = lowS;
-                lowS -= 1;
-                val
-            } else {
-                let val = lowN;
-                lowN += 1;
-                val
-            };
-        let n2 =
-            if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let val = lowS;
-                lowS -= 1;
-                val
-            } else {
-                let val = lowN;
-                lowN += 1;
-                val
-            };
-        (*huffNode.offset(nodeNb as isize)).count =
-            ((*huffNode.offset(n1 as isize)).count) + ((*huffNode.offset(n2 as isize)).count);
-        (*huffNode.offset(n2 as isize)).parent = nodeNb as u16;
-        (*huffNode.offset(n1 as isize)).parent = nodeNb as u16;
+        let n1 = if huffNode[(lowS + 1) as usize].count < huffNode[(lowN + 1) as usize].count {
+            let val = lowS;
+            lowS -= 1;
+            val
+        } else {
+            let val = lowN;
+            lowN += 1;
+            val
+        };
+        let n2 = if huffNode[(lowS + 1) as usize].count < huffNode[(lowN + 1) as usize].count {
+            let val = lowS;
+            lowS -= 1;
+            val
+        } else {
+            let val = lowN;
+            lowN += 1;
+            val
+        };
+        huffNode[(nodeNb + 1) as usize].count =
+            huffNode[(n1 + 1) as usize].count + huffNode[(n2 + 1) as usize].count;
+        huffNode[(n2 + 1) as usize].parent = nodeNb as u16;
+        huffNode[(n1 + 1) as usize].parent = nodeNb as u16;
         nodeNb += 1;
     }
 
     /* distribute weights (unlimited tree height) */
-    (*huffNode.offset(nodeRoot as isize)).nbBits = 0;
+    huffNode[(nodeRoot + 1) as usize].nbBits = 0;
     for n in (STARTNODE..nodeRoot).rev() {
-        (*huffNode.offset(n as isize)).nbBits = ((*huffNode
-            .offset((*huffNode.offset(n as isize)).parent as isize))
-        .nbBits as c_int
-            + 1) as u8;
+        let parent = huffNode[(n + 1) as usize].parent;
+        huffNode[(n + 1) as usize].nbBits = huffNode[usize::from(parent) + 1].nbBits + 1;
     }
     for n in 0..nonNullRank + 1 {
-        (*huffNode.offset(n as isize)).nbBits = ((*huffNode
-            .offset((*huffNode.offset(n as isize)).parent as isize))
-        .nbBits as c_int
-            + 1) as u8;
+        let parent = huffNode[(n + 1) as usize].parent;
+        huffNode[(n + 1) as usize].nbBits = huffNode[usize::from(parent) + 1].nbBits + 1;
     }
     nonNullRank
 }
@@ -878,7 +873,7 @@ fn HUF_buildCTableFromTree(
 /// `workSpace` must be aligned on 4-bytes boundaries, and be at least as large as sizeof([`HUF_buildCTable_wksp_tables`]).
 pub unsafe fn HUF_buildCTable_wksp(
     CTable: &mut CTable,
-    count: *const c_uint,
+    count: &[c_uint],
     maxSymbolValue: u8,
     mut maxNbBits: u32,
     workSpace: *mut c_void,
@@ -913,12 +908,8 @@ pub unsafe fn HUF_buildCTable_wksp(
         &mut (*wksp_tables).rankPosition,
     );
 
-    // HUF_buildTree reaches back to the slot before `huffNode` for its barrier entry,
-    // so this pointer must keep provenance over the whole table.
-    let huffNode = huffNodeTbl.as_mut_ptr().add(1);
-
     /* build tree */
-    let nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
+    let nonNullRank = HUF_buildTree(huffNodeTbl, maxSymbolValue);
 
     /* determine and enforce maxTableLog */
     maxNbBits = HUF_setMaxHeight(&mut huffNodeTbl[1..], nonNullRank as u32, maxNbBits);
@@ -935,24 +926,16 @@ pub unsafe fn HUF_buildCTable_wksp(
     Ok(maxNbBits)
 }
 
-pub unsafe fn HUF_estimateCompressedSize(
-    CTable: &CTable,
-    count: *const c_uint,
-    maxSymbolValue: u8,
-) -> size_t {
+pub fn HUF_estimateCompressedSize(CTable: &CTable, count: &[c_uint], maxSymbolValue: u8) -> size_t {
     let ct = &CTable.elements;
     let mut nbBits = 0usize;
-    for (s, elt) in ct[..=usize::from(maxSymbolValue)].iter().enumerate() {
-        nbBits += HUF_getNbBits(*elt) * *count.add(s) as size_t;
+    for (elt, &c) in ct[..=usize::from(maxSymbolValue)].iter().zip(count) {
+        nbBits += HUF_getNbBits(*elt) * c as size_t;
     }
     nbBits >> 3
 }
 
-pub unsafe fn HUF_validateCTable(
-    CTable: &CTable,
-    count: *const c_uint,
-    maxSymbolValue: u8,
-) -> bool {
+pub fn HUF_validateCTable(CTable: &CTable, count: &[c_uint], maxSymbolValue: u8) -> bool {
     let header = CTable.header;
     let ct = &CTable.elements;
     let mut bad = false;
@@ -962,9 +945,9 @@ pub unsafe fn HUF_validateCTable(
     if header.maxSymbolValue < maxSymbolValue {
         return false;
     }
-    for (s, elt) in ct[..=usize::from(maxSymbolValue)].iter().enumerate() {
+    for (elt, &c) in ct[..=usize::from(maxSymbolValue)].iter().zip(count) {
         // NOTE: use `&` rather than `&&` to keep the loop branch-free
-        bad |= (*count.add(s) != 0) & (HUF_getNbBits(*elt) == 0);
+        bad |= (c != 0) & (HUF_getNbBits(*elt) == 0);
     }
     !bad
 }
@@ -1560,10 +1543,10 @@ pub struct HUF_compress_tables_t {
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: usize = 4096;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: usize = 10; /* Must be >= 2 */
 
-pub unsafe fn HUF_cardinality(count: *const c_uint, maxSymbolValue: u8) -> c_uint {
+pub fn HUF_cardinality(count: &[c_uint], maxSymbolValue: u8) -> c_uint {
     let mut cardinality = 0 as c_uint;
-    for i in 0..usize::from(maxSymbolValue) + 1 {
-        if *count.add(i) != 0 {
+    for &c in &count[..usize::from(maxSymbolValue) + 1] {
+        if c != 0 {
             cardinality += 1;
         }
     }
@@ -1581,7 +1564,7 @@ pub unsafe fn HUF_optimalTableLog(
     workSpace: *mut c_void,
     wkspSize: size_t,
     table: &mut CTable,
-    count: *const c_uint,
+    count: &[c_uint],
     flags: c_int,
 ) -> c_uint {
     debug_assert!(srcSize > 1); /* Not supported, RLE should be used instead */
@@ -1782,7 +1765,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* Check validity of previous table */
     if *repeat == HUF_repeat::Check
-        && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
+        && !HUF_validateCTable(oldHufTable, &(*table).count, maxSymbolValue)
     {
         *repeat = HUF_repeat::None;
     }
@@ -1809,12 +1792,12 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         &mut (*table).wksps as *mut workspace_union as *mut c_void,
         size_of::<workspace_union>(),
         &mut (*table).CTable,
-        ((*table).count).as_mut_ptr(),
+        &(*table).count,
         flags,
     );
     let maxBits = match HUF_buildCTable_wksp(
         &mut (*table).CTable,
-        ((*table).count).as_mut_ptr(),
+        &(*table).count,
         maxSymbolValue,
         huffLog,
         &mut (*table).wksps.buildCTable_wksp as *mut HUF_buildCTable_wksp_tables as *mut c_void,
@@ -1842,16 +1825,9 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
         /* Check if using previous huffman table is beneficial */
         if *repeat != HUF_repeat::None {
-            let oldSize = HUF_estimateCompressedSize(
-                oldHufTable,
-                ((*table).count).as_mut_ptr(),
-                maxSymbolValue,
-            );
-            let newSize = HUF_estimateCompressedSize(
-                &(*table).CTable,
-                ((*table).count).as_mut_ptr(),
-                maxSymbolValue,
-            );
+            let oldSize = HUF_estimateCompressedSize(oldHufTable, &(*table).count, maxSymbolValue);
+            let newSize =
+                HUF_estimateCompressedSize(&(*table).CTable, &(*table).count, maxSymbolValue);
 
             if oldSize <= hSize + (newSize) || hSize + 12 >= srcSize {
                 return HUF_compressCTable_internal(
