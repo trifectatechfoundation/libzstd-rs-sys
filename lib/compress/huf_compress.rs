@@ -781,7 +781,7 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
     (*huffNode0).count = 1 << 31; /* fake entry, strong barrier */
 
     /* create parents */
-    while nodeNb <= nodeRoot {
+    for nodeNb in nodeNb..nodeRoot + 1 {
         let n1 =
             if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
                 let val = lowS;
@@ -806,7 +806,6 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u8) -> c_int {
             ((*huffNode.offset(n1 as isize)).count) + ((*huffNode.offset(n2 as isize)).count);
         (*huffNode.offset(n2 as isize)).parent = nodeNb as u16;
         (*huffNode.offset(n1 as isize)).parent = nodeNb as u16;
-        nodeNb += 1;
     }
 
     /* distribute weights (unlimited tree height) */
