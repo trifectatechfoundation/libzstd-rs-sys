@@ -8,6 +8,7 @@ use libc::{ptrdiff_t, size_t};
 use crate::lib::common::bitstream::{
     BIT_DStream_t, STREAM_ACCUMULATOR_MIN, STREAM_ACCUMULATOR_MIN_32, STREAM_ACCUMULATOR_MIN_64,
 };
+use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, prefetch_val, Locality};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
@@ -28,7 +29,7 @@ use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
     ZSTD_seqSymbol_header,
 };
-use crate::lib::polyfill::{cfg_select, likely, prefetch_read_data, unlikely, Locality};
+use crate::lib::polyfill::{cfg_select, likely, unlikely};
 use crate::lib::zstd::{ZSTD_BLOCKSIZE_MAX, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -125,8 +126,6 @@ pub struct ZSTD_OffsetInfo {
     pub longOffsetShare: core::ffi::c_uint,
     pub maxNbAdditionalBits: core::ffi::c_uint,
 }
-
-pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 impl ZSTD_DCtx {
     fn block_size_max(&self) -> usize {
@@ -1923,18 +1922,6 @@ fn ZSTD_decompressSequencesSplitLitBuffer_default(
     offset: Offset,
 ) -> Result<size_t, Error> {
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
-}
-
-#[inline(always)]
-fn prefetch_area<T>(ptr: *const T, bytes: usize) {
-    for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
-        prefetch_read_data(ptr.wrapping_byte_add(pos), Locality::L2);
-    }
-}
-
-#[inline(always)]
-fn prefetch_val<T>(ptr: *const T) {
-    prefetch_area(ptr, size_of::<T>())
 }
 
 #[inline(always)]

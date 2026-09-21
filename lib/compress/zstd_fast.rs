@@ -1,10 +1,10 @@
 use core::arch::asm;
 
 pub type ZSTD_match4Found = unsafe fn(*const u8, *const u8, u32, u32) -> bool;
-pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 use libc::size_t;
 
+use crate::lib::common::compiler::prefetch_area;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
@@ -584,12 +584,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     if ms.prefetchCDictTables != 0 {
         let hashTableBytes = ((1 as core::ffi::c_int as size_t) << (*dictCParams).hashLog)
             .wrapping_mul(size_of::<u32>());
-        let _ptr = dictHashTable as *const core::ffi::c_char;
-        let _size = hashTableBytes;
-        let mut _pos: size_t = 0;
-        while _pos < _size {
-            _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
-        }
+        prefetch_area(dictHashTable as *const core::ffi::c_char, hashTableBytes);
     }
 
     // init
