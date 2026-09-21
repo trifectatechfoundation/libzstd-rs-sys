@@ -915,18 +915,13 @@ pub(super) fn COVER_checkTotalCompressedSize(
 ) -> size_t {
     let mut totalCompressedSize = Error::GENERIC.to_error_code();
     let mut maxSampleSize = 0;
-    let mut i: size_t = if parameters.splitPoint < 1.0f64 {
+    let start = if parameters.splitPoint < 1.0f64 {
         nbTrainSamples
     } else {
         0
     };
-    while i < nbSamples {
-        maxSampleSize = if samplesSizes[i] > maxSampleSize {
-            samplesSizes[i]
-        } else {
-            maxSampleSize
-        };
-        i = i.wrapping_add(1);
+    for &size in &samplesSizes[start..nbSamples] {
+        maxSampleSize = Ord::max(maxSampleSize, size);
     }
     let dstCapacity = ZSTD_compressBound(maxSampleSize);
     let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
@@ -940,12 +935,7 @@ pub(super) fn COVER_checkTotalCompressedSize(
     };
     if !(cctx.is_null() || cdict.is_null()) {
         totalCompressedSize = dict.len();
-        i = if parameters.splitPoint < 1.0f64 {
-            nbTrainSamples
-        } else {
-            0
-        };
-        while i < nbSamples {
+        for i in start..nbSamples {
             let size = unsafe {
                 ZSTD_compress_usingCDict(
                     cctx,
@@ -959,10 +949,8 @@ pub(super) fn COVER_checkTotalCompressedSize(
             if ERR_isError(size) {
                 totalCompressedSize = size;
                 break;
-            } else {
-                totalCompressedSize = totalCompressedSize.wrapping_add(size);
-                i = i.wrapping_add(1);
             }
+            totalCompressedSize = totalCompressedSize.wrapping_add(size);
         }
     }
     unsafe { ZSTD_freeCCtx(cctx) };
