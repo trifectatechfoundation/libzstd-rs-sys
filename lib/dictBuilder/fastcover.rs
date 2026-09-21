@@ -108,18 +108,13 @@ fn FASTCOVER_selectSegment(
         end: begin,
         score: 0,
     };
-    while activeSegment.end < end {
-        let idx = FASTCOVER_hashPtrToIndex(
-            ctx.samples[activeSegment.end as usize..][..8]
-                .try_into()
-                .unwrap(),
-            f,
-            d,
-        );
+    for pos in begin..end {
+        let idx =
+            FASTCOVER_hashPtrToIndex(ctx.samples[pos as usize..][..8].try_into().unwrap(), f, d);
         if segmentFreqs[idx] == 0 {
             activeSegment.score = (activeSegment.score).wrapping_add(freqs[idx]);
         }
-        activeSegment.end = (activeSegment.end).wrapping_add(1);
+        activeSegment.end = pos.wrapping_add(1);
         segmentFreqs[idx] += 1;
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delIndex = FASTCOVER_hashPtrToIndex(
@@ -139,22 +134,14 @@ fn FASTCOVER_selectSegment(
             bestSegment = activeSegment;
         }
     }
-    while activeSegment.begin < end {
-        let delIndex_0 = FASTCOVER_hashPtrToIndex(
-            samples[activeSegment.begin as usize..][..8]
-                .try_into()
-                .unwrap(),
-            f,
-            d,
-        );
-        segmentFreqs[delIndex_0] -= 1;
-        activeSegment.begin += 1;
+    for pos in activeSegment.begin..end {
+        let delIndex =
+            FASTCOVER_hashPtrToIndex(samples[pos as usize..][..8].try_into().unwrap(), f, d);
+        segmentFreqs[delIndex] -= 1;
     }
-    let mut pos = bestSegment.begin;
-    while pos != bestSegment.end {
+    for pos in bestSegment.begin..bestSegment.end {
         let i = FASTCOVER_hashPtrToIndex(samples[pos as usize..][..8].try_into().unwrap(), f, d);
         freqs[i] = 0;
-        pos = pos.wrapping_add(1);
     }
     bestSegment
 }
