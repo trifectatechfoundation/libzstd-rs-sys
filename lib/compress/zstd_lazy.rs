@@ -527,7 +527,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     };
     let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let cacheSize = bucketSize.wrapping_sub(1);
-    let chainAttempts = ((1 << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
+    let chainAttempts = (1u32 << ms.cParams.searchLog).wrapping_sub(cacheSize);
     let chainLimit = chainAttempts.min(255);
 
     // We know the hashtable is oversized by a factor of `bucketSize`.
@@ -560,10 +560,9 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
 
     // sort chains into DDSS chain table
     let mut chainPos = 0u32;
-    let mut hashIdx = 0u32;
-    while hashIdx < 1 << hashLog {
+    for hashIdx in 0..(1usize << hashLog) {
         let mut countBeyondMinChain = 0u32;
-        let mut i = *tmpHashTable.offset(hashIdx as isize);
+        let mut i = *tmpHashTable.add(hashIdx);
         let mut count = 0;
         while i >= tmpMinChain && count < cacheSize {
             // skip through the chain to the first position that won't be
@@ -605,43 +604,35 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
             count = 0;
         }
         if count != 0 {
-            *tmpHashTable.offset(hashIdx as isize) =
-                (chainPos.wrapping_sub(count) << 8).wrapping_add(count);
+            *tmpHashTable.add(hashIdx) = (chainPos.wrapping_sub(count) << 8).wrapping_add(count);
         } else {
-            *tmpHashTable.offset(hashIdx as isize) = 0;
+            *tmpHashTable.add(hashIdx) = 0;
         }
-        hashIdx = hashIdx.wrapping_add(1);
     }
 
     // move chain pointers into the last entry of each hash bucket
-    hashIdx = (1 << hashLog) as u32;
-    while hashIdx != 0 {
-        hashIdx = hashIdx.wrapping_sub(1);
+    for hashIdx in (0..(1usize << hashLog)).rev() {
         let bucketIdx = hashIdx << ZSTD_LAZY_DDSS_BUCKET_LOG;
-        let chainPackedPointer = *tmpHashTable.offset(hashIdx as isize);
-        for i_0 in 0..cacheSize {
-            *hashTable.offset(bucketIdx.wrapping_add(i_0) as isize) = 0;
+        let chainPackedPointer = *tmpHashTable.add(hashIdx);
+        for i in 0..cacheSize as usize {
+            *hashTable.add(bucketIdx.wrapping_add(i)) = 0;
         }
-        *hashTable.offset(bucketIdx.wrapping_add(bucketSize).wrapping_sub(1) as isize) =
+        *hashTable.add(bucketIdx.wrapping_add(bucketSize as usize).wrapping_sub(1)) =
             chainPackedPointer;
     }
 
     // fill the buckets of the hash table
     for idx in ms.nextToUpdate..target {
-        let h_0 = (ZSTD_hashPtr(
+        let h = ZSTD_hashPtr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog,
             ms.cParams.minMatch,
-        ) as u32)
-            << ZSTD_LAZY_DDSS_BUCKET_LOG;
-        let mut i_1: u32 = cacheSize.wrapping_sub(1);
+        ) << ZSTD_LAZY_DDSS_BUCKET_LOG;
         // Shift hash cache down 1
-        while i_1 != 0 {
-            *hashTable.offset(h_0.wrapping_add(i_1) as isize) =
-                *hashTable.offset(h_0.wrapping_add(i_1).wrapping_sub(1) as isize);
-            i_1 = i_1.wrapping_sub(1);
+        for i in (1..cacheSize as usize).rev() {
+            *hashTable.add(h.wrapping_add(i)) = *hashTable.add(h.wrapping_add(i).wrapping_sub(1));
         }
-        *hashTable.offset(h_0 as isize) = idx;
+        *hashTable.add(h) = idx;
     }
 
     ms.nextToUpdate = target;
