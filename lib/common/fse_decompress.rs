@@ -1,8 +1,8 @@
 use libc::size_t;
 
 use crate::lib::common::fse::{
-    FSE_DTableHeader, FSE_decode_t, FSE_DECOMPRESS_WKSP_SIZE, FSE_MAX_SYMBOL_VALUE,
-    FSE_MAX_TABLELOG,
+    FSE_DTableHeader, FSE_decode_t, FSE_BUILD_DTABLE_WKSP_SIZE, FSE_DECOMPRESS_WKSP_SIZE,
+    FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG,
 };
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
@@ -75,16 +75,11 @@ fn FSE_buildDTable_internal(
 ) -> Result<(), Error> {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
-    let maxSV1 = u32::from(maxSymbolValue) + 1;
-    let tableSize = (1 << tableLog) as u32;
+    let maxSV1 = usize::from(maxSymbolValue) + 1;
+    let tableSize = 1usize << tableLog;
     let mut highThreshold = tableSize.wrapping_sub(1);
 
-    if ((size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-        .wrapping_mul(maxSV1 as core::ffi::c_ulong) as core::ffi::c_ulonglong)
-        .wrapping_add(1 << tableLog)
-        .wrapping_add(8)
-        > wkspSize as core::ffi::c_ulonglong
-    {
+    if FSE_BUILD_DTABLE_WKSP_SIZE(tableLog as usize, maxSymbolValue as usize) > wkspSize {
         return Err(Error::maxSymbolValue_tooLarge);
     }
 
@@ -99,82 +94,76 @@ fn FSE_buildDTable_internal(
 
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     for s in 0..maxSV1 {
-        if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
-            elements[highThreshold as usize].symbol = s as u8;
+        if normalizedCounter[s] == -1 {
+            elements[highThreshold].symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            symbols[s as usize] = 1;
+            symbols[s] = 1;
         } else {
-            if normalizedCounter[s as usize] as core::ffi::c_int >= largeLimit as core::ffi::c_int {
+            if normalizedCounter[s] >= largeLimit {
                 DTableH.fastMode = 0;
             }
-            symbols[s as usize] = normalizedCounter[s as usize] as u16;
+            symbols[s] = normalizedCounter[s] as u16;
         }
     }
 
     *header = DTableH;
 
     if highThreshold == tableSize.wrapping_sub(1) {
-        let tableMask = tableSize.wrapping_sub(1) as size_t;
+        let tableMask = tableSize.wrapping_sub(1);
         let step = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
-            .wrapping_add(3) as size_t;
+            .wrapping_add(3);
         let add = 0x101010101010101u64;
-        let mut pos = 0 as size_t;
+        let mut pos = 0usize;
         let mut sv = 0u64;
 
-        for s_0 in 0..maxSV1 {
-            let n = normalizedCounter[s_0 as usize] as core::ffi::c_int;
-            spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
-            let mut i = 8;
-            while i < n {
-                spread[pos as usize..][i as usize..][..8].copy_from_slice(&sv.to_le_bytes());
-                i += 8;
+        for &v in &normalizedCounter[..maxSV1] {
+            let n = v as usize;
+            spread[pos..][..8].copy_from_slice(&sv.to_le_bytes());
+            for i in (8..n).step_by(8) {
+                spread[pos..][i..][..8].copy_from_slice(&sv.to_le_bytes());
             }
-            pos = pos.wrapping_add(n as size_t);
+            pos = pos.wrapping_add(n);
             sv = sv.wrapping_add(add);
         }
 
-        let mut position = 0 as size_t;
+        let mut position = 0usize;
         let unroll = 2;
-        let mut s_1 = 0;
-        while s_1 < tableSize as size_t {
+        for s in (0..tableSize).step_by(unroll) {
             for u in 0..unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                elements[uPosition].symbol = spread[s_1 + u];
+                elements[uPosition].symbol = spread[s + u];
             }
             position = position.wrapping_add(unroll * step) & tableMask;
-            s_1 = s_1.wrapping_add(unroll);
         }
     } else {
-        let tableMask_0 = tableSize.wrapping_sub(1);
-        let step_0 = (tableSize >> 1)
+        let tableMask = tableSize.wrapping_sub(1);
+        let step = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3);
 
-        let mut position_0 = 0u32;
-        for s_2 in 0..maxSV1 {
-            for _ in 0..normalizedCounter[s_2 as usize] {
-                elements[position_0 as usize].symbol = s_2 as u8;
-                position_0 = position_0.wrapping_add(step_0) & tableMask_0;
-                while position_0 > highThreshold {
-                    position_0 = position_0.wrapping_add(step_0) & tableMask_0;
+        let mut position = 0usize;
+        for (s, &v) in normalizedCounter[..maxSV1].iter().enumerate() {
+            for _ in 0..v {
+                elements[position].symbol = s as u8;
+                position = position.wrapping_add(step) & tableMask;
+                while position > highThreshold {
+                    position = position.wrapping_add(step) & tableMask;
                 }
             }
         }
 
-        if position_0 != 0 {
+        if position != 0 {
             return Err(Error::GENERIC);
         }
     }
 
-    for u in 0..tableSize {
-        let symbol = usize::from((elements[u as usize]).symbol);
+    for elt in &mut elements[..tableSize] {
+        let symbol = usize::from(elt.symbol);
         let nextState = u32::from(symbols[symbol]);
         symbols[symbol] += 1;
-        (elements[u as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
-        (elements[u as usize]).newState = (nextState
-            << (elements[u as usize]).nbBits as core::ffi::c_int)
-            .wrapping_sub(tableSize) as u16;
+        elt.nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
+        elt.newState = (nextState << elt.nbBits).wrapping_sub(tableSize as u32) as u16;
     }
 
     Ok(())
