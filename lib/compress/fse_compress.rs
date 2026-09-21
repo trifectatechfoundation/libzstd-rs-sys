@@ -93,13 +93,11 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         for s in 0..maxSV1 {
             let n = normalizedCounter[s as usize] as core::ffi::c_int;
             MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
-            let mut i = 8;
-            while i < n {
+            for i in (8..n).step_by(8) {
                 MEM_write64(
                     spread.add(pos).offset(i as isize) as *mut core::ffi::c_void,
                     sv,
                 );
-                i += 8;
             }
             pos = pos.wrapping_add(n as size_t);
             sv = sv.wrapping_add(add);
@@ -110,27 +108,23 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         // reduce branch misses.
         let mut position = 0usize;
         let unroll = 2; // Experimentally determined optimal unroll
-        let mut s_0 = 0;
-        while s_0 < tableSize as size_t {
+        for s in (0..tableSize as size_t).step_by(unroll) {
             for u_0 in 0..unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
-                *tableSymbol.add(uPosition) = *spread.add(s_0.wrapping_add(u_0));
+                *tableSymbol.add(uPosition) = *spread.add(s.wrapping_add(u_0));
             }
             position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
-            s_0 = s_0.wrapping_add(unroll);
         }
     } else {
-        let mut position_0 = 0u32;
+        let mut position = 0u32;
         for symbol in 0..maxSV1 {
             let freq = normalizedCounter[symbol as usize] as core::ffi::c_int;
-            let mut nbOccurrences = 0;
-            while nbOccurrences < freq {
-                *tableSymbol.offset(position_0 as isize) = symbol as u8;
-                position_0 = position_0.wrapping_add(step) & tableMask;
-                while position_0 > highThreshold {
-                    position_0 = position_0.wrapping_add(step) & tableMask; // Low proba area
+            for _ in 0..freq {
+                *tableSymbol.offset(position as isize) = symbol as u8;
+                position = position.wrapping_add(step) & tableMask;
+                while position > highThreshold {
+                    position = position.wrapping_add(step) & tableMask; // Low proba area
                 }
-                nbOccurrences += 1;
             }
         }
     }
