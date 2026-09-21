@@ -1093,7 +1093,7 @@ unsafe fn ZSTD_row_nextCachedHash(
 #[inline(always)]
 unsafe fn ZSTD_row_update_internalImpl(
     ms: &mut ZSTD_MatchState_t,
-    mut updateStartIdx: u32,
+    updateStartIdx: u32,
     updateEndIdx: u32,
     mls: u32,
     rowLog: u32,
@@ -1105,14 +1105,14 @@ unsafe fn ZSTD_row_update_internalImpl(
     let hashLog = ms.rowHashLog;
     let base = ms.window.base;
 
-    while updateStartIdx < updateEndIdx {
+    for idx in updateStartIdx..updateEndIdx {
         let hash = if useCache {
             ZSTD_row_nextCachedHash(
                 &mut ms.hashCache,
                 hashTable,
                 tagTable,
                 base,
-                updateStartIdx,
+                idx,
                 hashLog,
                 rowLog,
                 mls,
@@ -1120,7 +1120,7 @@ unsafe fn ZSTD_row_update_internalImpl(
             )
         } else {
             ZSTD_hashPtrSalted(
-                base.wrapping_offset(updateStartIdx as isize) as *const core::ffi::c_void,
+                base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
                 hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
                 mls,
                 ms.hashSalt,
@@ -1132,8 +1132,7 @@ unsafe fn ZSTD_row_update_internalImpl(
         let pos = ZSTD_row_nextIndex(tagRow, rowMask);
 
         *tagRow.offset(pos as isize) = (hash & ZSTD_ROW_HASH_TAG_MASK) as u8;
-        *row.offset(pos as isize) = updateStartIdx;
-        updateStartIdx = updateStartIdx.wrapping_add(1);
+        *row.offset(pos as isize) = idx;
     }
 }
 
