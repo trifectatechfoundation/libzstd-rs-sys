@@ -57,12 +57,10 @@ unsafe fn addEvents_generic(
 ) {
     let p = src as *const c_char;
     let limit = srcSize.wrapping_sub(HASHLENGTH).wrapping_add(1);
-    let mut n: size_t = 0;
 
     debug_assert!(srcSize >= HASHLENGTH);
-    while n < limit {
+    for n in (0..limit).step_by(samplingRate) {
         fp.events[hash2(p.add(n) as *const c_void, hashLog) as usize] += 1;
-        n = n.wrapping_add(samplingRate);
     }
 
     fp.nbEvents += limit / samplingRate;
