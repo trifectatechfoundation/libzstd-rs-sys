@@ -1180,10 +1180,8 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
 
     while n > 0 {
         /* Encode kUnroll symbols into the bitstream @ index 0. */
-        let mut u_0 = 1;
-        while u_0 < kUnroll {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u_0) as isize) as u32, ct, false, true);
-            u_0 += 1;
+        for u in 1..kUnroll {
+            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, false, true);
         }
         HUF_encodeSymbol(
             bitC,
@@ -1198,16 +1196,14 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
          * without any data dependencies.
          */
         HUF_zeroIndex1(bitC);
-        u_0 = 1;
-        while u_0 < kUnroll {
+        for u in 1..kUnroll {
             HUF_encodeSymbol(
                 bitC,
-                *ip.offset((n - kUnroll - u_0) as isize) as u32,
+                *ip.offset((n - kUnroll - u) as isize) as u32,
                 ct,
                 true,
                 true,
             );
-            u_0 += 1;
         }
         HUF_encodeSymbol(
             bitC,
