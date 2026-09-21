@@ -511,15 +511,13 @@ unsafe fn ZSTD_DDictHashSet_expand(
     hashSet.ddictPtrTable = newTable;
     hashSet.ddictPtrTableSize = newTableSize;
     hashSet.ddictPtrCount = 0;
-    let mut i = 0;
-    while i < oldTableSize {
+    for i in 0..oldTableSize {
         if !(*oldTable.add(i)).is_null() {
             let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i));
             if ERR_isError(err_code) {
                 return err_code;
             }
         }
-        i = i.wrapping_add(1);
     }
     ZSTD_customFree(
         oldTable as *mut core::ffi::c_void,
