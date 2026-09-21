@@ -689,10 +689,8 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         for &v in normalizedCounter {
             let n = v as usize;
             wksp.spread[pos..][..8].copy_from_slice(&sv.to_le_bytes());
-            let mut i: usize = 8;
-            while i < n {
+            for i in (8..n).step_by(8) {
                 wksp.spread[pos..][i..][..8].copy_from_slice(&sv.to_le_bytes());
-                i += 8;
             }
             pos = pos.wrapping_add(n);
             sv = sv.wrapping_add(add);
