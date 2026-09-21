@@ -456,13 +456,13 @@ fn COVER_selectSegment(
         end: begin,
         score: 0,
     };
-    while activeSegment.end < end {
-        let newDmer = ctx.dmerAt[activeSegment.end as usize];
+    for pos in begin..end {
+        let newDmer = ctx.dmerAt[pos as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
         if *newDmerOcc == 0 {
             activeSegment.score = (activeSegment.score).wrapping_add(freqs[newDmer as usize]);
         }
-        activeSegment.end = (activeSegment.end).wrapping_add(1);
+        activeSegment.end = pos.wrapping_add(1);
         *newDmerOcc = (*newDmerOcc).wrapping_add(1);
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delDmer = ctx.dmerAt[activeSegment.begin as usize];
@@ -480,21 +480,17 @@ fn COVER_selectSegment(
     }
     let mut newBegin = bestSegment.end;
     let mut newEnd = bestSegment.begin;
-    let mut pos = bestSegment.begin;
-    while pos != bestSegment.end {
+    for pos in bestSegment.begin..bestSegment.end {
         let freq = freqs[ctx.dmerAt[pos as usize] as usize];
         if freq != 0 {
             newBegin = if newBegin < pos { newBegin } else { pos };
             newEnd = pos.wrapping_add(1);
         }
-        pos = pos.wrapping_add(1);
     }
     bestSegment.begin = newBegin;
     bestSegment.end = newEnd;
-    let mut pos_0 = bestSegment.begin;
-    while pos_0 != bestSegment.end {
-        freqs[ctx.dmerAt[pos_0 as usize] as usize] = 0;
-        pos_0 = pos_0.wrapping_add(1);
+    for pos in bestSegment.begin..bestSegment.end {
+        freqs[ctx.dmerAt[pos as usize] as usize] = 0;
     }
     bestSegment
 }
