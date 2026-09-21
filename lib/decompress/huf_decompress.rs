@@ -317,10 +317,8 @@ fn HUF_rescaleStats(
         // Update rankVal to reflect the new weights.
         // All weights except 0 get moved to weight + scale.
         // Weights [1, scale] are empty.
-        let mut s = targetTableLog as usize;
-        while s > scale {
+        for s in (scale + 1..targetTableLog as usize + 1).rev() {
             rankVal[s] = rankVal[s - scale];
-            s -= 1;
         }
 
         rankVal[1..=scale].fill(0);
