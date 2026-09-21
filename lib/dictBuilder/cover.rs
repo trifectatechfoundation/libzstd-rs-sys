@@ -615,11 +615,9 @@ fn COVER_ctx_init<'a>(
     ctx.freqs = Box::default();
     ctx.d = d;
     ctx.offsets[0] = 0;
-    let mut i: usize = 1;
-    while i <= nbSamples {
+    for i in 1..nbSamples + 1 {
         ctx.offsets[i] =
             ctx.offsets[i.wrapping_sub(1)].wrapping_add(samplesSizes[i.wrapping_sub(1)]);
-        i = i.wrapping_add(1);
     }
     if displayLevel >= 2 {
         eprintln!("Constructing partial suffix array");
