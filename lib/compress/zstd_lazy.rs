@@ -670,10 +670,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
 
-    let mut ddsAttempt = 0;
-    while ddsAttempt < bucketSize.wrapping_sub(1) {
-        ddsAttempt = ddsAttempt.wrapping_add(1);
-
+    for ddsAttempt in 0..bucketSize.wrapping_sub(1) {
         prefetch_read_data(
             ddsBase.add(*((*dms).hashTable).add(ddsIdx + ddsAttempt as usize) as usize),
             Locality::L1,
@@ -691,7 +688,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         );
     }
 
-    ddsAttempt = 0;
+    let mut ddsAttempt = 0;
     while ddsAttempt < bucketLimit {
         let mut currentMl = 0;
         let matchIndex = *((*dms).hashTable).add(ddsIdx.wrapping_add(ddsAttempt as size_t));
@@ -728,45 +725,42 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         ddsAttempt = ddsAttempt.wrapping_add(1);
     }
 
-    let chainPackedPointer_0 =
+    let chainPackedPointer =
         *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
-    let mut chainIndex_0 = chainPackedPointer_0 >> 8;
-    let chainLength = chainPackedPointer_0 & 0xff as core::ffi::c_int as u32;
+    let chainIndex = (chainPackedPointer >> 8) as usize;
+    let chainLength = chainPackedPointer & 0xff as core::ffi::c_int as u32;
     let chainAttempts = nbAttempts.wrapping_sub(ddsAttempt);
-    let chainLimit = chainAttempts.min(chainLength);
+    let chainLimit = chainAttempts.min(chainLength) as usize;
 
-    let mut chainAttempt = 0;
-    while chainAttempt < chainLimit {
-        chainAttempt = chainAttempt.wrapping_add(1);
+    for chainAttempt in 0..chainLimit {
+        let matchIndex = *((*dms).chainTable).add(chainIndex.wrapping_add(chainAttempt));
+        prefetch_read_data(ddsBase.offset(matchIndex as isize), Locality::L1);
     }
 
-    chainAttempt = 0;
-    while chainAttempt < chainLimit {
-        let mut currentMl_0 = 0;
-        let matchIndex = *((*dms).chainTable).offset(chainIndex_0 as isize);
+    for chainAttempt in 0..chainLimit {
+        let mut currentMl = 0;
+        let matchIndex = *((*dms).chainTable).add(chainIndex.wrapping_add(chainAttempt));
         let match_1 = ddsBase.offset(matchIndex as isize);
 
         if MEM_read32(match_1 as *const core::ffi::c_void)
             == MEM_read32(ip as *const core::ffi::c_void)
         {
             // assumption: matchIndex <= dictLimit-4 (by table construction)
-            currentMl_0 =
+            currentMl =
                 (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, ddsEnd, prefixStart))
                     .wrapping_add(4);
         }
 
         // save best solution
-        if currentMl_0 > ml {
-            ml = currentMl_0;
+        if currentMl > ml {
+            ml = currentMl;
             *offsetPtr = curr
                 .wrapping_sub(matchIndex.wrapping_add(ddsIndexDelta))
                 .wrapping_add(ZSTD_REP_NUM) as size_t;
-            if ip.add(currentMl_0) == iLimit {
+            if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
         }
-        chainAttempt = chainAttempt.wrapping_add(1);
-        chainIndex_0 = chainIndex_0.wrapping_add(1);
     }
 
     ml
