@@ -1147,8 +1147,7 @@ unsafe fn ZSTDMT_createJobsTable(
     }
 
     *nbJobsPtr = nbJobs;
-    let mut jobNb = 0;
-    while jobNb < nbJobs {
+    for jobNb in 0..nbJobs {
         core::ptr::write(
             core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_mutex),
             Mutex::new(()),
@@ -1157,7 +1156,6 @@ unsafe fn ZSTDMT_createJobsTable(
             core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_cond),
             Condvar::new(),
         );
-        jobNb = jobNb.wrapping_add(1);
     }
 
     jobTable
