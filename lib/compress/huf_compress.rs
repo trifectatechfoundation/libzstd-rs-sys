@@ -344,19 +344,19 @@ pub unsafe fn HUF_readCTable(
     /* Prepare base value per rank */
     {
         let mut nextRankStart = 0u32;
-        for n in 1..tableLog + 1 {
+        for (i, val) in rankVal[1..tableLog as usize + 1].iter_mut().enumerate() {
             let curr = nextRankStart;
-            nextRankStart += rankVal[n as usize] << (n - 1);
-            rankVal[n as usize] = curr;
+            nextRankStart += *val << i;
+            *val = curr;
         }
     }
 
     /* fill nbBits */
     {
-        for n_0 in 0..nbSymbols {
-            let w = huffWeight[n_0 as usize] as u32;
+        for n in 0..nbSymbols as usize {
+            let w = huffWeight[n] as u32;
             HUF_setNbBits(
-                &mut ct[n_0 as usize],
+                &mut ct[n],
                 ((tableLog + 1 - w) as u8 as c_int & -c_int::from(w != 0)) as size_t,
             );
         }
@@ -367,30 +367,26 @@ pub unsafe fn HUF_readCTable(
         let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2]; /* support w=0=>n=tableLog+1 */
         let mut valPerRank: [u16; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
 
-        let mut n_1: u32 = 0;
-        while n_1 < nbSymbols {
-            nbPerRank[HUF_getNbBits(ct[n_1 as usize])] += 1;
-            n_1 += 1;
+        for &elt in &ct[..nbSymbols as usize] {
+            nbPerRank[HUF_getNbBits(elt)] += 1;
         }
 
         /* determine stating value per rank */
         valPerRank[(tableLog + 1) as usize] = 0; /* for w==0 */
 
         let mut min = 0;
-        let mut n_2: u32 = tableLog;
-        while n_2 > 0 {
+        for n in (1..(tableLog + 1) as usize).rev() {
             /* start at n=tablelog <-> w=1 */
-            valPerRank[n_2 as usize] = min; /* get starting value within each rank */
-            min = (min as c_int + nbPerRank[n_2 as usize] as c_int) as u16;
-            min = (min as c_int >> 1) as u16;
-            n_2 -= 1;
+            valPerRank[n] = min; /* get starting value within each rank */
+            min += nbPerRank[n];
+            min >>= 1;
         }
 
         /* assign value within rank, symbol order */
-        for n_3 in 0..nbSymbols {
-            let fresh1 = &mut valPerRank[HUF_getNbBits(ct[n_3 as usize])];
-            HUF_setValue(&mut ct[n_3 as usize], *fresh1 as size_t);
-            *fresh1 += 1;
+        for elt in &mut ct[..nbSymbols as usize] {
+            let val = &mut valPerRank[HUF_getNbBits(*elt)];
+            HUF_setValue(elt, *val as size_t);
+            *val += 1;
         }
     }
     Ok(readSize)
