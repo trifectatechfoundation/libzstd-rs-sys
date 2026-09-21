@@ -1111,15 +1111,13 @@ unsafe fn ZSTDMT_freeJobsTable(
         return;
     }
 
-    let mut jobNb = 0;
-    while jobNb < nbJobs {
+    for jobNb in 0..nbJobs {
         core::ptr::drop_in_place(core::ptr::addr_of_mut!(
             (*jobTable.offset(jobNb as isize)).job_mutex
         ));
         core::ptr::drop_in_place(core::ptr::addr_of_mut!(
             (*jobTable.offset(jobNb as isize)).job_cond
         ));
-        jobNb = jobNb.wrapping_add(1);
     }
 
     ZSTD_customFree(
