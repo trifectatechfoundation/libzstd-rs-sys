@@ -47,6 +47,7 @@ pub mod lib {
         pub(crate) mod allocations;
         pub(crate) mod bits;
         pub(crate) mod bitstream;
+        pub(crate) mod compiler;
         pub mod debug;
         pub(crate) mod entropy_common;
         pub(crate) mod error_private;

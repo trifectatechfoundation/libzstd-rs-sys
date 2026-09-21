@@ -33,6 +33,7 @@ pub type ZSTD_VecMask = u64;
 use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
+use crate::lib::common::compiler::{prefetch_read_data, Locality};
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
@@ -42,7 +43,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE,
     ZSTD_DUBT_UNSORTED_MARK,
 };
-use crate::lib::polyfill::{prefetch_read_data, Locality, PointerExt};
+use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
 
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
