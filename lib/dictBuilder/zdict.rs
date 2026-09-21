@@ -151,9 +151,6 @@ fn ZDICT_analyzePos(
     minRatio: usize,
     notificationLevel: u32,
 ) -> DictItem {
-    let mut lengthList = [0u32; LLIMIT];
-    let mut maxLength = LLIMIT;
-
     // The C implementation maps index `len` and `-1` to the length of the suffix array.
     let suffix = |index| {
         if index == usize::MAX || index == suffix_slice.len() {
@@ -271,6 +268,7 @@ fn ZDICT_analyzePos(
     end = start;
 
     // look forward
+    let mut lengthList = [0u32; LLIMIT];
     loop {
         end = end.wrapping_add(1);
         let mut length = ZDICT_count(&buffer[pos..], &buffer[suffix(end as usize) as usize..]);
@@ -284,38 +282,31 @@ fn ZDICT_analyzePos(
     }
 
     // look backward
-    let mut length_2 = MINMATCHLENGTH;
-    while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
-        length_2 = ZDICT_count(
+    let mut length = MINMATCHLENGTH;
+    while (length >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
+        length = ZDICT_count(
             &buffer[pos..],
             &buffer[suffix(start.wrapping_sub(1) as usize) as usize..],
         );
-        if length_2 >= LLIMIT {
-            length_2 = LLIMIT - 1;
+        if length >= LLIMIT {
+            length = LLIMIT - 1;
         }
-        lengthList[length_2] += 1;
-        if length_2 >= MINMATCHLENGTH {
+        lengthList[length] += 1;
+        if length >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
     }
 
     // largest useful length
     let mut cumulLength = [0u32; LLIMIT];
-    cumulLength[maxLength.wrapping_sub(1)] = lengthList[maxLength - 1];
-    let mut i = maxLength.wrapping_sub(2) as core::ffi::c_int;
-    while i >= 0 {
-        cumulLength[i as usize] =
-            (cumulLength[(i + 1) as usize]).wrapping_add(lengthList[i as usize]);
-        i -= 1;
+    cumulLength[LLIMIT - 1] = lengthList[LLIMIT - 1];
+    for i in (0..LLIMIT - 1).rev() {
+        cumulLength[i] = (cumulLength[i + 1]).wrapping_add(lengthList[i]);
     }
-    let mut u_0 = (LLIMIT - 1) as core::ffi::c_uint;
-    while u_0 >= MINMATCHLENGTH as core::ffi::c_uint {
-        if cumulLength[u_0 as usize] >= minRatio as u32 {
-            break;
-        }
-        u_0 = u_0.wrapping_sub(1);
-    }
-    maxLength = u_0 as size_t;
+    let mut maxLength = (MINMATCHLENGTH..LLIMIT)
+        .rev()
+        .find(|&i| cumulLength[i] >= minRatio as u32)
+        .unwrap_or(MINMATCHLENGTH - 1);
 
     // reduce maxLength in case of final into repetitive data
     let mut l = maxLength as u32;
