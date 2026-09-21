@@ -292,10 +292,8 @@ pub unsafe fn HUF_writeCTable_wksp(
     // 128 is the special-case marker; `maxSymbolValue <= 128` was just checked, so this fits a byte
     *op = (128 + maxSymbolValue - 1) as u8;
     (*wksp).huffWeight[maxSymbolValue] = 0;
-    let mut n = 0;
-    while n < maxSymbolValue {
+    for n in (0..maxSymbolValue).step_by(2) {
         *op.add((n / 2) + 1) = ((*wksp).huffWeight[n] << 4) + (*wksp).huffWeight[n + 1];
-        n += 2;
     }
     maxSymbolValue.div_ceil(2) + 1
 }
