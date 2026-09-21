@@ -1119,12 +1119,10 @@ pub fn HUF_readDTableX2_wksp(
     }
 
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
-    let mut consumed: u32 = minBits;
-    while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
+    for consumed in minBits..maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
         for w in 1..maxW.wrapping_add(1) as usize {
             wksp.rankVal[consumed as usize][w] = wksp.rankVal[0][w] >> consumed;
         }
-        consumed = consumed.wrapping_add(1);
     }
 
     HUF_fillDTableX2(
