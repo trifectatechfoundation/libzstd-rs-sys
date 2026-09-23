@@ -7,7 +7,7 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
     &RepCodes,
     bool,
     u32,
-) -> u32;
+) -> usize;
 
 #[repr(C)]
 pub struct ZSTD_optLdm_t {
@@ -676,7 +676,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     ll0: bool,
     lengthToBeat: u32,
     mls: u32,
-) -> u32 {
+) -> usize {
     let cParams = &ms.cParams;
     let sufficient_len = cParams
         .targetLength
@@ -708,7 +708,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut largerPtr = bt.offset((2 * (curr & btMask)) as isize).add(1);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1); // farthest referenced position of any match => detects repetitive patterns
     let mut dummy32: u32 = 0;
-    let mut mnum = 0u32;
+    let mut mnum = 0usize;
     let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
 
     let dms = if dictMode == DictMode::DictMatchState {
@@ -847,8 +847,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         // save longer solution
         if repLen as size_t > bestLength {
             bestLength = repLen as size_t;
-            (*matches.offset(mnum as isize)).off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
-            (*matches.offset(mnum as isize)).len = repLen;
+            (*matches.add(mnum)).off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
+            (*matches.add(mnum)).len = repLen;
             mnum = mnum.wrapping_add(1);
             if (repLen > sufficient_len) | (ip.offset(repLen as isize) == iLimit) {
                 return mnum;
@@ -931,12 +931,11 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 matchEndIdx = matchIndex.wrapping_add(matchLength as u32);
             }
             bestLength = matchLength;
-            (*matches.offset(mnum as isize)).off =
-                curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
-            (*matches.offset(mnum as isize)).len = matchLength as u32;
+            (*matches.add(mnum)).off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
+            (*matches.add(mnum)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
             // equal: no way to know if inf or sup
-            if (matchLength > ZSTD_OPT_NUM as size_t) | (ip.add(matchLength) == iLimit) {
+            if (matchLength > ZSTD_OPT_NUM) | (ip.add(matchLength) == iLimit) {
                 if dictMode == DictMode::DictMatchState {
                     nbCompares = 0; // break should also skip searching dms
                 }
@@ -1005,12 +1004,11 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     matchEndIdx = matchIndex.wrapping_add(matchLength_0 as u32);
                 }
                 bestLength = matchLength_0;
-                (*matches.offset(mnum as isize)).off =
-                    curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
-                (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
+                (*matches.add(mnum)).off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
+                (*matches.add(mnum)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
                 // equal: no way to know if inf or sup
-                if (matchLength_0 > ZSTD_OPT_NUM as size_t) | (ip.add(matchLength_0) == iLimit) {
+                if (matchLength_0 > ZSTD_OPT_NUM) | (ip.add(matchLength_0) == iLimit) {
                     break; // drop, to guarantee consistency (miss a little bit of compression)
                 }
             }
@@ -1047,7 +1045,7 @@ unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u3
     rep: &RepCodes,
     ll0: bool,
     lengthToBeat: u32,
-) -> u32 {
+) -> usize {
     if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
         return 0; // skipped area
     }
@@ -1155,7 +1153,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 /// into 'matches'. Maintains the correct ordering of 'matches'.
 unsafe fn ZSTD_optLdm_maybeAddMatch(
     matches: *mut ZSTD_match_t,
-    nbMatches: &mut u32,
+    nbMatches: &mut usize,
     optLdm: &ZSTD_optLdm_t,
     currPosInBlock: u32,
     minMatch: u32,
@@ -1175,12 +1173,12 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
     }
 
     if *nbMatches == 0
-        || candidateMatchLength > (*matches.offset((*nbMatches).wrapping_sub(1) as isize)).len
-            && *nbMatches < ZSTD_OPT_NUM as u32
+        || candidateMatchLength > (*matches.add((*nbMatches).wrapping_sub(1))).len
+            && *nbMatches < ZSTD_OPT_NUM
     {
         let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM);
-        (*matches.offset(*nbMatches as isize)).len = candidateMatchLength;
-        (*matches.offset(*nbMatches as isize)).off = candidateOffBase;
+        (*matches.add(*nbMatches)).len = candidateMatchLength;
+        (*matches.add(*nbMatches)).off = candidateOffBase;
         *nbMatches = (*nbMatches).wrapping_add(1);
     }
 }
@@ -1189,7 +1187,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
 unsafe fn ZSTD_optLdm_processMatchCandidate(
     optLdm: &mut ZSTD_optLdm_t,
     matches: *mut ZSTD_match_t,
-    nbMatches: &mut u32,
+    nbMatches: &mut usize,
     currPosInBlock: u32,
     remainingBytes: u32,
     minMatch: u32,
@@ -1312,8 +1310,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             (*opt).rep = *rep;
 
             // large match -> immediate encoding
-            let maxML = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
-            let maxOffBase = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).off;
+            let maxML = (*matches.add(nbMatches.wrapping_sub(1))).len;
+            let maxOffBase = (*matches.add(nbMatches.wrapping_sub(1))).off;
             let mut cur: u32;
             let mut last_pos: u32;
             if maxML > sufficient_len {
@@ -1332,8 +1330,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     pos = pos.wrapping_add(1);
                 }
                 for matchNb in 0..nbMatches {
-                    let offBase = (*matches.offset(matchNb as isize)).off;
-                    let end = (*matches.offset(matchNb as isize)).len;
+                    let offBase = (*matches.add(matchNb)).off;
+                    let end = (*matches.add(matchNb)).len;
                     while pos <= end {
                         let matchPrice = ZSTD_getMatchPrice(offBase, pos, &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int;
@@ -1478,15 +1476,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             );
 
                             if nbMatches != 0 {
-                                let longestML =
-                                    (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
+                                let longestML = (*matches.add(nbMatches.wrapping_sub(1))).len;
                                 if longestML > sufficient_len
                                     || cur.wrapping_add(longestML) >= ZSTD_OPT_NUM as u32
                                     || ip.offset(cur as isize).offset(longestML as isize) >= iend
                                 {
                                     lastStretch.mlen = longestML;
-                                    lastStretch.off =
-                                        (*matches.offset(nbMatches.wrapping_sub(1) as isize)).off;
+                                    lastStretch.off = (*matches.add(nbMatches.wrapping_sub(1))).off;
                                     lastStretch.litlen = 0;
                                     last_pos = cur.wrapping_add(longestML);
                                     current_block = 12608488225262500095;
@@ -1494,11 +1490,10 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 } else {
                                     // set prices using matches found at position == cur
                                     for matchNb in 0..nbMatches {
-                                        let offset = (*matches.offset(matchNb as isize)).off;
-                                        let lastML = (*matches.offset(matchNb as isize)).len;
+                                        let offset = (*matches.add(matchNb)).off;
+                                        let lastML = (*matches.add(matchNb)).len;
                                         let startML = if matchNb > 0 {
-                                            ((*matches.offset(matchNb.wrapping_sub(1) as isize))
-                                                .len)
+                                            ((*matches.add(matchNb.wrapping_sub(1))).len)
                                                 .wrapping_add(1)
                                         } else {
                                             minMatch
