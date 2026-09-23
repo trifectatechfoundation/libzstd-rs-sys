@@ -11,6 +11,7 @@ use crate::lib::common::bitstream::{
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, prefetch_val, Locality};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::FSE_TABLESTEP;
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
@@ -682,7 +683,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
 
     if highThreshold == tableSize - 1 {
         let tableMask = tableSize - 1;
-        let step = (tableSize >> 1) + (tableSize >> 3) + 3;
+        let step = FSE_TABLESTEP(tableSize);
         let add = 0x101010101010101u64;
         let mut pos = 0usize;
         let mut sv = 0u64;
@@ -707,7 +708,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         }
     } else {
         let tableMask = tableSize - 1;
-        let step = (tableSize >> 1) + (tableSize >> 3) + 3;
+        let step = FSE_TABLESTEP(tableSize);
         let mut position = 0usize;
         for (s, &v) in normalizedCounter.iter().enumerate() {
             for _ in 0..i32::from(v) {

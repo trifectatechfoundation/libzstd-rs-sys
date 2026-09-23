@@ -9,7 +9,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2, FSE_symbolCompressionTransform,
     FSE_symbolTTIndex, FSE_writeU16Pair, FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG,
-    FSE_NCOUNTBOUND,
+    FSE_NCOUNTBOUND, FSE_TABLESTEP,
 };
 use crate::lib::common::mem::MEM_write64;
 
@@ -33,9 +33,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         .offset((if tableLog != 0 { tableSize >> 1 } else { 1 }) as isize)
         as *mut core::ffi::c_void;
     let symbolTT = FSCT as *mut FSE_symbolCompressionTransform;
-    let step = (tableSize >> 1)
-        .wrapping_add(tableSize >> 3)
-        .wrapping_add(3);
+    let step = FSE_TABLESTEP(tableSize as usize) as u32;
     let maxSV1 = u32::from(maxSymbolValue) + 1;
 
     let cumul = workSpace as *mut u16;

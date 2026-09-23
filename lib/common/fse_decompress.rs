@@ -2,7 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::fse::{
     FSE_DTableHeader, FSE_decode_t, FSE_BUILD_DTABLE_WKSP_SIZE, FSE_DECOMPRESS_WKSP_SIZE,
-    FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG,
+    FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG, FSE_TABLESTEP,
 };
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
@@ -112,9 +112,7 @@ fn FSE_buildDTable_internal(
     // Spread symbols
     if highThreshold == tableSize.wrapping_sub(1) {
         let tableMask = tableSize.wrapping_sub(1);
-        let step = (tableSize >> 1)
-            .wrapping_add(tableSize >> 3)
-            .wrapping_add(3);
+        let step = FSE_TABLESTEP(tableSize);
 
         // First lay down the symbols in order.
         // We use a u64 to lay down 8 bytes at a time. This reduces branch
