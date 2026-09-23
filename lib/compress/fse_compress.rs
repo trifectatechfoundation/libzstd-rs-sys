@@ -8,8 +8,8 @@ use crate::lib::common::bitstream::{
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2, FSE_symbolCompressionTransform,
-    FSE_symbolTTIndex, FSE_writeU16Pair, FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG,
-    FSE_NCOUNTBOUND, FSE_TABLESTEP,
+    FSE_symbolTTIndex, FSE_writeU16Pair, FSE_BUILD_CTABLE_WORKSPACE_SIZE, FSE_DEFAULT_TABLELOG,
+    FSE_MAX_TABLELOG, FSE_MIN_TABLELOG, FSE_NCOUNTBOUND, FSE_TABLESTEP,
 };
 use crate::lib::common::mem::MEM_write64;
 
@@ -41,17 +41,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 
     let mut highThreshold = tableSize.wrapping_sub(1);
 
-    if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulonglong).wrapping_mul(
-        ((u32::from(maxSymbolValue) + 2) as core::ffi::c_ulonglong)
-            .wrapping_add(1 << tableLog)
-            .wrapping_div(2)
-            .wrapping_add(
-                (size_of::<u64>() as core::ffi::c_ulong)
-                    .wrapping_div(size_of::<u32>() as core::ffi::c_ulong)
-                    as core::ffi::c_ulonglong,
-            ),
-    ) > wkspSize as core::ffi::c_ulonglong
-    {
+    if FSE_BUILD_CTABLE_WORKSPACE_SIZE(usize::from(maxSymbolValue), tableLog as usize) > wkspSize {
         return Err(Error::tableLog_tooLarge);
     }
 
