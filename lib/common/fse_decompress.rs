@@ -92,6 +92,7 @@ fn FSE_buildDTable_internal(
         fastMode: 1,
     };
 
+    // Init: lay down lowprob symbols
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     for s in 0..maxSV1 {
         if normalizedCounter[s] == -1 {
@@ -108,15 +109,21 @@ fn FSE_buildDTable_internal(
 
     *header = DTableH;
 
+    // Spread symbols
     if highThreshold == tableSize.wrapping_sub(1) {
         let tableMask = tableSize.wrapping_sub(1);
         let step = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3);
+
+        // First lay down the symbols in order.
+        // We use a u64 to lay down 8 bytes at a time. This reduces branch
+        // misses since small blocks generally have small table logs, so nearly
+        // all symbols have counts <= 8. We ensure we have 8 bytes at the end of
+        // our buffer to handle the over-write.
         let add = 0x101010101010101u64;
         let mut pos = 0usize;
         let mut sv = 0u64;
-
         for &v in &normalizedCounter[..maxSV1] {
             let n = v as usize;
             spread[pos..][..8].copy_from_slice(&sv.to_le_bytes());
@@ -127,6 +134,11 @@ fn FSE_buildDTable_internal(
             sv = sv.wrapping_add(add);
         }
 
+        // Now we spread those positions across the table.
+        // The benefit of doing it in two stages is that we avoid the
+        // variable size inner loop, which caused lots of branch misses.
+        // Now we can run through all the positions without any branch misses.
+        // We unroll the loop twice, since that is what empirically worked best.
         let mut position = 0usize;
         let unroll = 2;
         for s in (0..tableSize).step_by(unroll) {
@@ -154,10 +166,11 @@ fn FSE_buildDTable_internal(
         }
 
         if position != 0 {
-            return Err(Error::GENERIC);
+            return Err(Error::GENERIC); // position must reach all cells once, otherwise normalizedCounter is incorrect
         }
     }
 
+    // Build decoding table
     for elt in &mut elements[..tableSize] {
         let symbol = usize::from(elt.symbol);
         let nextState = u32::from(symbols[symbol]);
