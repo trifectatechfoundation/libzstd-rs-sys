@@ -22,7 +22,6 @@ pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
     /* additional 8 bytes for potential table overwrite */
 }
 
-#[expect(dead_code)] // TODO: Remove when used
 pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE(
     maxSymbolValue: usize,
     tableLog: usize,
