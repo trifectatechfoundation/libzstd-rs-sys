@@ -1234,7 +1234,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     let mut nextToUpdate3 = ms.nextToUpdate;
 
     let opt = ms.opt.priceTable;
-    let matches = ms.opt.matchTable;
+    let matches = core::slice::from_raw_parts_mut(ms.opt.matchTable, ZSTD_OPT_SIZE);
     let mut lastStretch = ZSTD_optimal_t {
         price: 0,
         off: 0,
@@ -1268,7 +1268,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
         // find first match
         let litlen = ip.offset_from(anchor) as core::ffi::c_long as u32;
         let mut nbMatches = getAllMatches(
-            core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
+            matches,
             ms,
             &mut nextToUpdate3,
             ip,
@@ -1279,7 +1279,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
         );
         ZSTD_optLdm_processMatchCandidate(
             &mut optLdm,
-            core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
+            matches,
             &mut nbMatches,
             ip.offset_from(istart) as core::ffi::c_long as u32,
             iend.offset_from(ip) as core::ffi::c_long as u32,
@@ -1308,8 +1308,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             (*opt).rep = *rep;
 
             // large match -> immediate encoding
-            let maxML = (*matches.add(nbMatches.wrapping_sub(1))).len;
-            let maxOffBase = (*matches.add(nbMatches.wrapping_sub(1))).off;
+            let maxML = matches[nbMatches - 1].len;
+            let maxOffBase = matches[nbMatches - 1].off;
             let mut cur: u32;
             let mut last_pos: u32;
             if maxML > sufficient_len {
@@ -1327,9 +1327,9 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     (*opt.offset(pos as isize)).litlen = litlen.wrapping_add(pos);
                     pos = pos.wrapping_add(1);
                 }
-                for matchNb in 0..nbMatches {
-                    let offBase = (*matches.add(matchNb)).off;
-                    let end = (*matches.add(matchNb)).len;
+                for m in &matches[..nbMatches] {
+                    let offBase = m.off;
+                    let end = m.len;
                     while pos <= end {
                         let matchPrice = ZSTD_getMatchPrice(offBase, pos, &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int;
@@ -1454,7 +1454,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                             let mut nbMatches = getAllMatches(
-                                core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
+                                matches,
                                 ms,
                                 &mut nextToUpdate3,
                                 inr,
@@ -1466,7 +1466,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                             ZSTD_optLdm_processMatchCandidate(
                                 &mut optLdm,
-                                core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
+                                matches,
                                 &mut nbMatches,
                                 inr.offset_from(istart) as core::ffi::c_long as u32,
                                 iend.offset_from(inr) as core::ffi::c_long as u32,
@@ -1474,13 +1474,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             );
 
                             if nbMatches != 0 {
-                                let longestML = (*matches.add(nbMatches.wrapping_sub(1))).len;
+                                let longestML = matches[nbMatches - 1].len;
                                 if longestML > sufficient_len
                                     || cur.wrapping_add(longestML) >= ZSTD_OPT_NUM as u32
                                     || ip.offset(cur as isize).offset(longestML as isize) >= iend
                                 {
                                     lastStretch.mlen = longestML;
-                                    lastStretch.off = (*matches.add(nbMatches.wrapping_sub(1))).off;
+                                    lastStretch.off = matches[nbMatches - 1].off;
                                     lastStretch.litlen = 0;
                                     last_pos = cur.wrapping_add(longestML);
                                     current_block = 12608488225262500095;
@@ -1488,11 +1488,10 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 } else {
                                     // set prices using matches found at position == cur
                                     for matchNb in 0..nbMatches {
-                                        let offset = (*matches.add(matchNb)).off;
-                                        let lastML = (*matches.add(matchNb)).len;
+                                        let offset = matches[matchNb].off;
+                                        let lastML = matches[matchNb].len;
                                         let startML = if matchNb > 0 {
-                                            ((*matches.add(matchNb.wrapping_sub(1))).len)
-                                                .wrapping_add(1)
+                                            (matches[matchNb - 1].len).wrapping_add(1)
                                         } else {
                                             minMatch
                                         };
