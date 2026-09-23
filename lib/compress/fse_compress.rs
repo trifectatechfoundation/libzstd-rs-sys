@@ -162,7 +162,7 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
     if maxSymbolValue != 0 {
         maxHeaderSize
     } else {
-        FSE_NCOUNTBOUND as size_t
+        FSE_NCOUNTBOUND
     }
 }
 
