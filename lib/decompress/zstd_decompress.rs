@@ -30,7 +30,6 @@ use crate::lib::decompress::{
     OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_entropyDTables_t,
     ZSTD_frame, ZSTD_skippableFrame,
 };
-use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;
 use crate::lib::zstd::{
     BufferMode, ForceIgnoreChecksum, Format, ZSTD_ResetDirective, ZSTD_customMem, ZSTD_dParameter,
     ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e,
@@ -3636,7 +3635,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         return err.to_error_code();
                     }
                     // remaining header bytes + next block header
-                    return Ord::max(ZSTD_FRAMEHEADERSIZE_MIN(zds.format), hSize)
+                    return Ord::max(zds.format.frame_header_size_min(), hSize)
                         .wrapping_sub(zds.lhSize)
                         .wrapping_add(ZSTD_BLOCKHEADERSIZE);
                 }
