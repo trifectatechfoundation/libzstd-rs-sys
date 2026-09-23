@@ -59,17 +59,17 @@ pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
     .wrapping_mul(2)
     .wrapping_add(1);
 
-pub const ZSTD_LITFREQ_ADD: core::ffi::c_int = 2;
+pub const ZSTD_LITFREQ_ADD: u32 = 2;
 pub const ZSTD_MAX_PRICE: core::ffi::c_int = 1 << 30;
 /// if srcSize < ZSTD_PREDEF_THRESHOLD, symbols' cost is assumed static, directly determined by pre-defined distributions
-pub const ZSTD_PREDEF_THRESHOLD: core::ffi::c_int = 8;
-pub const BITCOST_ACCURACY: core::ffi::c_int = 8;
-pub const BITCOST_MULTIPLIER: core::ffi::c_int = 1 << BITCOST_ACCURACY;
+pub const ZSTD_PREDEF_THRESHOLD: usize = 8;
+pub const BITCOST_ACCURACY: u32 = 8;
+pub const BITCOST_MULTIPLIER: u32 = 1 << BITCOST_ACCURACY;
 
 /// provide estimated "cost" of a stat in full bits only
 #[inline]
 fn ZSTD_bitWeight(stat: u32) -> u32 {
-    (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER as core::ffi::c_uint)
+    (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER)
 }
 
 /// provide fractional-bit "cost" of a stat,
@@ -78,7 +78,7 @@ fn ZSTD_bitWeight(stat: u32) -> u32 {
 fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     let stat = rawStat.wrapping_add(1);
     let hb = ZSTD_highbit32(stat);
-    let BWeight = hb * BITCOST_MULTIPLIER as u32;
+    let BWeight = hb * BITCOST_MULTIPLIER;
     // FWeight was meant for "Fractional weight"
     // but it's effectively a value between 1 and 2
     // using fixed point arithmetic
@@ -159,7 +159,7 @@ unsafe fn ZSTD_rescaleFreqs(
         // no literals stats collected -> first block assumed -> init
 
         // heuristic: use pre-defined stats for too small inputs
-        if srcSize <= ZSTD_PREDEF_THRESHOLD as size_t {
+        if srcSize <= ZSTD_PREDEF_THRESHOLD {
             opt_state.priceType = OptPrice::Predef;
         }
 
@@ -314,16 +314,16 @@ unsafe fn ZSTD_rawLiteralsCost(
     }
 
     if !ZSTD_compressedLiterals(opt_state) {
-        return (litLength << 3) * BITCOST_MULTIPLIER as u32; // Uncompressed - 8 bytes per literal.
+        return (litLength << 3) * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
 
     if opt_state.priceType == OptPrice::Predef {
-        return litLength * 6 * BITCOST_MULTIPLIER as u32; // 6 bit per literal - no statistic used
+        return litLength * 6 * BITCOST_MULTIPLIER; // 6 bit per literal - no statistic used
     }
 
     // dynamic statistics
     let mut price = opt_state.litSumBasePrice * litLength;
-    let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
+    let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER);
     for u in 0..litLength {
         let mut litPrice = WEIGHT(
             *(opt_state.litFreq).offset(*literals.offset(u as isize) as isize),
@@ -353,7 +353,7 @@ unsafe fn ZSTD_litLengthPrice(
     // So instead just pretend it would cost 1 bit more than ZSTD_BLOCKSIZE_MAX - 1.
     // In such a case, the block would be all literals.
     if litLength == ZSTD_BLOCKSIZE_MAX as u32 {
-        return (BITCOST_MULTIPLIER as u32).wrapping_add(ZSTD_litLengthPrice(
+        return BITCOST_MULTIPLIER.wrapping_add(ZSTD_litLengthPrice(
             (ZSTD_BLOCKSIZE_MAX - 1) as u32,
             opt_state,
             optLevel,
@@ -362,7 +362,7 @@ unsafe fn ZSTD_litLengthPrice(
 
     // dynamic statistics
     let llCode = ZSTD_LLcode(litLength);
-    ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
+    (LL_bits[llCode as usize] as u32 * BITCOST_MULTIPLIER)
         .wrapping_add(opt_state.litLengthSumBasePrice)
         .wrapping_sub(WEIGHT(
             *(opt_state.litLengthFreq).offset(llCode as isize),
@@ -388,25 +388,23 @@ unsafe fn ZSTD_getMatchPrice(
         // fixed scheme, does not use statistics
         return WEIGHT(mlBase, optLevel)
             // emulated offset cost
-            .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER as u32);
+            .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER);
     }
 
     // dynamic statistics
-    let mut price = (offCode * BITCOST_MULTIPLIER as u32).wrapping_add(
-        (opt_state.offCodeSumBasePrice).wrapping_sub(WEIGHT(
-            *(opt_state.offCodeFreq).offset(offCode as isize),
-            optLevel,
-        )),
-    );
+    let mut price =
+        (offCode * BITCOST_MULTIPLIER).wrapping_add((opt_state.offCodeSumBasePrice).wrapping_sub(
+            WEIGHT(*(opt_state.offCodeFreq).offset(offCode as isize), optLevel),
+        ));
     if optLevel < 2 && offCode >= 20 {
         // handicap for long distance offsets, favor decompression speed
-        price = price.wrapping_add(offCode.wrapping_sub(19) * 2 * BITCOST_MULTIPLIER as u32);
+        price = price.wrapping_add(offCode.wrapping_sub(19) * 2 * BITCOST_MULTIPLIER);
     }
 
     // match Length
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
-        ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
+        (ML_bits[mlCode as usize] as u32 * BITCOST_MULTIPLIER).wrapping_add(
             (opt_state.matchLengthSumBasePrice).wrapping_sub(WEIGHT(
                 *(opt_state.matchLengthFreq).offset(mlCode as isize),
                 optLevel,
@@ -414,7 +412,7 @@ unsafe fn ZSTD_getMatchPrice(
         ),
     );
 
-    price = price.wrapping_add((BITCOST_MULTIPLIER / 5) as u32); // heuristic: make matches a bit more costly to favor less sequences -> faster decompression speed
+    price = price.wrapping_add(BITCOST_MULTIPLIER / 5); // heuristic: make matches a bit more costly to favor less sequences -> faster decompression speed
 
     price
 }
@@ -431,9 +429,9 @@ unsafe fn ZSTD_updateStats(
     if ZSTD_compressedLiterals(opt_state) {
         for u in 0..litLength {
             let litFreq = &mut *opt_state.litFreq.add(*literals.add(u as usize) as usize);
-            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
+            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD);
         }
-        opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
+        opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD);
     }
 
     // literal Length
@@ -1422,7 +1420,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                         // skip unpromising positions; about ~+6% speed, -0.01 ratio
                         if !(OPT_LEVEL == 0
-                            && opt[cur + 1].price <= opt[cur].price + BITCOST_MULTIPLIER / 2)
+                            && opt[cur + 1].price <= opt[cur].price + BITCOST_MULTIPLIER as i32 / 2)
                         {
                             let previousPrice = opt[cur].price;
                             let basePrice = previousPrice
@@ -1653,7 +1651,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
         && seqStore.sequences == seqStore.sequencesStart
         && ms.window.dictLimit == ms.window.lowLimit
         && curr == ms.window.dictLimit
-        && srcSize > ZSTD_PREDEF_THRESHOLD as size_t
+        && srcSize > ZSTD_PREDEF_THRESHOLD
     {
         ZSTD_initStats_ultra(ms, seqStore, rep, src, srcSize);
     }
