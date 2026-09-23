@@ -37,7 +37,7 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
+    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
@@ -1152,7 +1152,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 /// based on it's 'matchStartPosInBlock' and 'matchEndPosInBlock',
 /// into 'matches'. Maintains the correct ordering of 'matches'.
 unsafe fn ZSTD_optLdm_maybeAddMatch(
-    matches: *mut ZSTD_match_t,
+    matches: &mut [ZSTD_match_t],
     nbMatches: &mut usize,
     optLdm: &ZSTD_optLdm_t,
     currPosInBlock: u32,
@@ -1173,12 +1173,10 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
     }
 
     if *nbMatches == 0
-        || candidateMatchLength > (*matches.add((*nbMatches).wrapping_sub(1))).len
-            && *nbMatches < ZSTD_OPT_NUM
+        || *nbMatches < ZSTD_OPT_NUM && candidateMatchLength > matches[*nbMatches - 1].len
     {
         let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM);
-        (*matches.add(*nbMatches)).len = candidateMatchLength;
-        (*matches.add(*nbMatches)).off = candidateOffBase;
+        matches[*nbMatches] = ZSTD_match_t::new(candidateOffBase, candidateMatchLength);
         *nbMatches = (*nbMatches).wrapping_add(1);
     }
 }
@@ -1186,7 +1184,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
 /// Wrapper function to update ldm seq store and call ldm functions as necessary.
 unsafe fn ZSTD_optLdm_processMatchCandidate(
     optLdm: &mut ZSTD_optLdm_t,
-    matches: *mut ZSTD_match_t,
+    matches: &mut [ZSTD_match_t],
     nbMatches: &mut usize,
     currPosInBlock: u32,
     remainingBytes: u32,
@@ -1281,7 +1279,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
         );
         ZSTD_optLdm_processMatchCandidate(
             &mut optLdm,
-            matches,
+            core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
             &mut nbMatches,
             ip.offset_from(istart) as core::ffi::c_long as u32,
             iend.offset_from(ip) as core::ffi::c_long as u32,
@@ -1468,7 +1466,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                             ZSTD_optLdm_processMatchCandidate(
                                 &mut optLdm,
-                                matches,
+                                core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
                                 &mut nbMatches,
                                 inr.offset_from(istart) as core::ffi::c_long as u32,
                                 iend.offset_from(inr) as core::ffi::c_long as u32,
