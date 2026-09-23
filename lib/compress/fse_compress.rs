@@ -115,38 +115,38 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
 
     // Build table
-    for u_1 in 0..tableSize {
-        let s_1 = *tableSymbol.add(u_1);
-        let fresh1 = &mut (*cumul.add(s_1 as usize));
-        *tableU16.offset(*fresh1 as isize) = tableSize.wrapping_add(u_1) as u16;
+    for u in 0..tableSize {
+        let s = *tableSymbol.add(u);
+        let fresh1 = &mut (*cumul.add(s as usize));
+        *tableU16.offset(*fresh1 as isize) = tableSize.wrapping_add(u) as u16;
         *fresh1 = (*fresh1).wrapping_add(1);
     }
 
     // Build Symbol Transformation Table
     let mut total = 0u32;
-    for s_2 in 0..maxSV1 {
-        match normalizedCounter[s_2] {
+    for s in 0..maxSV1 {
+        match normalizedCounter[s] {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
-                (*symbolTT.add(s_2)).deltaNbBits = (tableLog.wrapping_add(1) << 16)
+                (*symbolTT.add(s)).deltaNbBits = (tableLog.wrapping_add(1) << 16)
                     .wrapping_sub((1 << tableLog) as core::ffi::c_uint);
             }
             -1 | 1 => {
-                (*symbolTT.add(s_2)).deltaNbBits =
+                (*symbolTT.add(s)).deltaNbBits =
                     (tableLog << 16).wrapping_sub((1 << tableLog) as core::ffi::c_uint);
-                (*symbolTT.add(s_2)).deltaFindState = total.wrapping_sub(1) as core::ffi::c_int;
+                (*symbolTT.add(s)).deltaFindState = total.wrapping_sub(1) as core::ffi::c_int;
                 total = total.wrapping_add(1);
             }
             _ => {
                 let maxBitsOut = tableLog.wrapping_sub(ZSTD_highbit32(
-                    (normalizedCounter[s_2] as u32).wrapping_sub(1),
+                    (normalizedCounter[s] as u32).wrapping_sub(1),
                 ));
-                let minStatePlus = (normalizedCounter[s_2] as u32) << maxBitsOut;
-                (*symbolTT.add(s_2)).deltaNbBits = (maxBitsOut << 16).wrapping_sub(minStatePlus);
-                (*symbolTT.add(s_2)).deltaFindState = total
-                    .wrapping_sub(normalizedCounter[s_2] as core::ffi::c_uint)
+                let minStatePlus = (normalizedCounter[s] as u32) << maxBitsOut;
+                (*symbolTT.add(s)).deltaNbBits = (maxBitsOut << 16).wrapping_sub(minStatePlus);
+                (*symbolTT.add(s)).deltaFindState = total
+                    .wrapping_sub(normalizedCounter[s] as core::ffi::c_uint)
                     as core::ffi::c_int;
-                total = total.wrapping_add(normalizedCounter[s_2] as core::ffi::c_uint);
+                total = total.wrapping_add(normalizedCounter[s] as core::ffi::c_uint);
             }
         }
     }
