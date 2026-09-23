@@ -174,6 +174,56 @@ mod compress2_strats {
         }
     }
 
+    /// Only interesting for btopt/btultra/btultra2 which use zstd_opt.rs, and fast
+    mod target_length {
+        use super::*;
+
+        macro_rules! compress {
+            ($strategy:expr, $dict_setup:expr, $target_length:expr) => {
+                compress_with_param!(
+                    $strategy,
+                    $dict_setup,
+                    ZSTD_cParameter::ZSTD_c_targetLength,
+                    $target_length
+                )
+            };
+        }
+
+        #[track_caller]
+        fn check_strategy(strategy: i32, target_length: i32) {
+            if cfg!(miri) {
+                let dict_setup = DICT_SETUPS[(strategy as usize) % DICT_SETUPS.len()];
+                assert_eq_rs_c!({ compress!(strategy, dict_setup, target_length) });
+            } else {
+                for dict_setup in DICT_SETUPS {
+                    assert_eq_rs_c!({ compress!(strategy, dict_setup, target_length) });
+                }
+            }
+        }
+
+        /// For fast targetLength sets the match-sampling step size in zstd_fast.rs
+        #[test]
+        fn fast() {
+            check_strategy(1, 64);
+        }
+
+        #[test]
+        fn btopt() {
+            check_strategy(7, 64);
+        }
+
+        #[test]
+        fn btultra() {
+            check_strategy(8, 64);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore = "slow")]
+        fn btultra2() {
+            check_strategy(9, 64);
+        }
+    }
+
     mod target_cblock_size {
         use super::*;
 
