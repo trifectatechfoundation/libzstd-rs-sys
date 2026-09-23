@@ -55,10 +55,6 @@ fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
     newReps
 }
 
-pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
-    .wrapping_mul(2)
-    .wrapping_add(1);
-
 pub const ZSTD_LITFREQ_ADD: u32 = 2;
 pub const ZSTD_MAX_PRICE: core::ffi::c_int = 1 << 30;
 /// if srcSize < ZSTD_PREDEF_THRESHOLD, symbols' cost is assumed static, directly determined by pre-defined distributions
@@ -1087,8 +1083,8 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 ) {
     // Setting match end position to MAX to ensure we never use an LDM during this block
     if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
-        optLdm.startPosInBlock = UINT_MAX;
-        optLdm.endPosInBlock = UINT_MAX;
+        optLdm.startPosInBlock = u32::MAX;
+        optLdm.endPosInBlock = u32::MAX;
         return;
     }
     // Calculate appropriate bytes left in matchLength and litLength
@@ -1109,8 +1105,8 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 
     // If there are more literal bytes than bytes remaining in block, no ldm is possible
     if literalsBytesRemaining >= blockBytesRemaining {
-        optLdm.startPosInBlock = UINT_MAX;
-        optLdm.endPosInBlock = UINT_MAX;
+        optLdm.startPosInBlock = u32::MAX;
+        optLdm.endPosInBlock = u32::MAX;
         ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as size_t);
         return;
     }
@@ -1702,5 +1698,3 @@ pub unsafe fn ZSTD_compressBlock_btultra_extDict(
 // note: no btultra2 variant for extDict nor dictMatchState,
 // because btultra2 is not meant to work with dictionaries
 // and is only specific for the first block (no prefix)
-
-pub const __INT_MAX__: core::ffi::c_int = 2147483647;

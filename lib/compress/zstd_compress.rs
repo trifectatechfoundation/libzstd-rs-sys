@@ -1098,8 +1098,6 @@ pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 /// so that zstd_opt.c doesn't need to know about this constant.
 const ZSTD_HASHLOG3_MAX: u32 = 17;
 
-pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
-
 // ------- Helper functions -------
 
 /// Note that the result from this function is only valid for
@@ -10080,8 +10078,6 @@ pub extern "C" fn ZSTD_getParams(
     }
     ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
-
-pub const __INT_MAX__: core::ffi::c_int = 2147483647;
 
 pub const ZSTD_MAX_CLEVEL: core::ffi::c_int = 22;
 
