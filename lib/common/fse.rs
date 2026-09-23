@@ -4,7 +4,7 @@ use crate::lib::common::bitstream::{BIT_CStream_t, BIT_addBits, BIT_flushBits, B
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
 
-pub(crate) const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
+pub(crate) const FSE_NCOUNTBOUND: usize = 512;
 
 pub(crate) const fn FSE_CTABLE_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
     1 + (1 << ((maxTableLog) - 1)) + (((maxSymbolValue) + 1) * 2)
