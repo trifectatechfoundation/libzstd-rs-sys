@@ -8703,11 +8703,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             // but actually input wasn't consumed, so keep track of position from where compression shall resume
             (*cctx).stableIn_notConsumed = ((*cctx).stableIn_notConsumed).wrapping_add(inputSize);
             // don't initialize yet, wait for the first block of flush() order, for better parameters adaptation
-            return (if (*cctx).requestedParams.format == Format::ZSTD_f_zstd1 {
-                6
-            } else {
-                2
-            }) as size_t;
+            return (*cctx).requestedParams.format.frame_header_size_min() as size_t;
         }
         let err_code = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize);
         if ERR_isError(err_code) {
