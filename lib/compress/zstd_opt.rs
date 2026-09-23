@@ -1309,6 +1309,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     opt[pos].price = ZSTD_MAX_PRICE;
                     opt[pos].mlen = 0;
                     opt[pos].litlen = litlen.wrapping_add(pos as u32);
+                    opt[pos].off = 0; // initialized to prevent UB
+                    opt[pos].rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
                     pos = pos.wrapping_add(1);
                 }
                 for m in &matches[..nbMatches] {
@@ -1323,6 +1325,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         opt[pos].litlen = 0; // end of match
                         opt[pos].price = sequencePrice
                             + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
+                        opt[pos].rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
                         pos = pos.wrapping_add(1);
                     }
                 }
@@ -1479,6 +1482,10 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                                     opt[last_pos].price = ZSTD_MAX_PRICE;
                                                     // just needs to be != 0, to mean "not an end of match
                                                     opt[last_pos].litlen = 1;
+                                                    // initialized to prevent UB
+                                                    opt[last_pos].mlen = 0;
+                                                    opt[last_pos].off = 0;
+                                                    opt[last_pos].rep = [0; ZSTD_REP_NUM as usize];
                                                 }
                                                 opt[pos].mlen = mlen;
                                                 opt[pos].off = offset;
