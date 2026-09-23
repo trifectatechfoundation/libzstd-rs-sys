@@ -1215,7 +1215,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     srcSize: size_t,
     dictMode: DictMode,
 ) -> size_t {
-    let mut current_block: u64;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
@@ -1349,7 +1348,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                 cur = 1;
                 loop {
                     if cur > last_pos {
-                        current_block = 10357520176418200368;
+                        lastStretch = opt[last_pos];
+                        cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
                         break;
                     }
                     let inr = ip.add(cur);
@@ -1424,7 +1424,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     // last match must start at a minimum distance of 8 from oend
                     if inr <= ilimit {
                         if cur == last_pos {
-                            current_block = 10357520176418200368;
+                            lastStretch = opt[last_pos];
+                            cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
                             break;
                         }
 
@@ -1465,7 +1466,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                     lastStretch.off = matches[nbMatches - 1].off;
                                     lastStretch.litlen = 0;
                                     last_pos = cur.wrapping_add(longestML as usize);
-                                    current_block = 12608488225262500095;
                                     break;
                                 } else {
                                     // set prices using matches found at position == cur
@@ -1512,14 +1512,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     }
 
                     cur = cur.wrapping_add(1);
-                }
-
-                match current_block {
-                    12608488225262500095 => {}
-                    _ => {
-                        lastStretch = opt[last_pos];
-                        cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
-                    }
                 }
             }
 
