@@ -1310,40 +1310,40 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             // large match -> immediate encoding
             let maxML = matches[nbMatches - 1].len;
             let maxOffBase = matches[nbMatches - 1].off;
-            let mut cur: u32;
-            let mut last_pos: u32;
+            let mut cur: usize;
+            let mut last_pos: usize;
             if maxML > sufficient_len {
                 lastStretch.litlen = 0;
                 lastStretch.mlen = maxML;
                 lastStretch.off = maxOffBase;
                 cur = 0;
-                last_pos = maxML;
+                last_pos = maxML as usize;
             } else {
                 // set prices for first matches starting position == 0
                 let mut pos = 1;
-                while pos < minMatch {
-                    (*opt.offset(pos as isize)).price = ZSTD_MAX_PRICE;
-                    (*opt.offset(pos as isize)).mlen = 0;
-                    (*opt.offset(pos as isize)).litlen = litlen.wrapping_add(pos);
+                while pos < minMatch as usize {
+                    (*opt.add(pos)).price = ZSTD_MAX_PRICE;
+                    (*opt.add(pos)).mlen = 0;
+                    (*opt.add(pos)).litlen = litlen.wrapping_add(pos as u32);
                     pos = pos.wrapping_add(1);
                 }
                 for m in &matches[..nbMatches] {
                     let offBase = m.off;
-                    let end = m.len;
+                    let end = m.len as usize;
                     while pos <= end {
-                        let matchPrice = ZSTD_getMatchPrice(offBase, pos, &ms.opt, OPT_LEVEL)
+                        let matchPrice = ZSTD_getMatchPrice(offBase, pos as u32, &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int;
                         let sequencePrice = (*opt).price + matchPrice;
-                        (*opt.offset(pos as isize)).mlen = pos;
-                        (*opt.offset(pos as isize)).off = offBase;
-                        (*opt.offset(pos as isize)).litlen = 0; // end of match
-                        (*opt.offset(pos as isize)).price = sequencePrice
+                        (*opt.add(pos)).mlen = pos as u32;
+                        (*opt.add(pos)).off = offBase;
+                        (*opt.add(pos)).litlen = 0; // end of match
+                        (*opt.add(pos)).price = sequencePrice
                             + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                         pos = pos.wrapping_add(1);
                     }
                 }
                 last_pos = pos.wrapping_sub(1);
-                (*opt.offset(pos as isize)).price = ZSTD_MAX_PRICE;
+                (*opt.add(pos)).price = ZSTD_MAX_PRICE;
 
                 // check further positions
                 cur = 1;
@@ -1352,51 +1352,38 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         current_block = 10357520176418200368;
                         break;
                     }
-                    let inr = ip.offset(cur as isize);
+                    let inr = ip.add(cur);
 
                     // Fix current position with one literal if cheaper
-                    let litlen_0 =
-                        ((*opt.offset(cur.wrapping_sub(1) as isize)).litlen).wrapping_add(1);
-                    let price = (*opt.offset(cur.wrapping_sub(1) as isize)).price
-                        + ZSTD_rawLiteralsCost(
-                            ip.offset(cur as isize).sub(1),
-                            1,
-                            &ms.opt,
-                            OPT_LEVEL,
-                        ) as core::ffi::c_int
+                    let litlen_0 = ((*opt.add(cur.wrapping_sub(1))).litlen).wrapping_add(1);
+                    let price = (*opt.add(cur.wrapping_sub(1))).price
+                        + ZSTD_rawLiteralsCost(ip.add(cur).sub(1), 1, &ms.opt, OPT_LEVEL)
+                            as core::ffi::c_int
                         + (ZSTD_litLengthPrice(litlen_0, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                             - ZSTD_litLengthPrice(litlen_0.wrapping_sub(1), &ms.opt, OPT_LEVEL)
                                 as core::ffi::c_int);
-                    if price <= (*opt.offset(cur as isize)).price {
-                        let prevMatch = *opt.offset(cur as isize);
-                        *opt.offset(cur as isize) = *opt.offset(cur.wrapping_sub(1) as isize);
-                        (*opt.offset(cur as isize)).litlen = litlen_0;
-                        (*opt.offset(cur as isize)).price = price;
+                    if price <= (*opt.add(cur)).price {
+                        let prevMatch = *opt.add(cur);
+                        *opt.add(cur) = *opt.add(cur.wrapping_sub(1));
+                        (*opt.add(cur)).litlen = litlen_0;
+                        (*opt.add(cur)).price = price;
                         if OPT_LEVEL >= 1
                             && prevMatch.litlen == 0
                             && (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                                 - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int)
                                 < 0
-                            && ip.offset(cur as isize) < iend
+                            && ip.add(cur) < iend
                         {
                             // check next position, in case it would be cheaper
                             let with1literal = prevMatch.price
-                                + ZSTD_rawLiteralsCost(
-                                    ip.offset(cur as isize),
-                                    1,
-                                    &ms.opt,
-                                    OPT_LEVEL,
-                                ) as core::ffi::c_int
+                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                    as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                                     - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL)
                                         as core::ffi::c_int);
                             let withMoreLiterals = price
-                                + ZSTD_rawLiteralsCost(
-                                    ip.offset(cur as isize),
-                                    1,
-                                    &ms.opt,
-                                    OPT_LEVEL,
-                                ) as core::ffi::c_int
+                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                    as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(litlen_0.wrapping_add(1), &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int
                                     - ZSTD_litLengthPrice(
@@ -1405,19 +1392,19 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                         OPT_LEVEL,
                                     ) as core::ffi::c_int);
                             if with1literal < withMoreLiterals
-                                && with1literal < (*opt.offset(cur.wrapping_add(1) as isize)).price
+                                && with1literal < (*opt.add(cur.wrapping_add(1))).price
                             {
                                 // update offset history - before it disappears
-                                let prev = cur.wrapping_sub(prevMatch.mlen);
+                                let prev = cur.wrapping_sub(prevMatch.mlen as usize);
                                 let newReps = ZSTD_newRep(
-                                    &(*opt.offset(prev as isize)).rep,
+                                    &(*opt.add(prev)).rep,
                                     prevMatch.off,
-                                    (*opt.offset(prev as isize)).litlen == 0,
+                                    (*opt.add(prev)).litlen == 0,
                                 );
-                                *opt.offset(cur.wrapping_add(1) as isize) = prevMatch;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
+                                *opt.add(cur.wrapping_add(1)) = prevMatch;
+                                (*opt.add(cur.wrapping_add(1))).rep = newReps;
+                                (*opt.add(cur.wrapping_add(1))).litlen = 1;
+                                (*opt.add(cur.wrapping_add(1))).price = with1literal;
                                 if last_pos < cur.wrapping_add(1) {
                                     last_pos = cur.wrapping_add(1);
                                 }
@@ -1427,15 +1414,15 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                     // Offset history is not updated during match comparison.
                     // Do it here, now that the match is selected and confirmed.
-                    if (*opt.offset(cur as isize)).litlen == 0 {
+                    if (*opt.add(cur)).litlen == 0 {
                         // just finished a match => alter offset history
-                        let prev_0 = cur.wrapping_sub((*opt.offset(cur as isize)).mlen);
+                        let prev_0 = cur.wrapping_sub((*opt.add(cur)).mlen as usize);
                         let newReps_0 = ZSTD_newRep(
-                            &(*opt.offset(prev_0 as isize)).rep,
-                            (*opt.offset(cur as isize)).off,
-                            (*opt.offset(prev_0 as isize)).litlen == 0,
+                            &(*opt.add(prev_0)).rep,
+                            (*opt.add(cur)).off,
+                            (*opt.add(prev_0)).litlen == 0,
                         );
-                        (*opt.offset(cur as isize)).rep = newReps_0;
+                        (*opt.add(cur)).rep = newReps_0;
                     }
 
                     // last match must start at a minimum distance of 8 from oend
@@ -1447,10 +1434,10 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                         // skip unpromising positions; about ~+6% speed, -0.01 ratio
                         if !(OPT_LEVEL == 0
-                            && (*opt.offset(cur.wrapping_add(1) as isize)).price
-                                <= (*opt.offset(cur as isize)).price + BITCOST_MULTIPLIER / 2)
+                            && (*opt.add(cur.wrapping_add(1))).price
+                                <= (*opt.add(cur)).price + BITCOST_MULTIPLIER / 2)
                         {
-                            let previousPrice = (*opt.offset(cur as isize)).price;
+                            let previousPrice = (*opt.add(cur)).price;
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                             let mut nbMatches = getAllMatches(
@@ -1459,8 +1446,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 &mut nextToUpdate3,
                                 inr,
                                 iend,
-                                &(*opt.offset(cur as isize)).rep,
-                                (*opt.offset(cur as isize)).litlen == 0,
+                                &(*opt.add(cur)).rep,
+                                (*opt.add(cur)).litlen == 0,
                                 minMatch,
                             );
 
@@ -1476,13 +1463,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             if nbMatches != 0 {
                                 let longestML = matches[nbMatches - 1].len;
                                 if longestML > sufficient_len
-                                    || cur.wrapping_add(longestML) >= ZSTD_OPT_NUM as u32
-                                    || ip.offset(cur as isize).offset(longestML as isize) >= iend
+                                    || cur.wrapping_add(longestML as usize) >= ZSTD_OPT_NUM
+                                    || ip.add(cur).offset(longestML as isize) >= iend
                                 {
                                     lastStretch.mlen = longestML;
                                     lastStretch.off = matches[nbMatches - 1].off;
                                     lastStretch.litlen = 0;
-                                    last_pos = cur.wrapping_add(longestML);
+                                    last_pos = cur.wrapping_add(longestML as usize);
                                     current_block = 12608488225262500095;
                                     break;
                                 } else {
@@ -1498,36 +1485,33 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                                         // scan downward
                                         for mlen in (startML..lastML + 1).rev() {
-                                            let pos_0 = cur.wrapping_add(mlen);
+                                            let pos_0 = cur.wrapping_add(mlen as usize);
                                             let price_0 = basePrice
                                                 + ZSTD_getMatchPrice(
                                                     offset, mlen, &ms.opt, OPT_LEVEL,
                                                 )
                                                     as core::ffi::c_int;
 
-                                            if pos_0 > last_pos
-                                                || price_0 < (*opt.offset(pos_0 as isize)).price
+                                            if pos_0 > last_pos || price_0 < (*opt.add(pos_0)).price
                                             {
                                                 while last_pos < pos_0 {
                                                     // fill empty positions, for future comparisons
                                                     last_pos = last_pos.wrapping_add(1);
-                                                    (*opt.offset(last_pos as isize)).price =
-                                                        ZSTD_MAX_PRICE;
+                                                    (*opt.add(last_pos)).price = ZSTD_MAX_PRICE;
                                                     // just needs to be != 0, to mean "not an end of match
-                                                    (*opt.offset(last_pos as isize)).litlen = 1;
+                                                    (*opt.add(last_pos)).litlen = 1;
                                                 }
-                                                (*opt.offset(pos_0 as isize)).mlen = mlen;
-                                                (*opt.offset(pos_0 as isize)).off = offset;
-                                                (*opt.offset(pos_0 as isize)).litlen = 0;
-                                                (*opt.offset(pos_0 as isize)).price = price_0;
+                                                (*opt.add(pos_0)).mlen = mlen;
+                                                (*opt.add(pos_0)).off = offset;
+                                                (*opt.add(pos_0)).litlen = 0;
+                                                (*opt.add(pos_0)).price = price_0;
                                             } else if OPT_LEVEL == 0 {
                                                 break; // early update abort; gets ~+10% speed for about -0.01 ratio loss
                                             }
                                         }
                                     }
 
-                                    (*opt.offset(last_pos.wrapping_add(1) as isize)).price =
-                                        ZSTD_MAX_PRICE;
+                                    (*opt.add(last_pos.wrapping_add(1))).price = ZSTD_MAX_PRICE;
                                 }
                             }
                         }
@@ -1539,28 +1523,28 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                 match current_block {
                     12608488225262500095 => {}
                     _ => {
-                        lastStretch = *opt.offset(last_pos as isize);
-                        cur = last_pos.wrapping_sub(lastStretch.mlen);
+                        lastStretch = *opt.add(last_pos);
+                        cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
                     }
                 }
             }
 
             if lastStretch.mlen == 0 {
                 // no solution: all matches have been converted into literals
-                ip = ip.offset(last_pos as isize);
+                ip = ip.add(last_pos);
             } else {
                 // Update offset history
                 if lastStretch.litlen == 0 {
                     // finishing on a match: update offset history
                     let reps = ZSTD_newRep(
-                        &(*opt.offset(cur as isize)).rep,
+                        &(*opt.add(cur)).rep,
                         lastStretch.off,
-                        (*opt.offset(cur as isize)).litlen == 0,
+                        (*opt.add(cur)).litlen == 0,
                     );
                     *rep = reps;
                 } else {
                     *rep = lastStretch.rep;
-                    cur = cur.wrapping_sub(lastStretch.litlen);
+                    cur = cur.wrapping_sub(lastStretch.litlen as usize);
                 }
 
                 // Let's write the shortest path solution.
@@ -1576,32 +1560,32 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                 if lastStretch.litlen > 0 {
                     // last "sequence" is unfinished: just a bunch of literals
-                    (*opt.offset(storeEnd as isize)).litlen = lastStretch.litlen;
-                    (*opt.offset(storeEnd as isize)).mlen = 0;
+                    (*opt.add(storeEnd)).litlen = lastStretch.litlen;
+                    (*opt.add(storeEnd)).mlen = 0;
                     storeStart = storeEnd.wrapping_sub(1);
-                    *opt.offset(storeStart as isize) = lastStretch;
+                    *opt.add(storeStart) = lastStretch;
                 }
-                *opt.offset(storeEnd as isize) = lastStretch; // note: litlen will be fixed
+                *opt.add(storeEnd) = lastStretch; // note: litlen will be fixed
                 storeStart = storeEnd;
 
                 loop {
-                    let nextStretch = *opt.offset(stretchPos as isize);
-                    (*opt.offset(storeStart as isize)).litlen = nextStretch.litlen;
+                    let nextStretch = *opt.add(stretchPos);
+                    (*opt.add(storeStart)).litlen = nextStretch.litlen;
                     if nextStretch.mlen == 0 {
                         // reaching beginning of segment
                         break;
                     }
                     storeStart = storeStart.wrapping_sub(1);
-                    *opt.offset(storeStart as isize) = nextStretch; // note: litlen will be fixed
+                    *opt.add(storeStart) = nextStretch; // note: litlen will be fixed
                     stretchPos = stretchPos
-                        .wrapping_sub((nextStretch.litlen).wrapping_add(nextStretch.mlen));
+                        .wrapping_sub((nextStretch.litlen.wrapping_add(nextStretch.mlen)) as usize);
                 }
 
                 // save sequences
                 for storePos in storeStart..storeEnd + 1 {
-                    let llen = (*opt.offset(storePos as isize)).litlen;
-                    let mlen_0 = (*opt.offset(storePos as isize)).mlen;
-                    let offBase_0 = (*opt.offset(storePos as isize)).off;
+                    let llen = (*opt.add(storePos)).litlen;
+                    let mlen_0 = (*opt.add(storePos)).mlen;
+                    let offBase_0 = (*opt.add(storePos)).off;
                     let advance = llen.wrapping_add(mlen_0);
 
                     if mlen_0 == 0 {
