@@ -286,6 +286,12 @@ pub struct ZSTD_match_t {
     pub len: u32,
 }
 
+impl ZSTD_match_t {
+    pub fn new(off: u32, len: u32) -> Self {
+        Self { off, len }
+    }
+}
+
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum OptPrice {
