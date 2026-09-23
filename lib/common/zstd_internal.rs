@@ -10,7 +10,7 @@ const fn const_max(a: usize, b: usize) -> usize {
     }
 }
 
-pub(crate) const ZSTD_OPT_NUM: core::ffi::c_int = 1 << 12;
+pub(crate) const ZSTD_OPT_NUM: usize = 1 << 12;
 
 pub(crate) const ZSTD_REP_NUM: u32 = 3;
 pub(crate) type RepCodes = [u32; ZSTD_REP_NUM as usize];

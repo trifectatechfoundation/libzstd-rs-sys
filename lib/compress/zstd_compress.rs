@@ -516,7 +516,7 @@ pub struct BlockSummary {
 }
 
 pub const ZSTD_BLOCKSPLITTER_LEVEL_MAX: core::ffi::c_int = 6;
-pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
+pub const ZSTD_OPT_SIZE: usize = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: usize = 196;
 
 #[inline]
