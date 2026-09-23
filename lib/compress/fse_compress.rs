@@ -92,6 +92,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let mut sv = 0u64;
         for s in 0..maxSV1 {
             let n = normalizedCounter[s as usize] as core::ffi::c_int;
+            // TODO: rewrite these writes similar to the one in FSE_buildDTable_internal
+            // when spread becomes a slice
             MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
             for i in (8..n).step_by(8) {
                 MEM_write64(

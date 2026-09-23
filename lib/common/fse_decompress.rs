@@ -126,9 +126,9 @@ fn FSE_buildDTable_internal(
         let mut sv = 0u64;
         for &v in &normalizedCounter[..maxSV1] {
             let n = v as usize;
-            spread[pos..][..8].copy_from_slice(&sv.to_le_bytes());
-            for i in (8..n).step_by(8) {
-                spread[pos..][i..][..8].copy_from_slice(&sv.to_le_bytes());
+            let data = &mut spread[pos..][..n.max(1).next_multiple_of(8)];
+            for chunk in data.as_chunks_mut::<8>().0 {
+                *chunk = sv.to_le_bytes();
             }
             pos = pos.wrapping_add(n);
             sv = sv.wrapping_add(add);
