@@ -1,5 +1,5 @@
 pub type ZSTD_getAllMatchesFn = unsafe fn(
-    *mut ZSTD_match_t,
+    &mut [ZSTD_match_t],
     &mut ZSTD_MatchState_t,
     *mut u32,
     *const u8,
@@ -666,7 +666,7 @@ pub unsafe fn ZSTD_updateTree(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *
 
 #[inline(always)]
 unsafe fn ZSTD_insertBtAndGetAllMatches(
-    matches: *mut ZSTD_match_t,
+    matches: &mut [ZSTD_match_t],
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
     ip: *const u8,
@@ -847,8 +847,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         // save longer solution
         if repLen as size_t > bestLength {
             bestLength = repLen as size_t;
-            (*matches.add(mnum)).off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
-            (*matches.add(mnum)).len = repLen;
+            let off = repCode.wrapping_sub(ll0 as u32).wrapping_add(1); // expect value between 1 and 3
+            matches[mnum] = ZSTD_match_t::new(off, repLen);
             mnum = mnum.wrapping_add(1);
             if (repLen > sufficient_len) | (ip.offset(repLen as isize) == iLimit) {
                 return mnum;
@@ -876,8 +876,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             // save best solution
             if mlen >= mls as size_t {
                 bestLength = mlen;
-                (*matches).off = curr.wrapping_sub(matchIndex3).wrapping_add(ZSTD_REP_NUM);
-                (*matches).len = mlen as u32;
+                let off = curr.wrapping_sub(matchIndex3).wrapping_add(ZSTD_REP_NUM);
+                matches[0] = ZSTD_match_t::new(off, mlen as u32);
                 mnum = 1;
                 if (mlen > sufficient_len as size_t) | (ip.add(mlen) == iLimit) {
                     ms.nextToUpdate = curr.wrapping_add(1); // skip insertion
@@ -931,8 +931,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 matchEndIdx = matchIndex.wrapping_add(matchLength as u32);
             }
             bestLength = matchLength;
-            (*matches.add(mnum)).off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
-            (*matches.add(mnum)).len = matchLength as u32;
+            let off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
+            matches[mnum] = ZSTD_match_t::new(off, matchLength as u32);
             mnum = mnum.wrapping_add(1);
             // equal: no way to know if inf or sup
             if (matchLength > ZSTD_OPT_NUM) | (ip.add(matchLength) == iLimit) {
@@ -1004,8 +1004,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                     matchEndIdx = matchIndex.wrapping_add(matchLength_0 as u32);
                 }
                 bestLength = matchLength_0;
-                (*matches.add(mnum)).off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
-                (*matches.add(mnum)).len = matchLength_0 as u32;
+                let off = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM);
+                matches[mnum] = ZSTD_match_t::new(off, matchLength_0 as u32);
                 mnum = mnum.wrapping_add(1);
                 // equal: no way to know if inf or sup
                 if (matchLength_0 > ZSTD_OPT_NUM) | (ip.add(matchLength_0) == iLimit) {
@@ -1037,7 +1037,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 
 #[inline(always)]
 unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u32>(
-    matches: *mut ZSTD_match_t,
+    matches: &mut [ZSTD_match_t],
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
     ip: *const u8,
@@ -1268,7 +1268,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
         // find first match
         let litlen = ip.offset_from(anchor) as core::ffi::c_long as u32;
         let mut nbMatches = getAllMatches(
-            matches,
+            core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
             ms,
             &mut nextToUpdate3,
             ip,
@@ -1454,7 +1454,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                             let mut nbMatches = getAllMatches(
-                                matches,
+                                core::slice::from_raw_parts_mut(matches, ZSTD_OPT_SIZE),
                                 ms,
                                 &mut nextToUpdate3,
                                 inr,
