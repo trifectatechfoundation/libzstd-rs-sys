@@ -246,3 +246,8 @@ const _: () = assert!(
     FSE_MAX_TABLELOG <= FSE_TABLELOG_ABSOLUTE_MAX,
     "FSE_MAX_TABLELOG > FSE_TABLELOG_ABSOLUTE_MAX is not supported"
 );
+
+#[inline]
+pub(crate) const fn FSE_TABLESTEP(tableSize: usize) -> usize {
+    (tableSize >> 1) + (tableSize >> 3) + 3
+}
