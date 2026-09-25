@@ -218,7 +218,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     huffLog: c_uint,
     workspace: *mut c_void,
     mut workspaceSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ct = &CTable.elements;
     let op = dst as *mut u8;
     let wksp = HUF_alignUpWorkspace(workspace, &mut workspaceSize, align_of::<u32>())
@@ -233,7 +233,7 @@ pub unsafe fn HUF_writeCTable_wksp(
 
     /* check conditions */
     if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
 
     let maxSymbolValue = usize::from(maxSymbolValue);
@@ -254,33 +254,30 @@ pub unsafe fn HUF_writeCTable_wksp(
 
     /* attempt weights compression by FSE */
     if maxDstSize < 1 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     {
-        let hSize = match HUF_compressWeights(
+        let hSize = HUF_compressWeights(
             op.add(1) as *mut c_void,
             maxDstSize - 1,
             &(*wksp).huffWeight,
             maxSymbolValue,
             &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
             size_of::<HUF_CompressWeightsWksp>(),
-        ) {
-            Ok(hSize) => hSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
         if (hSize > 1) && (hSize < maxSymbolValue / 2) {
             /* FSE compressed */
             *op = hSize as u8;
-            return hSize + 1;
+            return Ok(hSize + 1);
         }
     }
 
     /* write raw values as 4-bits (max : 15) */
     if maxSymbolValue > 256 - 128 {
-        return Error::GENERIC.to_error_code(); /* should not happen : likely means source cannot be compressed */
+        return Err(Error::GENERIC); /* should not happen : likely means source cannot be compressed */
     }
     if maxSymbolValue.div_ceil(2) + 1 > maxDstSize {
-        return Error::dstSize_tooSmall.to_error_code(); /* not enough space within dst buffer */
+        return Err(Error::dstSize_tooSmall); /* not enough space within dst buffer */
     }
     // 128 is the special-case marker; `maxSymbolValue <= 128` was just checked, so this fits a byte
     *op = (128 + maxSymbolValue - 1) as u8;
@@ -288,7 +285,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     for n in (0..maxSymbolValue).step_by(2) {
         *op.add((n / 2) + 1) = ((*wksp).huffWeight[n] << 4) + (*wksp).huffWeight[n + 1];
     }
-    maxSymbolValue.div_ceil(2) + 1
+    Ok(maxSymbolValue.div_ceil(2) + 1)
 }
 
 pub unsafe fn HUF_readCTable(
@@ -1603,8 +1600,8 @@ pub unsafe fn HUF_optimalTableLog(
                 workSpace,
                 wkspSize,
             );
-            if !ERR_isError(hSize) {
-                let newSize = (HUF_estimateCompressedSize(table, count, maxSymbolValue)) + (hSize);
+            if let Ok(hSize) = hSize {
+                let newSize = HUF_estimateCompressedSize(table, count, maxSymbolValue) + hSize;
                 if newSize > optSize + 1 {
                     break;
                 }
@@ -1809,7 +1806,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* Write table description header */
     {
-        let hSize = HUF_writeCTable_wksp(
+        let hSize = match HUF_writeCTable_wksp(
             op as *mut c_void,
             dstSize,
             &(*table).CTable,
@@ -1817,10 +1814,10 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             huffLog,
             &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut c_void,
             size_of::<HUF_WriteCTableWksp>(),
-        );
-        if ERR_isError(hSize) {
-            return hSize;
-        }
+        ) {
+            Ok(hSize) => hSize,
+            Err(err) => return err.to_error_code(),
+        };
 
         /* Check if using previous huffman table is beneficial */
         if *repeat != HUF_repeat::None {
