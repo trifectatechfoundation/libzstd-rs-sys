@@ -87,7 +87,7 @@ unsafe fn HUF_compressWeights(
     wtSize: size_t,
     workspace: *mut c_void,
     mut workspaceSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
     let mut op = ostart;
     let oend = ostart.add(dstSize);
@@ -98,12 +98,12 @@ unsafe fn HUF_compressWeights(
         as *mut HUF_CompressWeightsWksp;
 
     if workspaceSize < size_of::<HUF_CompressWeightsWksp>() {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
 
     /* init conditions */
     if wtSize <= 1 {
-        return 0; /* Not compressible */
+        return Ok(0); /* Not compressible */
     }
 
     /* Scan input and build symbol stats */
@@ -116,51 +116,44 @@ unsafe fn HUF_compressWeights(
         ); /* never fails */
 
         if maxCount as size_t == wtSize {
-            return 1; /* only a single symbol in src : rle */
+            return Ok(1); /* only a single symbol in src : rle */
         }
 
         if maxCount == 1 {
-            return 0; /* each symbol present maximum once => not compressible */
+            return Ok(0); /* each symbol present maximum once => not compressible */
         }
     }
     tableLog = FSE_optimalTableLog(tableLog, wtSize, maxSymbolValue);
-    if let Err(err) = FSE_normalizeCount(
+    FSE_normalizeCount(
         &mut (*wksp).norm,
         tableLog,
         ((*wksp).count).as_mut_ptr(),
         wtSize,
         maxSymbolValue,
         /* useLowProbCount */ false,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     /* Write table description header */
     {
-        let hSize = match FSE_writeNCount(
+        let hSize = FSE_writeNCount(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
             &(*wksp).norm,
             maxSymbolValue,
             tableLog,
-        ) {
-            Ok(hSize) => hSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
         op = op.add(hSize);
     }
 
     /* Compress */
-    if let Err(err) = FSE_buildCTable_wksp(
+    FSE_buildCTable_wksp(
         &mut (*wksp).CTable,
         &(*wksp).norm,
         maxSymbolValue,
         tableLog,
         ((*wksp).scratchBuffer).as_mut_ptr() as *mut c_void,
         size_of::<[u32; 41]>(),
-    ) {
-        return err.to_error_code();
-    }
+    )?;
     {
         let cSize = FSE_compress_usingCTable(
             op as *mut c_void,
@@ -169,15 +162,15 @@ unsafe fn HUF_compressWeights(
             wtSize,
             &(*wksp).CTable,
         );
-        if ERR_isError(cSize) {
-            return cSize;
+        if let Some(err) = Error::from_error_code(cSize) {
+            return Err(err);
         }
         if cSize == 0 {
-            return 0; /* not enough space for compressed data */
+            return Ok(0); /* not enough space for compressed data */
         }
         op = op.add(cSize);
     }
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
@@ -264,17 +257,17 @@ pub unsafe fn HUF_writeCTable_wksp(
         return Error::dstSize_tooSmall.to_error_code();
     }
     {
-        let hSize = HUF_compressWeights(
+        let hSize = match HUF_compressWeights(
             op.add(1) as *mut c_void,
             maxDstSize - 1,
             &(*wksp).huffWeight,
             maxSymbolValue,
             &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
             size_of::<HUF_CompressWeightsWksp>(),
-        );
-        if ERR_isError(hSize) {
-            return hSize;
-        }
+        ) {
+            Ok(hSize) => hSize,
+            Err(err) => return err.to_error_code(),
+        };
         if (hSize > 1) && (hSize < maxSymbolValue / 2) {
             /* FSE compressed */
             *op = hSize as u8;
