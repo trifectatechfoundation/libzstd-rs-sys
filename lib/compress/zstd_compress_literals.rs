@@ -1,6 +1,6 @@
 use libc::size_t;
 
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::huf::{
     CTable, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
@@ -26,7 +26,7 @@ pub type huf_compress_f = unsafe fn(
     &mut CTable,
     &mut HUF_repeat,
     core::ffi::c_int,
-) -> size_t;
+) -> Result<size_t, Error>;
 
 pub unsafe fn ZSTD_noCompressLiterals(
     dst: *mut core::ffi::c_void,
@@ -223,10 +223,13 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     let minGain = ZSTD_minGain(srcSize, strategy);
-    if cLitSize == 0 || cLitSize >= srcSize.wrapping_sub(minGain) || ERR_isError(cLitSize) {
-        core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
-        return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
-    }
+    let cLitSize = match cLitSize {
+        Ok(cLitSize) if cLitSize > 0 && cLitSize < srcSize.wrapping_sub(minGain) => cLitSize,
+        _ => {
+            core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
+            return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
+        }
+    };
 
     // A return value of 1 signals that the alphabet consists of a single symbol.
     // However, in some rare circumstances, it could be the compressed size (a single byte).

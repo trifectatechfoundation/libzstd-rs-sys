@@ -136,11 +136,12 @@ unsafe fn ZSTD_compressSubBlock_literal(
             flags,
         )
     };
+    let cSize = match cSize {
+        Ok(0) | Err(_) => return Ok(0),
+        Ok(cSize) => cSize,
+    };
     op = op.add(cSize);
     cLitSize = cLitSize.wrapping_add(cSize);
-    if cSize == 0 || ERR_isError(cSize) {
-        return Ok(0);
-    }
     // If we expand and we aren't writing a header then emit uncompressed.
     if !writeEntropy && cLitSize >= litSize {
         return ZSTD_noCompressLiterals(
