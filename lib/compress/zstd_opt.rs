@@ -476,12 +476,12 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     let hashTable3 = ms.hashTable3;
     let hashLog3 = ms.hashLog3;
     let base = ms.window.base;
-    let target = ip.offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let hash3 = ZSTD_hash32Ptr::<3>(ip as *const core::ffi::c_void, hashLog3);
 
     for idx in *nextToUpdate3..target {
         *hashTable3.add(ZSTD_hash32Ptr::<3>(
-            base.offset(idx as isize) as *const core::ffi::c_void,
+            base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
             hashLog3,
         )) = idx;
     }
@@ -851,10 +851,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 || dictMode == DictMode::DictMatchState
                 || matchIndex3 >= dictLimit
             {
-                let match_0 = base.offset(matchIndex3 as isize);
+                let match_0 = base.wrapping_offset(matchIndex3 as isize);
                 ZSTD_count(ip, match_0, iLimit)
             } else {
-                let match_1 = dictBase.offset(matchIndex3 as isize);
+                let match_1 = dictBase.wrapping_offset(matchIndex3 as isize);
                 ZSTD_count_2segments(ip, match_1, iLimit, dictEnd, prefixStart)
             };
 
