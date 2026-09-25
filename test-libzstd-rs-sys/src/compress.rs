@@ -224,6 +224,87 @@ mod compress2_strats {
         }
     }
 
+    mod min_match {
+        use super::*;
+
+        macro_rules! compress {
+            ($strategy:expr, $dict_setup:expr, $min_match:expr) => {
+                compress_with_param!(
+                    $strategy,
+                    $dict_setup,
+                    ZSTD_cParameter::ZSTD_c_minMatch,
+                    $min_match
+                )
+            };
+        }
+
+        #[track_caller]
+        fn check_strategy(strategy: i32, min_match: i32) {
+            if cfg!(miri) {
+                let dict_setup = DICT_SETUPS[(strategy as usize) % DICT_SETUPS.len()];
+                assert_eq_rs_c!({ compress!(strategy, dict_setup, min_match) });
+            } else {
+                for dict_setup in DICT_SETUPS {
+                    assert_eq_rs_c!({ compress!(strategy, dict_setup, min_match) });
+                }
+            }
+        }
+
+        /// minMatch=7 is the highest value (d)fast's dispatch handles distinctly
+        #[test]
+        fn fast_7() {
+            check_strategy(1, 7);
+        }
+
+        #[test]
+        fn dfast_7() {
+            check_strategy(2, 7);
+        }
+
+        /// test top and bottom of the clamped [4, 6] range (default is 5)
+        #[test]
+        fn greedy_4() {
+            check_strategy(3, 4);
+        }
+
+        #[test]
+        fn lazy_6() {
+            check_strategy(4, 6);
+        }
+
+        #[test]
+        fn fast_6() {
+            check_strategy(1, 6);
+        }
+
+        #[test]
+        fn dfast_6() {
+            check_strategy(2, 6);
+        }
+
+        #[test]
+        fn btlazy2_6() {
+            check_strategy(6, 6);
+        }
+
+        /// minMatch=3 enables the HC3 hash-table shortcut in `ZSTD_insertBtAndGetAllMatches`
+        #[test]
+        fn btopt_3() {
+            check_strategy(7, 3);
+        }
+
+        #[test]
+        fn btultra_3() {
+            check_strategy(8, 3);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore = "slow")]
+        fn btultra2_3() {
+            check_strategy(9, 3);
+        }
+    }
+
     mod target_cblock_size {
         use super::*;
 
