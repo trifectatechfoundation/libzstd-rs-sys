@@ -16,20 +16,20 @@ mod compress2_strats {
         CDict,
     }
 
-    macro_rules! compress {
-        ($strategy:expr, $use_row_match_finder:expr, $dict_setup:expr) => {{
+    const DICT_SETUPS: [DictSetup; 3] = [DictSetup::None, DictSetup::Prefix, DictSetup::CDict];
+
+    macro_rules! compress_with_param {
+        ($strategy:expr, $dict_setup:expr $(, $param:expr, $value:expr)?) => {{
             let cctx = ZSTD_createCCtx();
             assert!(!cctx.is_null());
 
             let err = ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_strategy, $strategy);
             assert_eq!(ZSTD_isError(err), 0);
 
-            let err = ZSTD_CCtx_setParameter(
-                cctx,
-                ZSTD_cParameter::ZSTD_c_experimentalParam14, // ZSTD_c_useRowMatchFinder
-                $use_row_match_finder,
-            );
-            assert_eq!(ZSTD_isError(err), 0);
+            $(
+                let err = ZSTD_CCtx_setParameter(cctx, $param, $value);
+                assert_eq!(ZSTD_isError(err), 0);
+            )?
 
             let cdict = match $dict_setup {
                 DictSetup::None => core::ptr::null_mut(),
@@ -69,142 +69,221 @@ mod compress2_strats {
         }};
     }
 
-    // The full cross product of (useRowMatchFinder, dictSetup), in a fixed order
-    const COMBOS: [(i32, DictSetup); 6] = [
-        (1, DictSetup::None),
-        (1, DictSetup::Prefix),
-        (1, DictSetup::CDict),
-        (2, DictSetup::None),
-        (2, DictSetup::Prefix),
-        (2, DictSetup::CDict),
-    ];
+    mod basic {
+        use super::*;
 
-    #[track_caller]
-    fn check_strategy(strategy: i32) {
-        if cfg!(miri) {
-            // Pick just one combination to save time
-            let (use_row_match_finder, dict_setup) = COMBOS[(strategy as usize - 1) % COMBOS.len()];
-            assert_eq_rs_c!({ compress!(strategy, use_row_match_finder, dict_setup) });
-        } else {
-            for (use_row_match_finder, dict_setup) in COMBOS {
+        #[track_caller]
+        fn check_strategy(strategy: i32) {
+            if cfg!(miri) {
+                // Pick just one combination to save time
+                let dict_setup = DICT_SETUPS[(strategy as usize - 1) % DICT_SETUPS.len()];
+                assert_eq_rs_c!({ compress_with_param!(strategy, dict_setup) });
+            } else {
+                for dict_setup in DICT_SETUPS {
+                    assert_eq_rs_c!({ compress_with_param!(strategy, dict_setup) });
+                }
+            }
+        }
+
+        #[test]
+        fn fast() {
+            check_strategy(1);
+        }
+
+        #[test]
+        fn dfast() {
+            check_strategy(2);
+        }
+
+        #[test]
+        fn btlazy2() {
+            check_strategy(6);
+        }
+
+        #[test]
+        fn btopt() {
+            check_strategy(7);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore = "slow")]
+        fn btultra() {
+            check_strategy(8);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore = "slow")]
+        fn btultra2() {
+            check_strategy(9);
+        }
+    }
+
+    /// `ZSTD_c_useRowMatchFinder` only affects greedy/lazy/lazy2
+    /// (see`ZSTD_rowMatchFinderSupported` in zstd_compress.rs)]
+    mod row_match_finder {
+        use super::*;
+
+        macro_rules! compress {
+            ($strategy:expr, $use_row_match_finder:expr, $dict_setup:expr) => {
+                compress_with_param!(
+                    $strategy,
+                    $dict_setup,
+                    ZSTD_cParameter::ZSTD_c_experimentalParam14, // ZSTD_c_useRowMatchFinder
+                    $use_row_match_finder
+                )
+            };
+        }
+
+        // The full cross product of (useRowMatchFinder, dictSetup), in a fixed order
+        const COMBOS: [(i32, DictSetup); 6] = [
+            (1, DictSetup::None),
+            (1, DictSetup::Prefix),
+            (1, DictSetup::CDict),
+            (2, DictSetup::None),
+            (2, DictSetup::Prefix),
+            (2, DictSetup::CDict),
+        ];
+
+        #[track_caller]
+        fn check_strategy(strategy: i32) {
+            if cfg!(miri) {
+                // Pick just one combination to save time
+                let (use_row_match_finder, dict_setup) =
+                    COMBOS[(strategy as usize - 1) % COMBOS.len()];
                 assert_eq_rs_c!({ compress!(strategy, use_row_match_finder, dict_setup) });
+            } else {
+                for (use_row_match_finder, dict_setup) in COMBOS {
+                    assert_eq_rs_c!({ compress!(strategy, use_row_match_finder, dict_setup) });
+                }
             }
+        }
+
+        #[test]
+        fn greedy() {
+            check_strategy(3);
+        }
+
+        #[test]
+        fn lazy() {
+            check_strategy(4);
+        }
+
+        #[test]
+        fn lazy2() {
+            check_strategy(5);
         }
     }
 
-    #[test]
-    fn fast() {
-        check_strategy(1);
-    }
+    /// Only interesting for btopt/btultra/btultra2 which use zstd_opt.rs, and fast
+    mod target_length {
+        use super::*;
 
-    #[test]
-    fn dfast() {
-        check_strategy(2);
-    }
+        macro_rules! compress {
+            ($strategy:expr, $dict_setup:expr, $target_length:expr) => {
+                compress_with_param!(
+                    $strategy,
+                    $dict_setup,
+                    ZSTD_cParameter::ZSTD_c_targetLength,
+                    $target_length
+                )
+            };
+        }
 
-    #[test]
-    fn greedy() {
-        check_strategy(3);
-    }
-
-    #[test]
-    fn lazy() {
-        check_strategy(4);
-    }
-
-    #[test]
-    fn lazy2() {
-        check_strategy(5);
-    }
-
-    #[test]
-    fn btlazy2() {
-        check_strategy(6);
-    }
-
-    #[test]
-    fn btopt() {
-        check_strategy(7);
-    }
-
-    #[test]
-    #[cfg_attr(miri, ignore = "slow")]
-    fn btultra() {
-        check_strategy(8);
-    }
-
-    #[test]
-    #[cfg_attr(miri, ignore = "slow")]
-    fn btultra2() {
-        check_strategy(9);
-    }
-}
-
-mod target_cblock_size {
-    use crate::assert_eq_rs_c;
-    use std::ffi::c_void;
-
-    #[cfg(miri)]
-    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-tiny.dat");
-    #[cfg(not(miri))]
-    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-small.dat");
-
-    const INCOMPRESSIBLE_INPUT: &[u8] = include_bytes!("../test-data/random-input.dat");
-
-    macro_rules! compress_target {
-        ($strategy:expr, $target_size:expr, $input:expr) => {{
-            let cctx = ZSTD_createCCtx();
-            assert!(!cctx.is_null());
-
-            let err = ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_strategy, $strategy);
-            assert_eq!(ZSTD_isError(err), 0);
-
-            // set targetCBlockSize to use ZSTD_compressSuperBlock
-            let err = ZSTD_CCtx_setParameter(
-                cctx,
-                ZSTD_cParameter::ZSTD_c_targetCBlockSize,
-                $target_size,
-            );
-            assert_eq!(ZSTD_isError(err), 0);
-
-            let bound = ZSTD_compressBound($input.len());
-            let mut dst = vec![0u8; bound];
-
-            let written = ZSTD_compress2(
-                cctx,
-                dst.as_mut_ptr() as *mut c_void,
-                dst.len(),
-                $input.as_ptr() as *const c_void,
-                $input.len(),
-            );
-            assert_eq!(ZSTD_isError(written), 0);
-            dst.truncate(written);
-
-            ZSTD_freeCCtx(cctx);
-
-            dst
-        }};
-    }
-
-    #[cfg(not(miri))]
-    const STRATEGIES: [i32; 4] = [1, 3, 6, 9];
-    #[cfg(miri)]
-    const STRATEGIES: [i32; 1] = [1];
-
-    #[test]
-    fn compressible_input() {
-        for strategy in STRATEGIES {
-            // test both ZSTD_TARGETCBLOCKSIZE_MIN and ZSTD_TARGETCBLOCKSIZE_MAX
-            for target_size in [1340, 131072] {
-                assert_eq_rs_c!({ compress_target!(strategy, target_size, INPUT) });
+        #[track_caller]
+        fn check_strategy(strategy: i32, target_length: i32) {
+            if cfg!(miri) {
+                let dict_setup = DICT_SETUPS[(strategy as usize) % DICT_SETUPS.len()];
+                assert_eq_rs_c!({ compress!(strategy, dict_setup, target_length) });
+            } else {
+                for dict_setup in DICT_SETUPS {
+                    assert_eq_rs_c!({ compress!(strategy, dict_setup, target_length) });
+                }
             }
+        }
+
+        /// For fast targetLength sets the match-sampling step size in zstd_fast.rs
+        #[test]
+        fn fast() {
+            check_strategy(1, 64);
+        }
+
+        #[test]
+        fn btopt() {
+            check_strategy(7, 64);
+        }
+
+        #[test]
+        fn btultra() {
+            check_strategy(8, 64);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore = "slow")]
+        fn btultra2() {
+            check_strategy(9, 64);
         }
     }
 
-    #[test]
-    fn incompressible_input() {
-        for strategy in STRATEGIES {
-            assert_eq_rs_c!({ compress_target!(strategy, 1340, INCOMPRESSIBLE_INPUT) });
+    mod target_cblock_size {
+        use super::*;
+
+        const INCOMPRESSIBLE_INPUT: &[u8] = include_bytes!("../test-data/random-input.dat");
+
+        macro_rules! compress_target {
+            ($strategy:expr, $target_size:expr, $input:expr) => {{
+                let cctx = ZSTD_createCCtx();
+                assert!(!cctx.is_null());
+
+                let err = ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_strategy, $strategy);
+                assert_eq!(ZSTD_isError(err), 0);
+
+                // set targetCBlockSize to use ZSTD_compressSuperBlock
+                let err = ZSTD_CCtx_setParameter(
+                    cctx,
+                    ZSTD_cParameter::ZSTD_c_targetCBlockSize,
+                    $target_size,
+                );
+                assert_eq!(ZSTD_isError(err), 0);
+
+                let bound = ZSTD_compressBound($input.len());
+                let mut dst = vec![0u8; bound];
+
+                let written = ZSTD_compress2(
+                    cctx,
+                    dst.as_mut_ptr() as *mut c_void,
+                    dst.len(),
+                    $input.as_ptr() as *const c_void,
+                    $input.len(),
+                );
+                assert_eq!(ZSTD_isError(written), 0);
+                dst.truncate(written);
+
+                ZSTD_freeCCtx(cctx);
+
+                dst
+            }};
+        }
+
+        #[cfg(not(miri))]
+        const STRATEGIES: [i32; 4] = [1, 3, 6, 9];
+        #[cfg(miri)]
+        const STRATEGIES: [i32; 1] = [1];
+
+        #[test]
+        fn compressible_input() {
+            for strategy in STRATEGIES {
+                // test both ZSTD_TARGETCBLOCKSIZE_MIN and ZSTD_TARGETCBLOCKSIZE_MAX
+                for target_size in [1340, 131072] {
+                    assert_eq_rs_c!({ compress_target!(strategy, target_size, INPUT) });
+                }
+            }
+        }
+
+        #[test]
+        fn incompressible_input() {
+            for strategy in STRATEGIES {
+                assert_eq_rs_c!({ compress_target!(strategy, 1340, INCOMPRESSIBLE_INPUT) });
+            }
         }
     }
 }

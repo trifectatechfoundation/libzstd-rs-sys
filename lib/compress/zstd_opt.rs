@@ -55,30 +55,26 @@ fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
     newReps
 }
 
-pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
-    .wrapping_mul(2)
-    .wrapping_add(1);
-
-pub const ZSTD_LITFREQ_ADD: core::ffi::c_int = 2;
+pub const ZSTD_LITFREQ_ADD: u32 = 2;
 pub const ZSTD_MAX_PRICE: core::ffi::c_int = 1 << 30;
-// if srcSize < ZSTD_PREDEF_THRESHOLD, symbols' cost is assumed static, directly determined by pre-defined distributions
-pub const ZSTD_PREDEF_THRESHOLD: core::ffi::c_int = 8;
-pub const BITCOST_ACCURACY: core::ffi::c_int = 8;
-pub const BITCOST_MULTIPLIER: core::ffi::c_int = 1 << BITCOST_ACCURACY;
+/// if srcSize < ZSTD_PREDEF_THRESHOLD, symbols' cost is assumed static, directly determined by pre-defined distributions
+pub const ZSTD_PREDEF_THRESHOLD: usize = 8;
+pub const BITCOST_ACCURACY: u32 = 8;
+pub const BITCOST_MULTIPLIER: u32 = 1 << BITCOST_ACCURACY;
 
-// provide estimated "cost" of a stat in full bits only
+/// provide estimated "cost" of a stat in full bits only
 #[inline]
 fn ZSTD_bitWeight(stat: u32) -> u32 {
-    (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER as core::ffi::c_uint)
+    (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER)
 }
 
-// provide fractional-bit "cost" of a stat,
-// using linear interpolation approximation
+/// provide fractional-bit "cost" of a stat,
+/// using linear interpolation approximation
 #[inline]
 fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     let stat = rawStat.wrapping_add(1);
     let hb = ZSTD_highbit32(stat);
-    let BWeight = hb * BITCOST_MULTIPLIER as u32;
+    let BWeight = hb * BITCOST_MULTIPLIER;
     // FWeight was meant for "Fractional weight"
     // but it's effectively a value between 1 and 2
     // using fixed point arithmetic
@@ -87,29 +83,27 @@ fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     BWeight.wrapping_add(FWeight)
 }
 
+/// provide the cost of a stat, using either the full-bits or
+/// fractional-bit estimate depending on `optLevel`
+#[inline]
+fn WEIGHT(stat: u32, optLevel: core::ffi::c_int) -> u32 {
+    match optLevel {
+        0 => ZSTD_bitWeight(stat),
+        _ => ZSTD_fracWeight(stat),
+    }
+}
+
 fn ZSTD_compressedLiterals(opt_state: &optState_t) -> bool {
     opt_state.literalCompressionMode != ParamSwitch::Disable
 }
 
 fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: core::ffi::c_int) {
     if ZSTD_compressedLiterals(opt_state) {
-        opt_state.litSumBasePrice = match optLevel {
-            0 => ZSTD_bitWeight(opt_state.litSum),
-            _ => ZSTD_fracWeight(opt_state.litSum),
-        };
+        opt_state.litSumBasePrice = WEIGHT(opt_state.litSum, optLevel);
     }
-    opt_state.litLengthSumBasePrice = match optLevel {
-        0 => ZSTD_bitWeight(opt_state.litLengthSum),
-        _ => ZSTD_fracWeight(opt_state.litLengthSum),
-    };
-    opt_state.matchLengthSumBasePrice = match optLevel {
-        0 => ZSTD_bitWeight(opt_state.matchLengthSum),
-        _ => ZSTD_fracWeight(opt_state.matchLengthSum),
-    };
-    opt_state.offCodeSumBasePrice = match optLevel {
-        0 => ZSTD_bitWeight(opt_state.offCodeSum),
-        _ => ZSTD_fracWeight(opt_state.offCodeSum),
-    };
+    opt_state.litLengthSumBasePrice = WEIGHT(opt_state.litLengthSum, optLevel);
+    opt_state.matchLengthSumBasePrice = WEIGHT(opt_state.matchLengthSum, optLevel);
+    opt_state.offCodeSumBasePrice = WEIGHT(opt_state.offCodeSum, optLevel);
 }
 
 fn ZSTD_downscaleStats(
@@ -161,7 +155,7 @@ unsafe fn ZSTD_rescaleFreqs(
         // no literals stats collected -> first block assumed -> init
 
         // heuristic: use pre-defined stats for too small inputs
-        if srcSize <= ZSTD_PREDEF_THRESHOLD as size_t {
+        if srcSize <= ZSTD_PREDEF_THRESHOLD {
             opt_state.priceType = OptPrice::Predef;
         }
 
@@ -316,23 +310,21 @@ unsafe fn ZSTD_rawLiteralsCost(
     }
 
     if !ZSTD_compressedLiterals(opt_state) {
-        return (litLength << 3) * BITCOST_MULTIPLIER as u32; // Uncompressed - 8 bytes per literal.
+        return (litLength << 3) * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
 
     if opt_state.priceType == OptPrice::Predef {
-        return litLength * 6 * BITCOST_MULTIPLIER as u32; // 6 bit per literal - no statistic used
+        return litLength * 6 * BITCOST_MULTIPLIER; // 6 bit per literal - no statistic used
     }
 
     // dynamic statistics
     let mut price = opt_state.litSumBasePrice * litLength;
-    let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
+    let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER);
     for u in 0..litLength {
-        let mut litPrice = match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.litFreq).offset(*literals.offset(u as isize) as isize)),
-            _ => {
-                ZSTD_fracWeight(*(opt_state.litFreq).offset(*literals.offset(u as isize) as isize))
-            }
-        };
+        let mut litPrice = WEIGHT(
+            *(opt_state.litFreq).offset(*literals.offset(u as isize) as isize),
+            optLevel,
+        );
         if litPrice > litPriceMax {
             litPrice = litPriceMax;
         }
@@ -349,10 +341,7 @@ unsafe fn ZSTD_litLengthPrice(
     optLevel: core::ffi::c_int,
 ) -> u32 {
     if opt_state.priceType == OptPrice::Predef {
-        return match optLevel {
-            0 => ZSTD_bitWeight(litLength),
-            _ => ZSTD_fracWeight(litLength),
-        };
+        return WEIGHT(litLength, optLevel);
     }
 
     // ZSTD_LLcode() can't compute litLength price for sizes >= ZSTD_BLOCKSIZE_MAX
@@ -360,7 +349,7 @@ unsafe fn ZSTD_litLengthPrice(
     // So instead just pretend it would cost 1 bit more than ZSTD_BLOCKSIZE_MAX - 1.
     // In such a case, the block would be all literals.
     if litLength == ZSTD_BLOCKSIZE_MAX as u32 {
-        return (BITCOST_MULTIPLIER as u32).wrapping_add(ZSTD_litLengthPrice(
+        return BITCOST_MULTIPLIER.wrapping_add(ZSTD_litLengthPrice(
             (ZSTD_BLOCKSIZE_MAX - 1) as u32,
             opt_state,
             optLevel,
@@ -369,12 +358,12 @@ unsafe fn ZSTD_litLengthPrice(
 
     // dynamic statistics
     let llCode = ZSTD_LLcode(litLength);
-    ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
+    (LL_bits[llCode as usize] as u32 * BITCOST_MULTIPLIER)
         .wrapping_add(opt_state.litLengthSumBasePrice)
-        .wrapping_sub(match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.litLengthFreq).offset(llCode as isize)),
-            _ => ZSTD_fracWeight(*(opt_state.litLengthFreq).offset(llCode as isize)),
-        })
+        .wrapping_sub(WEIGHT(
+            *(opt_state.litLengthFreq).offset(llCode as isize),
+            optLevel,
+        ))
 }
 
 /// Provides the cost of the match part (offset + matchLength) of a sequence.
@@ -393,37 +382,33 @@ unsafe fn ZSTD_getMatchPrice(
 
     if opt_state.priceType == OptPrice::Predef {
         // fixed scheme, does not use statistics
-        return (match optLevel {
-            0 => ZSTD_bitWeight(mlBase),
-            _ => ZSTD_fracWeight(mlBase),
-        })
-        .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER as u32); // emulated offset cost
+        return WEIGHT(mlBase, optLevel)
+            // emulated offset cost
+            .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER);
     }
 
     // dynamic statistics
-    let mut price = (offCode * BITCOST_MULTIPLIER as u32).wrapping_add(
-        (opt_state.offCodeSumBasePrice).wrapping_sub(match optLevel {
-            0 => ZSTD_bitWeight(*(opt_state.offCodeFreq).offset(offCode as isize)),
-            _ => ZSTD_fracWeight(*(opt_state.offCodeFreq).offset(offCode as isize)),
-        }),
-    );
+    let mut price =
+        (offCode * BITCOST_MULTIPLIER).wrapping_add((opt_state.offCodeSumBasePrice).wrapping_sub(
+            WEIGHT(*(opt_state.offCodeFreq).offset(offCode as isize), optLevel),
+        ));
     if optLevel < 2 && offCode >= 20 {
         // handicap for long distance offsets, favor decompression speed
-        price = price.wrapping_add(offCode.wrapping_sub(19) * 2 * BITCOST_MULTIPLIER as u32);
+        price = price.wrapping_add(offCode.wrapping_sub(19) * 2 * BITCOST_MULTIPLIER);
     }
 
     // match Length
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
-        ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
-            (opt_state.matchLengthSumBasePrice).wrapping_sub(match optLevel {
-                0 => ZSTD_bitWeight(*(opt_state.matchLengthFreq).offset(mlCode as isize)),
-                _ => ZSTD_fracWeight(*(opt_state.matchLengthFreq).offset(mlCode as isize)),
-            }),
+        (ML_bits[mlCode as usize] as u32 * BITCOST_MULTIPLIER).wrapping_add(
+            (opt_state.matchLengthSumBasePrice).wrapping_sub(WEIGHT(
+                *(opt_state.matchLengthFreq).offset(mlCode as isize),
+                optLevel,
+            )),
         ),
     );
 
-    price = price.wrapping_add((BITCOST_MULTIPLIER / 5) as u32); // heuristic: make matches a bit more costly to favor less sequences -> faster decompression speed
+    price = price.wrapping_add(BITCOST_MULTIPLIER / 5); // heuristic: make matches a bit more costly to favor less sequences -> faster decompression speed
 
     price
 }
@@ -440,9 +425,9 @@ unsafe fn ZSTD_updateStats(
     if ZSTD_compressedLiterals(opt_state) {
         for u in 0..litLength {
             let litFreq = &mut *opt_state.litFreq.add(*literals.add(u as usize) as usize);
-            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
+            *litFreq = litFreq.wrapping_add(ZSTD_LITFREQ_ADD);
         }
-        opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
+        opt_state.litSum = (opt_state.litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD);
     }
 
     // literal Length
@@ -1098,8 +1083,8 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 ) {
     // Setting match end position to MAX to ensure we never use an LDM during this block
     if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
-        optLdm.startPosInBlock = UINT_MAX;
-        optLdm.endPosInBlock = UINT_MAX;
+        optLdm.startPosInBlock = u32::MAX;
+        optLdm.endPosInBlock = u32::MAX;
         return;
     }
     // Calculate appropriate bytes left in matchLength and litLength
@@ -1120,8 +1105,8 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 
     // If there are more literal bytes than bytes remaining in block, no ldm is possible
     if literalsBytesRemaining >= blockBytesRemaining {
-        optLdm.startPosInBlock = UINT_MAX;
-        optLdm.endPosInBlock = UINT_MAX;
+        optLdm.startPosInBlock = u32::MAX;
+        optLdm.endPosInBlock = u32::MAX;
         ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as size_t);
         return;
     }
@@ -1215,7 +1200,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     srcSize: size_t,
     dictMode: DictMode,
 ) -> size_t {
-    let mut current_block: u64;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
@@ -1233,7 +1217,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 
-    let opt = ms.opt.priceTable;
+    let opt = core::slice::from_raw_parts_mut(ms.opt.priceTable, ZSTD_OPT_SIZE);
     let matches = core::slice::from_raw_parts_mut(ms.opt.matchTable, ZSTD_OPT_SIZE);
     let mut lastStretch = ZSTD_optimal_t {
         price: 0,
@@ -1296,107 +1280,98 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             // for each literal position part of a literals run.
 
             // initialize opt[0]
-            (*opt).mlen = 0; // there are only literals so far
-            (*opt).litlen = litlen;
-            (*opt).off = 0; // initialized to prevent UB
+            opt[0].mlen = 0; // there are only literals so far
+            opt[0].litlen = litlen;
+            opt[0].off = 0; // initialized to prevent UB
 
             // No need to include the actual price of the literals before the first match
             // because it is static for the duration of the forward pass, and is included
             // in every subsequent price. But, we include the literal length because
             // the cost variation of litlen depends on the value of litlen.
-            (*opt).price = ZSTD_litLengthPrice(litlen, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
-            (*opt).rep = *rep;
+            opt[0].price = ZSTD_litLengthPrice(litlen, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
+            opt[0].rep = *rep;
 
             // large match -> immediate encoding
             let maxML = matches[nbMatches - 1].len;
             let maxOffBase = matches[nbMatches - 1].off;
-            let mut cur: u32;
-            let mut last_pos: u32;
+            let mut cur: usize;
+            let mut last_pos: usize;
             if maxML > sufficient_len {
                 lastStretch.litlen = 0;
                 lastStretch.mlen = maxML;
                 lastStretch.off = maxOffBase;
                 cur = 0;
-                last_pos = maxML;
+                last_pos = maxML as usize;
             } else {
                 // set prices for first matches starting position == 0
                 let mut pos = 1;
-                while pos < minMatch {
-                    (*opt.offset(pos as isize)).price = ZSTD_MAX_PRICE;
-                    (*opt.offset(pos as isize)).mlen = 0;
-                    (*opt.offset(pos as isize)).litlen = litlen.wrapping_add(pos);
+                while pos < minMatch as usize {
+                    opt[pos].price = ZSTD_MAX_PRICE;
+                    opt[pos].mlen = 0;
+                    opt[pos].litlen = litlen.wrapping_add(pos as u32);
+                    opt[pos].off = 0; // initialized to prevent UB
+                    opt[pos].rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
                     pos = pos.wrapping_add(1);
                 }
                 for m in &matches[..nbMatches] {
                     let offBase = m.off;
-                    let end = m.len;
+                    let end = m.len as usize;
                     while pos <= end {
-                        let matchPrice = ZSTD_getMatchPrice(offBase, pos, &ms.opt, OPT_LEVEL)
+                        let matchPrice = ZSTD_getMatchPrice(offBase, pos as u32, &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int;
-                        let sequencePrice = (*opt).price + matchPrice;
-                        (*opt.offset(pos as isize)).mlen = pos;
-                        (*opt.offset(pos as isize)).off = offBase;
-                        (*opt.offset(pos as isize)).litlen = 0; // end of match
-                        (*opt.offset(pos as isize)).price = sequencePrice
+                        let sequencePrice = opt[0].price + matchPrice;
+                        opt[pos].mlen = pos as u32;
+                        opt[pos].off = offBase;
+                        opt[pos].litlen = 0; // end of match
+                        opt[pos].price = sequencePrice
                             + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
+                        opt[pos].rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
                         pos = pos.wrapping_add(1);
                     }
                 }
                 last_pos = pos.wrapping_sub(1);
-                (*opt.offset(pos as isize)).price = ZSTD_MAX_PRICE;
+                opt[pos].price = ZSTD_MAX_PRICE;
 
                 // check further positions
                 cur = 1;
                 loop {
                     if cur > last_pos {
-                        current_block = 10357520176418200368;
+                        lastStretch = opt[last_pos];
+                        cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
                         break;
                     }
-                    let inr = ip.offset(cur as isize);
+                    let inr = ip.add(cur);
 
                     // Fix current position with one literal if cheaper
-                    let litlen_0 =
-                        ((*opt.offset(cur.wrapping_sub(1) as isize)).litlen).wrapping_add(1);
-                    let price = (*opt.offset(cur.wrapping_sub(1) as isize)).price
-                        + ZSTD_rawLiteralsCost(
-                            ip.offset(cur as isize).sub(1),
-                            1,
-                            &ms.opt,
-                            OPT_LEVEL,
-                        ) as core::ffi::c_int
+                    let litlen_0 = (opt[cur - 1].litlen).wrapping_add(1);
+                    let price = opt[cur - 1].price
+                        + ZSTD_rawLiteralsCost(ip.add(cur).sub(1), 1, &ms.opt, OPT_LEVEL)
+                            as core::ffi::c_int
                         + (ZSTD_litLengthPrice(litlen_0, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                             - ZSTD_litLengthPrice(litlen_0.wrapping_sub(1), &ms.opt, OPT_LEVEL)
                                 as core::ffi::c_int);
-                    if price <= (*opt.offset(cur as isize)).price {
-                        let prevMatch = *opt.offset(cur as isize);
-                        *opt.offset(cur as isize) = *opt.offset(cur.wrapping_sub(1) as isize);
-                        (*opt.offset(cur as isize)).litlen = litlen_0;
-                        (*opt.offset(cur as isize)).price = price;
+                    if price <= opt[cur].price {
+                        let prevMatch = opt[cur];
+                        opt[cur] = opt[cur - 1];
+                        opt[cur].litlen = litlen_0;
+                        opt[cur].price = price;
                         if OPT_LEVEL >= 1
                             && prevMatch.litlen == 0
                             && (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                                 - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int)
                                 < 0
-                            && ip.offset(cur as isize) < iend
+                            && ip.add(cur) < iend
                         {
                             // check next position, in case it would be cheaper
                             let with1literal = prevMatch.price
-                                + ZSTD_rawLiteralsCost(
-                                    ip.offset(cur as isize),
-                                    1,
-                                    &ms.opt,
-                                    OPT_LEVEL,
-                                ) as core::ffi::c_int
+                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                    as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                                     - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL)
                                         as core::ffi::c_int);
                             let withMoreLiterals = price
-                                + ZSTD_rawLiteralsCost(
-                                    ip.offset(cur as isize),
-                                    1,
-                                    &ms.opt,
-                                    OPT_LEVEL,
-                                ) as core::ffi::c_int
+                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                    as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(litlen_0.wrapping_add(1), &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int
                                     - ZSTD_litLengthPrice(
@@ -1404,22 +1379,21 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                         &ms.opt,
                                         OPT_LEVEL,
                                     ) as core::ffi::c_int);
-                            if with1literal < withMoreLiterals
-                                && with1literal < (*opt.offset(cur.wrapping_add(1) as isize)).price
+                            if with1literal < withMoreLiterals && with1literal < opt[cur + 1].price
                             {
                                 // update offset history - before it disappears
-                                let prev = cur.wrapping_sub(prevMatch.mlen);
+                                let prev = cur.wrapping_sub(prevMatch.mlen as usize);
                                 let newReps = ZSTD_newRep(
-                                    &(*opt.offset(prev as isize)).rep,
+                                    &opt[prev].rep,
                                     prevMatch.off,
-                                    (*opt.offset(prev as isize)).litlen == 0,
+                                    opt[prev].litlen == 0,
                                 );
-                                *opt.offset(cur.wrapping_add(1) as isize) = prevMatch;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).rep = newReps;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
-                                (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
-                                if last_pos < cur.wrapping_add(1) {
-                                    last_pos = cur.wrapping_add(1);
+                                opt[cur + 1] = prevMatch;
+                                opt[cur + 1].rep = newReps;
+                                opt[cur + 1].litlen = 1;
+                                opt[cur + 1].price = with1literal;
+                                if last_pos < cur + 1 {
+                                    last_pos = cur + 1;
                                 }
                             }
                         }
@@ -1427,30 +1401,27 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                     // Offset history is not updated during match comparison.
                     // Do it here, now that the match is selected and confirmed.
-                    if (*opt.offset(cur as isize)).litlen == 0 {
+                    if opt[cur].litlen == 0 {
                         // just finished a match => alter offset history
-                        let prev_0 = cur.wrapping_sub((*opt.offset(cur as isize)).mlen);
-                        let newReps_0 = ZSTD_newRep(
-                            &(*opt.offset(prev_0 as isize)).rep,
-                            (*opt.offset(cur as isize)).off,
-                            (*opt.offset(prev_0 as isize)).litlen == 0,
-                        );
-                        (*opt.offset(cur as isize)).rep = newReps_0;
+                        let prev = cur.wrapping_sub(opt[cur].mlen as usize);
+                        let newReps =
+                            ZSTD_newRep(&opt[prev].rep, opt[cur].off, opt[prev].litlen == 0);
+                        opt[cur].rep = newReps;
                     }
 
                     // last match must start at a minimum distance of 8 from oend
                     if inr <= ilimit {
                         if cur == last_pos {
-                            current_block = 10357520176418200368;
+                            lastStretch = opt[last_pos];
+                            cur = last_pos.wrapping_sub(lastStretch.mlen as usize);
                             break;
                         }
 
                         // skip unpromising positions; about ~+6% speed, -0.01 ratio
                         if !(OPT_LEVEL == 0
-                            && (*opt.offset(cur.wrapping_add(1) as isize)).price
-                                <= (*opt.offset(cur as isize)).price + BITCOST_MULTIPLIER / 2)
+                            && opt[cur + 1].price <= opt[cur].price + BITCOST_MULTIPLIER as i32 / 2)
                         {
-                            let previousPrice = (*opt.offset(cur as isize)).price;
+                            let previousPrice = opt[cur].price;
                             let basePrice = previousPrice
                                 + ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as core::ffi::c_int;
                             let mut nbMatches = getAllMatches(
@@ -1459,8 +1430,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 &mut nextToUpdate3,
                                 inr,
                                 iend,
-                                &(*opt.offset(cur as isize)).rep,
-                                (*opt.offset(cur as isize)).litlen == 0,
+                                &opt[cur].rep,
+                                opt[cur].litlen == 0,
                                 minMatch,
                             );
 
@@ -1476,14 +1447,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                             if nbMatches != 0 {
                                 let longestML = matches[nbMatches - 1].len;
                                 if longestML > sufficient_len
-                                    || cur.wrapping_add(longestML) >= ZSTD_OPT_NUM as u32
-                                    || ip.offset(cur as isize).offset(longestML as isize) >= iend
+                                    || cur.wrapping_add(longestML as usize) >= ZSTD_OPT_NUM
+                                    || ip.add(cur).offset(longestML as isize) >= iend
                                 {
                                     lastStretch.mlen = longestML;
                                     lastStretch.off = matches[nbMatches - 1].off;
                                     lastStretch.litlen = 0;
-                                    last_pos = cur.wrapping_add(longestML);
-                                    current_block = 12608488225262500095;
+                                    last_pos = cur.wrapping_add(longestML as usize);
                                     break;
                                 } else {
                                     // set prices using matches found at position == cur
@@ -1498,36 +1468,36 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                                         // scan downward
                                         for mlen in (startML..lastML + 1).rev() {
-                                            let pos_0 = cur.wrapping_add(mlen);
-                                            let price_0 = basePrice
+                                            let pos = cur.wrapping_add(mlen as usize);
+                                            let price = basePrice
                                                 + ZSTD_getMatchPrice(
                                                     offset, mlen, &ms.opt, OPT_LEVEL,
                                                 )
                                                     as core::ffi::c_int;
 
-                                            if pos_0 > last_pos
-                                                || price_0 < (*opt.offset(pos_0 as isize)).price
-                                            {
-                                                while last_pos < pos_0 {
+                                            if pos > last_pos || price < opt[pos].price {
+                                                while last_pos < pos {
                                                     // fill empty positions, for future comparisons
                                                     last_pos = last_pos.wrapping_add(1);
-                                                    (*opt.offset(last_pos as isize)).price =
-                                                        ZSTD_MAX_PRICE;
+                                                    opt[last_pos].price = ZSTD_MAX_PRICE;
                                                     // just needs to be != 0, to mean "not an end of match
-                                                    (*opt.offset(last_pos as isize)).litlen = 1;
+                                                    opt[last_pos].litlen = 1;
+                                                    // initialized to prevent UB
+                                                    opt[last_pos].mlen = 0;
+                                                    opt[last_pos].off = 0;
+                                                    opt[last_pos].rep = [0; ZSTD_REP_NUM as usize];
                                                 }
-                                                (*opt.offset(pos_0 as isize)).mlen = mlen;
-                                                (*opt.offset(pos_0 as isize)).off = offset;
-                                                (*opt.offset(pos_0 as isize)).litlen = 0;
-                                                (*opt.offset(pos_0 as isize)).price = price_0;
+                                                opt[pos].mlen = mlen;
+                                                opt[pos].off = offset;
+                                                opt[pos].litlen = 0;
+                                                opt[pos].price = price;
                                             } else if OPT_LEVEL == 0 {
                                                 break; // early update abort; gets ~+10% speed for about -0.01 ratio loss
                                             }
                                         }
                                     }
 
-                                    (*opt.offset(last_pos.wrapping_add(1) as isize)).price =
-                                        ZSTD_MAX_PRICE;
+                                    opt[last_pos.wrapping_add(1)].price = ZSTD_MAX_PRICE;
                                 }
                             }
                         }
@@ -1535,32 +1505,20 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                     cur = cur.wrapping_add(1);
                 }
-
-                match current_block {
-                    12608488225262500095 => {}
-                    _ => {
-                        lastStretch = *opt.offset(last_pos as isize);
-                        cur = last_pos.wrapping_sub(lastStretch.mlen);
-                    }
-                }
             }
 
             if lastStretch.mlen == 0 {
                 // no solution: all matches have been converted into literals
-                ip = ip.offset(last_pos as isize);
+                ip = ip.add(last_pos);
             } else {
                 // Update offset history
                 if lastStretch.litlen == 0 {
                     // finishing on a match: update offset history
-                    let reps = ZSTD_newRep(
-                        &(*opt.offset(cur as isize)).rep,
-                        lastStretch.off,
-                        (*opt.offset(cur as isize)).litlen == 0,
-                    );
+                    let reps = ZSTD_newRep(&opt[cur].rep, lastStretch.off, opt[cur].litlen == 0);
                     *rep = reps;
                 } else {
                     *rep = lastStretch.rep;
-                    cur = cur.wrapping_sub(lastStretch.litlen);
+                    cur = cur.wrapping_sub(lastStretch.litlen as usize);
                 }
 
                 // Let's write the shortest path solution.
@@ -1576,46 +1534,46 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
                 if lastStretch.litlen > 0 {
                     // last "sequence" is unfinished: just a bunch of literals
-                    (*opt.offset(storeEnd as isize)).litlen = lastStretch.litlen;
-                    (*opt.offset(storeEnd as isize)).mlen = 0;
+                    opt[storeEnd].litlen = lastStretch.litlen;
+                    opt[storeEnd].mlen = 0;
                     storeStart = storeEnd.wrapping_sub(1);
-                    *opt.offset(storeStart as isize) = lastStretch;
+                    opt[storeStart] = lastStretch;
                 }
-                *opt.offset(storeEnd as isize) = lastStretch; // note: litlen will be fixed
+                opt[storeEnd] = lastStretch; // note: litlen will be fixed
                 storeStart = storeEnd;
 
                 loop {
-                    let nextStretch = *opt.offset(stretchPos as isize);
-                    (*opt.offset(storeStart as isize)).litlen = nextStretch.litlen;
+                    let nextStretch = opt[stretchPos];
+                    opt[storeStart].litlen = nextStretch.litlen;
                     if nextStretch.mlen == 0 {
                         // reaching beginning of segment
                         break;
                     }
                     storeStart = storeStart.wrapping_sub(1);
-                    *opt.offset(storeStart as isize) = nextStretch; // note: litlen will be fixed
+                    opt[storeStart] = nextStretch; // note: litlen will be fixed
                     stretchPos = stretchPos
-                        .wrapping_sub((nextStretch.litlen).wrapping_add(nextStretch.mlen));
+                        .wrapping_sub((nextStretch.litlen.wrapping_add(nextStretch.mlen)) as usize);
                 }
 
                 // save sequences
-                for storePos in storeStart..storeEnd + 1 {
-                    let llen = (*opt.offset(storePos as isize)).litlen;
-                    let mlen_0 = (*opt.offset(storePos as isize)).mlen;
-                    let offBase_0 = (*opt.offset(storePos as isize)).off;
-                    let advance = llen.wrapping_add(mlen_0);
+                for entry in &opt[storeStart..storeEnd + 1] {
+                    let llen = entry.litlen;
+                    let mlen = entry.mlen;
+                    let offBase = entry.off;
+                    let advance = llen.wrapping_add(mlen);
 
-                    if mlen_0 == 0 {
+                    if mlen == 0 {
                         // only literals => must be last "sequence", actually starting a new stream of sequences
                         ip = anchor.offset(llen as isize); // last "sequence" is a bunch of literals => don't progress anchor
                     } else {
-                        ZSTD_updateStats(&mut ms.opt, llen, anchor, offBase_0, mlen_0);
+                        ZSTD_updateStats(&mut ms.opt, llen, anchor, offBase, mlen);
                         ZSTD_storeSeq(
                             seqStore,
                             llen as size_t,
                             anchor,
                             iend,
-                            offBase_0,
-                            mlen_0 as size_t,
+                            offBase,
+                            mlen as size_t,
                         );
                         anchor = anchor.offset(advance as isize);
                         ip = anchor;
@@ -1696,7 +1654,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
         && seqStore.sequences == seqStore.sequencesStart
         && ms.window.dictLimit == ms.window.lowLimit
         && curr == ms.window.dictLimit
-        && srcSize > ZSTD_PREDEF_THRESHOLD as size_t
+        && srcSize > ZSTD_PREDEF_THRESHOLD
     {
         ZSTD_initStats_ultra(ms, seqStore, rep, src, srcSize);
     }
@@ -1747,5 +1705,3 @@ pub unsafe fn ZSTD_compressBlock_btultra_extDict(
 // note: no btultra2 variant for extDict nor dictMatchState,
 // because btultra2 is not meant to work with dictionaries
 // and is only specific for the first block (no prefix)
-
-pub const __INT_MAX__: core::ffi::c_int = 2147483647;
