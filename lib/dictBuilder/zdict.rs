@@ -939,13 +939,12 @@ unsafe fn analyze_entropy_internal(
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
-    );
-    if let Some(err) = Error::from_error_code(hhSize) {
+    )
+    .inspect_err(|_| {
         if notificationLevel >= 1 {
             eprintln!("HUF_writeCTable error");
         }
-        return Err(err);
-    }
+    })?;
     dstPtr = dstPtr.add(hhSize);
     maxDstSize = maxDstSize.wrapping_sub(hhSize);
     let mut eSize = hhSize;

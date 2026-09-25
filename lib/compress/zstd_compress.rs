@@ -4993,7 +4993,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-    );
+    )?;
     // Check against repeating the previous CTable
     if repeat != HUF_repeat::None {
         let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, countWksp, maxSymbolValue);
