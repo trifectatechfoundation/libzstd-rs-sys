@@ -4,7 +4,7 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CTable, FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32, FSE_CTABLE_SIZE_U32,
 };
@@ -1217,19 +1217,19 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     src: *const c_void,
     srcSize: size_t,
     CTable: &CTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     let tableLog = CTable.header.tableLog as u32;
     let ct = &CTable.elements;
     let ip = src as *const u8;
 
     /* init */
     if dstSize < 8 {
-        return 0; /* not enough space to compress */
+        return Ok(0); /* not enough space to compress */
     }
 
     let mut bitC = match HUF_CStream_t::new(dst, dstSize) {
         Ok(bitC) => bitC,
-        Err(_) => return 0,
+        Err(_) => return Ok(0),
     };
 
     if dstSize < HUF_tightCompressBound(srcSize, tableLog as size_t) || tableLog > 11 {
@@ -1295,7 +1295,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
         }
     }
     debug_assert!(bitC.ptr <= bitC.endPtr);
-    HUF_closeCStream(&mut bitC)
+    Ok(HUF_closeCStream(&mut bitC))
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
@@ -1304,7 +1304,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
     src: *const c_void,
     srcSize: size_t,
     CTable: &CTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 
@@ -1314,7 +1314,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_default(
     src: *const c_void,
     srcSize: size_t,
     CTable: &CTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 
@@ -1325,7 +1325,7 @@ unsafe fn HUF_compress1X_usingCTable_internal(
     srcSize: size_t,
     CTable: &CTable,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if flags & HUF_flags_bmi2 as c_int != 0 {
         return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, srcSize, CTable);
     }
@@ -1339,7 +1339,7 @@ pub unsafe fn HUF_compress1X_usingCTable(
     srcSize: size_t,
     CTable: &CTable,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
 
@@ -1350,7 +1350,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     srcSize: size_t,
     CTable: &CTable,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let segmentSize = srcSize.div_ceil(4); /* first 3 segments */
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
@@ -1359,11 +1359,11 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     let mut op = ostart;
 
     if dstSize < (6 + 1 + 1 + 1 + 8) {
-        return 0; /* minimum space to compress successfully */
+        return Ok(0); /* minimum space to compress successfully */
     }
 
     if srcSize < 12 {
-        return 0; /* no saving possible : too small input */
+        return Ok(0); /* no saving possible : too small input */
     }
     op = op.add(6); /* jumpTable */
 
@@ -1378,12 +1378,9 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             segmentSize,
             CTable,
             flags,
-        );
-        if ERR_isError(cSize) {
-            return cSize;
-        }
+        )?;
         if cSize == 0 || cSize > 65535 {
-            return 0;
+            return Ok(0);
         }
         MEM_writeLE16(ostart as *mut c_void, cSize as u16);
         op = op.add(cSize);
@@ -1399,12 +1396,9 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             segmentSize,
             CTable,
             flags,
-        );
-        if ERR_isError(cSize_0) {
-            return cSize_0;
-        }
+        )?;
         if cSize_0 == 0 || cSize_0 > 65535 {
-            return 0;
+            return Ok(0);
         }
         MEM_writeLE16(ostart.add(2) as *mut c_void, cSize_0 as u16);
         op = op.add(cSize_0);
@@ -1420,12 +1414,9 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             segmentSize,
             CTable,
             flags,
-        );
-        if ERR_isError(cSize_1) {
-            return cSize_1;
-        }
+        )?;
         if cSize_1 == 0 || cSize_1 > 65535 {
-            return 0;
+            return Ok(0);
         }
         MEM_writeLE16(ostart.add(4) as *mut c_void, cSize_1 as u16);
         op = op.add(cSize_1);
@@ -1442,17 +1433,14 @@ unsafe fn HUF_compress4X_usingCTable_internal(
             iend.offset_from_unsigned(ip),
             CTable,
             flags,
-        );
-        if ERR_isError(cSize_2) {
-            return cSize_2;
-        }
+        )?;
         if cSize_2 == 0 || cSize_2 > 65535 {
-            return 0;
+            return Ok(0);
         }
         op = op.add(cSize_2);
     }
 
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 pub unsafe fn HUF_compress4X_usingCTable(
@@ -1462,7 +1450,7 @@ pub unsafe fn HUF_compress4X_usingCTable(
     srcSize: size_t,
     CTable: &CTable,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
 
@@ -1482,7 +1470,7 @@ unsafe fn HUF_compressCTable_internal(
     nbStreams: HUF_nbStreams_e,
     CTable: &CTable,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let cSize = match nbStreams {
         HUF_nbStreams_e::Single => HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
@@ -1491,7 +1479,7 @@ unsafe fn HUF_compressCTable_internal(
             srcSize,
             CTable,
             flags,
-        ),
+        )?,
         HUF_nbStreams_e::Four => HUF_compress4X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
@@ -1499,25 +1487,21 @@ unsafe fn HUF_compressCTable_internal(
             srcSize,
             CTable,
             flags,
-        ),
+        )?,
     };
 
-    if ERR_isError(cSize) {
-        return cSize;
-    }
-
     if cSize == 0 {
-        return 0; /* uncompressible */
+        return Ok(0); /* uncompressible */
     }
     op = op.add(cSize);
 
     /* check compressibility */
     debug_assert!(op >= ostart);
     if op.offset_from_unsigned(ostart) >= srcSize - 1 {
-        return 0;
+        return Ok(0);
     }
 
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 #[derive(Copy, Clone)]
@@ -1631,7 +1615,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     oldHufTable: &mut CTable,
     repeat: &mut HUF_repeat,
     flags: c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     const { assert!(matches!(NB_STREAMS, 1 | 4)) };
 
     let nbStreams = match NB_STREAMS {
@@ -1655,33 +1639,33 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     }
 
     if wkspSize < size_of::<HUF_compress_tables_t>() {
-        return Error::workSpace_tooSmall.to_error_code();
+        return Err(Error::workSpace_tooSmall);
     }
 
     // Initialize the CTable so we can take a (mutable) reference to its contents.
     core::ptr::write_bytes(&raw mut (*table).CTable, 0, 1);
 
     if srcSize == 0 {
-        return 0; /* Uncompressed */
+        return Ok(0); /* Uncompressed */
     }
 
     if dstSize == 0 {
-        return 0; /* cannot fit anything within dst budget */
+        return Ok(0); /* cannot fit anything within dst budget */
     }
 
     if srcSize > HUF_BLOCKSIZE_MAX {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     if huffLog > HUF_TABLELOG_MAX as c_uint {
-        return Error::tableLog_tooLarge.to_error_code(); /* current block size limit */
+        return Err(Error::tableLog_tooLarge); /* current block size limit */
     }
 
     // The value is restricted to the u8 range, so let's just use a u8.
     const _: () = assert!(HUF_SYMBOLVALUE_MAX == 255);
 
     let Ok(mut maxSymbolValue) = u8::try_from(maxSymbolValue) else {
-        return Error::maxSymbolValue_tooLarge.to_error_code();
+        return Err(Error::maxSymbolValue_tooLarge);
     };
 
     if maxSymbolValue == 0 {
@@ -1718,8 +1702,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             src as *const u8 as *const c_void,
             SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
-        if ERR_isError(largestBegin) {
-            return largestBegin;
+        if let Some(err) = Error::from_error_code(largestBegin) {
+            return Err(err);
         }
         largestTotal += largestBegin;
         let mut maxSymbolValueEnd = maxSymbolValue;
@@ -1730,33 +1714,30 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
                 .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE),
             SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
-        if ERR_isError(largestEnd) {
-            return largestEnd;
+        if let Some(err) = Error::from_error_code(largestEnd) {
+            return Err(err);
         }
         largestTotal += largestEnd;
         if largestTotal <= ((2 * SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE) >> 7) + 4 {
-            return 0; /* heuristic : probably not compressible enough */
+            return Ok(0); /* heuristic : probably not compressible enough */
         }
     }
 
     /* Scan input and build symbol stats */
     (*table).wksps.hist_wksp.fill(0);
-    let largest = match HIST_count_wksp_array(
+    let largest = HIST_count_wksp_array(
         ((*table).count).as_mut_ptr(),
         &mut maxSymbolValue,
         src as *const u8 as *const c_void,
         srcSize,
         &mut (*table).wksps.hist_wksp,
-    ) {
-        Ok(largest) => largest as usize,
-        Err(err) => return err.to_error_code(),
-    };
+    )? as usize;
     if largest == srcSize {
         *ostart = *(src as *const u8);
-        return 1; /* single symbol, rle */
+        return Ok(1); /* single symbol, rle */
     }
     if largest <= (srcSize >> 7) + 4 {
-        return 0; /* heuristic : probably not compressible enough */
+        return Ok(0); /* heuristic : probably not compressible enough */
     }
 
     /* Check validity of previous table */
@@ -1791,22 +1772,19 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         ((*table).count).as_mut_ptr(),
         flags,
     );
-    let maxBits = match HUF_buildCTable_wksp(
+    let maxBits = HUF_buildCTable_wksp(
         &mut (*table).CTable,
         ((*table).count).as_mut_ptr(),
         maxSymbolValue,
         huffLog,
         &mut (*table).wksps.buildCTable_wksp as *mut HUF_buildCTable_wksp_tables as *mut c_void,
         size_of::<HUF_buildCTable_wksp_tables>(),
-    ) {
-        Ok(maxBits) => maxBits,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     huffLog = maxBits as u32;
 
     /* Write table description header */
     {
-        let hSize = match HUF_writeCTable_wksp(
+        let hSize = HUF_writeCTable_wksp(
             op as *mut c_void,
             dstSize,
             &(*table).CTable,
@@ -1814,10 +1792,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             huffLog,
             &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut c_void,
             size_of::<HUF_WriteCTableWksp>(),
-        ) {
-            Ok(hSize) => hSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
 
         /* Check if using previous huffman table is beneficial */
         if *repeat != HUF_repeat::None {
@@ -1848,7 +1823,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
         /* Use the new huffman table */
         if hSize + 12 >= srcSize {
-            return 0;
+            return Ok(0);
         }
         op = op.add(hSize);
         *repeat = HUF_repeat::None;
