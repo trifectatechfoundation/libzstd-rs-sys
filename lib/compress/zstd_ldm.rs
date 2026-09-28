@@ -512,7 +512,8 @@ fn ZSTD_ldm_insertEntry(
 ) {
     let offset = core::ffi::c_uint::from(bucketOffsets[hash]);
 
-    hashTable[(hash << bucketSizeLog) + offset as usize] = entry;
+    let bucket = &mut hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog];
+    bucket[offset as usize] = entry;
     bucketOffsets[hash] = (offset.wrapping_add(1)
         & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1))
         as u8;
