@@ -2071,68 +2071,45 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
     cctx: *mut ZSTD_CCtx,
     cparams: ZSTD_compressionParameters,
 ) -> size_t {
-    let err_code = ZSTD_checkCParams(cparams);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
-    let err_code_0 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_windowLog,
-        cparams.windowLog as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
-    let err_code_1 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_chainLog,
-        cparams.chainLog as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_1) {
-        return err_code_1;
-    }
-    let err_code_2 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_hashLog,
-        cparams.hashLog as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_2) {
-        return err_code_2;
-    }
-    let err_code_3 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_searchLog,
-        cparams.searchLog as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_3) {
-        return err_code_3;
-    }
-    let err_code_4 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_minMatch,
-        cparams.minMatch as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_4) {
-        return err_code_4;
-    }
-    let err_code_5 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_targetLength,
-        cparams.targetLength as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_5) {
-        return err_code_5;
-    }
-    let err_code_6 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_strategy,
-        cparams.strategy as core::ffi::c_int,
-    );
-    if ERR_isError(err_code_6) {
-        return err_code_6;
-    }
+    (*cctx)
+        .set_cparams(cparams)
+        .map(|()| 0)
+        .unwrap_or_else(|e| e.to_error_code())
+}
 
-    0
+impl ZSTD_CCtx {
+    pub fn set_cparams(&mut self, cparams: ZSTD_compressionParameters) -> Result<(), Error> {
+        cparams.check_bounds()?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_windowLog,
+            cparams.windowLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_chainLog,
+            cparams.chainLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_hashLog,
+            cparams.hashLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_searchLog,
+            cparams.searchLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_minMatch,
+            cparams.minMatch as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_targetLength,
+            cparams.targetLength as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_strategy,
+            cparams.strategy as core::ffi::c_int,
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setFParams))]
