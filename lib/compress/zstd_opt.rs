@@ -758,8 +758,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 
     // check repCode
     let lastR = (ZSTD_REP_NUM).wrapping_add(ll0 as u32);
-    let mut repCode = ll0 as u32;
-    while repCode < lastR {
+    for repCode in ll0 as u32..lastR {
         let repOffset = if repCode == ZSTD_REP_NUM {
             rep[0].wrapping_sub(1)
         } else {
@@ -839,7 +838,6 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 return mnum;
             }
         }
-        repCode = repCode.wrapping_add(1);
     }
 
     // HC3 match finder
