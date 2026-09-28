@@ -91,16 +91,16 @@ unsafe fn ZSTD_NCountCost(
 
 /// Returns the cost in bits of encoding the distribution described by count
 /// using the entropy bound.
-unsafe fn ZSTD_entropyCost(count: *const core::ffi::c_uint, max: u8, total: size_t) -> size_t {
+fn ZSTD_entropyCost(count: &[core::ffi::c_uint], max: u8, total: size_t) -> size_t {
     let mut cost = 0u32;
     for s in 0..=max {
         let mut norm =
-            (256u32.wrapping_mul(*count.offset(s as isize)) as size_t / total) as core::ffi::c_uint;
-        if *count.offset(s as isize) != 0 && norm == 0 {
+            (256u32.wrapping_mul(count[usize::from(s)]) as size_t / total) as core::ffi::c_uint;
+        if count[usize::from(s)] != 0 && norm == 0 {
             norm = 1;
         }
         cost = cost.wrapping_add(
-            (*count.offset(s as isize)).wrapping_mul(kInverseProbabilityLog256[norm as usize]),
+            count[usize::from(s)].wrapping_mul(kInverseProbabilityLog256[norm as usize]),
         );
     }
     (cost >> 8) as size_t
@@ -218,8 +218,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Ok(nCountCost) => nCountCost,
             Err(_) => unreachable!(),
         };
-        let compressedCost =
-            (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count.as_ptr(), max, nbSeq));
+        let compressedCost = (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert_eq!(ZSTD_isError(basicCost), 0);
