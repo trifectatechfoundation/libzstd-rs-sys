@@ -908,15 +908,16 @@ pub(super) fn COVER_checkTotalCompressedSize(
     dict: &[u8],
 ) -> size_t {
     let mut totalCompressedSize = Error::GENERIC.to_error_code();
-    let mut maxSampleSize = 0;
     let start = if parameters.splitPoint < 1.0f64 {
         nbTrainSamples
     } else {
         0
     };
-    for &size in &samplesSizes[start..nbSamples] {
-        maxSampleSize = Ord::max(maxSampleSize, size);
-    }
+    let maxSampleSize = samplesSizes[start..nbSamples]
+        .iter()
+        .copied()
+        .max()
+        .unwrap_or(0);
     let dstCapacity = ZSTD_compressBound(maxSampleSize);
     let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
     let cctx = unsafe { ZSTD_createCCtx() };
