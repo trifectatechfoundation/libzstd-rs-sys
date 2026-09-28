@@ -413,10 +413,10 @@ fn FSE_normalizeM2(
         // find max, then give all remaining points to max
         let mut maxV = 0;
         let mut maxC = 0;
-        for s in 0..maxSV1 {
-            if count[s] > maxC {
+        for (s, &c) in count[..maxSV1].iter().enumerate() {
+            if c > maxC {
                 maxV = s;
-                maxC = count[s];
+                maxC = c;
             }
         }
         norm[maxV] += ToDistribute as i16;
