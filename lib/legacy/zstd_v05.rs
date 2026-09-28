@@ -1080,9 +1080,7 @@ fn HUFv05_fillDTableX4Level2(
         DElt.sequence.0 = u16::to_le_bytes(baseSeq);
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
-        for i in 0..skipSize {
-            DTable[i as usize] = DElt;
-        }
+        DTable[..skipSize as usize].fill(DElt);
     }
     for sortedSymbol in sortedSymbols {
         let symbol = sortedSymbol.symbol as u32;
@@ -1094,9 +1092,7 @@ fn HUFv05_fillDTableX4Level2(
         DElt.sequence.0 = u16::to_le_bytes((baseSeq as u32).wrapping_add(symbol << 8) as u16);
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
-        for i in start..end {
-            DTable[i as usize] = DElt;
-        }
+        DTable[start as usize..end as usize].fill(DElt);
         let fresh33 = &mut rankVal[weight as usize];
         *fresh33 = (*fresh33).wrapping_add(length);
     }
@@ -1145,9 +1141,7 @@ fn HUFv05_fillDTableX4(
             DElt.sequence.0 = u16::to_le_bytes(symbol);
             DElt.nbBits = nbBits as u8;
             DElt.length = 1;
-            for i in start..end {
-                DTable[i as usize] = DElt;
-            }
+            DTable[start as usize..end as usize].fill(DElt);
         }
         let fresh34 = &mut rankVal[weight as usize];
         *fresh34 = (*fresh34).wrapping_add(length);

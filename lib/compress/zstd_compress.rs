@@ -3428,9 +3428,7 @@ unsafe fn ZSTD_resetCCtx_internal(
 ///
 /// Note: only works with regular variant; do not use with extDict variant!
 pub unsafe fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx) {
-    for i in 0..ZSTD_REP_NUM {
-        (*(*cctx).blockState.prevCBlock).rep[i as usize] = 0;
-    }
+    (*(*cctx).blockState.prevCBlock).rep.fill(0);
 }
 
 /// Approximate sizes for each strategy past which copying the dictionary tables into the working
