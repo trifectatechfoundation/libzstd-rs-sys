@@ -1628,282 +1628,284 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
 pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
     CCtxParams: *mut ZSTD_CCtx_params,
     param: ZSTD_cParameter,
-    mut value: core::ffi::c_int,
+    value: core::ffi::c_int,
 ) -> size_t {
-    match param {
-        ZSTD_cParameter::ZSTD_c_format => {
-            let Ok(format) = Format::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
+    (*CCtxParams)
+        .set_parameter(param, value)
+        .unwrap_or_else(|e| e.to_error_code())
+}
 
-            (*CCtxParams).format = format;
-            (*CCtxParams).format as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_compressionLevel => {
-            if let Err(err) = param.clamp_bounds(&mut value) {
-                return err.to_error_code();
+impl ZSTD_CCtx_params {
+    pub fn set_parameter(
+        &mut self,
+        param: ZSTD_cParameter,
+        mut value: core::ffi::c_int,
+    ) -> Result<size_t, Error> {
+        match param {
+            ZSTD_cParameter::ZSTD_c_format => {
+                let Ok(format) = Format::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+
+                self.format = format;
+                Ok(self.format as size_t)
             }
-            if value == 0 {
-                (*CCtxParams).compressionLevel = ZSTD_CLEVEL_DEFAULT;
-            } else {
-                (*CCtxParams).compressionLevel = value;
-            }
-            if (*CCtxParams).compressionLevel >= 0 {
-                return (*CCtxParams).compressionLevel as size_t;
-            }
-            0
-        }
-        ZSTD_cParameter::ZSTD_c_windowLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_windowLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.windowLog = value as u32;
-            (*CCtxParams).cParams.windowLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_hashLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_hashLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.hashLog = value as u32;
-            (*CCtxParams).cParams.hashLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_chainLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_chainLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.chainLog = value as u32;
-            (*CCtxParams).cParams.chainLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_searchLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_searchLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.searchLog = value as u32;
-            value as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_minMatch => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_minMatch.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.minMatch = value as u32;
-            (*CCtxParams).cParams.minMatch as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_targetLength => {
-            if !ZSTD_cParameter::ZSTD_c_targetLength.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.targetLength = value as u32;
-            (*CCtxParams).cParams.targetLength as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_strategy => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_strategy.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).cParams.strategy = value as ZSTD_strategy;
-            (*CCtxParams).cParams.strategy as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_contentSizeFlag => {
-            (*CCtxParams).fParams.contentSizeFlag = core::ffi::c_int::from(value != 0);
-            (*CCtxParams).fParams.contentSizeFlag as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_checksumFlag => {
-            (*CCtxParams).fParams.checksumFlag = core::ffi::c_int::from(value != 0);
-            (*CCtxParams).fParams.checksumFlag as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_dictIDFlag => {
-            (*CCtxParams).fParams.noDictIDFlag = core::ffi::c_int::from(value == 0);
-            size_t::from((*CCtxParams).fParams.noDictIDFlag == 0)
-        }
-        ZSTD_cParameter::ZSTD_c_forceMaxWindow => {
-            (*CCtxParams).forceWindow = core::ffi::c_int::from(value != 0);
-            (*CCtxParams).forceWindow as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_forceAttachDict => {
-            let Ok(pref) = ZSTD_dictAttachPref_e::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).attachDictPref = pref;
-            (*CCtxParams).attachDictPref.0 as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_literalCompressionMode => {
-            let Ok(lcm) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).literalCompressionMode = lcm;
-            (*CCtxParams).literalCompressionMode as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_nbWorkers => {
-            if let Err(err) = param.clamp_bounds(&mut value) {
-                return err.to_error_code();
-            }
-            (*CCtxParams).nbWorkers = value;
-            (*CCtxParams).nbWorkers as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_jobSize => {
-            if value != 0 && value < ZSTDMT_JOBSIZE_MIN {
-                value = ZSTDMT_JOBSIZE_MIN;
-            }
-            if let Err(err) = param.clamp_bounds(&mut value) {
-                return err.to_error_code();
-            }
-            (*CCtxParams).jobSize = value as size_t;
-            (*CCtxParams).jobSize
-        }
-        ZSTD_cParameter::ZSTD_c_overlapLog => {
-            if let Err(err) = param.clamp_bounds(&mut value) {
-                return err.to_error_code();
-            }
-            (*CCtxParams).overlapLog = value;
-            (*CCtxParams).overlapLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_rsyncable => {
-            if let Err(err) = param.clamp_bounds(&mut value) {
-                return err.to_error_code();
-            }
-            (*CCtxParams).rsyncable = value;
-            (*CCtxParams).rsyncable as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch => {
-            (*CCtxParams).enableDedicatedDictSearch = core::ffi::c_int::from(value != 0);
-            (*CCtxParams).enableDedicatedDictSearch as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching => {
-            let Ok(value) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).ldmParams.enableLdm = value;
-            (*CCtxParams).ldmParams.enableLdm as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_ldmHashLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmHashLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).ldmParams.hashLog = value as u32;
-            (*CCtxParams).ldmParams.hashLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_ldmMinMatch => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmMinMatch.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).ldmParams.minMatchLength = value as u32;
-            (*CCtxParams).ldmParams.minMatchLength as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).ldmParams.bucketSizeLog = value as u32;
-            (*CCtxParams).ldmParams.bucketSizeLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_ldmHashRateLog => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmHashRateLog.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
-            }
-            (*CCtxParams).ldmParams.hashRateLog = value as u32;
-            (*CCtxParams).ldmParams.hashRateLog as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_targetCBlockSize => {
-            if value != 0 {
-                value = value.max(ZSTD_TARGETCBLOCKSIZE_MIN);
-                if !ZSTD_cParameter::ZSTD_c_targetCBlockSize.within_bounds(value) {
-                    return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_compressionLevel => {
+                param.clamp_bounds(&mut value)?;
+                self.compressionLevel = if value == 0 {
+                    ZSTD_CLEVEL_DEFAULT
+                } else {
+                    value
+                };
+                if self.compressionLevel >= 0 {
+                    return Ok(self.compressionLevel as size_t);
                 }
+                Ok(0)
             }
-            (*CCtxParams).targetCBlockSize = value as u32 as size_t;
-            (*CCtxParams).targetCBlockSize
-        }
-        ZSTD_cParameter::ZSTD_c_srcSizeHint => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_srcSizeHint.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_windowLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_windowLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.windowLog = value as u32;
+                Ok(self.cParams.windowLog as size_t)
             }
-            (*CCtxParams).srcSizeHint = value;
-            (*CCtxParams).srcSizeHint as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_stableInBuffer => {
-            if !ZSTD_cParameter::ZSTD_c_stableInBuffer.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_hashLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_hashLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.hashLog = value as u32;
+                Ok(self.cParams.hashLog as size_t)
             }
-            (*CCtxParams).inBufferMode = value as ZSTD_bufferMode_e;
-            (*CCtxParams).inBufferMode as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_stableOutBuffer => {
-            if !ZSTD_cParameter::ZSTD_c_stableOutBuffer.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_chainLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_chainLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.chainLog = value as u32;
+                Ok(self.cParams.chainLog as size_t)
             }
-            (*CCtxParams).outBufferMode = value as ZSTD_bufferMode_e;
-            (*CCtxParams).outBufferMode as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_blockDelimiters => {
-            if !ZSTD_cParameter::ZSTD_c_blockDelimiters.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_searchLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_searchLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.searchLog = value as u32;
+                Ok(value as size_t)
             }
-            (*CCtxParams).blockDelimiters = value as ZSTD_SequenceFormat_e;
-            (*CCtxParams).blockDelimiters as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_validateSequences => {
-            if !ZSTD_cParameter::ZSTD_c_validateSequences.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_minMatch => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_minMatch.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.minMatch = value as u32;
+                Ok(self.cParams.minMatch as size_t)
             }
-            (*CCtxParams).validateSequences = value;
-            (*CCtxParams).validateSequences as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_splitAfterSequences => {
-            let Ok(value) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).postBlockSplitter = value;
-            (*CCtxParams).postBlockSplitter as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_blockSplitterLevel => {
-            if !ZSTD_cParameter::ZSTD_c_blockSplitterLevel.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_targetLength => {
+                if !ZSTD_cParameter::ZSTD_c_targetLength.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.targetLength = value as u32;
+                Ok(self.cParams.targetLength as size_t)
             }
-            (*CCtxParams).preBlockSplitter_level = value;
-            (*CCtxParams).preBlockSplitter_level as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_useRowMatchFinder => {
-            let Ok(value) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).useRowMatchFinder = value;
-            (*CCtxParams).useRowMatchFinder as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_deterministicRefPrefix => {
-            if !ZSTD_cParameter::ZSTD_c_deterministicRefPrefix.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_strategy => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_strategy.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.cParams.strategy = value as ZSTD_strategy;
+                Ok(self.cParams.strategy as size_t)
             }
-            (*CCtxParams).deterministicRefPrefix = core::ffi::c_int::from(value != 0);
-            (*CCtxParams).deterministicRefPrefix as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_prefetchCDictTables => {
-            let Ok(value) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).prefetchCDictTables = value;
-            (*CCtxParams).prefetchCDictTables as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback => {
-            if !ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_contentSizeFlag => {
+                self.fParams.contentSizeFlag = core::ffi::c_int::from(value != 0);
+                Ok(self.fParams.contentSizeFlag as size_t)
             }
-            (*CCtxParams).enableMatchFinderFallback = value;
-            (*CCtxParams).enableMatchFinderFallback as size_t
-        }
-        ZSTD_cParameter::ZSTD_c_maxBlockSize => {
-            if value != 0 && !ZSTD_cParameter::ZSTD_c_maxBlockSize.within_bounds(value) {
-                return Error::parameter_outOfBound.to_error_code();
+            ZSTD_cParameter::ZSTD_c_checksumFlag => {
+                self.fParams.checksumFlag = core::ffi::c_int::from(value != 0);
+                Ok(self.fParams.checksumFlag as size_t)
             }
-            (*CCtxParams).maxBlockSize = value as size_t;
-            (*CCtxParams).maxBlockSize
+            ZSTD_cParameter::ZSTD_c_dictIDFlag => {
+                self.fParams.noDictIDFlag = core::ffi::c_int::from(value == 0);
+                Ok(size_t::from(self.fParams.noDictIDFlag == 0))
+            }
+            ZSTD_cParameter::ZSTD_c_forceMaxWindow => {
+                self.forceWindow = core::ffi::c_int::from(value != 0);
+                Ok(self.forceWindow as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_forceAttachDict => {
+                let Ok(pref) = ZSTD_dictAttachPref_e::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.attachDictPref = pref;
+                Ok(self.attachDictPref.0 as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_literalCompressionMode => {
+                let Ok(lcm) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.literalCompressionMode = lcm;
+                Ok(self.literalCompressionMode as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_nbWorkers => {
+                param.clamp_bounds(&mut value)?;
+                self.nbWorkers = value;
+                Ok(self.nbWorkers as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_jobSize => {
+                if value != 0 && value < ZSTDMT_JOBSIZE_MIN {
+                    value = ZSTDMT_JOBSIZE_MIN;
+                }
+                param.clamp_bounds(&mut value)?;
+                self.jobSize = value as size_t;
+                Ok(self.jobSize)
+            }
+            ZSTD_cParameter::ZSTD_c_overlapLog => {
+                param.clamp_bounds(&mut value)?;
+                self.overlapLog = value;
+                Ok(self.overlapLog as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_rsyncable => {
+                param.clamp_bounds(&mut value)?;
+                self.rsyncable = value;
+                Ok(self.rsyncable as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch => {
+                self.enableDedicatedDictSearch = core::ffi::c_int::from(value != 0);
+                Ok(self.enableDedicatedDictSearch as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching => {
+                let Ok(value) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.ldmParams.enableLdm = value;
+                Ok(self.ldmParams.enableLdm as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_ldmHashLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmHashLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.ldmParams.hashLog = value as u32;
+                Ok(self.ldmParams.hashLog as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_ldmMinMatch => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmMinMatch.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.ldmParams.minMatchLength = value as u32;
+                Ok(self.ldmParams.minMatchLength as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.ldmParams.bucketSizeLog = value as u32;
+                Ok(self.ldmParams.bucketSizeLog as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_ldmHashRateLog => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_ldmHashRateLog.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.ldmParams.hashRateLog = value as u32;
+                Ok(self.ldmParams.hashRateLog as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_targetCBlockSize => {
+                if value != 0 {
+                    value = value.max(ZSTD_TARGETCBLOCKSIZE_MIN);
+                    if !ZSTD_cParameter::ZSTD_c_targetCBlockSize.within_bounds(value) {
+                        return Err(Error::parameter_outOfBound);
+                    }
+                }
+                self.targetCBlockSize = value as size_t;
+                Ok(self.targetCBlockSize)
+            }
+            ZSTD_cParameter::ZSTD_c_srcSizeHint => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_srcSizeHint.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.srcSizeHint = value;
+                Ok(self.srcSizeHint as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_stableInBuffer => {
+                if !ZSTD_cParameter::ZSTD_c_stableInBuffer.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.inBufferMode = value as ZSTD_bufferMode_e;
+                Ok(self.inBufferMode as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_stableOutBuffer => {
+                if !ZSTD_cParameter::ZSTD_c_stableOutBuffer.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.outBufferMode = value as ZSTD_bufferMode_e;
+                Ok(self.outBufferMode as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_blockDelimiters => {
+                if !ZSTD_cParameter::ZSTD_c_blockDelimiters.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.blockDelimiters = value as ZSTD_SequenceFormat_e;
+                Ok(self.blockDelimiters as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_validateSequences => {
+                if !ZSTD_cParameter::ZSTD_c_validateSequences.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.validateSequences = value;
+                Ok(self.validateSequences as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_splitAfterSequences => {
+                let Ok(value) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.postBlockSplitter = value;
+                Ok(self.postBlockSplitter as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_blockSplitterLevel => {
+                if !ZSTD_cParameter::ZSTD_c_blockSplitterLevel.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.preBlockSplitter_level = value;
+                Ok(self.preBlockSplitter_level as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_useRowMatchFinder => {
+                let Ok(value) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.useRowMatchFinder = value;
+                Ok(self.useRowMatchFinder as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_deterministicRefPrefix => {
+                if !ZSTD_cParameter::ZSTD_c_deterministicRefPrefix.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.deterministicRefPrefix = core::ffi::c_int::from(value != 0);
+                Ok(self.deterministicRefPrefix as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_prefetchCDictTables => {
+                let Ok(value) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.prefetchCDictTables = value;
+                Ok(self.prefetchCDictTables as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback => {
+                if !ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.enableMatchFinderFallback = value;
+                Ok(self.enableMatchFinderFallback as size_t)
+            }
+            ZSTD_cParameter::ZSTD_c_maxBlockSize => {
+                if value != 0 && !ZSTD_cParameter::ZSTD_c_maxBlockSize.within_bounds(value) {
+                    return Err(Error::parameter_outOfBound);
+                }
+                self.maxBlockSize = value as size_t;
+                Ok(self.maxBlockSize)
+            }
+            ZSTD_cParameter::ZSTD_c_repcodeResolution => {
+                let Ok(value) = ParamSwitch::try_from(value) else {
+                    return Err(Error::parameter_outOfBound);
+                };
+                self.searchForExternalRepcodes = value;
+                Ok(self.searchForExternalRepcodes as size_t)
+            }
+            _ => Err(Error::parameter_unsupported),
         }
-        ZSTD_cParameter::ZSTD_c_repcodeResolution => {
-            let Ok(value) = ParamSwitch::try_from(value) else {
-                return Error::parameter_outOfBound.to_error_code();
-            };
-            (*CCtxParams).searchForExternalRepcodes = value;
-            (*CCtxParams).searchForExternalRepcodes as size_t
-        }
-        _ => Error::parameter_unsupported.to_error_code(),
     }
 }
 
