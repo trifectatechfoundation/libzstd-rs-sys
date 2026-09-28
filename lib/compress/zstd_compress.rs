@@ -577,8 +577,8 @@ fn ZSTD_checkDictValidity(
 
 /// Returns `true` if an external sequence producer is registered.
 #[inline]
-unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> bool {
-    ((*params).extSeqProdFunc).is_some()
+fn ZSTD_hasExtSeqProd(params: &ZSTD_CCtx_params) -> bool {
+    params.extSeqProdFunc.is_some()
 }
 
 use libc::{ptrdiff_t, size_t};
@@ -2847,7 +2847,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
         0,
         0,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(params),
+        ZSTD_hasExtSeqProd(&*params),
         (*params).maxBlockSize,
     )
 }
@@ -2937,7 +2937,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
         inBuffSize,
         outBuffSize,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(params),
+        ZSTD_hasExtSeqProd(&*params),
         (*params).maxBlockSize,
     )
 }
@@ -3382,7 +3382,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     }
 
     // reserve space for block-level external sequences
-    if ZSTD_hasExtSeqProd(params) {
+    if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
         let maxNbExternalSeq = ZSTD_sequenceBound(blockSize);
         (*zc).extSeqBufCapacity = maxNbExternalSeq;
         (*zc).extSeqBuf = ZSTD_cwksp_reserve_aligned64(
