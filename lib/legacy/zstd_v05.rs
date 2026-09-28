@@ -468,19 +468,17 @@ fn FSEv05_buildDTable<const N: usize>(
     if position != 0 {
         return Err(Error::GENERIC);
     }
-    let mut i_0: u32 = 0;
-    while i_0 < tableSize {
-        let symbol = tableDecode[i_0 as usize].symbol;
+    for i in 0..tableSize {
+        let symbol = tableDecode[i as usize].symbol;
         let fresh1 = &mut symbolNext[symbol as usize];
         let nextState = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
-        tableDecode[i_0 as usize].nbBits =
+        tableDecode[i as usize].nbBits =
             tableLog.wrapping_sub(BITv05_highbit32(nextState as u32)) as u8;
-        tableDecode[i_0 as usize].newState = (((nextState as core::ffi::c_int)
-            << (tableDecode[i_0 as usize]).nbBits as core::ffi::c_int)
+        tableDecode[i as usize].newState = (((nextState as core::ffi::c_int)
+            << (tableDecode[i as usize]).nbBits as core::ffi::c_int)
             as u32)
             .wrapping_sub(tableSize) as u16;
-        i_0 = i_0.wrapping_add(1);
     }
     DTableH.fastMode = noLarge as u16;
     dt.header = DTableH;
@@ -609,12 +607,10 @@ fn FSEv05_buildDTable_raw<const N: usize>(
     }
     dt.header.tableLog = nbBits as u16;
     dt.header.fastMode = 1;
-    let mut s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         dt.data[s as usize].newState = 0;
         dt.data[s as usize].symbol = s as u8;
         dt.data[s as usize].nbBits = nbBits as u8;
-        s += 1;
     }
     Ok(())
 }
@@ -834,30 +830,24 @@ unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> Result<size_t, Er
     }
     *DTable = tableLog as u16;
     let mut nextRankStart: u32 = 0;
-    let mut n = 1;
-    while n <= tableLog {
+    for n in 1..tableLog + 1 {
         let current = nextRankStart;
         nextRankStart = nextRankStart
             .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
         *rankVal.as_mut_ptr().offset(n as isize) = current;
-        n = n.wrapping_add(1);
     }
-    n = 0;
-    while n < nbSymbols {
+    for n in 0..nbSymbols {
         let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
         let length = (1 << w >> 1) as u32;
-        let mut i: u32 = 0;
         let mut D = HUFv05_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
         D.nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
-        i = *rankVal.as_mut_ptr().offset(w as isize);
-        while i < (*rankVal.as_mut_ptr().offset(w as isize)).wrapping_add(length) {
+        let start = *rankVal.as_mut_ptr().offset(w as isize);
+        for i in start..start.wrapping_add(length) {
             *dt.offset(i as isize) = D;
-            i = i.wrapping_add(1);
         }
         let fresh9 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
         *fresh9 = (*fresh9).wrapping_add(length);
-        n = n.wrapping_add(1);
     }
     Ok(iSize)
 }
@@ -1086,39 +1076,29 @@ fn HUFv05_fillDTableX4Level2(
     };
     let mut rankVal: [u32; 17] = *rankValOrigin;
     if minWeight > 1 {
-        let mut i: u32 = 0;
         let skipSize = rankVal[minWeight as usize];
         DElt.sequence.0 = u16::to_le_bytes(baseSeq);
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
-        i = 0;
-        while i < skipSize {
+        for i in 0..skipSize {
             DTable[i as usize] = DElt;
-            i = i.wrapping_add(1);
         }
     }
-    let mut s: usize = 0;
-    while s < sortedSymbols.len() {
-        let symbol = (sortedSymbols[s]).symbol as u32;
-        let weight = (sortedSymbols[s]).weight as u32;
+    for sortedSymbol in sortedSymbols {
+        let symbol = sortedSymbol.symbol as u32;
+        let weight = sortedSymbol.weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = (1 << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
-        let mut i_0 = start;
         let end = start.wrapping_add(length);
         DElt.sequence.0 = u16::to_le_bytes((baseSeq as u32).wrapping_add(symbol << 8) as u16);
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
-        loop {
-            DTable[i_0 as usize] = DElt;
-            i_0 = i_0.wrapping_add(1);
-            if i_0 >= end {
-                break;
-            }
+        for i in start..end {
+            DTable[i as usize] = DElt;
         }
         let fresh33 = &mut rankVal[weight as usize];
         *fresh33 = (*fresh33).wrapping_add(length);
-        s = s.wrapping_add(1);
     }
 }
 fn HUFv05_fillDTableX4(
@@ -1133,10 +1113,9 @@ fn HUFv05_fillDTableX4(
     let mut rankVal = rankValOrigin[0];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
-    let mut s = 0;
-    while s < sortedList.len() {
-        let symbol = (sortedList[s]).symbol as u16;
-        let weight = (sortedList[s]).weight as u32;
+    for sortedSymbol in sortedList {
+        let symbol = sortedSymbol.symbol as u16;
+        let weight = sortedSymbol.weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start: u32 = rankVal[weight as usize];
         let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
@@ -1172,7 +1151,6 @@ fn HUFv05_fillDTableX4(
         }
         let fresh34 = &mut rankVal[weight as usize];
         *fresh34 = (*fresh34).wrapping_add(length);
-        s = s.wrapping_add(1);
     }
 }
 unsafe fn HUFv05_readDTableX4(DTable: &mut [u32; 4097], src: &[u8]) -> Result<size_t, Error> {
@@ -1210,49 +1188,38 @@ unsafe fn HUFv05_readDTableX4(DTable: &mut [u32; 4097], src: &[u8]) -> Result<si
         maxW = maxW.wrapping_sub(1);
     }
     let mut nextRankStart = 0u32;
-    let mut w: u32 = 1;
-    while w <= maxW {
+    for w in 1..maxW + 1 {
         let current = nextRankStart;
         nextRankStart = nextRankStart.wrapping_add(rankStats[w as usize]);
         *rankStart.offset(w as isize) = current;
-        w = w.wrapping_add(1);
     }
     *rankStart = nextRankStart;
     let sizeOfSort = nextRankStart;
-    let mut s: u32 = 0;
-    while s < nbSymbols {
+    for s in 0..nbSymbols {
         let w_0 = weightList[s as usize] as u32;
         let fresh35 = &mut (*rankStart.offset(w_0 as isize));
         let r = *fresh35;
         *fresh35 = (*fresh35).wrapping_add(1);
         sortedSymbol[r as usize].symbol = s as u8;
         sortedSymbol[r as usize].weight = w_0 as u8;
-        s = s.wrapping_add(1);
     }
     *rankStart = 0;
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut nextRankVal = 0u32;
-    let mut consumed: u32 = 0;
     let rescale = memLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let rankVal0 = (*rankVal.as_mut_ptr()).as_mut_ptr();
-    let mut w_1 = 1;
-    while w_1 <= maxW {
+    for w in 1..maxW + 1 {
         let current_0 = nextRankVal;
         nextRankVal = nextRankVal.wrapping_add(
-            *rankStats.as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
+            *rankStats.as_mut_ptr().offset(w as isize) << w.wrapping_add(rescale as u32),
         );
-        *rankVal0.offset(w_1 as isize) = current_0;
-        w_1 = w_1.wrapping_add(1);
+        *rankVal0.offset(w as isize) = current_0;
     }
-    consumed = minBits;
-    while consumed <= memLog.wrapping_sub(minBits) {
+    for consumed in minBits..memLog.wrapping_sub(minBits) + 1 {
         let rankValPtr = (*rankVal.as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
-        w_1 = 1;
-        while w_1 <= maxW {
-            *rankValPtr.offset(w_1 as isize) = *rankVal0.offset(w_1 as isize) >> consumed;
-            w_1 = w_1.wrapping_add(1);
+        for w in 1..maxW + 1 {
+            *rankValPtr.offset(w as isize) = *rankVal0.offset(w as isize) >> consumed;
         }
-        consumed = consumed.wrapping_add(1);
     }
     HUFv05_fillDTableX4(
         dt,
@@ -1818,9 +1785,8 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, 
         return Ok(dst.capacity());
     }
     let Q = (cSrc.len() * 16 / dst.capacity()) as u32;
-    let mut n = 0;
     let mut Dtime: [u32; 3] = [0; 3];
-    while n < 3 {
+    for n in 0..3 {
         *Dtime.as_mut_ptr().offset(n as isize) = ((*(*algoTime.as_ptr().offset(Q as isize))
             .as_ptr()
             .offset(n as isize))
@@ -1832,7 +1798,6 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, 
                 .decode256Time
                     * D256,
             );
-        n += 1;
     }
     let fresh37 = &mut (*Dtime.as_mut_ptr().add(1));
     *fresh37 = (*fresh37).wrapping_add(*Dtime.as_mut_ptr().add(1) >> 4);
