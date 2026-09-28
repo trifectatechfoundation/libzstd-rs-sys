@@ -570,15 +570,12 @@ fn HUFv07_readStats(
     }
     rankStats.fill(0);
     weightTotal = 0;
-    let mut n_0: usize = 0;
-    while n_0 < oSize {
-        if huffWeight[n_0] as usize >= HUFv07_TABLELOG_ABSOLUTEMAX {
+    for &weight in &huffWeight[..oSize] {
+        if weight as usize >= HUFv07_TABLELOG_ABSOLUTEMAX {
             return Err(Error::corruption_detected);
         }
-        rankStats[usize::from(huffWeight[n_0])] += 1;
-        weightTotal =
-            weightTotal.wrapping_add((1 << huffWeight[n_0] as core::ffi::c_int >> 1) as u32);
-        n_0 += 1;
+        rankStats[usize::from(weight)] += 1;
+        weightTotal = weightTotal.wrapping_add((1 << weight as core::ffi::c_int >> 1) as u32);
     }
     if weightTotal == 0 {
         return Err(Error::corruption_detected);
@@ -647,14 +644,12 @@ fn FSEv07_buildDTable<const N: usize>(
     let mut position = 0u32;
     #[allow(clippy::needless_range_loop)]
     for s in 0..maxSV1 {
-        let mut i: core::ffi::c_int = 0;
-        while i < normalizedCounter[s] as core::ffi::c_int {
+        for _ in 0..normalizedCounter[s] as core::ffi::c_int {
             tableDecode[position as usize].symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
                 position = position.wrapping_add(step) & tableMask;
             }
-            i += 1;
         }
     }
     if position != 0 {
@@ -838,10 +833,9 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
             byte: n as u8,
             nbBits: tableLog.wrapping_add(1).wrapping_sub(w as u32) as u8,
         };
-        let mut i = rankVal[usize::from(w)];
-        while i < (rankVal[usize::from(w)]).wrapping_add(length) {
+        let start = rankVal[usize::from(w)];
+        for i in start..start.wrapping_add(length) {
             dt[i as usize] = D;
-            i += 1;
         }
         rankVal[usize::from(w)] += length;
     }
@@ -1027,10 +1021,8 @@ fn HUFv07_fillDTableX4Level2(
         DElt.sequence = LE16(baseSeq.to_le_bytes());
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
-        let mut i = 0;
-        while i < skipSize {
+        for i in 0..skipSize {
             DTable[i as usize] = DElt;
-            i = i.wrapping_add(1);
         }
     }
     for sym in sortedSymbols {
@@ -1092,10 +1084,8 @@ fn HUFv07_fillDTableX4(
                 length: 1,
             };
             let end = start.wrapping_add(length);
-            let mut u = start;
-            while u < end {
+            for u in start..end {
                 DTable[u as usize] = DElt;
-                u = u.wrapping_add(1);
             }
         }
         rankVal[weight as usize] += length;
