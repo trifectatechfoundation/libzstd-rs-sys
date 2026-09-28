@@ -30,7 +30,6 @@ pub struct ldmMatchCandidate_t {
     pub split: *const u8,
     pub hash: u32,
     pub checksum: u32,
-    pub bucket: *mut ldmEntry_t,
 }
 
 #[derive(Copy, Clone)]
@@ -745,7 +744,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 split,
                 hash,
                 checksum: (xxhash >> 32) as u32,
-                bucket: ZSTD_ldm_getBucket(ldmState, hash as size_t, params.bucketSizeLog),
             };
         }
 
@@ -758,8 +756,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 split,
                 checksum,
                 hash,
-                bucket,
             } = ldmState.matchCandidates[n];
+            let bucket = ZSTD_ldm_getBucket(ldmState, hash as size_t, params.bucketSizeLog);
 
             let mut bestEntry = core::ptr::null();
             let newEntry = ldmEntry_t {
