@@ -161,7 +161,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
 
 pub unsafe fn ZSTD_selectEncodingType(
     repeatMode: &mut FSE_repeat,
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     max: u8,
     mostFrequent: size_t,
     nbSeq: size_t,
@@ -206,20 +206,21 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count.as_ptr(), max)
         } else {
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat::None {
-            ZSTD_fseBitCost(prevCTable, count, max)
+            ZSTD_fseBitCost(prevCTable, count.as_ptr(), max)
         } else {
             Error::GENERIC.to_error_code()
         };
-        let nCountCost = match ZSTD_NCountCost(count, max, nbSeq, FSELog) {
+        let nCountCost = match ZSTD_NCountCost(count.as_ptr(), max, nbSeq, FSELog) {
             Ok(nCountCost) => nCountCost,
             Err(_) => unreachable!(),
         };
-        let compressedCost = (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
+        let compressedCost =
+            (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count.as_ptr(), max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert_eq!(ZSTD_isError(basicCost), 0);
