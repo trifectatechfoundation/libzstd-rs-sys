@@ -1929,8 +1929,7 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
         return Range::default();
     }
 
-    let mut jobID = firstJobID;
-    while jobID < lastJobID {
+    for jobID in firstJobID..lastJobID {
         let wJobID = jobID & (*mtctx).jobIDMask;
 
         let guard = (*((*mtctx).jobs).offset(wJobID as isize))
@@ -1949,8 +1948,6 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
             // Job source in multiple segments not supported yet
             return range;
         }
-
-        jobID = jobID.wrapping_add(1);
     }
 
     Range::default()
