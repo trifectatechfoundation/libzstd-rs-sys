@@ -63,15 +63,13 @@ fn sort_typeBstar(
     if (0) < m {
         let PAb = n - m;
         let ISAb = m;
-        i = m - 2;
-        while 0 <= i {
+        for i in (0..m - 1).rev() {
             t = SA[(PAb + i) as usize];
             c0 = T[t as usize] as i32;
             c1 = T[(t + 1) as usize] as i32;
             let fresh189 = &mut (bucket_B[(c0 << 8 | c1) as usize]);
             *fresh189 -= 1;
             SA[*fresh189 as usize] = i;
-            i -= 1;
         }
         t = SA[(PAb + (m - 1)) as usize];
         c0 = T[t as usize] as i32;
