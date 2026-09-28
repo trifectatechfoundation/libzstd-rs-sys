@@ -47,10 +47,9 @@ fn sort_typeBstar(
         }
     }
     m = n - m;
-    c0 = 0;
     i = 0;
     let mut j = 0;
-    while c0 < ALPHABET_SIZE {
+    for c0 in 0..ALPHABET_SIZE {
         t = i + bucket_A[c0 as usize];
         bucket_A[c0 as usize] = i + j;
         i = t + bucket_B[(c0 << 8 | c0) as usize];
@@ -59,7 +58,6 @@ fn sort_typeBstar(
             bucket_B[(c0 << 8 | c1) as usize] = j;
             i += bucket_B[(c1 << 8 | c0) as usize];
         }
-        c0 += 1;
     }
 
     if (0) < m {
@@ -160,9 +158,8 @@ fn sort_typeBstar(
             }
         }
         bucket_B[(((256 - 1) << 8) | (256 - 1)) as usize] = n;
-        c0 = ALPHABET_SIZE - 2;
         let mut k = m - 1;
-        while 0 <= c0 {
+        for c0 in (0..ALPHABET_SIZE - 1).rev() {
             i = bucket_A[(c0 + 1) as usize] - 1;
             for c1 in (c0 + 1..ALPHABET_SIZE).rev() {
                 t = i - bucket_B[(c1 << 8 | c0) as usize];
@@ -177,7 +174,6 @@ fn sort_typeBstar(
             }
             bucket_B[((c0 << 8) | (c0 + 1)) as usize] = i - bucket_B[(c0 << 8 | c0) as usize] + 1;
             bucket_B[(c0 << 8 | c0) as usize] = i;
-            c0 -= 1;
         }
     }
     m
