@@ -127,7 +127,7 @@ unsafe fn HUF_compressWeights(
     FSE_normalizeCount(
         &mut (*wksp).norm,
         tableLog,
-        ((*wksp).count).as_mut_ptr(),
+        &(*wksp).count,
         wtSize,
         maxSymbolValue,
         /* useLowProbCount */ false,
