@@ -755,16 +755,16 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             };
         }
 
-        for n in 0..numSplits {
+        for &ldmMatchCandidate_t {
+            split,
+            checksum,
+            hash,
+        } in &ldmState.matchCandidates[..numSplits]
+        {
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
 
-            let ldmMatchCandidate_t {
-                split,
-                checksum,
-                hash,
-            } = ldmState.matchCandidates[n];
             let bucket = ZSTD_ldm_getBucket(hashTable, hash as size_t, params.bucketSizeLog);
 
             let mut bestEntry = None;
