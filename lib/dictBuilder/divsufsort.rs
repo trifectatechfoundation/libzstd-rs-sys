@@ -195,9 +195,8 @@ fn construct_SA(
         while 0 <= c1 {
             let mut k = i32::MIN;
             let i = bucket_B[((c1 << 8) | (c1 + 1)) as usize];
-            let mut j = bucket_A[(c1 + 1) as usize] - 1;
             c2 = -1;
-            while i <= j {
+            for j in (i..bucket_A[(c1 + 1) as usize]).rev() {
                 s = SA[j as usize];
                 if (0) < s {
                     assert_eq!(T[s as usize] as i32, c1);
@@ -224,7 +223,6 @@ fn construct_SA(
                     assert!(s == 0 && T[s as usize] as i32 == c1 || s < 0);
                     SA[j as usize] = !s;
                 }
-                j -= 1;
             }
             c1 -= 1;
         }
