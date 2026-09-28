@@ -110,6 +110,7 @@ pub unsafe fn ZSTD_fseBitCost(
     count: &[core::ffi::c_uint],
     max: u8,
 ) -> size_t {
+    let count = &count[..usize::from(max) + 1];
     let kAccuracyLog = 8;
     let mut cost = 0usize;
     let cstate = FSE_initCState(ctable);
