@@ -1423,8 +1423,7 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
     };
 
     let lastJobNb = ((*mtctx).nextJobID).wrapping_add((*mtctx).jobReady as core::ffi::c_uint);
-    let mut jobNb = (*mtctx).doneJobID;
-    while jobNb < lastJobNb {
+    for jobNb in (*mtctx).doneJobID..lastJobNb {
         let wJobID = jobNb & (*mtctx).jobIDMask;
         let jobPtr: *mut ZSTDMT_jobDescription =
             &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
@@ -1443,7 +1442,6 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         fps.nbActiveWorkers = (fps.nbActiveWorkers).wrapping_add(core::ffi::c_uint::from(
             (*jobPtr).consumed < (*jobPtr).src.size,
         ));
-        jobNb += 1;
     }
     fps
 }
