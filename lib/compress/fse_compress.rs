@@ -491,25 +491,26 @@ pub(crate) fn FSE_normalizeCount(
     let lowThreshold = (total >> tableLog) as u32;
 
     let slice = &mut normalizedCounter[0..=usize::from(maxSymbolValue)];
+    let count = &count[..slice.len()];
     for (s, current) in slice.iter_mut().enumerate() {
-        if count[s] as size_t == total {
+        let c = count[s];
+        if c as size_t == total {
             return Ok(0); // rle special case
         }
 
-        *current = if count[s] == 0 {
+        *current = if c == 0 {
             0
-        } else if count[s] <= lowThreshold {
+        } else if c <= lowThreshold {
             stillToDistribute -= 1;
 
             lowProbCount
         } else {
-            let mut proba = ((u64::from(count[s]) * step) >> scale) as i16;
+            let mut proba = ((u64::from(c) * step) >> scale) as i16;
             if proba < 8 {
                 let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
                     + core::ffi::c_int::from(
-                        (u64::from(count[s]) * step).wrapping_sub((proba as u64) << scale)
-                            > restToBeat,
+                        (u64::from(c) * step).wrapping_sub((proba as u64) << scale) > restToBeat,
                     )) as core::ffi::c_short;
             }
             if proba > largestP {
