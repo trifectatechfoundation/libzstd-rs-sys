@@ -594,7 +594,7 @@ use crate::lib::common::huf::{
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
+    MEM_32bits, MEM_read64, MEM_readLE32, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
     MEM_writeLE64,
 };
 use crate::lib::common::pool::ZSTD_threadPool;
@@ -621,10 +621,10 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
-    ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_count,
-    ZSTD_entropyCTables_t, ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t,
-    ZSTD_localDict, ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock,
-    ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
+    ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_entropyCTables_t,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
+    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
     ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_init,
     ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
     REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
