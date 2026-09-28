@@ -136,10 +136,10 @@ pub unsafe fn ZSTD_fseBitCost(
 /// Returns the cost in bits of encoding the distribution in count using the
 /// table described by norm. The max symbol support by norm is assumed >= max.
 /// norm must be valid for every symbol with non-zero probability in count.
-pub unsafe fn ZSTD_crossEntropyCost(
+pub fn ZSTD_crossEntropyCost(
     norm: &[core::ffi::c_short],
     accuracyLog: core::ffi::c_uint,
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     max: u8,
 ) -> size_t {
     let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
@@ -152,8 +152,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
         };
         let norm256 = normAcc << shift;
         cost = cost.wrapping_add(
-            (*count.offset(s as isize)).wrapping_mul(kInverseProbabilityLog256[norm256 as usize])
-                as size_t,
+            count[s as usize].wrapping_mul(kInverseProbabilityLog256[norm256 as usize]) as size_t,
         );
     }
     cost >> 8
@@ -206,7 +205,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count.as_ptr(), max)
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };
