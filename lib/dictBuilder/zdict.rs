@@ -895,7 +895,7 @@ unsafe fn analyze_entropy_internal(
     let offLog = FSE_normalizeCount(
         &mut offcodeNCount,
         OffFSELog,
-        offcodeCount.as_mut_ptr(),
+        &offcodeCount,
         total as size_t,
         offcodeMax,
         true,
@@ -910,7 +910,7 @@ unsafe fn analyze_entropy_internal(
     let mlLog = FSE_normalizeCount(
         &mut matchLengthNCount,
         MLFSELog,
-        matchLengthCount.as_mut_ptr(),
+        &matchLengthCount,
         total as size_t,
         MaxML,
         true,
@@ -925,7 +925,7 @@ unsafe fn analyze_entropy_internal(
     let llLog = FSE_normalizeCount(
         &mut litLengthNCount,
         LLFSELog,
-        litLengthCount.as_mut_ptr(),
+        &litLengthCount,
         total as size_t,
         MaxLL,
         true,

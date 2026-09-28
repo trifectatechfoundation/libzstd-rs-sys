@@ -460,7 +460,7 @@ unsafe fn FSE_normalizeM2(
 pub(crate) unsafe fn FSE_normalizeCount(
     normalizedCounter: &mut [core::ffi::c_short],
     mut tableLog: core::ffi::c_uint,
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     total: size_t,
     maxSymbolValue: u8,
     useLowProbCount: bool,
@@ -491,23 +491,23 @@ pub(crate) unsafe fn FSE_normalizeCount(
 
     let slice = &mut normalizedCounter[0..=usize::from(maxSymbolValue)];
     for (s, current) in slice.iter_mut().enumerate() {
-        if *count.add(s) as size_t == total {
+        if count[s] as size_t == total {
             return Ok(0); // rle special case
         }
 
-        *current = if *count.add(s) == 0 {
+        *current = if count[s] == 0 {
             0
-        } else if *count.add(s) <= lowThreshold {
+        } else if count[s] <= lowThreshold {
             stillToDistribute -= 1;
 
             lowProbCount
         } else {
-            let mut proba = ((u64::from(*count.add(s)) * step) >> scale) as i16;
+            let mut proba = ((u64::from(count[s]) * step) >> scale) as i16;
             if proba < 8 {
                 let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
                     + core::ffi::c_int::from(
-                        (u64::from(*count.add(s)) * step).wrapping_sub((proba as u64) << scale)
+                        (u64::from(count[s]) * step).wrapping_sub((proba as u64) << scale)
                             > restToBeat,
                     )) as core::ffi::c_short;
             }
@@ -525,7 +525,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
         FSE_normalizeM2(
             normalizedCounter,
             tableLog,
-            count,
+            count.as_ptr(),
             total,
             maxSymbolValue,
             lowProbCount,

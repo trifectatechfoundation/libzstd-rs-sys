@@ -75,7 +75,7 @@ unsafe fn ZSTD_NCountCost(
     FSE_normalizeCount(
         &mut norm,
         tableLog,
-        count.as_ptr(),
+        count,
         nbSeq,
         max,
         ZSTD_useLowProbCount(nbSeq),
@@ -292,7 +292,7 @@ pub unsafe fn ZSTD_buildCTable(
             FSE_normalizeCount(
                 &mut (*wksp).norm,
                 tableLog,
-                count.as_ptr(),
+                count,
                 nbSeq_1,
                 max,
                 ZSTD_useLowProbCount(nbSeq_1),
