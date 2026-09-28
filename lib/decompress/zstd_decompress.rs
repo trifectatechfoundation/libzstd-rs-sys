@@ -1728,7 +1728,7 @@ fn ZSTD_DCtx_trace_end(
 /// Decompress a frame.
 /// - `dctx` must be properly initialized
 /// - will update `*srcPtr` and `*srcSizePtr` to make `*srcPtr` progress by one frame
-unsafe fn ZSTD_decompressFrame(
+fn ZSTD_decompressFrame(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
     srcPtr: &mut Reader<'_>,
@@ -1738,7 +1738,6 @@ unsafe fn ZSTD_decompressFrame(
 
     let start_capacity = dst.capacity();
     let mut op = dst;
-    let oend = op.as_mut_ptr_range().end;
 
     // check
     if ip.len() < dctx.format.frame_header_size_min() + ZSTD_BLOCKHEADERSIZE {
@@ -1763,7 +1762,7 @@ unsafe fn ZSTD_decompressFrame(
 
     // loop on each block
     loop {
-        let mut oBlockEnd = oend;
+        let mut blockCapacity = op.capacity();
 
         let (blockProperties, cBlockSize) = getc_block_size(ip.as_slice())?;
 
@@ -1785,30 +1784,24 @@ unsafe fn ZSTD_decompressFrame(
             // ZSTD_decompressBlock_internal to never write past ip.
             //
             // See ZSTD_allocateLiteralsBuffer() for reference.
-            oBlockEnd = op
-                .as_mut_ptr()
-                .add(ip.as_ptr().offset_from_unsigned(op.as_mut_ptr()));
+            blockCapacity = ip.as_ptr().addr() - op.as_mut_ptr().addr();
         }
 
         let decodedSize = match blockProperties.blockType {
             BlockType::Raw => {
-                // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
+                // Use the full capacity instead of blockCapacity because this function is safe to overlap. It uses memmove.
                 copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize))?
             }
-            BlockType::Rle => {
-                let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
-                ZSTD_setRleBlock(
-                    op.subslice(..capacity),
-                    ip.as_slice()[0],
-                    blockProperties.origSize as size_t,
-                )?
-            }
+            BlockType::Rle => ZSTD_setRleBlock(
+                op.subslice(..blockCapacity),
+                ip.as_slice()[0],
+                blockProperties.origSize as size_t,
+            )?,
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
-                let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
                 ZSTD_decompressBlock_internal_help(
                     dctx,
-                    op.subslice(..capacity),
+                    op.subslice(..blockCapacity),
                     ip.subslice(..cBlockSize).as_slice(),
                     StreamingOperation::NotStreaming,
                 )?
