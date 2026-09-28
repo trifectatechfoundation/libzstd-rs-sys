@@ -457,7 +457,7 @@ fn FSE_normalizeM2(
     Ok(())
 }
 
-pub(crate) unsafe fn FSE_normalizeCount(
+pub(crate) fn FSE_normalizeCount(
     normalizedCounter: &mut [core::ffi::c_short],
     mut tableLog: core::ffi::c_uint,
     count: &[core::ffi::c_uint],
