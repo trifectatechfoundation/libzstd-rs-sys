@@ -377,8 +377,7 @@ fn ZDICT_tryMerge(
     let buf = buffer;
 
     /* tail overlap */
-    let mut u = 1usize;
-    while u < tableSize as usize {
+    for mut u in 1..tableSize as usize {
         if (u as u32 != eltNbToSkip) && table[u].pos > elt.pos && table[u].pos <= eltEnd {
             /* append */
             let addedLength = table[u].pos - elt.pos;
@@ -395,14 +394,11 @@ fn ZDICT_tryMerge(
             table[u] = elt;
             return u as u32;
         }
-        u = u.wrapping_add(1);
     }
 
     /* front overlap */
-    let mut u = 1usize;
-    while u < tableSize as usize {
+    for mut u in 1..tableSize as usize {
         if u == eltNbToSkip as usize {
-            u = u.wrapping_add(1);
             continue;
         }
 
@@ -440,8 +436,6 @@ fn ZDICT_tryMerge(
             table[u].length = Ord::min(elt.length, table[u].length + 1);
             return u as u32;
         }
-
-        u = u.wrapping_add(1);
     }
 
     0
