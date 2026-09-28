@@ -244,7 +244,7 @@ pub unsafe fn ZSTD_buildCTable(
     nextCTable: &mut [FSE_CTable],
     FSELog: u32,
     type_0: SymbolEncodingType,
-    count: *mut core::ffi::c_uint,
+    count: &mut [core::ffi::c_uint],
     max: u8,
     codeTable: *const u8,
     nbSeq: size_t,
@@ -286,15 +286,15 @@ pub unsafe fn ZSTD_buildCTable(
             let wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
             let mut nbSeq_1 = nbSeq;
             let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
-            if *count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize) > 1 {
-                let fresh0 = &mut (*count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize));
-                *fresh0 = (*fresh0).wrapping_sub(1);
+            let lastCode = usize::from(*codeTable.add(nbSeq.wrapping_sub(1)));
+            if count[lastCode] > 1 {
+                count[lastCode] = count[lastCode].wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
             FSE_normalizeCount(
                 &mut (*wksp).norm,
                 tableLog,
-                count,
+                count.as_ptr(),
                 nbSeq_1,
                 max,
                 ZSTD_useLowProbCount(nbSeq_1),
