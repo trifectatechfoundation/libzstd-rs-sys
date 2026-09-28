@@ -497,24 +497,25 @@ pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t
     }
 }
 
-/// Returns a pointer to the start of the bucket associated with hash.
-fn ZSTD_ldm_getBucket(ldmState: &ldmState_t, hash: size_t, bucketSizeLog: u32) -> *mut ldmEntry_t {
-    ldmState.hashTable.wrapping_add(hash << bucketSizeLog)
+/// Returns the bucket associated with hash.
+fn ZSTD_ldm_getBucket(hashTable: &[ldmEntry_t], hash: size_t, bucketSizeLog: u32) -> &[ldmEntry_t] {
+    &hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog]
 }
 
 /// Insert the entry with corresponding hash into the hash table
-unsafe fn ZSTD_ldm_insertEntry(
-    ldmState: &mut ldmState_t,
+fn ZSTD_ldm_insertEntry(
+    hashTable: &mut [ldmEntry_t],
+    bucketOffsets: &mut [u8],
     hash: size_t,
     entry: ldmEntry_t,
     bucketSizeLog: u32,
 ) {
-    let pOffset = ldmState.bucketOffsets.add(hash);
-    let offset = *pOffset as core::ffi::c_uint;
+    let offset = core::ffi::c_uint::from(bucketOffsets[hash]);
 
-    *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
-    *pOffset = (offset.wrapping_add(1)
-        & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1)) as u8;
+    hashTable[(hash << bucketSizeLog) + offset as usize] = entry;
+    bucketOffsets[hash] = (offset.wrapping_add(1)
+        & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1))
+        as u8;
 }
 
 /// Returns the number of bytes that match backwards before pIn and pMatch.
@@ -610,6 +611,8 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
     let base = ldmState.window.base;
     let istart = ip;
+    let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
+    let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
 
     let mut hashState = ZSTD_ldm_gear_init(params);
 
@@ -638,7 +641,13 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                     checksum: (xxhash >> 32) as u32,
                 };
 
-                ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, params.bucketSizeLog);
+                ZSTD_ldm_insertEntry(
+                    hashTable,
+                    bucketOffsets,
+                    hash as size_t,
+                    entry,
+                    params.bucketSizeLog,
+                );
             }
         }
 
@@ -674,6 +683,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let minMatchLength = params.minMatchLength;
     let entsPerBucket = 1 << params.bucketSizeLog;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
+    let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
+    let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
 
     // Prefix and extDict parameters
     let dictLimit = ldmState.window.dictLimit;
@@ -757,7 +768,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 checksum,
                 hash,
             } = ldmState.matchCandidates[n];
-            let bucket = ZSTD_ldm_getBucket(ldmState, hash as size_t, params.bucketSizeLog);
+            let bucket = ZSTD_ldm_getBucket(hashTable, hash as size_t, params.bucketSizeLog);
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
@@ -769,28 +780,32 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // the previous one, we merely register it in the hash table and
             // move on
             if split < anchor {
-                ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
+                ZSTD_ldm_insertEntry(
+                    hashTable,
+                    bucketOffsets,
+                    hash as size_t,
+                    newEntry,
+                    params.bucketSizeLog,
+                );
             } else {
-                for i in 0..entsPerBucket as usize {
-                    let cur = bucket.add(i) as *const ldmEntry_t;
-
-                    if (*cur).checksum != checksum || (*cur).offset <= lowestIndex {
+                for cur in bucket {
+                    if cur.checksum != checksum || cur.offset <= lowestIndex {
                         continue;
                     }
 
                     let (curForwardMatchLength, curBackwardMatchLength) = if extDict {
-                        let curMatchBase = if (*cur).offset < dictLimit {
+                        let curMatchBase = if cur.offset < dictLimit {
                             dictBase
                         } else {
                             base
                         };
-                        let pMatch = curMatchBase.wrapping_offset((*cur).offset as isize);
-                        let matchEnd = if (*cur).offset < dictLimit {
+                        let pMatch = curMatchBase.wrapping_offset(cur.offset as isize);
+                        let matchEnd = if cur.offset < dictLimit {
                             dictEnd
                         } else {
                             iend
                         };
-                        let lowMatchPtr = if (*cur).offset < dictLimit {
+                        let lowMatchPtr = if cur.offset < dictLimit {
                             dictStart
                         } else {
                             lowPrefixPtr
@@ -813,7 +828,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                         (forward, backward)
                     } else {
-                        let pMatch = base.wrapping_offset((*cur).offset as isize);
+                        let pMatch = base.wrapping_offset(cur.offset as isize);
 
                         let forward = ZSTD_count(split, pMatch, iend);
                         if forward < minMatchLength as size_t {
@@ -856,7 +871,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                     // Insert the current entry into the hash table --- it must be
                     // done after the previous block to avoid clobbering bestEntry
-                    ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
+                    ZSTD_ldm_insertEntry(
+                        hashTable,
+                        bucketOffsets,
+                        hash as size_t,
+                        newEntry,
+                        params.bucketSizeLog,
+                    );
 
                     anchor = split.add(forwardMatchLength);
 
@@ -882,7 +903,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 } else {
                     // No match found -- insert an entry into the hash table
                     // and process the next candidate match
-                    ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
+                    ZSTD_ldm_insertEntry(
+                        hashTable,
+                        bucketOffsets,
+                        hash as size_t,
+                        newEntry,
+                        params.bucketSizeLog,
+                    );
                 }
             }
         }
