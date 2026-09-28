@@ -296,7 +296,7 @@ pub struct ZSTD_CCtx_params_s {
     pub prefetchCDictTables: ParamSwitch,
     pub enableMatchFinderFallback: core::ffi::c_int,
     pub extSeqProdState: *mut core::ffi::c_void,
-    pub extSeqProdFunc: ZSTD_sequenceProducer_F,
+    pub extSeqProdFunc: Option<ZSTD_sequenceProducer_F>,
     pub searchForExternalRepcodes: ParamSwitch,
 }
 
@@ -11190,7 +11190,7 @@ fn ZSTD_getParams_internal(
 pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
     zc: *mut ZSTD_CCtx,
     extSeqProdState: *mut core::ffi::c_void,
-    extSeqProdFunc: ZSTD_sequenceProducer_F,
+    extSeqProdFunc: Option<ZSTD_sequenceProducer_F>,
 ) {
     ZSTD_CCtxParams_registerSequenceProducer(
         &mut (*zc).requestedParams,
@@ -11203,7 +11203,7 @@ pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
 pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
     params: *mut ZSTD_CCtx_params,
     extSeqProdState: *mut core::ffi::c_void,
-    extSeqProdFunc: ZSTD_sequenceProducer_F,
+    extSeqProdFunc: Option<ZSTD_sequenceProducer_F>,
 ) {
     if extSeqProdFunc.is_some() {
         (*params).extSeqProdFunc = extSeqProdFunc;
