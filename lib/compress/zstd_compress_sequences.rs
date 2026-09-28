@@ -93,15 +93,12 @@ unsafe fn ZSTD_NCountCost(
 /// using the entropy bound.
 fn ZSTD_entropyCost(count: &[core::ffi::c_uint], max: u8, total: size_t) -> size_t {
     let mut cost = 0u32;
-    for s in 0..=max {
-        let mut norm =
-            (256u32.wrapping_mul(count[usize::from(s)]) as size_t / total) as core::ffi::c_uint;
-        if count[usize::from(s)] != 0 && norm == 0 {
+    for &c in &count[..usize::from(max) + 1] {
+        let mut norm = (256u32.wrapping_mul(c) as size_t / total) as core::ffi::c_uint;
+        if c != 0 && norm == 0 {
             norm = 1;
         }
-        cost = cost.wrapping_add(
-            count[usize::from(s)].wrapping_mul(kInverseProbabilityLog256[norm as usize]),
-        );
+        cost = cost.wrapping_add(c.wrapping_mul(kInverseProbabilityLog256[norm as usize]));
     }
     (cost >> 8) as size_t
 }
