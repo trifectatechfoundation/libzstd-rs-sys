@@ -694,16 +694,14 @@ pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
 /// `ZSTD_Sequence[]` contains explicit block delimiters
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 
-pub type ZSTD_sequenceProducer_F = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        *mut ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_int,
-        size_t,
-    ) -> size_t,
->;
+pub type ZSTD_sequenceProducer_F = unsafe extern "C" fn(
+    *mut core::ffi::c_void,
+    *mut ZSTD_Sequence,
+    size_t,
+    *const core::ffi::c_void,
+    size_t,
+    *const core::ffi::c_void,
+    size_t,
+    core::ffi::c_int,
+    size_t,
+) -> size_t;
