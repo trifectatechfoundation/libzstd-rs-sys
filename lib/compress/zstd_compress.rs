@@ -4822,35 +4822,29 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
 }
 
 /// Unrolled loop to read four size_ts of input at a time. Returns `true` if the input is RLE.
-unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
-    let ip = src;
-    let value = *ip;
-    let valueST = u64::from(value).wrapping_mul(0x101010101010101) as size_t;
-    let unrollSize = size_of::<size_t>().wrapping_mul(4);
-    let unrollMask = unrollSize.wrapping_sub(1);
-    let prefixLength = length & unrollMask;
-
-    if length == 1 {
+fn ZSTD_isRLE(src: &[u8]) -> bool {
+    let Some(&value) = src.first() else {
         return true;
-    }
+    };
+    let valueST = size_t::from_ne_bytes([value; size_of::<size_t>()]);
+    let (prefix, rest) = src.split_at(src.len() % (4 * size_of::<size_t>()));
 
     // Check if prefix is RLE first before using unrolled loop
-    if prefixLength != 0
-        && ZSTD_count(ip.add(1), ip, ip.add(prefixLength)) != prefixLength.wrapping_sub(1)
-    {
+    if !prefix.iter().all(|&b| b == value) {
         return false;
     }
 
-    for chunk in 0..(length - prefixLength) / unrollSize {
-        let i = prefixLength + chunk * unrollSize;
-        for u in (0..unrollSize).step_by(size_of::<size_t>()) {
-            if MEM_readST(ip.add(i).add(u).cast::<core::ffi::c_void>()) != valueST {
-                return false;
-            }
-        }
-    }
-
-    true
+    let (chunks, []) = rest.as_chunks::<{ 4 * size_of::<size_t>() }>() else {
+        unreachable!()
+    };
+    chunks.iter().all(|chunk| {
+        let (words, []) = chunk.as_chunks::<{ size_of::<size_t>() }>() else {
+            unreachable!()
+        };
+        words
+            .iter()
+            .all(|&word| size_t::from_ne_bytes(word) == valueST)
+    })
 }
 
 /// Returns true if the given block may be RLE.
@@ -5555,7 +5549,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     if (*zc).isFirstBlock == 0
         && cSeqsSize < rleMaxLength as size_t
-        && ZSTD_isRLE(src as *const u8, srcSize)
+        && ZSTD_isRLE(core::slice::from_raw_parts(src.cast::<u8>(), srcSize))
     {
         // We don't want to emit our first block as a RLE even if it qualifies because
         // doing so will cause the decoder (cli only) to throw a "should consume all input error."
@@ -5850,7 +5844,7 @@ unsafe fn ZSTD_compressBlock_internal(
         if frame
             && (*zc).isFirstBlock == 0
             && cSize < rleMaxLength as size_t
-            && ZSTD_isRLE(ip, srcSize)
+            && ZSTD_isRLE(core::slice::from_raw_parts(ip, srcSize))
         {
             cSize = 1;
             *op = *ip;
@@ -5884,7 +5878,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     if bss == BuildSeqStore::Compress {
         if (*zc).isFirstBlock == 0
             && ZSTD_maybeRLE(&(*zc).seqStore)
-            && ZSTD_isRLE(src as *const u8, srcSize)
+            && ZSTD_isRLE(core::slice::from_raw_parts(src.cast::<u8>(), srcSize))
         {
             return ZSTD_rleCompressBlock(
                 dst,
@@ -9368,7 +9362,7 @@ unsafe fn ZSTD_compressSequences_internal(
 
             if (*cctx).isFirstBlock == 0
                 && ZSTD_maybeRLE(&(*cctx).seqStore)
-                && ZSTD_isRLE(ip, blockSize)
+                && ZSTD_isRLE(core::slice::from_raw_parts(ip, blockSize))
             {
                 // Note: don't emit the first block as RLE even if it qualifies because
                 // doing so will cause the decoder (cli <= v1.4.3 only) to throw an (invalid) error
