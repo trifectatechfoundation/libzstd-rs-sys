@@ -1485,16 +1485,12 @@ pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
 /// Initializes `cctxParams` from `params` and `compressionLevel`.
 /// If params are derived from a compression level then that compression
 /// level, otherwise ZSTD_NO_CLEVEL.
-unsafe fn ZSTD_CCtxParams_init_internal(
+fn ZSTD_CCtxParams_init_internal(
     cctxParams: &mut ZSTD_CCtx_params,
     params: &ZSTD_parameters,
     compressionLevel: core::ffi::c_int,
 ) {
-    ptr::write_bytes(
-        (cctxParams as *mut ZSTD_CCtx_params).cast::<u8>(),
-        0,
-        size_of::<ZSTD_CCtx_params>(),
-    );
+    *cctxParams = ZSTD_CCtx_params::default();
     cctxParams.cParams = params.cParams;
     cctxParams.fParams = params.fParams;
     // Should not matter, as all cParams are presumed properly defined.
