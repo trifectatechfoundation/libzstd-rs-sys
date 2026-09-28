@@ -952,7 +952,7 @@ pub(crate) fn ZSTD_window_enforceMaxDist(
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
 
 #[inline]
-pub(crate) unsafe fn ZSTD_window_needOverflowCorrection(
+pub(crate) fn ZSTD_window_needOverflowCorrection(
     window: ZSTD_window_t,
     cycleLog: u32,
     maxDist: u32,
