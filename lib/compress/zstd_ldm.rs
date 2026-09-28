@@ -917,8 +917,10 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
     let mut leftoverSize = 0;
 
-    let mut chunk = 0;
-    while chunk < nbChunks && sequences.size < sequences.capacity {
+    for chunk in 0..nbChunks {
+        if sequences.size >= sequences.capacity {
+            break;
+        }
         let chunkStart = istart.add(chunk * kMaxChunkSize);
         let remaining = iend.offset_from_unsigned(chunkStart);
         let chunkEnd = if remaining < kMaxChunkSize {
@@ -992,8 +994,6 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         } else {
             leftoverSize = leftoverSize.wrapping_add(chunkSize);
         }
-
-        chunk = chunk.wrapping_add(1);
     }
 
     Ok(())
