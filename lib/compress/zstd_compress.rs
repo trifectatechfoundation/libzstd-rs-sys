@@ -4464,11 +4464,11 @@ unsafe fn ZSTD_validateSeqStore(seqStore: &SeqStore_t, cParams: &ZSTD_compressio
         _ => 4,
     };
 
-    let start = seqStore.sequences;
+    let start = seqStore.sequencesStart;
     let end = seqStore.sequences;
 
     if cfg!(debug_assertions) {
-        for n in 0..end as usize - start as usize {
+        for n in 0..end.offset_from_unsigned(start) {
             let seqLength = ZSTD_getSequenceLength(seqStore, start.add(n));
             debug_assert!(seqLength.matchLength >= matchLenLowerBound);
         }
