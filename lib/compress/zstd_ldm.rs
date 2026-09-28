@@ -681,7 +681,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     // LDM parameters
     let extDict = ZSTD_window_hasExtDict(ldmState.window);
     let minMatchLength = params.minMatchLength;
-    let entsPerBucket = 1 << params.bucketSizeLog;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
     let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
     let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
