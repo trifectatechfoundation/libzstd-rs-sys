@@ -5212,16 +5212,18 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         wkspSize,
     )
     .expect("can't fail");
+    // `HIST_countFast_wksp` has filled every entry of the count table up to `max`.
+    let count = core::slice::from_raw_parts(countWksp, usize::from(max) + 1);
     let mut cSymbolTypeSizeEstimateInBits = match encodingType {
         SymbolEncodingType::Basic => {
             // We selected this encoding type, so it must be valid.
             assert!(max <= defaultMax);
 
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
+            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         }
         SymbolEncodingType::Rle => 0,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
-            ZSTD_fseBitCost(fseCTable, countWksp, max)
+            ZSTD_fseBitCost(fseCTable, count.as_ptr(), max)
         }
     };
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
