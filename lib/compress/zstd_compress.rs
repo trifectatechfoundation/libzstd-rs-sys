@@ -3929,10 +3929,12 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWkspSize,
     )
     .expect("can't fail") as usize;
+    // `HIST_countFast_wksp` has filled every entry of the count table up to `max`.
+    let count = core::slice::from_raw_parts_mut(countWorkspace, usize::from(max) + 1);
     nextEntropy.litlength_repeatMode = prevEntropy.litlength_repeatMode;
     stats.LLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.litlength_repeatMode,
-        countWorkspace,
+        count,
         max,
         mostFrequent,
         nbSeq,
@@ -3949,7 +3951,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &mut nextEntropy.litlengthCTable,
         LLFSELog,
         stats.LLtype,
-        countWorkspace,
+        count.as_mut_ptr(),
         max,
         llCodeTable,
         nbSeq,
@@ -3976,6 +3978,8 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWkspSize,
     )
     .expect("can't fail") as usize;
+    // `HIST_countFast_wksp` has filled every entry of the count table up to `max_0`.
+    let count = core::slice::from_raw_parts_mut(countWorkspace, usize::from(max_0) + 1);
     // We can only use the basic table if max <= DefaultMaxOff, otherwise the offsets are too large
     let defaultPolicy = if max_0 <= DefaultMaxOff {
         DefaultPolicy::Allowed
@@ -3985,7 +3989,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     nextEntropy.offcode_repeatMode = prevEntropy.offcode_repeatMode;
     stats.Offtype = ZSTD_selectEncodingType(
         &mut nextEntropy.offcode_repeatMode,
-        countWorkspace,
+        count,
         max_0,
         mostFrequent_0,
         nbSeq,
@@ -4002,7 +4006,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &mut nextEntropy.offcodeCTable,
         OffFSELog,
         stats.Offtype,
-        countWorkspace,
+        count.as_mut_ptr(),
         max_0,
         ofCodeTable,
         nbSeq,
@@ -4029,10 +4033,12 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWkspSize,
     )
     .expect("can't fail") as usize;
+    // `HIST_countFast_wksp` has filled every entry of the count table up to `max_1`.
+    let count = core::slice::from_raw_parts_mut(countWorkspace, usize::from(max_1) + 1);
     nextEntropy.matchlength_repeatMode = prevEntropy.matchlength_repeatMode;
     stats.MLtype = ZSTD_selectEncodingType(
         &mut nextEntropy.matchlength_repeatMode,
-        countWorkspace,
+        count,
         max_1,
         mostFrequent_1,
         nbSeq,
@@ -4049,7 +4055,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         &mut nextEntropy.matchlengthCTable,
         MLFSELog,
         stats.MLtype,
-        countWorkspace,
+        count.as_mut_ptr(),
         max_1,
         mlCodeTable,
         nbSeq,
