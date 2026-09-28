@@ -1304,15 +1304,14 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                 last_pos = maxML as usize;
             } else {
                 // set prices for first matches starting position == 0
-                let mut pos = 1;
-                while pos < minMatch as usize {
-                    opt[pos].price = ZSTD_MAX_PRICE;
-                    opt[pos].mlen = 0;
-                    opt[pos].litlen = litlen.wrapping_add(pos as u32);
-                    opt[pos].off = 0; // initialized to prevent UB
-                    opt[pos].rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
-                    pos = pos.wrapping_add(1);
+                for (pos, o) in (1..).zip(&mut opt[1..minMatch as usize]) {
+                    o.price = ZSTD_MAX_PRICE;
+                    o.mlen = 0;
+                    o.litlen = litlen.wrapping_add(pos);
+                    o.off = 0; // initialized to prevent UB
+                    o.rep = [0; ZSTD_REP_NUM as usize]; // initialized to prevent UB
                 }
+                let mut pos = minMatch as usize;
                 for m in &matches[..nbMatches] {
                     let offBase = m.off;
                     let end = m.len as usize;
