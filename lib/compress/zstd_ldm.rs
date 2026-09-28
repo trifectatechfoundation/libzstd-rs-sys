@@ -625,11 +625,9 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             &mut numSplits,
         );
 
-        for n in 0..numSplits {
-            if ip.add(ldmState.splitIndices[n]) >= istart.offset(minMatchLength as isize) {
-                let split = ip
-                    .add(ldmState.splitIndices[n])
-                    .sub(minMatchLength as usize);
+        for &splitIndex in &ldmState.splitIndices[..numSplits] {
+            if ip.add(splitIndex) >= istart.offset(minMatchLength as isize) {
+                let split = ip.add(splitIndex).sub(minMatchLength as usize);
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
                     minMatchLength as usize,
