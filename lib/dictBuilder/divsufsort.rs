@@ -54,12 +54,10 @@ fn sort_typeBstar(
         t = i + bucket_A[c0 as usize];
         bucket_A[c0 as usize] = i + j;
         i = t + bucket_B[(c0 << 8 | c0) as usize];
-        c1 = c0 + 1;
-        while c1 < ALPHABET_SIZE {
+        for c1 in c0 + 1..ALPHABET_SIZE {
             j += bucket_B[(c0 << 8 | c1) as usize];
             bucket_B[(c0 << 8 | c1) as usize] = j;
             i += bucket_B[(c1 << 8 | c0) as usize];
-            c1 += 1;
         }
         c0 += 1;
     }
@@ -86,8 +84,7 @@ fn sort_typeBstar(
         c0 = ALPHABET_SIZE - 2;
         j = m;
         while (0) < j {
-            c1 = ALPHABET_SIZE - 1;
-            while c0 < c1 {
+            for c1 in (c0 + 1..ALPHABET_SIZE).rev() {
                 i = bucket_B[(c0 << 8 | c1) as usize];
                 if (1) < j - i {
                     let Ok([i_to_j, PAb]) = ({
@@ -102,7 +99,6 @@ fn sort_typeBstar(
                     sssort(T, PAb, i_to_j, 2, n);
                 }
                 j = i;
-                c1 -= 1;
             }
             c0 -= 1;
         }
@@ -168,8 +164,7 @@ fn sort_typeBstar(
         let mut k = m - 1;
         while 0 <= c0 {
             i = bucket_A[(c0 + 1) as usize] - 1;
-            c1 = ALPHABET_SIZE - 1;
-            while c0 < c1 {
+            for c1 in (c0 + 1..ALPHABET_SIZE).rev() {
                 t = i - bucket_B[(c1 << 8 | c0) as usize];
                 bucket_B[(c1 << 8 | c0) as usize] = i;
                 i = t;
@@ -179,7 +174,6 @@ fn sort_typeBstar(
                     i -= 1;
                     k -= 1;
                 }
-                c1 -= 1;
             }
             bucket_B[((c0 << 8) | (c0 + 1)) as usize] = i - bucket_B[(c0 << 8 | c0) as usize] + 1;
             bucket_B[(c0 << 8 | c0) as usize] = i;
