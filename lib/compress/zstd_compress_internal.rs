@@ -109,7 +109,7 @@ pub(crate) fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
 ///
 /// The correction made to the indices, which must be applied to every stored index.
 #[inline]
-pub(crate) unsafe fn ZSTD_window_correctOverflow(
+pub(crate) fn ZSTD_window_correctOverflow(
     window: &mut ZSTD_window_t,
     cycleLog: u32,
     maxDist: u32,
@@ -117,7 +117,7 @@ pub(crate) unsafe fn ZSTD_window_correctOverflow(
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let cycleMask = cycleSize.wrapping_sub(1);
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
+    let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
     let currentCycle = curr & cycleMask;
     // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
@@ -135,8 +135,8 @@ pub(crate) unsafe fn ZSTD_window_correctOverflow(
         assert!(correction > 1 << 28);
     }
 
-    window.base = window.base.offset(correction as isize);
-    window.dictBase = window.dictBase.offset(correction as isize);
+    window.base = window.base.wrapping_add(correction as usize);
+    window.dictBase = window.dictBase.wrapping_add(correction as usize);
     if window.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
         window.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
     } else {
