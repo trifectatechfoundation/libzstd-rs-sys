@@ -191,8 +191,7 @@ fn construct_SA(
     let mut c0: i32;
     let mut c2: i32;
     if (0) < m {
-        let mut c1 = ALPHABET_SIZE - 2;
-        while 0 <= c1 {
+        for c1 in (0..ALPHABET_SIZE - 1).rev() {
             let mut k = i32::MIN;
             let i = bucket_B[((c1 << 8) | (c1 + 1)) as usize];
             c2 = -1;
@@ -224,7 +223,6 @@ fn construct_SA(
                     SA[j as usize] = !s;
                 }
             }
-            c1 -= 1;
         }
     }
     c2 = T[(n - 1) as usize] as i32;
@@ -237,10 +235,7 @@ fn construct_SA(
     };
     k += 1;
 
-    let mut i = 0;
-    let j = n as usize;
-
-    while i < j {
+    for i in 0..n as usize {
         s = SA[i];
         if (0) < s {
             assert!(T[(s - 1) as usize] as i32 >= T[s as usize] as i32);
@@ -261,7 +256,6 @@ fn construct_SA(
             assert!(s < 0);
             SA[i] = !s;
         }
-        i += 1;
     }
 }
 
