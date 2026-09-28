@@ -847,7 +847,7 @@ pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMod
 ///
 /// Returns `true` if the segment is contiguous.
 #[inline]
-pub(crate) unsafe fn ZSTD_window_update(
+pub(crate) fn ZSTD_window_update(
     window: &mut ZSTD_window_t,
     src: *const core::ffi::c_void,
     srcSize: usize,
@@ -872,13 +872,16 @@ pub(crate) unsafe fn ZSTD_window_update(
         }
         contiguous = false;
     }
-    window.nextSrc = ip.add(srcSize);
+    window.nextSrc = ip.wrapping_add(srcSize);
 
     // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
-    if (ip.add(srcSize) > (window.dictBase).wrapping_offset(window.lowLimit as isize))
+    if (ip.wrapping_add(srcSize) > (window.dictBase).wrapping_offset(window.lowLimit as isize))
         && (ip < (window.dictBase).wrapping_offset(window.dictLimit as isize))
     {
-        let highInputIdx = ip.add(srcSize).offset_from(window.dictBase) as usize;
+        let highInputIdx = ip
+            .wrapping_add(srcSize)
+            .addr()
+            .wrapping_sub(window.dictBase.addr());
         let lowLimitMax = (highInputIdx as u32).min(window.dictLimit);
         window.lowLimit = lowLimitMax;
     }
