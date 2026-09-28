@@ -142,17 +142,12 @@ pub fn ZSTD_crossEntropyCost(
 ) -> size_t {
     let count = &count[..usize::from(max) + 1];
     let norm = &norm[..count.len()];
-    let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
+    let shift = 8u32 - accuracyLog;
     let mut cost = 0usize;
     for (&n, &c) in norm.iter().zip(count) {
-        let normAcc = if n as core::ffi::c_int != -1 {
-            n as core::ffi::c_uint
-        } else {
-            1
-        };
+        let normAcc = if n != -1 { n as u8 } else { 1 };
         let norm256 = normAcc << shift;
-        cost = cost
-            .wrapping_add(c.wrapping_mul(kInverseProbabilityLog256[norm256 as usize]) as size_t);
+        cost += c.wrapping_mul(kInverseProbabilityLog256[usize::from(norm256)]) as size_t;
     }
     cost >> 8
 }
