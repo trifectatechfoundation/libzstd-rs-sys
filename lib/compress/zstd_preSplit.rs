@@ -213,31 +213,22 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
     debug_assert!(wkspSize >= size_of::<FPStats>());
 
+    let block = core::slice::from_raw_parts(blockStart.cast::<u8>(), blockSize);
+    let segment = SEGMENT_SIZE as usize;
+
     initStats(fpstats);
-    HIST_add(
-        &mut (*fpstats).pastEvents.events,
-        blockStart,
-        SEGMENT_SIZE as size_t,
-    );
+    HIST_add(&mut (*fpstats).pastEvents.events, &block[..segment]);
     HIST_add(
         &mut (*fpstats).newEvents.events,
-        (blockStart as *const c_char)
-            .add(blockSize)
-            .sub(SEGMENT_SIZE as usize) as *const c_void,
-        SEGMENT_SIZE as size_t,
+        &block[blockSize - segment..],
     );
     (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
     if !compareFingerprints(&(*fpstats).pastEvents, &(*fpstats).newEvents, 0, 8) {
         return blockSize;
     }
-    HIST_add(
-        &mut (*middleEvents).events,
-        (blockStart as *const c_char)
-            .add(blockSize / 2)
-            .sub((SEGMENT_SIZE / 2) as usize) as *const c_void,
-        SEGMENT_SIZE as size_t,
-    );
+    let middle = blockSize / 2 - segment / 2;
+    HIST_add(&mut (*middleEvents).events, &block[middle..][..segment]);
     (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;
     let distFromBegin = fpDistance(&(*fpstats).pastEvents, &*middleEvents, 8);
     let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
