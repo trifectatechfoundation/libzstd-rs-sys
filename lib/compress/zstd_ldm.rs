@@ -759,7 +759,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             } = ldmState.matchCandidates[n];
             let bucket = ZSTD_ldm_getBucket(ldmState, hash as size_t, params.bucketSizeLog);
 
-            let mut bestEntry = core::ptr::null();
+            let mut bestEntry = None;
             let newEntry = ldmEntry_t {
                 offset: split.wrapping_offset_from(base) as u32,
                 checksum,
@@ -832,18 +832,14 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         bestMatchLength = curTotalMatchLength;
                         forwardMatchLength = curForwardMatchLength;
                         backwardMatchLength = curBackwardMatchLength;
-                        bestEntry = cur;
+                        bestEntry = Some(*cur);
                     }
                 }
 
-                // No match found -- insert an entry into the hash table
-                // and process the next candidate match
-                if bestEntry.is_null() {
-                    ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
-                } else {
+                if let Some(bestEntry) = bestEntry {
                     // Match found
                     let offset =
-                        (split.wrapping_offset_from(base) as u32).wrapping_sub((*bestEntry).offset);
+                        (split.wrapping_offset_from(base) as u32).wrapping_sub(bestEntry.offset);
                     let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
                     let seq = (rawSeqStore.seq).add(rawSeqStore.size);
@@ -883,6 +879,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         ip = anchor.sub(hashed as usize);
                         break;
                     }
+                } else {
+                    // No match found -- insert an entry into the hash table
+                    // and process the next candidate match
+                    ZSTD_ldm_insertEntry(ldmState, hash as size_t, newEntry, params.bucketSizeLog);
                 }
             }
         }
