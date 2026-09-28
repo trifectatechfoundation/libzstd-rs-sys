@@ -970,7 +970,7 @@ pub(crate) unsafe fn ZSTD_window_needOverflowCorrection(
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 
 #[inline]
-unsafe fn ZSTD_window_canOverflowCorrect(
+fn ZSTD_window_canOverflowCorrect(
     window: ZSTD_window_t,
     cycleLog: u32,
     maxDist: u32,
@@ -978,7 +978,7 @@ unsafe fn ZSTD_window_canOverflowCorrect(
     src: *const core::ffi::c_void,
 ) -> bool {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
+    let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
     let minIndexToOverflowCorrect = cycleSize
         .wrapping_add(maxDist.max(cycleSize))
         .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
