@@ -15,16 +15,9 @@ enum CheckInput {
     CheckMaxSymbolValue,
 }
 
-pub unsafe fn HIST_add(
-    count: &mut [core::ffi::c_uint; 1024],
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) {
-    let mut ip = src as *const u8;
-    let end = ip.add(srcSize);
-    while ip < end {
-        count[usize::from(*ip)] += 1;
-        ip = ip.add(1);
+pub fn HIST_add(count: &mut [core::ffi::c_uint; 1024], src: &[u8]) {
+    for &byte in src {
+        count[usize::from(byte)] += 1;
     }
 }
 
