@@ -174,7 +174,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     };
 
     // Step 6: Write compression table to buffer
-    let table_size = unsafe {
+    let Ok(table_size) = (unsafe {
         lib::compress::huf_compress::HUF_writeCTable_wksp(
             c_buf.as_mut_ptr().cast(),
             cbuf_size,
@@ -184,11 +184,9 @@ fuzz_target!(|input: HufRoundTripInput| {
             workspace.as_mut_ptr().cast(),
             HUF_WORKSPACE_SIZE,
         )
-    };
-
-    if ZSTD_isError(table_size) == 1 {
+    }) else {
         return;
-    }
+    };
 
     // Step 7: Read decompression table (X1 or X2)
     let dt_read_size = if input.symbols {
@@ -254,9 +252,8 @@ fuzz_target!(|input: HufRoundTripInput| {
                 flags,
             )
         }
-    };
-
-    assert!(!ERR_isError(compress_size), "compression failed");
+    }
+    .expect("compression failed");
 
     // C code skips decompression if cSize == 0
     if compress_size == 0 {
