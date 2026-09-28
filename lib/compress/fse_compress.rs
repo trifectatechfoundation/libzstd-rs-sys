@@ -363,6 +363,7 @@ fn FSE_normalizeM2(
     maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
 ) -> Result<(), Error> {
+    let count = &count[..usize::from(maxSymbolValue) + 1];
     let maxSV1 = usize::from(maxSymbolValue) + 1;
     const NOT_YET_ASSIGNED: i16 = -2;
     let mut distributed = 0usize;
@@ -371,17 +372,17 @@ fn FSE_normalizeM2(
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
 
     let slice = &mut norm[0..=usize::from(maxSymbolValue)];
-    for (s, current) in slice.iter_mut().enumerate() {
-        *current = if count[s] == 0 {
+    for (current, &c) in slice.iter_mut().zip(count) {
+        *current = if c == 0 {
             0
-        } else if count[s] <= lowThreshold {
+        } else if c <= lowThreshold {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(count[s] as size_t);
+            total = total.wrapping_sub(c as size_t);
 
             lowProbCount
-        } else if count[s] <= lowOne {
+        } else if c <= lowOne {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(count[s] as size_t);
+            total = total.wrapping_sub(c as size_t);
 
             1
         } else {
@@ -397,11 +398,11 @@ fn FSE_normalizeM2(
     if total / ToDistribute as size_t > lowOne as size_t {
         // risk of rounding to zero
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
-        for (s, current) in slice.iter_mut().enumerate() {
-            if *current == NOT_YET_ASSIGNED && count[s] <= lowOne {
+        for (current, &c) in slice.iter_mut().zip(count) {
+            if *current == NOT_YET_ASSIGNED && c <= lowOne {
                 *current = 1;
                 distributed = distributed.wrapping_add(1);
-                total = total.wrapping_sub(count[s] as size_t);
+                total = total.wrapping_sub(c as size_t);
             }
         }
         ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
@@ -440,9 +441,9 @@ fn FSE_normalizeM2(
     let mid = (1u64 << vStepLog.wrapping_sub(1)).wrapping_sub(1);
     let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
-    for (s, current) in slice.iter_mut().enumerate() {
+    for (current, &c) in slice.iter_mut().zip(count) {
         if *current == NOT_YET_ASSIGNED {
-            let end = tmpTotal.wrapping_add(count[s] as u64 * rStep);
+            let end = tmpTotal.wrapping_add(c as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
             let sEnd = (end >> vStepLog) as u32;
             let weight = sEnd.wrapping_sub(sStart);
