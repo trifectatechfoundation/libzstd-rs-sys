@@ -579,18 +579,15 @@ unsafe fn FSEv06_buildDTable(
     let step = (tableSize >> 1)
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3);
-    let mut s_0: u32 = 0;
     let mut position = 0u32;
-    s_0 = 0;
-    while s_0 < maxSV1 {
-        for _ in 0..*normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
-            (*tableDecode.offset(position as isize)).symbol = s_0 as u8;
+    for s in 0..maxSV1 {
+        for _ in 0..*normalizedCounter.offset(s as isize) as core::ffi::c_int {
+            (*tableDecode.offset(position as isize)).symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
                 position = position.wrapping_add(step) & tableMask;
             }
         }
-        s_0 = s_0.wrapping_add(1);
     }
     if position != 0 {
         return Error::GENERIC.to_error_code();
@@ -896,7 +893,6 @@ unsafe fn HUFv06_readDTableX2(
     let mut tableLog = 0;
     let mut iSize: size_t = 0;
     let mut nbSymbols = 0;
-    let mut n: u32 = 0;
     let mut nextRankStart: u32 = 0;
     let dtPtr = DTable.add(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUFv06_DEltX2;
@@ -917,30 +913,24 @@ unsafe fn HUFv06_readDTableX2(
     }
     *DTable = tableLog as u16;
     nextRankStart = 0;
-    n = 1;
-    while n < tableLog.wrapping_add(1) {
+    for n in 1..tableLog.wrapping_add(1) {
         let current = nextRankStart;
         nextRankStart = nextRankStart
             .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
         *rankVal.as_mut_ptr().offset(n as isize) = current;
-        n = n.wrapping_add(1);
     }
-    n = 0;
-    while n < nbSymbols {
+    for n in 0..nbSymbols {
         let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
         let length = (1 << w >> 1) as u32;
-        let mut i: u32 = 0;
         let mut D = HUFv06_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
         D.nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
-        i = *rankVal.as_mut_ptr().offset(w as isize);
-        while i < (*rankVal.as_mut_ptr().offset(w as isize)).wrapping_add(length) {
+        let start = *rankVal.as_mut_ptr().offset(w as isize);
+        for i in start..start.wrapping_add(length) {
             *dt.offset(i as isize) = D;
-            i = i.wrapping_add(1);
         }
         let fresh11 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
         *fresh11 = (*fresh11).wrapping_add(length);
-        n = n.wrapping_add(1);
     }
     iSize
 }
@@ -1261,7 +1251,6 @@ unsafe fn HUFv06_fillDTableX4Level2(
         size_of::<[u32; 17]>(),
     );
     if minWeight > 1 {
-        let mut i: u32 = 0;
         let skipSize = *rankVal.as_mut_ptr().offset(minWeight as isize);
         MEM_writeLE16(
             &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
@@ -1269,10 +1258,8 @@ unsafe fn HUFv06_fillDTableX4Level2(
         );
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
-        i = 0;
-        while i < skipSize {
+        for i in 0..skipSize {
             *DTable.offset(i as isize) = DElt;
-            i = i.wrapping_add(1);
         }
     }
     for s in 0..sortedListSize {
@@ -1281,7 +1268,6 @@ unsafe fn HUFv06_fillDTableX4Level2(
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = (1 << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
-        let mut i_0 = start;
         let end = start.wrapping_add(length);
         MEM_writeLE16(
             &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
@@ -1289,12 +1275,8 @@ unsafe fn HUFv06_fillDTableX4Level2(
         );
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
-        loop {
-            *DTable.offset(i_0 as isize) = DElt;
-            i_0 = i_0.wrapping_add(1);
-            if i_0 >= end {
-                break;
-            }
+        for i in start..end {
+            *DTable.offset(i as isize) = DElt;
         }
         let fresh35 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
         *fresh35 = (*fresh35).wrapping_add(length);
@@ -1313,14 +1295,12 @@ unsafe fn HUFv06_fillDTableX4(
     let mut rankVal: [u32; 17] = [0; 17];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
-    let mut s: u32 = 0;
     memcpy(
         rankVal.as_mut_ptr() as *mut core::ffi::c_void,
         rankValOrigin as *const core::ffi::c_void,
         size_of::<[u32; 17]>(),
     );
-    s = 0;
-    while s < sortedListSize {
+    for s in 0..sortedListSize {
         let symbol = (*sortedList.offset(s as isize)).symbol as u16;
         let weight = (*sortedList.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
@@ -1356,17 +1336,13 @@ unsafe fn HUFv06_fillDTableX4(
             );
             DElt.nbBits = nbBits as u8;
             DElt.length = 1;
-            let mut u: u32 = 0;
             let end = start.wrapping_add(length);
-            u = start;
-            while u < end {
+            for u in start..end {
                 *DTable.offset(u as isize) = DElt;
-                u = u.wrapping_add(1);
             }
         }
         let fresh36 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
         *fresh36 = (*fresh36).wrapping_add(length);
-        s = s.wrapping_add(1);
     }
 }
 unsafe fn HUFv06_readDTableX4(
@@ -1413,14 +1389,11 @@ unsafe fn HUFv06_readDTableX4(
     while *rankStats.as_mut_ptr().offset(maxW as isize) == 0 {
         maxW = maxW.wrapping_sub(1);
     }
-    let mut w: u32 = 0;
     let mut nextRankStart = 0u32;
-    w = 1;
-    while w < maxW.wrapping_add(1) {
+    for w in 1..maxW.wrapping_add(1) {
         let current = nextRankStart;
         nextRankStart = nextRankStart.wrapping_add(*rankStats.as_mut_ptr().offset(w as isize));
         *rankStart.offset(w as isize) = current;
-        w = w.wrapping_add(1);
     }
     *rankStart = nextRankStart;
     sizeOfSort = nextRankStart;
@@ -1436,28 +1409,19 @@ unsafe fn HUFv06_readDTableX4(
     let rankVal0 = (*rankVal.as_mut_ptr()).as_mut_ptr();
     let rescale = memLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0u32;
-    let mut w_1: u32 = 0;
-    w_1 = 1;
-    while w_1 < maxW.wrapping_add(1) {
+    for w in 1..maxW.wrapping_add(1) {
         let current_0 = nextRankVal;
         nextRankVal = nextRankVal.wrapping_add(
-            *rankStats.as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
+            *rankStats.as_mut_ptr().offset(w as isize) << w.wrapping_add(rescale as u32),
         );
-        *rankVal0.offset(w_1 as isize) = current_0;
-        w_1 = w_1.wrapping_add(1);
+        *rankVal0.offset(w as isize) = current_0;
     }
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
-    let mut consumed: u32 = 0;
-    consumed = minBits;
-    while consumed < memLog.wrapping_sub(minBits).wrapping_add(1) {
+    for consumed in minBits..memLog.wrapping_sub(minBits).wrapping_add(1) {
         let rankValPtr = (*rankVal.as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
-        let mut w_2: u32 = 0;
-        w_2 = 1;
-        while w_2 < maxW.wrapping_add(1) {
-            *rankValPtr.offset(w_2 as isize) = *rankVal0.offset(w_2 as isize) >> consumed;
-            w_2 = w_2.wrapping_add(1);
+        for w in 1..maxW.wrapping_add(1) {
+            *rankValPtr.offset(w as isize) = *rankVal0.offset(w as isize) >> consumed;
         }
-        consumed = consumed.wrapping_add(1);
     }
     HUFv06_fillDTableX4(
         dt,
