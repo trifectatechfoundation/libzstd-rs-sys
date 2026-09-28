@@ -355,10 +355,10 @@ pub(crate) fn FSE_optimalTableLog(
 
 /// Secondary normalization method.
 /// To be used when primary method fails.
-unsafe fn FSE_normalizeM2(
+fn FSE_normalizeM2(
     norm: &mut [core::ffi::c_short],
     tableLog: u32,
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     mut total: size_t,
     maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
@@ -372,16 +372,16 @@ unsafe fn FSE_normalizeM2(
 
     let slice = &mut norm[0..=usize::from(maxSymbolValue)];
     for (s, current) in slice.iter_mut().enumerate() {
-        *current = if *count.add(s) == 0 {
+        *current = if count[s] == 0 {
             0
-        } else if *count.add(s) <= lowThreshold {
+        } else if count[s] <= lowThreshold {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.add(s) as size_t);
+            total = total.wrapping_sub(count[s] as size_t);
 
             lowProbCount
-        } else if *count.add(s) <= lowOne {
+        } else if count[s] <= lowOne {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.add(s) as size_t);
+            total = total.wrapping_sub(count[s] as size_t);
 
             1
         } else {
@@ -398,10 +398,10 @@ unsafe fn FSE_normalizeM2(
         // risk of rounding to zero
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
         for (s, current) in slice.iter_mut().enumerate() {
-            if *current == NOT_YET_ASSIGNED && *count.add(s) <= lowOne {
+            if *current == NOT_YET_ASSIGNED && count[s] <= lowOne {
                 *current = 1;
                 distributed = distributed.wrapping_add(1);
-                total = total.wrapping_sub(*count.add(s) as size_t);
+                total = total.wrapping_sub(count[s] as size_t);
             }
         }
         ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
@@ -414,9 +414,9 @@ unsafe fn FSE_normalizeM2(
         let mut maxV = 0;
         let mut maxC = 0;
         for s in 0..maxSV1 {
-            if *count.add(s) > maxC {
+            if count[s] > maxC {
                 maxV = s;
-                maxC = *count.add(s);
+                maxC = count[s];
             }
         }
         norm[maxV] += ToDistribute as i16;
@@ -442,7 +442,7 @@ unsafe fn FSE_normalizeM2(
     let mut tmpTotal = mid;
     for (s, current) in slice.iter_mut().enumerate() {
         if *current == NOT_YET_ASSIGNED {
-            let end = tmpTotal.wrapping_add(*count.add(s) as u64 * rStep);
+            let end = tmpTotal.wrapping_add(count[s] as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
             let sEnd = (end >> vStepLog) as u32;
             let weight = sEnd.wrapping_sub(sStart);
@@ -525,7 +525,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
         FSE_normalizeM2(
             normalizedCounter,
             tableLog,
-            count.as_ptr(),
+            count,
             total,
             maxSymbolValue,
             lowProbCount,
