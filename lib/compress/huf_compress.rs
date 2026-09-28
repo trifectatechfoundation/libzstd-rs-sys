@@ -288,15 +288,12 @@ pub unsafe fn HUF_writeCTable_wksp(
     Ok(maxSymbolValue.div_ceil(2) + 1)
 }
 
-pub unsafe fn HUF_readCTable(
+pub fn HUF_readCTable(
     CTable: &mut CTable,
     maxSymbolValuePtr: &mut u8,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     hasZeroWeights: &mut c_uint,
 ) -> Result<size_t, Error> {
-    let src = core::slice::from_raw_parts(src.cast(), srcSize);
-
     let mut huffWeight: [u8; HUF_SYMBOLVALUE_MAX as usize + 1] =
         [0; HUF_SYMBOLVALUE_MAX as usize + 1];
     let mut rankVal: [u32; HUF_TABLELOG_ABSOLUTEMAX + 1] = [0; HUF_TABLELOG_ABSOLUTEMAX + 1]; /* large enough for values from 0 to 16 */
