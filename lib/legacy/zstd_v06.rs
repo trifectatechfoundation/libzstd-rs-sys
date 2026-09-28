@@ -3029,9 +3029,7 @@ unsafe fn ZSTDv06_decompressSequences(
             size_of::<seq_t>(),
         );
         sequence.offset = REPCODE_STARTVALUE as size_t;
-        for i in 0..ZSTDv06_REP_INIT as u32 {
-            *(seqState.prevOffset).as_mut_ptr().offset(i as isize) = REPCODE_STARTVALUE as size_t;
-        }
+        seqState.prevOffset[..ZSTDv06_REP_INIT as usize].fill(REPCODE_STARTVALUE as size_t);
         let errorCode = BITv06_initDStream(
             &mut seqState.DStream,
             ip as *const core::ffi::c_void,

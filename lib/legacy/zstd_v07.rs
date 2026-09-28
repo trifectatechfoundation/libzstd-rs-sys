@@ -833,10 +833,7 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
             byte: n as u8,
             nbBits: tableLog.wrapping_add(1).wrapping_sub(w as u32) as u8,
         };
-        let start = rankVal[usize::from(w)];
-        for i in start..start.wrapping_add(length) {
-            dt[i as usize] = D;
-        }
+        dt[rankVal[usize::from(w)] as usize..][..length as usize].fill(D);
         rankVal[usize::from(w)] += length;
     }
     Ok(iSize)
@@ -1021,9 +1018,7 @@ fn HUFv07_fillDTableX4Level2(
         DElt.sequence = LE16(baseSeq.to_le_bytes());
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
-        for i in 0..skipSize {
-            DTable[i as usize] = DElt;
-        }
+        DTable[..skipSize as usize].fill(DElt);
     }
     for sym in sortedSymbols {
         let symbol = sym.symbol as u32;
@@ -1036,9 +1031,7 @@ fn HUFv07_fillDTableX4Level2(
         ));
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
-        for i in start..start + length {
-            DTable[i as usize] = DElt;
-        }
+        DTable[start as usize..][..length as usize].fill(DElt);
         rankVal[weight as usize] += length;
     }
 }
@@ -1083,10 +1076,7 @@ fn HUFv07_fillDTableX4(
                 nbBits: nbBits as u8,
                 length: 1,
             };
-            let end = start.wrapping_add(length);
-            for u in start..end {
-                DTable[u as usize] = DElt;
-            }
+            DTable[start as usize..][..length as usize].fill(DElt);
         }
         rankVal[weight as usize] += length;
     }
