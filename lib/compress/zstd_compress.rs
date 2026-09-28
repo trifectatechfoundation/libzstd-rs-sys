@@ -1562,65 +1562,77 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
     param: ZSTD_cParameter,
     value: core::ffi::c_int,
 ) -> size_t {
-    if (*cctx).streamStage != StreamStage::Init {
-        if ZSTD_isUpdateAuthorized(param) {
-            (*cctx).cParamsChanged = 1;
-        } else {
-            return Error::stage_wrong.to_error_code();
-        }
-    }
+    (*cctx)
+        .set_parameter(param, value)
+        .unwrap_or_else(|e| e.to_error_code())
+}
 
-    match param {
-        ZSTD_cParameter::ZSTD_c_nbWorkers => {
-            if value != 0 && (*cctx).staticSize != 0 {
-                Error::parameter_unsupported.to_error_code()
+impl ZSTD_CCtx {
+    pub fn set_parameter(
+        &mut self,
+        param: ZSTD_cParameter,
+        value: core::ffi::c_int,
+    ) -> Result<size_t, Error> {
+        if self.streamStage != StreamStage::Init {
+            if ZSTD_isUpdateAuthorized(param) {
+                self.cParamsChanged = 1;
             } else {
-                ZSTD_CCtxParams_setParameter(&mut (*cctx).requestedParams, param, value)
+                return Err(Error::stage_wrong);
             }
         }
 
-        ZSTD_cParameter::ZSTD_c_compressionLevel
-        | ZSTD_cParameter::ZSTD_c_windowLog
-        | ZSTD_cParameter::ZSTD_c_hashLog
-        | ZSTD_cParameter::ZSTD_c_chainLog
-        | ZSTD_cParameter::ZSTD_c_searchLog
-        | ZSTD_cParameter::ZSTD_c_minMatch
-        | ZSTD_cParameter::ZSTD_c_targetLength
-        | ZSTD_cParameter::ZSTD_c_strategy
-        | ZSTD_cParameter::ZSTD_c_ldmHashRateLog
-        | ZSTD_cParameter::ZSTD_c_format
-        | ZSTD_cParameter::ZSTD_c_contentSizeFlag
-        | ZSTD_cParameter::ZSTD_c_checksumFlag
-        | ZSTD_cParameter::ZSTD_c_dictIDFlag
-        | ZSTD_cParameter::ZSTD_c_forceMaxWindow
-        | ZSTD_cParameter::ZSTD_c_forceAttachDict
-        | ZSTD_cParameter::ZSTD_c_literalCompressionMode
-        | ZSTD_cParameter::ZSTD_c_jobSize
-        | ZSTD_cParameter::ZSTD_c_overlapLog
-        | ZSTD_cParameter::ZSTD_c_rsyncable
-        | ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch
-        | ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching
-        | ZSTD_cParameter::ZSTD_c_ldmHashLog
-        | ZSTD_cParameter::ZSTD_c_ldmMinMatch
-        | ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog
-        | ZSTD_cParameter::ZSTD_c_targetCBlockSize
-        | ZSTD_cParameter::ZSTD_c_srcSizeHint
-        | ZSTD_cParameter::ZSTD_c_stableInBuffer
-        | ZSTD_cParameter::ZSTD_c_stableOutBuffer
-        | ZSTD_cParameter::ZSTD_c_blockDelimiters
-        | ZSTD_cParameter::ZSTD_c_validateSequences
-        | ZSTD_cParameter::ZSTD_c_splitAfterSequences
-        | ZSTD_cParameter::ZSTD_c_blockSplitterLevel
-        | ZSTD_cParameter::ZSTD_c_useRowMatchFinder
-        | ZSTD_cParameter::ZSTD_c_deterministicRefPrefix
-        | ZSTD_cParameter::ZSTD_c_prefetchCDictTables
-        | ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback
-        | ZSTD_cParameter::ZSTD_c_maxBlockSize
-        | ZSTD_cParameter::ZSTD_c_repcodeResolution => {
-            ZSTD_CCtxParams_setParameter(&mut (*cctx).requestedParams, param, value)
-        }
+        match param {
+            ZSTD_cParameter::ZSTD_c_nbWorkers => {
+                if value != 0 && self.staticSize != 0 {
+                    Err(Error::parameter_unsupported)
+                } else {
+                    self.requestedParams.set_parameter(param, value)
+                }
+            }
 
-        _ => Error::parameter_unsupported.to_error_code(),
+            ZSTD_cParameter::ZSTD_c_compressionLevel
+            | ZSTD_cParameter::ZSTD_c_windowLog
+            | ZSTD_cParameter::ZSTD_c_hashLog
+            | ZSTD_cParameter::ZSTD_c_chainLog
+            | ZSTD_cParameter::ZSTD_c_searchLog
+            | ZSTD_cParameter::ZSTD_c_minMatch
+            | ZSTD_cParameter::ZSTD_c_targetLength
+            | ZSTD_cParameter::ZSTD_c_strategy
+            | ZSTD_cParameter::ZSTD_c_ldmHashRateLog
+            | ZSTD_cParameter::ZSTD_c_format
+            | ZSTD_cParameter::ZSTD_c_contentSizeFlag
+            | ZSTD_cParameter::ZSTD_c_checksumFlag
+            | ZSTD_cParameter::ZSTD_c_dictIDFlag
+            | ZSTD_cParameter::ZSTD_c_forceMaxWindow
+            | ZSTD_cParameter::ZSTD_c_forceAttachDict
+            | ZSTD_cParameter::ZSTD_c_literalCompressionMode
+            | ZSTD_cParameter::ZSTD_c_jobSize
+            | ZSTD_cParameter::ZSTD_c_overlapLog
+            | ZSTD_cParameter::ZSTD_c_rsyncable
+            | ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch
+            | ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching
+            | ZSTD_cParameter::ZSTD_c_ldmHashLog
+            | ZSTD_cParameter::ZSTD_c_ldmMinMatch
+            | ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog
+            | ZSTD_cParameter::ZSTD_c_targetCBlockSize
+            | ZSTD_cParameter::ZSTD_c_srcSizeHint
+            | ZSTD_cParameter::ZSTD_c_stableInBuffer
+            | ZSTD_cParameter::ZSTD_c_stableOutBuffer
+            | ZSTD_cParameter::ZSTD_c_blockDelimiters
+            | ZSTD_cParameter::ZSTD_c_validateSequences
+            | ZSTD_cParameter::ZSTD_c_splitAfterSequences
+            | ZSTD_cParameter::ZSTD_c_blockSplitterLevel
+            | ZSTD_cParameter::ZSTD_c_useRowMatchFinder
+            | ZSTD_cParameter::ZSTD_c_deterministicRefPrefix
+            | ZSTD_cParameter::ZSTD_c_prefetchCDictTables
+            | ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback
+            | ZSTD_cParameter::ZSTD_c_maxBlockSize
+            | ZSTD_cParameter::ZSTD_c_repcodeResolution => {
+                self.requestedParams.set_parameter(param, value)
+            }
+
+            _ => Err(Error::parameter_unsupported),
+        }
     }
 }
 
