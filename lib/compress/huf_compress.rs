@@ -1588,8 +1588,7 @@ pub unsafe fn HUF_optimalTableLog(
     let mut optLog = maxTableLog;
 
     /* Search until size increases */
-    let mut optLogGuess = minTableLog;
-    while optLogGuess <= maxTableLog {
+    for optLogGuess in minTableLog..maxTableLog + 1 {
         if let Ok(maxBits) = HUF_buildCTable_wksp(
             table,
             count,
@@ -1621,7 +1620,6 @@ pub unsafe fn HUF_optimalTableLog(
                 }
             }
         }
-        optLogGuess += 1;
     }
     debug_assert!(optLog as usize <= HUF_TABLELOG_MAX);
     optLog
