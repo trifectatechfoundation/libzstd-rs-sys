@@ -110,7 +110,7 @@ unsafe fn ZSTD_entropyCost(count: *const core::ffi::c_uint, max: u8, total: size
 /// Returns an error if ctable cannot represent all the symbols in count.
 pub unsafe fn ZSTD_fseBitCost(
     ctable: &[FSE_CTable],
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     max: u8,
 ) -> size_t {
     let kAccuracyLog = 8;
@@ -123,11 +123,11 @@ pub unsafe fn ZSTD_fseBitCost(
         let tableLog = cstate.stateLog;
         let badCost = tableLog.wrapping_add(1) << kAccuracyLog;
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
-        if *count.offset(s as isize) != 0 {
+        if count[s as usize] != 0 {
             if bitCost >= badCost {
                 return Error::GENERIC.to_error_code();
             }
-            cost = cost.wrapping_add(*count.offset(s as isize) as size_t * bitCost as size_t);
+            cost = cost.wrapping_add(count[s as usize] as size_t * bitCost as size_t);
         }
     }
     cost >> kAccuracyLog
@@ -210,7 +210,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode != FSE_repeat::None {
-            ZSTD_fseBitCost(prevCTable, count.as_ptr(), max)
+            ZSTD_fseBitCost(prevCTable, count, max)
         } else {
             Error::GENERIC.to_error_code()
         };

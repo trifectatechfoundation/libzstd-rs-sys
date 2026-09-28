@@ -499,7 +499,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         }
         SymbolEncodingType::Rle => 0,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
-            ZSTD_fseBitCost(fseCTable, count.as_ptr(), max)
+            ZSTD_fseBitCost(fseCTable, count, max)
         }
     };
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
