@@ -64,7 +64,7 @@ fn ZSTD_useLowProbCount(nbSeq: size_t) -> bool {
 /// Returns the cost in bytes of encoding the normalized count header.
 /// Returns an error if any of the helper functions return an error.
 unsafe fn ZSTD_NCountCost(
-    count: *const core::ffi::c_uint,
+    count: &[core::ffi::c_uint],
     max: u8,
     nbSeq: size_t,
     FSELog: core::ffi::c_uint,
@@ -75,7 +75,7 @@ unsafe fn ZSTD_NCountCost(
     FSE_normalizeCount(
         &mut norm,
         tableLog,
-        count,
+        count.as_ptr(),
         nbSeq,
         max,
         ZSTD_useLowProbCount(nbSeq),
@@ -214,7 +214,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         } else {
             Error::GENERIC.to_error_code()
         };
-        let nCountCost = match ZSTD_NCountCost(count.as_ptr(), max, nbSeq, FSELog) {
+        let nCountCost = match ZSTD_NCountCost(count, max, nbSeq, FSELog) {
             Ok(nCountCost) => nCountCost,
             Err(_) => unreachable!(),
         };
