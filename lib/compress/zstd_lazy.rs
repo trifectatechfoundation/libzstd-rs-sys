@@ -1422,7 +1422,6 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let headGrouped = (*tagRow as u32 & rowMask) * groupWidth;
     let mut matchBuffer: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
     let mut numMatches = 0usize;
-    let mut currMatch = 0;
     let mut matches = ZSTD_row_getMatchMask(tagRow, tag as u8, headGrouped, rowEntries);
 
     // Cycle through the matches and prefetch
@@ -1456,7 +1455,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     ms.nextToUpdate = (ms.nextToUpdate).wrapping_add(1);
 
     // Return the longest match
-    while currMatch < numMatches {
+    for currMatch in 0..numMatches {
         let matchIndex_0 = *matchBuffer.as_mut_ptr().add(currMatch);
         let mut currentMl = 0;
 
@@ -1488,7 +1487,6 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 break; // best possible, avoids read overflow on next attempt
             }
         }
-        currMatch = currMatch.wrapping_add(1);
     }
 
     if dictMode == DictMode::DedicatedDictSearch {
@@ -1515,7 +1513,6 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let headGrouped_0 = (*dmsTagRow as u32 & rowMask) * groupWidth;
         let mut matchBuffer_0: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
         let mut numMatches_0 = 0usize;
-        let mut currMatch_0 = 0;
         let mut matches_0 =
             ZSTD_row_getMatchMask(dmsTagRow, dmsTag as u8, headGrouped_0, rowEntries);
 
@@ -1535,8 +1532,8 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         }
 
         // Return the longest match
-        while currMatch_0 < numMatches_0 {
-            let matchIndex_2 = *matchBuffer_0.as_mut_ptr().add(currMatch_0);
+        for currMatch in 0..numMatches_0 {
+            let matchIndex_2 = *matchBuffer_0.as_mut_ptr().add(currMatch);
             let mut currentMl_0 = 0;
 
             let match_2 = dmsBase.offset(matchIndex_2 as isize);
@@ -1557,8 +1554,6 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                     break;
                 }
             }
-
-            currMatch_0 = currMatch_0.wrapping_add(1);
         }
     }
 
