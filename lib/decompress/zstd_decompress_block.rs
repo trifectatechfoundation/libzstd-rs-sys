@@ -755,6 +755,7 @@ fn ZSTD_buildFSETable_body_default<const N: usize>(
     );
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
@@ -790,14 +791,17 @@ pub fn ZSTD_buildFSETable<const N: usize>(
     bmi2: bool,
 ) {
     if bmi2 {
-        ZSTD_buildFSETable_body_bmi2(
-            dt,
-            normalizedCounter,
-            baseValue,
-            nbAdditionalBits,
-            tableLog,
-            wksp,
-        );
+        // SAFETY: the bmi2 feature is enabled.
+        unsafe {
+            ZSTD_buildFSETable_body_bmi2(
+                dt,
+                normalizedCounter,
+                baseValue,
+                nbAdditionalBits,
+                tableLog,
+                wksp,
+            )
+        };
     } else {
         ZSTD_buildFSETable_body_default(
             dt,
