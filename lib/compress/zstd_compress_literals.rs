@@ -31,20 +31,19 @@ pub type huf_compress_f = unsafe fn(
 pub unsafe fn ZSTD_noCompressLiterals(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
-    let flSize = 1 + u32::from(srcSize > 31) + u32::from(srcSize > 4095);
+    let flSize = 1 + usize::from(src.len() > 31) + usize::from(src.len() > 4095);
 
-    if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
+    if src.len().wrapping_add(flSize) > dstCapacity {
         return Err(Error::dstSize_tooSmall);
     }
 
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart = (SymbolEncodingType::Basic as size_t).wrapping_add(srcSize << 3) as u8;
+            *ostart = (SymbolEncodingType::Basic as size_t).wrapping_add(src.len() << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
@@ -52,7 +51,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
                 ostart as *mut core::ffi::c_void,
                 (SymbolEncodingType::Basic as size_t)
                     .wrapping_add(1 << 2)
-                    .wrapping_add(srcSize << 4) as u16,
+                    .wrapping_add(src.len() << 4) as u16,
             );
         }
         3 => {
@@ -61,15 +60,15 @@ pub unsafe fn ZSTD_noCompressLiterals(
                 ostart as *mut core::ffi::c_void,
                 (SymbolEncodingType::Basic as size_t)
                     .wrapping_add(3 << 2)
-                    .wrapping_add(srcSize << 4) as u32,
+                    .wrapping_add(src.len() << 4) as u32,
             );
         }
         _ => {} // not necessary : flSize is {1,2,3}
     }
 
-    core::ptr::copy_nonoverlapping(src.cast::<u8>(), ostart.offset(flSize as isize), srcSize);
+    core::ptr::copy_nonoverlapping(src.as_ptr(), ostart.add(flSize), src.len());
 
-    Ok(srcSize.wrapping_add(flSize as size_t))
+    Ok(src.len().wrapping_add(flSize as size_t))
 }
 
 fn allBytesIdentical(src: &[u8]) -> bool {
@@ -82,22 +81,18 @@ fn allBytesIdentical(src: &[u8]) -> bool {
 pub unsafe fn ZSTD_compressRleLiteralsBlock(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
-    let flSize = 1 + usize::from(srcSize > 31) + usize::from(srcSize > 4095);
+    let flSize = 1 + usize::from(src.len() > 31) + usize::from(src.len() > 4095);
 
     assert!(dstCapacity >= 4);
-    assert!(allBytesIdentical(core::slice::from_raw_parts(
-        src.cast::<u8>(),
-        srcSize
-    )));
+    assert!(allBytesIdentical(src));
 
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart = (SymbolEncodingType::Rle as size_t).wrapping_add(srcSize << 3) as u8;
+            *ostart = (SymbolEncodingType::Rle as size_t).wrapping_add(src.len() << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
@@ -105,7 +100,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
                 ostart as *mut core::ffi::c_void,
                 (SymbolEncodingType::Rle as size_t)
                     .wrapping_add(1 << 2)
-                    .wrapping_add(srcSize << 4) as u16,
+                    .wrapping_add(src.len() << 4) as u16,
             );
         }
         3 => {
@@ -114,13 +109,13 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
                 ostart as *mut core::ffi::c_void,
                 (SymbolEncodingType::Rle as size_t)
                     .wrapping_add(3 << 2)
-                    .wrapping_add(srcSize << 4) as u32,
+                    .wrapping_add(src.len() << 4) as u32,
             );
         }
         _ => {} // not necessary : flSize is {1,2,3}
     }
 
-    *ostart.add(flSize) = *(src as *const u8);
+    *ostart.add(flSize) = src[0];
     Ok(flSize + 1)
 }
 
@@ -165,13 +160,15 @@ pub unsafe fn ZSTD_compressLiterals(
     // Prepare nextEntropy assuming reusing the existing table
     core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
 
+    let src = core::slice::from_raw_parts(src.cast::<u8>(), srcSize);
+
     if disableLiteralCompression {
-        return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
+        return ZSTD_noCompressLiterals(dst, dstCapacity, src);
     }
 
     // if too small, don't even attempt compression (speed opt)
     if srcSize < ZSTD_minLiteralsToCompress(strategy, prevHuf.repeatMode) {
-        return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
+        return ZSTD_noCompressLiterals(dst, dstCapacity, src);
     }
 
     if dstCapacity < lhSize.wrapping_add(1) {
@@ -207,7 +204,7 @@ pub unsafe fn ZSTD_compressLiterals(
     let cLitSize = huf_compress(
         ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
-        src,
+        src.as_ptr().cast(),
         srcSize,
         HUF_SYMBOLVALUE_MAX,
         LitHufLog,
@@ -227,7 +224,7 @@ pub unsafe fn ZSTD_compressLiterals(
         Ok(cLitSize) if cLitSize > 0 && cLitSize < srcSize.wrapping_sub(minGain) => cLitSize,
         _ => {
             core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
-            return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
+            return ZSTD_noCompressLiterals(dst, dstCapacity, src);
         }
     };
 
@@ -236,12 +233,9 @@ pub unsafe fn ZSTD_compressLiterals(
     // For that outcome to have a chance to happen, it's necessary that `srcSize < 8`.
     // (it's also necessary to not generate statistics).
     // Therefore, in such a case, actively check that all bytes are identical.
-    if cLitSize == 1
-        && (srcSize >= 8
-            || allBytesIdentical(core::slice::from_raw_parts(src.cast::<u8>(), srcSize)))
-    {
+    if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src)) {
         core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
-        return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
+        return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src);
     }
 
     if hType == SymbolEncodingType::Compressed {
