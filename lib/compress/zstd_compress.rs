@@ -4045,8 +4045,7 @@ pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: core::ffi::c_int = 20;
 unsafe fn ZSTD_entropyCompressSeqStore_internal(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    literals: *const core::ffi::c_void,
-    litSize: size_t,
+    literals: &[u8],
     seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
     nextEntropy: &mut ZSTD_entropyCTables_t,
@@ -4078,12 +4077,12 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         .offset_from(seqStorePtr.sequencesStart) as size_t;
     // Base suspicion of uncompressibility on ratio of literals to sequences
     let suspectUncompressible = numSequences == 0
-        || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
+        || literals.len() / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
 
     let cSize = ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,
         dstCapacity,
-        core::slice::from_raw_parts(literals.cast::<u8>(), litSize),
+        literals,
         entropyWorkspace,
         entropyWkspSize,
         &prevEntropy.huf,
@@ -4189,8 +4188,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     let cSize = match ZSTD_entropyCompressSeqStore_internal(
         dst,
         dstCapacity,
-        literals,
-        litSize,
+        core::slice::from_raw_parts(literals.cast::<u8>(), litSize),
         seqStorePtr,
         prevEntropy,
         nextEntropy,
@@ -9763,8 +9761,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore_internal(
             op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
-            literals,
-            block.litSize,
+            core::slice::from_raw_parts(literals.cast::<u8>(), block.litSize),
             &(*cctx).seqStore,
             &(*(*cctx).blockState.prevCBlock).entropy,
             &mut (*(*cctx).blockState.nextCBlock).entropy,
