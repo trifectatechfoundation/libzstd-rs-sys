@@ -175,6 +175,7 @@ fn FSE_readNCount_body_default(
 ) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn FSE_readNCount_body_bmi2(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut u8,
@@ -192,7 +193,8 @@ pub(super) fn FSE_readNCount_bmi2(
     bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     if bmi2 != 0 {
-        FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
+        // SAFETY: the bmi2 feature is enabled.
+        unsafe { FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer) }
     } else {
         FSE_readNCount_body_default(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
     }
