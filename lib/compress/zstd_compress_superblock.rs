@@ -84,13 +84,12 @@ unsafe fn ZSTD_compressSubBlock_literal(
         SymbolEncodingType::Repeat
     };
     let mut cLitSize = 0usize;
+    let literals = core::slice::from_raw_parts(literals, litSize);
 
     *entropyWritten = false;
     if litSize == 0 || hufMetadata.hType == SymbolEncodingType::Basic {
-        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     } else if hufMetadata.hType == SymbolEncodingType::Rle {
-        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
         return ZSTD_compressRleLiteralsBlock(dst, dstSize, literals);
     }
 
@@ -113,7 +112,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         HUF_compress1X_usingCTable(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
-            literals as *const core::ffi::c_void,
+            literals.as_ptr().cast(),
             litSize,
             hufTable,
             flags,
@@ -122,7 +121,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         HUF_compress4X_usingCTable(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
-            literals as *const core::ffi::c_void,
+            literals.as_ptr().cast(),
             litSize,
             hufTable,
             flags,
@@ -136,7 +135,6 @@ unsafe fn ZSTD_compressSubBlock_literal(
     cLitSize = cLitSize.wrapping_add(cSize);
     // If we expand and we aren't writing a header then emit uncompressed.
     if !writeEntropy && cLitSize >= litSize {
-        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
@@ -144,7 +142,6 @@ unsafe fn ZSTD_compressSubBlock_literal(
         < 3 + size_t::from(cLitSize >= (1 << 10) as size_t)
             + size_t::from(cLitSize >= (16 * (1 << 10)) as size_t)
     {
-        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
 
