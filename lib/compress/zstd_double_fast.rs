@@ -2,7 +2,7 @@ use crate::lib::polyfill::PointerExt;
 
 use libc::size_t;
 
-use crate::lib::common::compiler::prefetch_area;
+use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, Locality};
 use crate::lib::common::mem::{MEM_read32, MEM_read64};
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
@@ -296,6 +296,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             }
 
                             if ip1 >= nextStep {
+                                prefetch_read_data(ip1.wrapping_add(64), Locality::L1);
+                                prefetch_read_data(ip1.wrapping_add(128), Locality::L1);
                                 step = step.wrapping_add(1);
                                 nextStep = nextStep.add(kStepIncr);
                             }
