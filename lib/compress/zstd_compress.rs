@@ -4174,8 +4174,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
 unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    literals: *const core::ffi::c_void,
-    litSize: size_t,
+    literals: &[u8],
     blockSize: size_t,
     seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_entropyCTables_t,
@@ -4188,7 +4187,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     let cSize = match ZSTD_entropyCompressSeqStore_internal(
         dst,
         dstCapacity,
-        core::slice::from_raw_parts(literals.cast::<u8>(), litSize),
+        literals,
         seqStorePtr,
         prevEntropy,
         nextEntropy,
@@ -4228,8 +4227,10 @@ unsafe fn ZSTD_entropyCompressSeqStore(
     ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         dst,
         dstCapacity,
-        seqStorePtr.litStart as *const core::ffi::c_void,
-        seqStorePtr.lit.offset_from(seqStorePtr.litStart) as size_t,
+        core::slice::from_raw_parts(
+            seqStorePtr.litStart,
+            seqStorePtr.lit.offset_from_unsigned(seqStorePtr.litStart),
+        ),
         srcSize,
         seqStorePtr,
         prevEntropy,
