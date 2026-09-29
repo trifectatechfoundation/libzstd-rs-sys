@@ -3,7 +3,6 @@ use core::ptr;
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::mem::MEM_read32;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
 pub const HIST_WKSP_SIZE: size_t =
     (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
