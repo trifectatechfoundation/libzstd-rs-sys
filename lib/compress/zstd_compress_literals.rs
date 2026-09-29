@@ -138,8 +138,7 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
 pub unsafe fn ZSTD_compressLiterals(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWorkspaceSize: size_t,
     prevHuf: &ZSTD_hufCTables_t,
@@ -150,23 +149,21 @@ pub unsafe fn ZSTD_compressLiterals(
     bmi2: bool,
 ) -> Result<size_t, Error> {
     let lhSize = 3
-        + size_t::from(srcSize >= (1 << 10) as size_t)
-        + size_t::from(srcSize >= (16 * (1 << 10)) as size_t);
+        + size_t::from(src.len() >= (1 << 10) as size_t)
+        + size_t::from(src.len() >= (16 * (1 << 10)) as size_t);
     let ostart = dst as *mut u8;
-    let mut singleStream = srcSize < 256;
+    let mut singleStream = src.len() < 256;
     let mut hType = SymbolEncodingType::Compressed;
 
     // Prepare nextEntropy assuming reusing the existing table
     core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
-
-    let src = core::slice::from_raw_parts(src.cast::<u8>(), srcSize);
 
     if disableLiteralCompression {
         return ZSTD_noCompressLiterals(dst, dstCapacity, src);
     }
 
     // if too small, don't even attempt compression (speed opt)
-    if srcSize < ZSTD_minLiteralsToCompress(strategy, prevHuf.repeatMode) {
+    if src.len() < ZSTD_minLiteralsToCompress(strategy, prevHuf.repeatMode) {
         return ZSTD_noCompressLiterals(dst, dstCapacity, src);
     }
 
@@ -179,7 +176,7 @@ pub unsafe fn ZSTD_compressLiterals(
         HUF_flags_bmi2 as core::ffi::c_int
     } else {
         0
-    }) | (if (strategy as core::ffi::c_uint) < ZSTD_lazy && srcSize <= 1024 {
+    }) | (if (strategy as core::ffi::c_uint) < ZSTD_lazy && src.len() <= 1024 {
         HUF_flags_preferRepeat as core::ffi::c_int
     } else {
         0
@@ -217,9 +214,9 @@ pub unsafe fn ZSTD_compressLiterals(
         hType = SymbolEncodingType::Repeat;
     }
 
-    let minGain = ZSTD_minGain(srcSize, strategy);
+    let minGain = ZSTD_minGain(src.len(), strategy);
     let cLitSize = match cLitSize {
-        Ok(cLitSize) if cLitSize > 0 && cLitSize < srcSize.wrapping_sub(minGain) => cLitSize,
+        Ok(cLitSize) if cLitSize > 0 && cLitSize < src.len().wrapping_sub(minGain) => cLitSize,
         _ => {
             core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
             return ZSTD_noCompressLiterals(dst, dstCapacity, src);
@@ -228,10 +225,10 @@ pub unsafe fn ZSTD_compressLiterals(
 
     // A return value of 1 signals that the alphabet consists of a single symbol.
     // However, in some rare circumstances, it could be the compressed size (a single byte).
-    // For that outcome to have a chance to happen, it's necessary that `srcSize < 8`.
+    // For that outcome to have a chance to happen, it's necessary that `src.len() < 8`.
     // (it's also necessary to not generate statistics).
     // Therefore, in such a case, actively check that all bytes are identical.
-    if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src)) {
+    if cLitSize == 1 && (src.len() >= 8 || allBytesIdentical(src)) {
         core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src);
     }
@@ -246,12 +243,12 @@ pub unsafe fn ZSTD_compressLiterals(
         3 => {
             // 2 - 2 - 10 - 10
             if !singleStream {
-                assert!(srcSize >= MIN_LITERALS_FOR_4_STREAMS)
+                assert!(src.len() >= MIN_LITERALS_FOR_4_STREAMS)
             }
 
             let lhc = (hType as core::ffi::c_uint)
                 .wrapping_add(((!singleStream) as core::ffi::c_int as u32) << 2)
-                .wrapping_add((srcSize as u32) << 4)
+                .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);
         }
@@ -259,7 +256,7 @@ pub unsafe fn ZSTD_compressLiterals(
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
                 .wrapping_add((2 << 2) as core::ffi::c_uint)
-                .wrapping_add((srcSize as u32) << 4)
+                .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
         }
@@ -267,7 +264,7 @@ pub unsafe fn ZSTD_compressLiterals(
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
                 .wrapping_add((3 << 2) as core::ffi::c_uint)
-                .wrapping_add((srcSize as u32) << 4)
+                .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);
             *ostart.add(4) = (cLitSize >> 10) as u8;

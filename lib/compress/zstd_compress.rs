@@ -4083,8 +4083,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let cSize = ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,
         dstCapacity,
-        literals,
-        litSize,
+        core::slice::from_raw_parts(literals.cast::<u8>(), litSize),
         entropyWorkspace,
         entropyWkspSize,
         &prevEntropy.huf,
