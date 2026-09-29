@@ -497,11 +497,6 @@ pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t
     }
 }
 
-/// Returns the bucket associated with hash.
-fn ZSTD_ldm_getBucket(hashTable: &[ldmEntry_t], hash: size_t, bucketSizeLog: u32) -> &[ldmEntry_t] {
-    &hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog]
-}
-
 /// Insert the entry with corresponding hash into the hash table
 fn ZSTD_ldm_insertEntry(
     hashTable: &mut [ldmEntry_t],
@@ -766,7 +761,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
 
-            let bucket = ZSTD_ldm_getBucket(hashTable, hash as size_t, params.bucketSizeLog);
+            // Get the bucket associated with hash.
+            let bucketSizeLog = params.bucketSizeLog;
+            let bucket = &hashTable[(hash as usize) << bucketSizeLog..][..1 << bucketSizeLog];
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
