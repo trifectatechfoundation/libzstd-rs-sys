@@ -1572,6 +1572,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
 }
 
 impl ZSTD_CCtx {
+    /// Safe version of [`ZSTD_CCtx_setParameter`]
     pub fn set_parameter(
         &mut self,
         param: ZSTD_cParameter,
@@ -1652,6 +1653,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
 }
 
 impl ZSTD_CCtx_params {
+    /// Safe version of [`ZSTD_CCtxParams_setParameter`]
     pub fn set_parameter(
         &mut self,
         param: ZSTD_cParameter,
@@ -2077,7 +2079,30 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
         .unwrap_or_else(|e| e.to_error_code())
 }
 
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setFParams))]
+pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
+    cctx: *mut ZSTD_CCtx,
+    fparams: ZSTD_frameParameters,
+) -> size_t {
+    (*cctx)
+        .set_fparams(fparams)
+        .map(|()| 0)
+        .unwrap_or_else(|e| e.to_error_code())
+}
+
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParams))]
+pub unsafe extern "C" fn ZSTD_CCtx_setParams(
+    cctx: *mut ZSTD_CCtx,
+    params: ZSTD_parameters,
+) -> size_t {
+    (*cctx)
+        .set_params(params)
+        .map(|()| 0)
+        .unwrap_or_else(|e| e.to_error_code())
+}
+
 impl ZSTD_CCtx {
+    /// Safe version of [`ZSTD_CCtx_setCParams`]
     pub fn set_cparams(&mut self, cparams: ZSTD_compressionParameters) -> Result<(), Error> {
         cparams.check_bounds()?;
         self.set_parameter(
@@ -2110,20 +2135,8 @@ impl ZSTD_CCtx {
         )?;
         Ok(())
     }
-}
 
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setFParams))]
-pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
-    cctx: *mut ZSTD_CCtx,
-    fparams: ZSTD_frameParameters,
-) -> size_t {
-    (*cctx)
-        .set_fparams(fparams)
-        .map(|()| 0)
-        .unwrap_or_else(|e| e.to_error_code())
-}
-
-impl ZSTD_CCtx {
+    /// Safe version of [`ZSTD_CCtx_setFParams`]
     pub fn set_fparams(&mut self, fparams: ZSTD_frameParameters) -> Result<(), Error> {
         self.set_parameter(
             ZSTD_cParameter::ZSTD_c_contentSizeFlag,
@@ -2139,20 +2152,8 @@ impl ZSTD_CCtx {
         )?;
         Ok(())
     }
-}
 
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParams))]
-pub unsafe extern "C" fn ZSTD_CCtx_setParams(
-    cctx: *mut ZSTD_CCtx,
-    params: ZSTD_parameters,
-) -> size_t {
-    (*cctx)
-        .set_params(params)
-        .map(|()| 0)
-        .unwrap_or_else(|e| e.to_error_code())
-}
-
-impl ZSTD_CCtx {
+    /// Safe version of [`ZSTD_CCtx_setParams`]
     pub fn set_params(&mut self, params: ZSTD_parameters) -> Result<(), Error> {
         params.cParams.check_bounds()?;
         self.set_fparams(params.fParams)?;
