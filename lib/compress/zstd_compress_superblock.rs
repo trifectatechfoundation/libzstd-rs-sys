@@ -112,8 +112,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         HUF_compress1X_usingCTable(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
-            literals.as_ptr().cast(),
-            litSize,
+            literals,
             hufTable,
             flags,
         )
