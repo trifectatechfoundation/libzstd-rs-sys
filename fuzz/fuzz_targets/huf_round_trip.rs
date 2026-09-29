@@ -111,8 +111,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         lib::compress::hist::HIST_count(
             count.as_mut_ptr(),
             &mut max_symbol,
-            input.data[..size].as_ptr().cast(),
-            size,
+            &input.data[..size],
         )
         .unwrap()
     };
