@@ -259,7 +259,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                         // check prefix long match
                         if MEM_read64(matchl0_safe as *const core::ffi::c_void)
                             == MEM_read64(ip as *const core::ffi::c_void)
-                            && matchl0_safe == matchl0
+                            && idxl0 >= prefixLowestIndex
                         {
                             mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
                             offset = ip.offset_from(matchl0) as core::ffi::c_long as u32;
@@ -289,7 +289,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             // check prefix short match
                             if MEM_read32(matchs0_safe as *const core::ffi::c_void)
                                 == MEM_read32(ip as *const core::ffi::c_void)
-                                && matchs0_safe == matchs0
+                                && idxs0 >= prefixLowestIndex
                             {
                                 current_block_83 = 6142208486753608565;
                                 break;
