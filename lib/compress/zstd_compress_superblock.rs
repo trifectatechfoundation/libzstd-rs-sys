@@ -461,8 +461,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     HIST_countFast_wksp(
         countWksp,
         &mut max,
-        codeTable as *const core::ffi::c_void,
-        nbSeq,
+        core::slice::from_raw_parts(codeTable, nbSeq),
         workspace,
         wkspSize,
     )

@@ -179,19 +179,18 @@ unsafe fn HIST_count_parallel_wksp(
 pub unsafe fn HIST_countFast_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    source: *const core::ffi::c_void,
-    sourceSize: size_t,
+    source: &[u8],
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
 ) -> Result<core::ffi::c_uint, Error> {
     // checked before the workspace, which this path does not touch
-    if sourceSize < HIST_FAST_THRESHOLD as size_t {
+    if source.len() < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
         return Ok(HIST_count_simple(
             count,
             maxSymbolValuePtr,
-            source,
-            sourceSize,
+            source.as_ptr().cast(),
+            source.len(),
         ));
     }
     if workSpace as size_t & 3 != 0 {
@@ -206,7 +205,13 @@ pub unsafe fn HIST_countFast_wksp(
     unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
     let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
-    HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace)
+    HIST_countFast_wksp_array(
+        count,
+        maxSymbolValuePtr,
+        source.as_ptr().cast(),
+        source.len(),
+        workSpace,
+    )
 }
 
 /// Same as [`HIST_countFast_wksp`], but taking the scratch buffer as an array.
@@ -272,14 +277,7 @@ pub unsafe fn HIST_count_wksp(
 
     // this path may not touch the workspace at all, so leave the zeroing to it
     *maxSymbolValuePtr = u8::MAX;
-    HIST_countFast_wksp(
-        count,
-        maxSymbolValuePtr,
-        source.as_ptr().cast(),
-        source.len(),
-        workSpace,
-        workSpaceSize,
-    )
+    HIST_countFast_wksp(count, maxSymbolValuePtr, source, workSpace, workSpaceSize)
 }
 
 /// Same as [`HIST_count_wksp`], but taking the scratch buffer as an array.
