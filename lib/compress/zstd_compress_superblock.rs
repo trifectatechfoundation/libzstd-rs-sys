@@ -419,8 +419,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             if HIST_count_wksp(
                 countWksp,
                 &mut maxSymbolValue,
-                literals as *const core::ffi::c_void,
-                litSize,
+                core::slice::from_raw_parts(literals, litSize),
                 workspace,
                 wkspSize,
             )

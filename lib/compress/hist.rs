@@ -244,8 +244,7 @@ pub unsafe fn HIST_countFast_wksp_array(
 pub unsafe fn HIST_count_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    source: *const core::ffi::c_void,
-    sourceSize: size_t,
+    source: &[u8],
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
 ) -> Result<core::ffi::c_uint, Error> {
@@ -262,7 +261,13 @@ pub unsafe fn HIST_count_wksp(
         unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
         let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
-        return HIST_count_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace);
+        return HIST_count_wksp_array(
+            count,
+            maxSymbolValuePtr,
+            source.as_ptr().cast(),
+            source.len(),
+            workSpace,
+        );
     }
 
     // this path may not touch the workspace at all, so leave the zeroing to it
@@ -270,8 +275,8 @@ pub unsafe fn HIST_count_wksp(
     HIST_countFast_wksp(
         count,
         maxSymbolValuePtr,
-        source,
-        sourceSize,
+        source.as_ptr().cast(),
+        source.len(),
         workSpace,
         workSpaceSize,
     )
