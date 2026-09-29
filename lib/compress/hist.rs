@@ -205,13 +205,7 @@ pub unsafe fn HIST_countFast_wksp(
     unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
     let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
-    HIST_countFast_wksp_array(
-        count,
-        maxSymbolValuePtr,
-        source.as_ptr().cast(),
-        source.len(),
-        workSpace,
-    )
+    HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, workSpace)
 }
 
 /// Same as [`HIST_countFast_wksp`], but taking the scratch buffer as an array.
@@ -220,25 +214,24 @@ pub unsafe fn HIST_countFast_wksp(
 pub unsafe fn HIST_countFast_wksp_array(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    source: *const core::ffi::c_void,
-    sourceSize: size_t,
+    source: &[u8],
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
 ) -> Result<core::ffi::c_uint, Error> {
-    if sourceSize < HIST_FAST_THRESHOLD as size_t {
+    if source.len() < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
         return Ok(HIST_count_simple(
             count,
             maxSymbolValuePtr,
-            source,
-            sourceSize,
+            source.as_ptr().cast(),
+            source.len(),
         ));
     }
 
     HIST_count_parallel_wksp(
         count,
         maxSymbolValuePtr,
-        source,
-        sourceSize,
+        source.as_ptr().cast(),
+        source.len(),
         CheckInput::Trust,
         workSpace,
     )
@@ -295,13 +288,7 @@ pub unsafe fn HIST_count_wksp_array(
     } else {
         *maxSymbolValuePtr = u8::MAX;
 
-        HIST_countFast_wksp_array(
-            count,
-            maxSymbolValuePtr,
-            source.as_ptr().cast(),
-            source.len(),
-            workSpace,
-        )
+        HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, workSpace)
     }
 }
 
@@ -313,13 +300,7 @@ pub unsafe fn HIST_countFast(
 ) -> Result<core::ffi::c_uint, Error> {
     // zeroed, as `HIST_countFast_wksp_array` requires
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
-    HIST_countFast_wksp_array(
-        count,
-        maxSymbolValuePtr,
-        source.as_ptr().cast(),
-        source.len(),
-        &mut tmpCounters,
-    )
+    HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, &mut tmpCounters)
 }
 
 pub unsafe fn HIST_count(
