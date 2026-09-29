@@ -721,12 +721,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 
     // check repCode
     let lastR = (ZSTD_REP_NUM).wrapping_add(ll0 as u32);
-    for repCode in ll0 as u32..lastR {
-        let repOffset = if repCode == ZSTD_REP_NUM {
-            rep[0].wrapping_sub(1)
-        } else {
-            rep[repCode as usize]
-        };
+    let repOffsets = [rep[0], rep[1], rep[2], rep[0].wrapping_sub(1)];
+    for (repCode, &repOffset) in (ll0 as u32..lastR).zip(&repOffsets[usize::from(ll0)..]) {
         let repIndex = curr.wrapping_sub(repOffset);
         let mut repLen = 0;
         // intentional overflow, discards 0 and -1, equivalent to `curr > repIndex >= dictLimit
