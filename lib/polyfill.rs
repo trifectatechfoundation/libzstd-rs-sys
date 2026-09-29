@@ -19,6 +19,23 @@ macro_rules! cfg_select {
 }
 pub(crate) use cfg_select;
 
+/// Keep the branches on either side of this point in source order.
+///
+/// Once inlined, `a && b` on two cheap, side-effect-free tests becomes two branches, and LLVM
+/// may evaluate `b` first. That matters when `a` is the predictable test and `b` the
+/// unpredictable one: e.g. in the match finders, the data comparison almost never succeeds,
+/// while the match-index validity check is close to random.
+macro_rules! branch_barrier {
+    () => {
+        #[cfg(not(any(target_family = "wasm", miri)))]
+        // SAFETY: an empty asm block has no effect.
+        unsafe {
+            core::arch::asm!("", options(preserves_flags));
+        }
+    };
+}
+pub(crate) use branch_barrier;
+
 pub trait PointerExt {
     fn wrapping_offset_from(self, other: Self) -> isize;
 }

@@ -1,6 +1,4 @@
-use crate::lib::polyfill::PointerExt;
-
-use core::arch::asm;
+use crate::lib::polyfill::{branch_barrier, PointerExt};
 
 use libc::size_t;
 
@@ -262,11 +260,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                         if MEM_read64(matchl0_safe as *const core::ffi::c_void)
                             == MEM_read64(ip as *const core::ffi::c_void)
                             && {
-                                // Force the data comparison to be the first branch.
-                                #[cfg(not(target_family = "wasm"))]
-                                if !cfg!(miri) {
-                                    asm!("", options(preserves_flags));
-                                }
+                                branch_barrier!();
                                 idxl0 >= prefixLowestIndex
                             }
                         {
@@ -299,11 +293,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             if MEM_read32(matchs0_safe as *const core::ffi::c_void)
                                 == MEM_read32(ip as *const core::ffi::c_void)
                                 && {
-                                    // Force the data comparison to be the first branch.
-                                    #[cfg(not(target_family = "wasm"))]
-                                    if !cfg!(miri) {
-                                        asm!("", options(preserves_flags));
-                                    }
+                                    branch_barrier!();
                                     idxs0 >= prefixLowestIndex
                                 }
                             {
