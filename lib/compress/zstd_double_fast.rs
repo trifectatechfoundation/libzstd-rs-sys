@@ -1,5 +1,7 @@
 use crate::lib::polyfill::PointerExt;
 
+use core::arch::asm;
+
 use libc::size_t;
 
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, Locality};
@@ -259,7 +261,14 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                         // check prefix long match
                         if MEM_read64(matchl0_safe as *const core::ffi::c_void)
                             == MEM_read64(ip as *const core::ffi::c_void)
-                            && idxl0 >= prefixLowestIndex
+                            && {
+                                // Force the data comparison to be the first branch.
+                                #[cfg(not(target_family = "wasm"))]
+                                if !cfg!(miri) {
+                                    asm!("", options(preserves_flags));
+                                }
+                                idxl0 >= prefixLowestIndex
+                            }
                         {
                             mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
                             offset = ip.offset_from(matchl0) as core::ffi::c_long as u32;
@@ -289,7 +298,14 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             // check prefix short match
                             if MEM_read32(matchs0_safe as *const core::ffi::c_void)
                                 == MEM_read32(ip as *const core::ffi::c_void)
-                                && idxs0 >= prefixLowestIndex
+                                && {
+                                    // Force the data comparison to be the first branch.
+                                    #[cfg(not(target_family = "wasm"))]
+                                    if !cfg!(miri) {
+                                        asm!("", options(preserves_flags));
+                                    }
+                                    idxs0 >= prefixLowestIndex
+                                }
                             {
                                 current_block_83 = 6142208486753608565;
                                 break;
