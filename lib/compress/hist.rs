@@ -85,8 +85,6 @@ unsafe fn HIST_count_parallel_wksp(
     // with the `&mut` reference, skip writes to `count`.
     let aliasesWorkSpace = count as *mut u8 == workSpace.as_mut_ptr().cast::<u8>();
 
-    let mut ip = source.as_ptr();
-    let iend = ip.add(source.len());
     let countSize = (usize::from(*maxSymbolValuePtr) + 1) * size_of::<core::ffi::c_uint>();
     let mut max = 0;
 
@@ -105,47 +103,19 @@ unsafe fn HIST_count_parallel_wksp(
     }
 
     // by stripes of 16 bytes
-    let mut cached = MEM_read32(ip as *const core::ffi::c_void);
-    ip = ip.add(4);
-    while ip < iend.sub(15) {
-        let [c3, c2, c1, c0] = cached.to_le_bytes();
-        cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.add(4);
-        Counting1[usize::from(c3)] += 1;
-        Counting2[usize::from(c2)] += 1;
-        Counting3[usize::from(c1)] += 1;
-        Counting4[usize::from(c0)] += 1;
-
-        let [c3, c2, c1, c0] = cached.to_le_bytes();
-        cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.add(4);
-        Counting1[usize::from(c3)] += 1;
-        Counting2[usize::from(c2)] += 1;
-        Counting3[usize::from(c1)] += 1;
-        Counting4[usize::from(c0)] += 1;
-
-        let [c3, c2, c1, c0] = cached.to_le_bytes();
-        cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.add(4);
-        Counting1[usize::from(c3)] += 1;
-        Counting2[usize::from(c2)] += 1;
-        Counting3[usize::from(c1)] += 1;
-        Counting4[usize::from(c0)] += 1;
-
-        let [c3, c2, c1, c0] = cached.to_le_bytes();
-        cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.add(4);
-        Counting1[usize::from(c3)] += 1;
-        Counting2[usize::from(c2)] += 1;
-        Counting3[usize::from(c1)] += 1;
-        Counting4[usize::from(c0)] += 1;
+    let (stripes, rest) = source.as_chunks::<16>();
+    for stripe in stripes {
+        for &[c0, c1, c2, c3] in stripe.as_chunks::<4>().0 {
+            Counting1[usize::from(c0)] += 1;
+            Counting2[usize::from(c1)] += 1;
+            Counting3[usize::from(c2)] += 1;
+            Counting4[usize::from(c3)] += 1;
+        }
     }
-    ip = ip.sub(4);
 
     // finish last symbols
-    while ip < iend {
-        Counting1[usize::from(*ip)] += 1;
-        ip = ip.add(1);
+    for &byte in rest {
+        Counting1[usize::from(byte)] += 1;
     }
 
     for s in 0..256 {
