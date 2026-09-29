@@ -324,10 +324,15 @@ pub unsafe fn HIST_countFast(
 pub unsafe fn HIST_count(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) -> Result<core::ffi::c_uint, Error> {
     // zeroed, as `HIST_count_wksp_array` requires
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
-    HIST_count_wksp_array(count, maxSymbolValuePtr, src, srcSize, &mut tmpCounters)
+    HIST_count_wksp_array(
+        count,
+        maxSymbolValuePtr,
+        src.as_ptr().cast(),
+        src.len(),
+        &mut tmpCounters,
+    )
 }
