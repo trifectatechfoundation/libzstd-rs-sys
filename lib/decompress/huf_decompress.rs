@@ -327,6 +327,14 @@ fn HUF_rescaleStats(
     targetTableLog
 }
 
+#[inline(always)]
+fn HUF_fillDTableX1<const N: usize>(dt: &mut [HUF_DEltX1], symbols: &[u8], nbBits: u8) {
+    let (chunks, _) = dt.as_chunks_mut::<N>();
+    for (chunk, &byte) in chunks.iter_mut().zip(symbols) {
+        *chunk = [HUF_DEltX1 { nbBits, byte }; N];
+    }
+}
+
 pub fn HUF_readDTableX1_wksp(
     DTable: &mut DTable,
     src: &[u8],
@@ -407,14 +415,20 @@ pub fn HUF_readDTableX1_wksp(
     for w in 1..tableLog.wrapping_add(1) {
         let symbolCount = wksp.rankVal[w as usize] as usize;
         let length = 1 << w >> 1;
-        let dt = dt[rankStart..][..length * symbolCount].chunks_exact_mut(length);
+        let dt = &mut dt[rankStart..][..length * symbolCount];
+        let symbols = &wksp.symbols[symbol..][..symbolCount];
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
 
-        // FIXME: zstd unrolls this loop for low values of `length` (a power of 2).
-        // we should investigate whether that is beneficial here.
-        for (s, chunk) in dt.enumerate() {
-            let byte = wksp.symbols[symbol + s];
-            chunk.fill(HUF_DEltX1 { nbBits, byte });
+        match length {
+            1 => HUF_fillDTableX1::<1>(dt, symbols, nbBits),
+            2 => HUF_fillDTableX1::<2>(dt, symbols, nbBits),
+            4 => HUF_fillDTableX1::<4>(dt, symbols, nbBits),
+            8 => HUF_fillDTableX1::<8>(dt, symbols, nbBits),
+            _ => {
+                for (chunk, &byte) in dt.chunks_exact_mut(length).zip(symbols) {
+                    chunk.fill(HUF_DEltX1 { nbBits, byte });
+                }
+            }
         }
 
         symbol += symbolCount;
