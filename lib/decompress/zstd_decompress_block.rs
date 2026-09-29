@@ -30,7 +30,7 @@ use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
     ZSTD_seqSymbol_header,
 };
-use crate::lib::polyfill::{cfg_select, likely, unlikely};
+use crate::lib::polyfill::{likely, unlikely};
 use crate::lib::zstd::{ZSTD_BLOCKSIZE_MAX, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -60,9 +60,9 @@ enum Offset {
 #[repr(C)]
 pub struct seqState_t<'a> {
     DStream: BIT_DStream_t<'a>,
-    stateLL: ZSTD_fseState<'a>,
-    stateOffb: ZSTD_fseState<'a>,
-    stateML: ZSTD_fseState<'a>,
+    stateLL: ZSTD_fseState<'a, { 1 << LLFSELog }>,
+    stateOffb: ZSTD_fseState<'a, { 1 << OffFSELog }>,
+    stateML: ZSTD_fseState<'a, { 1 << MLFSELog }>,
     prevOffset: [size_t; 3],
 }
 
@@ -94,16 +94,13 @@ impl ZSTD_DCtx {
 }
 
 #[repr(C)]
-pub struct ZSTD_fseState<'a> {
+pub struct ZSTD_fseState<'a, const N: usize> {
     pub state: size_t,
-    pub table: &'a [ZSTD_seqSymbol],
+    pub table: &'a [ZSTD_seqSymbol; N],
 }
 
-impl<'a> ZSTD_fseState<'a> {
-    pub(crate) fn new<const N: usize>(
-        bit_dstream: &mut BIT_DStream_t,
-        dt: &'a SymbolTable<N>,
-    ) -> Self {
+impl<'a, const N: usize> ZSTD_fseState<'a, N> {
+    pub(crate) fn new(bit_dstream: &mut BIT_DStream_t, dt: &'a SymbolTable<N>) -> Self {
         let table = &dt.symbols;
 
         let state = bit_dstream.read_bits(dt.header.tableLog);
@@ -523,9 +520,23 @@ const fn sequence_header(fastMode: u32, tableLog: u32) -> ZSTD_seqSymbol_header 
     ZSTD_seqSymbol_header { fastMode, tableLog }
 }
 
+/// Pads a default table to the size of a decoded table, so that both have the same type.
+const fn pad_table<const M: usize, const N: usize>(small: SymbolTable<M>) -> SymbolTable<N> {
+    let mut symbols = [sequence_symbol(0, 0, 0, 0); N];
+    let mut i = 0;
+    while i < M {
+        symbols[i] = small.symbols[i];
+        i += 1;
+    }
+    SymbolTable {
+        header: small.header,
+        symbols,
+    }
+}
+
 /// Default FSE distribution table for Literal Lengths.
 #[rustfmt::skip]
-static LL_defaultDTable: SymbolTable< { 1 << LL_DEFAULTNORMLOG }> = SymbolTable {
+static LL_defaultDTable: SymbolTable<{ 1 << LLFSELog }> = pad_table(SymbolTable::<{ 1 << LL_DEFAULTNORMLOG }> {
     /* header : fastMode, tableLog */
     header: sequence_header(0x00010101, LL_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
@@ -563,11 +574,11 @@ static LL_defaultDTable: SymbolTable< { 1 << LL_DEFAULTNORMLOG }> = SymbolTable 
         sequence_symbol( 0, 16,  6,65536), sequence_symbol( 0, 15,  6,32768),
         sequence_symbol( 0, 14,  6,16384), sequence_symbol( 0, 13,  6, 8192),
     ]
-};
+});
 
 /// Default FSE distribution table for Offset Codes.
 #[rustfmt::skip]
-static OF_defaultDTable: SymbolTable<{ 1 << OF_DEFAULTNORMLOG }> = SymbolTable {
+static OF_defaultDTable: SymbolTable<{ 1 << OffFSELog }> = pad_table(SymbolTable::<{ 1 << OF_DEFAULTNORMLOG }> {
     /* header : fastMode, tableLog */
     header: sequence_header(0x00010101, OF_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
@@ -589,11 +600,11 @@ static OF_defaultDTable: SymbolTable<{ 1 << OF_DEFAULTNORMLOG }> = SymbolTable {
         sequence_symbol( 0, 27,  5,134217725), sequence_symbol( 0, 26,  5,67108861),
         sequence_symbol( 0, 25,  5,33554429),  sequence_symbol( 0, 24,  5,16777213),
     ]
-};
+});
 
 /// Default FSE distribution table for Match Lengths.
 #[rustfmt::skip]
-static ML_defaultDTable: SymbolTable<{ 1 << ML_DEFAULTNORMLOG }> = SymbolTable {
+static ML_defaultDTable: SymbolTable<{ 1 << MLFSELog }> = pad_table(SymbolTable::<{ 1 << ML_DEFAULTNORMLOG }> {
     /* header : fastMode, tableLog */
     header: sequence_header(0x00010101, ML_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
@@ -631,7 +642,7 @@ static ML_defaultDTable: SymbolTable<{ 1 << ML_DEFAULTNORMLOG }> = SymbolTable {
         sequence_symbol( 0, 13,  6, 8195),  sequence_symbol( 0, 12,  6, 4099),
         sequence_symbol( 0, 11,  6, 2051),  sequence_symbol( 0, 10,  6, 1027),
     ]
-};
+});
 
 fn ZSTD_buildSeqTable_rle<const N: usize>(dt: &mut SymbolTable<N>, baseValue: u32, nbAddBits: u8) {
     dt.header = ZSTD_seqSymbol_header {
@@ -1510,7 +1521,14 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     Ok(sequenceLength)
 }
 
-impl ZSTD_fseState<'_> {
+impl<const N: usize> ZSTD_fseState<'_, N> {
+    #[inline(always)]
+    fn symbol(&self) -> ZSTD_seqSymbol {
+        const { assert!(N.is_power_of_two()) };
+        // A valid table only produces states below `1 << tableLog`, so the mask is a no-op.
+        self.table[self.state & (N - 1)]
+    }
+
     #[inline(always)]
     fn update_with_d_info(&mut self, bitD: &mut BIT_DStream_t, nextState: u16, nbBits: u32) {
         let lowBits = bitD.read_bits(nbBits);
@@ -1536,23 +1554,9 @@ fn ZSTD_decodeSequence(
         matchLength: 0,
         offset: 0,
     };
-    cfg_select! {
-        feature = "unsafe-performance-experimental" => {
-            let llDInfo = unsafe { seqState.stateLL.table.get_unchecked(seqState.stateLL.state) };
-            let mlDInfo = unsafe { seqState.stateML.table.get_unchecked(seqState.stateML.state) };
-            let ofDInfo = unsafe {
-                seqState
-                    .stateOffb
-                    .table
-                    .get_unchecked(seqState.stateOffb.state)
-            };
-        }
-        _ => {
-            let llDInfo = seqState.stateLL.table[seqState.stateLL.state];
-            let mlDInfo = seqState.stateML.table[seqState.stateML.state];
-            let ofDInfo = seqState.stateOffb.table[seqState.stateOffb.state];
-        }
-    }
+    let llDInfo = seqState.stateLL.symbol();
+    let mlDInfo = seqState.stateML.symbol();
+    let ofDInfo = seqState.stateOffb.symbol();
 
     seq.matchLength = mlDInfo.baseValue as size_t;
     seq.litLength = llDInfo.baseValue as size_t;
