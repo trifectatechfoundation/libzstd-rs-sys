@@ -48,11 +48,16 @@ pub(crate) fn BIT_initCStream(
     })
 }
 
-static BIT_mask: [core::ffi::c_uint; 32] = [
-    0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff,
-    0xffff, 0x1ffff, 0x3ffff, 0x7ffff, 0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff,
-    0x3ffffff, 0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff,
-];
+// Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
+static BIT_mask: [core::ffi::c_uint; 256] = {
+    let mut mask = [u32::MAX; 256];
+    let mut i = 0;
+    while i < 32 {
+        mask[i] = (1 << i) - 1;
+        i += 1;
+    }
+    mask
+};
 
 #[inline(always)]
 fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
@@ -63,7 +68,8 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
         }
         _ => {
             // At least on x86_64, the lookup table is faster without bmi2.
-            bitContainer & BIT_mask[nbBits as usize] as BitContainerType
+            debug_assert!(nbBits < 32);
+            bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
         }
     }
 }
