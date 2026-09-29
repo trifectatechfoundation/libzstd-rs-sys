@@ -322,6 +322,7 @@ fn FSE_decompress_wksp_body_default(
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0)
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn FSE_decompress_wksp_body_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
@@ -339,7 +340,8 @@ pub(super) fn FSE_decompress_wksp_bmi2(
     bmi2: bool,
 ) -> Result<size_t, Error> {
     if bmi2 {
-        FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace)
+        // SAFETY: the bmi2 feature is enabled.
+        unsafe { FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace) }
     } else {
         FSE_decompress_wksp_body_default(dst, cSrc, maxLog, workSpace)
     }
