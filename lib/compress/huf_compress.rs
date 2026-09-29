@@ -1445,8 +1445,7 @@ unsafe fn HUF_compressCTable_internal(
     ostart: *mut u8,
     mut op: *mut u8,
     oend: *mut u8,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     nbStreams: HUF_nbStreams_e,
     CTable: &CTable,
     flags: c_int,
@@ -1455,16 +1454,16 @@ unsafe fn HUF_compressCTable_internal(
         HUF_nbStreams_e::Single => HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             CTable,
             flags,
         )?,
         HUF_nbStreams_e::Four => HUF_compress4X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             CTable,
             flags,
         )?,
@@ -1477,7 +1476,7 @@ unsafe fn HUF_compressCTable_internal(
 
     /* check compressibility */
     debug_assert!(op >= ostart);
-    if op.offset_from_unsigned(ostart) >= srcSize - 1 {
+    if op.offset_from_unsigned(ostart) >= src.len() - 1 {
         return Ok(0);
     }
 
@@ -1655,16 +1654,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* Heuristic : If old table is valid, use it for small inputs */
     if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat == HUF_repeat::Valid {
-        return HUF_compressCTable_internal(
-            ostart,
-            op,
-            oend,
-            src.as_ptr().cast(),
-            src.len(),
-            nbStreams,
-            oldHufTable,
-            flags,
-        );
+        return HUF_compressCTable_internal(ostart, op, oend, src, nbStreams, oldHufTable, flags);
     }
 
     /* If uncompressible data is suspected, do a smaller sampling first */
@@ -1728,16 +1718,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* Heuristic : use existing table for small inputs */
     if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat != HUF_repeat::None {
-        return HUF_compressCTable_internal(
-            ostart,
-            op,
-            oend,
-            src.as_ptr().cast(),
-            src.len(),
-            nbStreams,
-            oldHufTable,
-            flags,
-        );
+        return HUF_compressCTable_internal(ostart, op, oend, src, nbStreams, oldHufTable, flags);
     }
 
     /* Build Huffman Tree */
@@ -1784,8 +1765,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
                     ostart,
                     op,
                     oend,
-                    src.as_ptr().cast(),
-                    src.len(),
+                    src,
                     nbStreams,
                     oldHufTable,
                     flags,
@@ -1801,14 +1781,5 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         *repeat = HUF_repeat::None;
         *oldHufTable = (*table).CTable;
     }
-    HUF_compressCTable_internal(
-        ostart,
-        op,
-        oend,
-        src.as_ptr().cast(),
-        src.len(),
-        nbStreams,
-        &(*table).CTable,
-        flags,
-    )
+    HUF_compressCTable_internal(ostart, op, oend, src, nbStreams, &(*table).CTable, flags)
 }
