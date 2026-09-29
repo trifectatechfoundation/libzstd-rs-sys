@@ -2117,32 +2117,28 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     cctx: *mut ZSTD_CCtx,
     fparams: ZSTD_frameParameters,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_contentSizeFlag,
-        core::ffi::c_int::from(fparams.contentSizeFlag != 0),
-    );
-    if ERR_isError(err_code) {
-        return err_code;
-    }
-    let err_code_0 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_checksumFlag,
-        core::ffi::c_int::from(fparams.checksumFlag != 0),
-    );
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
-    let err_code_1 = ZSTD_CCtx_setParameter(
-        cctx,
-        ZSTD_cParameter::ZSTD_c_dictIDFlag,
-        core::ffi::c_int::from(fparams.noDictIDFlag == 0),
-    );
-    if ERR_isError(err_code_1) {
-        return err_code_1;
-    }
+    (*cctx)
+        .set_fparams(fparams)
+        .map(|()| 0)
+        .unwrap_or_else(|e| e.to_error_code())
+}
 
-    0
+impl ZSTD_CCtx {
+    pub fn set_fparams(&mut self, fparams: ZSTD_frameParameters) -> Result<(), Error> {
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_contentSizeFlag,
+            core::ffi::c_int::from(fparams.contentSizeFlag != 0),
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_checksumFlag,
+            core::ffi::c_int::from(fparams.checksumFlag != 0),
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_dictIDFlag,
+            core::ffi::c_int::from(fparams.noDictIDFlag == 0),
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParams))]
