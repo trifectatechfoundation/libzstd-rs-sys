@@ -1105,15 +1105,16 @@ fn HUF_encodeSymbol(
 #[inline(always)]
 unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
     bitC: &mut HUF_CStream_t,
-    ip: *const u8,
-    srcSize: size_t,
+    src: &[u8],
     ct: &SymbolTable,
     kUnroll: c_int,
     kFastFlush: bool,
     kLastFast: bool,
 ) {
+    let ip = src.as_ptr();
+
     /* Join to kUnroll */
-    let mut n = srcSize as c_int;
+    let mut n = src.len() as c_int;
     let rem = n % kUnroll;
     if rem > 0 {
         for _ in (1..rem + 1).rev() {
@@ -1199,8 +1200,6 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
 ) -> Result<size_t, Error> {
     let tableLog = CTable.header.tableLog as u32;
     let ct = &CTable.elements;
-    let ip = src.as_ptr();
-    let srcSize = src.len();
 
     /* init */
     if dstSize < 8 {
@@ -1212,11 +1211,10 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
         Err(_) => return Ok(0),
     };
 
-    if dstSize < HUF_tightCompressBound(srcSize, tableLog as size_t) || tableLog > 11 {
+    if dstSize < HUF_tightCompressBound(src.len(), tableLog as size_t) || tableLog > 11 {
         HUF_compress1X_usingCTable_internal_body_loop(
             &mut bitC,
-            ip,
-            srcSize,
+            src,
             ct,
             if MEM_32bits() { 2 } else { 4 },
             false,
@@ -1225,52 +1223,34 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     } else if MEM_32bits() {
         match tableLog {
             11 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 2, true, false,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 2, true, false);
             }
             8..=10 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 2, true, true,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 2, true, true);
             }
             _ => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 3, true, true,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 3, true, true);
             }
         }
     } else {
         match tableLog {
             11 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 5, true, false,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 5, true, false);
             }
             10 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 5, true, true,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 5, true, true);
             }
             9 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 6, true, false,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 6, true, false);
             }
             8 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 7, true, false,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 7, true, false);
             }
             7 => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 8, true, false,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 8, true, false);
             }
             _ => {
-                HUF_compress1X_usingCTable_internal_body_loop(
-                    &mut bitC, ip, srcSize, ct, 9, true, true,
-                );
+                HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, src, ct, 9, true, true);
             }
         }
     }
