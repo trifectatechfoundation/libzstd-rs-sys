@@ -1671,6 +1671,7 @@ fn HUF_decompress4X2_usingDTable_internal(
     }
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
@@ -1693,7 +1694,8 @@ fn HUF_decompress1X2_usingDTable_internal(
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        HUF_decompress1X2_usingDTable_internal_bmi2(dst, src, DTable)
+        // SAFETY: the bmi2 feature is enabled.
+        unsafe { HUF_decompress1X2_usingDTable_internal_bmi2(dst, src, DTable) }
     } else {
         HUF_decompress1X2_usingDTable_internal_default(dst, src, DTable)
     }
