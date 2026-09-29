@@ -229,8 +229,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 HIST_count_simple(
                     opt_state.litFreq,
                     &mut lit_0,
-                    src as *const core::ffi::c_void,
-                    srcSize, // use raw first block to init statistics
+                    core::slice::from_raw_parts(src, srcSize), // use raw first block to init statistics
                 );
                 opt_state.litSum =
                     ZSTD_downscaleStats(opt_state.litFreq_mut(), 8, BaseDirective::Possible);

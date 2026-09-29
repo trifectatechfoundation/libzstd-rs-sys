@@ -111,8 +111,7 @@ unsafe fn HUF_compressWeights(
         let maxCount = HIST_count_simple(
             ((*wksp).count).as_mut_ptr(),
             &mut maxSymbolValue,
-            weightTable.as_ptr().cast::<c_void>(),
-            wtSize,
+            &weightTable[..wtSize],
         ); /* never fails */
 
         if maxCount as size_t == wtSize {
@@ -1597,8 +1596,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         let largestBegin = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueBegin,
-            src.as_ptr().cast(),
-            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
+            &src[..SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE],
         ) as size_t;
         if let Some(err) = Error::from_error_code(largestBegin) {
             return Err(err);
@@ -1608,11 +1606,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         let largestEnd = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueEnd,
-            src.as_ptr()
-                .byte_add(src.len())
-                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE)
-                .cast(),
-            SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
+            &src[src.len() - SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE..],
         ) as size_t;
         if let Some(err) = Error::from_error_code(largestEnd) {
             return Err(err);
