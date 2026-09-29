@@ -1103,84 +1103,54 @@ fn HUF_encodeSymbol(
 }
 
 #[inline(always)]
-unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: c_int>(
+unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
     bitC: &mut HUF_CStream_t,
     src: &[u8],
     ct: &SymbolTable,
     kFastFlush: bool,
     kLastFast: bool,
 ) {
-    let ip = src.as_ptr();
+    let (blocks, rem) = src.as_chunks::<K_UNROLL>();
 
-    /* Join to kUnroll */
-    let mut n = src.len() as c_int;
-    let rem = n % K_UNROLL;
-    if rem > 0 {
-        for _ in (1..rem + 1).rev() {
-            n -= 1;
-            HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, false, false);
+    /* Join to K_UNROLL */
+    if !rem.is_empty() {
+        for &byte in rem.iter().rev() {
+            HUF_encodeSymbol(bitC, byte as u32, ct, false, false);
         }
         HUF_flushBits(bitC, kFastFlush);
     }
-    debug_assert_eq!(n % K_UNROLL, 0);
 
-    /* Join to 2 * kUnroll */
-    if n % (2 * K_UNROLL) != 0 {
+    let (pairs, single) = blocks.as_chunks::<2>();
+
+    /* Join to 2 * K_UNROLL */
+    if let [block] = single {
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, false, true);
+            HUF_encodeSymbol(bitC, block[K_UNROLL - u] as u32, ct, false, true);
         }
-        HUF_encodeSymbol(
-            bitC,
-            *ip.offset((n - K_UNROLL) as isize) as u32,
-            ct,
-            false,
-            kLastFast,
-        );
+        HUF_encodeSymbol(bitC, block[0] as u32, ct, false, kLastFast);
         HUF_flushBits(bitC, kFastFlush);
-        n -= K_UNROLL;
     }
-    debug_assert_eq!(n % (2 * K_UNROLL), 0);
 
-    while n > 0 {
-        /* Encode kUnroll symbols into the bitstream @ index 0. */
+    for [lo, hi] in pairs.iter().rev() {
+        /* Encode K_UNROLL symbols into the bitstream @ index 0. */
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(bitC, *ip.offset((n - u) as isize) as u32, ct, false, true);
+            HUF_encodeSymbol(bitC, hi[K_UNROLL - u] as u32, ct, false, true);
         }
-        HUF_encodeSymbol(
-            bitC,
-            *ip.offset((n - K_UNROLL) as isize) as u32,
-            ct,
-            false,
-            kLastFast,
-        );
+        HUF_encodeSymbol(bitC, hi[0] as u32, ct, false, kLastFast);
         HUF_flushBits(bitC, kFastFlush);
-        /* Encode kUnroll symbols into the bitstream @ index 1.
+        /* Encode K_UNROLL symbols into the bitstream @ index 1.
          * This allows us to start filling the bit container
          * without any data dependencies.
          */
         HUF_zeroIndex1(bitC);
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(
-                bitC,
-                *ip.offset((n - K_UNROLL - u) as isize) as u32,
-                ct,
-                true,
-                true,
-            );
+            HUF_encodeSymbol(bitC, lo[K_UNROLL - u] as u32, ct, true, true);
         }
-        HUF_encodeSymbol(
-            bitC,
-            *ip.offset((n - K_UNROLL - K_UNROLL) as isize) as u32,
-            ct,
-            true,
-            kLastFast,
-        );
+        HUF_encodeSymbol(bitC, lo[0] as u32, ct, true, kLastFast);
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
         HUF_mergeIndex1(bitC);
         HUF_flushBits(bitC, kFastFlush);
-        n -= 2 * K_UNROLL;
     }
-    debug_assert_eq!(n, 0);
 }
 
 /// Returns a tight upper bound on the output space needed by Huffman
