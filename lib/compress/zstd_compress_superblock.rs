@@ -87,19 +87,11 @@ unsafe fn ZSTD_compressSubBlock_literal(
 
     *entropyWritten = false;
     if litSize == 0 || hufMetadata.hType == SymbolEncodingType::Basic {
-        return ZSTD_noCompressLiterals(
-            dst,
-            dstSize,
-            literals as *const core::ffi::c_void,
-            litSize,
-        );
+        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
+        return ZSTD_noCompressLiterals(dst, dstSize, literals);
     } else if hufMetadata.hType == SymbolEncodingType::Rle {
-        return ZSTD_compressRleLiteralsBlock(
-            dst,
-            dstSize,
-            literals as *const core::ffi::c_void,
-            litSize,
-        );
+        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
+        return ZSTD_compressRleLiteralsBlock(dst, dstSize, literals);
     }
 
     if writeEntropy && hufMetadata.hType == SymbolEncodingType::Compressed {
@@ -144,24 +136,16 @@ unsafe fn ZSTD_compressSubBlock_literal(
     cLitSize = cLitSize.wrapping_add(cSize);
     // If we expand and we aren't writing a header then emit uncompressed.
     if !writeEntropy && cLitSize >= litSize {
-        return ZSTD_noCompressLiterals(
-            dst,
-            dstSize,
-            literals as *const core::ffi::c_void,
-            litSize,
-        );
+        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
+        return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
     if lhSize
         < 3 + size_t::from(cLitSize >= (1 << 10) as size_t)
             + size_t::from(cLitSize >= (16 * (1 << 10)) as size_t)
     {
-        return ZSTD_noCompressLiterals(
-            dst,
-            dstSize,
-            literals as *const core::ffi::c_void,
-            litSize,
-        );
+        let literals = core::slice::from_raw_parts(literals.cast(), litSize);
+        return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
 
     // Build header
