@@ -3917,8 +3917,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
-        llCodeTable as *const core::ffi::c_void,
-        nbSeq,
+        core::slice::from_raw_parts(llCodeTable, nbSeq),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -3966,8 +3965,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
-        ofCodeTable as *const core::ffi::c_void,
-        nbSeq,
+        core::slice::from_raw_parts(ofCodeTable, nbSeq),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -4021,8 +4019,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_1,
-        mlCodeTable as *const core::ffi::c_void,
-        nbSeq,
+        core::slice::from_raw_parts(mlCodeTable, nbSeq),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -5195,8 +5192,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     HIST_countFast_wksp(
         countWksp,
         &mut max,
-        codeTable as *const core::ffi::c_void,
-        nbSeq,
+        core::slice::from_raw_parts(codeTable, nbSeq),
         workspace,
         wkspSize,
     )
