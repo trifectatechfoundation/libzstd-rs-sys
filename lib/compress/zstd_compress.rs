@@ -4901,8 +4901,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let largest = HIST_count_wksp(
         countWksp,
         &mut maxSymbolValue,
-        src as *const u8 as *const core::ffi::c_void,
-        srcSize,
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize),
         workspace,
         wkspSize,
     )? as usize;
@@ -5115,8 +5114,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
             if HIST_count_wksp(
                 countWksp,
                 &mut maxSymbolValue,
-                literals as *const core::ffi::c_void,
-                litSize,
+                core::slice::from_raw_parts(literals, litSize),
                 workspace,
                 wkspSize,
             )
