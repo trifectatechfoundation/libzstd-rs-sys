@@ -2146,20 +2146,19 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
     cctx: *mut ZSTD_CCtx,
     params: ZSTD_parameters,
 ) -> size_t {
-    let err_code = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
-    let err_code_0 = ZSTD_CCtx_setFParams(cctx, params.fParams);
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
-    let err_code_1 = ZSTD_CCtx_setCParams(cctx, params.cParams);
-    if ERR_isError(err_code_1) {
-        return err_code_1;
-    }
+    (*cctx)
+        .set_params(params)
+        .map(|()| 0)
+        .unwrap_or_else(|e| e.to_error_code())
+}
 
-    0
+impl ZSTD_CCtx {
+    pub fn set_params(&mut self, params: ZSTD_parameters) -> Result<(), Error> {
+        params.cParams.check_bounds()?;
+        self.set_fparams(params.fParams)?;
+        self.set_cparams(params.cParams)?;
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize))]
