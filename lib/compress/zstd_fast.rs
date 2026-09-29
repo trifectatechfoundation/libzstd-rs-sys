@@ -1,5 +1,3 @@
-use core::arch::asm;
-
 pub type ZSTD_match4Found = unsafe fn(*const u8, *const u8, u32, u32) -> bool;
 
 use libc::size_t;
@@ -14,7 +12,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE,
     REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
 };
-use crate::lib::polyfill::PointerExt;
+use crate::lib::polyfill::{branch_barrier, PointerExt};
 use crate::lib::zstd::ZSTD_compressionParameters;
 
 unsafe fn ZSTD_fillHashTableForCDict(
@@ -133,10 +131,7 @@ unsafe fn ZSTD_match4Found_cmov(
     }
 
     // force ordering of these tests, which matters once the function is inlined, as they become branches.
-    #[cfg(not(target_family = "wasm"))]
-    if !cfg!(miri) {
-        asm!("", options(preserves_flags));
-    }
+    branch_barrier!();
 
     matchIdx >= idxLowLimit
 }
