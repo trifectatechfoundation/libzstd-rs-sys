@@ -62,8 +62,7 @@ pub struct EstimatedBlockSize {
 unsafe fn ZSTD_compressSubBlock_literal(
     hufTable: &CTable,
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
-    literals: *const u8,
-    litSize: size_t,
+    literals: &[u8],
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     bmi2: bool,
@@ -72,8 +71,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> Result<size_t, Error> {
     let header = (if writeEntropy { 200 } else { 0 }) as size_t;
     let lhSize = 3
-        + size_t::from(litSize >= ((1 << 10) as size_t).wrapping_sub(header))
-        + size_t::from(litSize >= ((16 * (1 << 10)) as size_t).wrapping_sub(header));
+        + size_t::from(literals.len() >= ((1 << 10) as size_t).wrapping_sub(header))
+        + size_t::from(literals.len() >= ((16 * (1 << 10)) as size_t).wrapping_sub(header));
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
@@ -84,10 +83,9 @@ unsafe fn ZSTD_compressSubBlock_literal(
         SymbolEncodingType::Repeat
     };
     let mut cLitSize = 0usize;
-    let literals = core::slice::from_raw_parts(literals, litSize);
 
     *entropyWritten = false;
-    if litSize == 0 || hufMetadata.hType == SymbolEncodingType::Basic {
+    if literals.is_empty() || hufMetadata.hType == SymbolEncodingType::Basic {
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     } else if hufMetadata.hType == SymbolEncodingType::Rle {
         return ZSTD_compressRleLiteralsBlock(dst, dstSize, literals);
@@ -132,7 +130,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     op = op.add(cSize);
     cLitSize = cLitSize.wrapping_add(cSize);
     // If we expand and we aren't writing a header then emit uncompressed.
-    if !writeEntropy && cLitSize >= litSize {
+    if !writeEntropy && cLitSize >= literals.len() {
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
@@ -149,7 +147,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             // 2 - 2 - 10 - 10
             let lhc = (hType as core::ffi::c_uint)
                 .wrapping_add(((!singleStream) as core::ffi::c_int as u32) << 2)
-                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((literals.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);
         }
@@ -157,7 +155,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
                 .wrapping_add((2 << 2) as core::ffi::c_uint)
-                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((literals.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
         }
@@ -165,7 +163,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
                 .wrapping_add((3 << 2) as core::ffi::c_uint)
-                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((literals.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);
             *ostart.add(4) = (cLitSize >> 10) as u8;
@@ -356,8 +354,7 @@ unsafe fn ZSTD_compressSubBlock(
     let cLitSize = ZSTD_compressSubBlock_literal(
         &entropy.huf.CTable,
         &entropyMetadata.hufMetadata,
-        literals,
-        litSize,
+        core::slice::from_raw_parts(literals, litSize),
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         bmi2,
