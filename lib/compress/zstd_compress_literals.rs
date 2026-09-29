@@ -17,8 +17,7 @@ const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 pub type huf_compress_f = unsafe fn(
     *mut core::ffi::c_void,
     size_t,
-    *const core::ffi::c_void,
-    size_t,
+    &[u8],
     core::ffi::c_uint,
     core::ffi::c_uint,
     *mut core::ffi::c_void,
@@ -204,8 +203,7 @@ pub unsafe fn ZSTD_compressLiterals(
     let cLitSize = huf_compress(
         ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
-        src.as_ptr().cast(),
-        srcSize,
+        src,
         HUF_SYMBOLVALUE_MAX,
         LitHufLog,
         entropyWorkspace,

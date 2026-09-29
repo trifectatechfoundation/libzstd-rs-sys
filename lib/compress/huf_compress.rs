@@ -1584,8 +1584,7 @@ pub unsafe fn HUF_optimalTableLog(
 pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     maxSymbolValue: c_uint,
     mut huffLog: c_uint,
     workSpace: *mut c_void,
@@ -1623,7 +1622,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     // Initialize the CTable so we can take a (mutable) reference to its contents.
     core::ptr::write_bytes(&raw mut (*table).CTable, 0, 1);
 
-    if srcSize == 0 {
+    if src.is_empty() {
         return Ok(0); /* Uncompressed */
     }
 
@@ -1631,7 +1630,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         return Ok(0); /* cannot fit anything within dst budget */
     }
 
-    if srcSize > HUF_BLOCKSIZE_MAX {
+    if src.len() > HUF_BLOCKSIZE_MAX {
         return Err(Error::srcSize_wrong);
     }
 
@@ -1660,8 +1659,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             ostart,
             op,
             oend,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             nbStreams,
             oldHufTable,
             flags,
@@ -1670,14 +1669,14 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
 
     /* If uncompressible data is suspected, do a smaller sampling first */
     if flags & HUF_flags_suspectUncompressible as c_int != 0
-        && srcSize >= SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO
+        && src.len() >= SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO
     {
         let mut largestTotal = 0usize;
         let mut maxSymbolValueBegin = maxSymbolValue;
         let largestBegin = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueBegin,
-            src as *const u8 as *const c_void,
+            src.as_ptr().cast(),
             SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
         if let Some(err) = Error::from_error_code(largestBegin) {
@@ -1688,8 +1687,10 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         let largestEnd = HIST_count_simple(
             ((*table).count).as_mut_ptr(),
             &mut maxSymbolValueEnd,
-            src.byte_add(srcSize)
-                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE),
+            src.as_ptr()
+                .byte_add(src.len())
+                .byte_sub(SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE)
+                .cast(),
             SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE,
         ) as size_t;
         if let Some(err) = Error::from_error_code(largestEnd) {
@@ -1706,15 +1707,15 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     let largest = HIST_count_wksp_array(
         ((*table).count).as_mut_ptr(),
         &mut maxSymbolValue,
-        src as *const u8 as *const c_void,
-        srcSize,
+        src.as_ptr().cast(),
+        src.len(),
         &mut (*table).wksps.hist_wksp,
     )? as usize;
-    if largest == srcSize {
-        *ostart = *(src as *const u8);
+    if largest == src.len() {
+        *ostart = src[0];
         return Ok(1); /* single symbol, rle */
     }
-    if largest <= (srcSize >> 7) + 4 {
+    if largest <= (src.len() >> 7) + 4 {
         return Ok(0); /* heuristic : probably not compressible enough */
     }
 
@@ -1731,8 +1732,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             ostart,
             op,
             oend,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             nbStreams,
             oldHufTable,
             flags,
@@ -1742,7 +1743,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     /* Build Huffman Tree */
     huffLog = HUF_optimalTableLog(
         huffLog,
-        srcSize,
+        src.len(),
         maxSymbolValue,
         &mut (*table).wksps as *mut workspace_union as *mut c_void,
         size_of::<workspace_union>(),
@@ -1778,13 +1779,13 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             let newSize =
                 HUF_estimateCompressedSize(&(*table).CTable, &(*table).count, maxSymbolValue);
 
-            if oldSize <= hSize + (newSize) || hSize + 12 >= srcSize {
+            if oldSize <= hSize + (newSize) || hSize + 12 >= src.len() {
                 return HUF_compressCTable_internal(
                     ostart,
                     op,
                     oend,
-                    src,
-                    srcSize,
+                    src.as_ptr().cast(),
+                    src.len(),
                     nbStreams,
                     oldHufTable,
                     flags,
@@ -1793,7 +1794,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         }
 
         /* Use the new huffman table */
-        if hSize + 12 >= srcSize {
+        if hSize + 12 >= src.len() {
             return Ok(0);
         }
         op = op.add(hSize);
@@ -1804,8 +1805,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         ostart,
         op,
         oend,
-        src,
-        srcSize,
+        src.as_ptr().cast(),
+        src.len(),
         nbStreams,
         &(*table).CTable,
         flags,
