@@ -1326,14 +1326,11 @@ pub unsafe fn HUF_compress1X_usingCTable(
 unsafe fn HUF_compress4X_usingCTable_internal(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
     flags: c_int,
 ) -> Result<size_t, Error> {
-    let segmentSize = srcSize.div_ceil(4); /* first 3 segments */
-    let mut ip = src as *const u8;
-    let iend = ip.add(srcSize);
+    let segmentSize = src.len().div_ceil(4); /* first 3 segments */
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart;
@@ -1342,9 +1339,12 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         return Ok(0); /* minimum space to compress successfully */
     }
 
-    if srcSize < 12 {
+    if src.len() < 12 {
         return Ok(0); /* no saving possible : too small input */
     }
+    let (src0, rest) = src.split_at(segmentSize);
+    let (src1, rest) = rest.split_at(segmentSize);
+    let (src2, src3) = rest.split_at(segmentSize);
     op = op.add(6); /* jumpTable */
 
     debug_assert!(op <= oend);
@@ -1354,8 +1354,8 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         let cSize = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            ip as *const c_void,
-            segmentSize,
+            src0.as_ptr().cast(),
+            src0.len(),
             CTable,
             flags,
         )?;
@@ -1366,14 +1366,13 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         op = op.add(cSize);
     }
 
-    ip = ip.add(segmentSize);
     debug_assert!(op <= oend);
     {
         let cSize_0 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            ip as *const c_void,
-            segmentSize,
+            src1.as_ptr().cast(),
+            src1.len(),
             CTable,
             flags,
         )?;
@@ -1384,14 +1383,13 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         op = op.add(cSize_0);
     }
 
-    ip = ip.add(segmentSize);
     debug_assert!(op <= oend);
     {
         let cSize_1 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            ip as *const c_void,
-            segmentSize,
+            src2.as_ptr().cast(),
+            src2.len(),
             CTable,
             flags,
         )?;
@@ -1402,15 +1400,13 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         op = op.add(cSize_1);
     }
 
-    ip = ip.add(segmentSize);
     debug_assert!(op <= oend);
-    debug_assert!(ip <= iend);
     {
         let cSize_2 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            ip as *const c_void,
-            iend.offset_from_unsigned(ip),
+            src3.as_ptr().cast(),
+            src3.len(),
             CTable,
             flags,
         )?;
@@ -1426,12 +1422,11 @@ unsafe fn HUF_compress4X_usingCTable_internal(
 pub unsafe fn HUF_compress4X_usingCTable(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
     flags: c_int,
 ) -> Result<size_t, Error> {
-    HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
+    HUF_compress4X_usingCTable_internal(dst, dstSize, src, CTable, flags)
 }
 
 #[repr(u32)]
@@ -1462,8 +1457,7 @@ unsafe fn HUF_compressCTable_internal(
         HUF_nbStreams_e::Four => HUF_compress4X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src.as_ptr().cast(),
-            src.len(),
+            src,
             CTable,
             flags,
         )?,

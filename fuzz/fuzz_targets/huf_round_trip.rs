@@ -246,8 +246,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             lib::compress::huf_compress::HUF_compress4X_usingCTable(
                 c_buf.as_mut_ptr().cast(),
                 cbuf_size,
-                input.data[..size].as_ptr().cast(),
-                size,
+                &input.data[..size],
                 &ct,
                 flags,
             )
