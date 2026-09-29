@@ -311,6 +311,7 @@ pub unsafe fn ZSTD_buildCTable(
     }
 }
 
+#[inline(always)]
 unsafe fn ZSTD_encodeSequences_body(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -493,6 +494,7 @@ unsafe fn ZSTD_encodeSequences_default(
     )
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_encodeSequences_bmi2(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
