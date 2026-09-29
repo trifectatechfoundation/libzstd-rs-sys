@@ -700,8 +700,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let nbSeqs = send.offset_from_unsigned(sstart);
     let lstart: *const u8 = seqStorePtr.litStart;
     let lend: *const u8 = seqStorePtr.lit;
-    let mut lp = lstart;
     let nbLiterals = lend.offset_from_unsigned(lstart);
+    let mut literals = core::slice::from_raw_parts(lstart, nbLiterals);
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
     let ostart = dst as *mut u8;
@@ -718,7 +718,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     // let's start by a general estimation for the full block
     if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
-            lp,
+            lstart,
             nbLiterals,
             ofCodePtr,
             llCodePtr,
@@ -776,7 +776,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 entropyMetadata,
                 sp,
                 seqCount,
-                core::slice::from_raw_parts(lp, litSize),
+                &literals[..litSize],
                 llCodePtr,
                 mlCodePtr,
                 ofCodePtr,
@@ -794,7 +794,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             // check compressibility, update state components
             if cSize > 0 && cSize < decompressedSize {
                 ip = ip.add(decompressedSize);
-                lp = lp.add(litSize);
+                literals = &literals[litSize..];
                 op = op.add(cSize);
                 llCodePtr = llCodePtr.add(seqCount);
                 mlCodePtr = mlCodePtr.add(seqCount);
@@ -816,7 +816,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     // write last block
     let mut litEntropyWritten = false;
     let mut seqEntropyWritten = false;
-    let litSize_0 = lend.offset_from_unsigned(lp);
+    let litSize_0 = literals.len();
     let seqCount_0 = send.offset_from_unsigned(sp);
     let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, true);
     let cSize_0 = ZSTD_compressSubBlock(
@@ -824,7 +824,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         entropyMetadata,
         sp,
         seqCount_0,
-        core::slice::from_raw_parts(lp, litSize_0),
+        literals,
         llCodePtr,
         mlCodePtr,
         ofCodePtr,
