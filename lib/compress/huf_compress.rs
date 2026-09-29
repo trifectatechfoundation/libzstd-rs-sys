@@ -1194,13 +1194,13 @@ fn HUF_tightCompressBound(srcSize: size_t, tableLog: size_t) -> size_t {
 unsafe fn HUF_compress1X_usingCTable_internal_body(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
 ) -> Result<size_t, Error> {
     let tableLog = CTable.header.tableLog as u32;
     let ct = &CTable.elements;
-    let ip = src as *const u8;
+    let ip = src.as_ptr();
+    let srcSize = src.len();
 
     /* init */
     if dstSize < 8 {
@@ -1281,46 +1281,42 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
 unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
 ) -> Result<size_t, Error> {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, CTable)
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal_default(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
 ) -> Result<size_t, Error> {
-    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, CTable)
 }
 
 unsafe fn HUF_compress1X_usingCTable_internal(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
     flags: c_int,
 ) -> Result<size_t, Error> {
     if flags & HUF_flags_bmi2 as c_int != 0 {
-        return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, srcSize, CTable);
+        return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, CTable);
     }
-    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable)
+    HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, CTable)
 }
 
 pub unsafe fn HUF_compress1X_usingCTable(
     dst: *mut c_void,
     dstSize: size_t,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     CTable: &CTable,
     flags: c_int,
 ) -> Result<size_t, Error> {
-    HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
+    HUF_compress1X_usingCTable_internal(dst, dstSize, src, CTable, flags)
 }
 
 unsafe fn HUF_compress4X_usingCTable_internal(
@@ -1354,8 +1350,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         let cSize = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src0.as_ptr().cast(),
-            src0.len(),
+            src0,
             CTable,
             flags,
         )?;
@@ -1371,8 +1366,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         let cSize_0 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src1.as_ptr().cast(),
-            src1.len(),
+            src1,
             CTable,
             flags,
         )?;
@@ -1388,8 +1382,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         let cSize_1 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src2.as_ptr().cast(),
-            src2.len(),
+            src2,
             CTable,
             flags,
         )?;
@@ -1405,8 +1398,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         let cSize_2 = HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src3.as_ptr().cast(),
-            src3.len(),
+            src3,
             CTable,
             flags,
         )?;
@@ -1449,8 +1441,7 @@ unsafe fn HUF_compressCTable_internal(
         HUF_nbStreams_e::Single => HUF_compress1X_usingCTable_internal(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            src.as_ptr().cast(),
-            src.len(),
+            src,
             CTable,
             flags,
         )?,
