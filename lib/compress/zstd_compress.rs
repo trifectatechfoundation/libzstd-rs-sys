@@ -9703,8 +9703,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     mut dstCapacity: size_t,
     mut inSeqs: *const ZSTD_Sequence,
     mut nbSequences: size_t,
-    mut literals: *const core::ffi::c_void,
-    mut litSize: size_t,
+    mut literals: &[u8],
     srcSize: size_t,
 ) -> size_t {
     let mut remaining = srcSize;
@@ -9735,7 +9734,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         if ERR_isError(err_code) {
             return err_code;
         }
-        if block.litSize > litSize {
+        if block.litSize > literals.len() {
             return Error::externalSequences_invalid.to_error_code();
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
@@ -9762,7 +9761,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore_internal(
             op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
-            core::slice::from_raw_parts(literals.cast::<u8>(), block.litSize),
+            &literals[..block.litSize],
             &(*cctx).seqStore,
             &(*(*cctx).blockState.prevCBlock).entropy,
             &mut (*(*cctx).blockState.nextCBlock).entropy,
@@ -9778,9 +9777,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         if compressedSeqsSize > (*cctx).blockSizeMax {
             compressedSeqsSize = 0;
         }
-        litSize = litSize.wrapping_sub(block.litSize);
-        literals =
-            (literals as *const core::ffi::c_char).add(block.litSize) as *const core::ffi::c_void;
+        literals = &literals[block.litSize..];
 
         // Note: difficult to check source for RLE block when only Literals are provided,
         // but it could be considered from analyzing the sequence directly
@@ -9818,7 +9815,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         }
     }
 
-    if litSize != 0 {
+    if !literals.is_empty() {
         return Error::externalSequences_invalid.to_error_code();
     }
     if remaining != 0 {
@@ -9875,6 +9872,11 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     cSize = cSize.wrapping_add(frameHeaderSize);
 
     // Now generate compressed blocks
+    let literals = if literals.is_null() || litSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(literals.cast::<u8>(), litSize)
+    };
     let cBlocksSize = ZSTD_compressSequencesAndLiterals_internal(
         cctx,
         op as *mut core::ffi::c_void,
@@ -9882,7 +9884,6 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
         inSeqs,
         inSeqsSize,
         literals,
-        litSize,
         decompressedSize,
     );
     let err_code_0 = cBlocksSize;
