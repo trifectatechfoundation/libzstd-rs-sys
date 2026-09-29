@@ -24,11 +24,10 @@ pub fn HIST_add(count: &mut [core::ffi::c_uint; 1024], src: &[u8]) {
 pub unsafe fn HIST_count_simple(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) -> core::ffi::c_uint {
-    let mut ip = src as *const u8;
-    let end = ip.add(srcSize);
+    let mut ip = src.as_ptr();
+    let end = ip.add(src.len());
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
 
@@ -37,7 +36,7 @@ pub unsafe fn HIST_count_simple(
         0,
         (usize::from(maxSymbolValue) + 1) * size_of::<core::ffi::c_uint>(),
     );
-    if srcSize == 0 {
+    if src.is_empty() {
         *maxSymbolValuePtr = 0;
         return 0;
     }
@@ -47,7 +46,7 @@ pub unsafe fn HIST_count_simple(
         ip = ip.add(1);
     }
 
-    // `srcSize` is non-zero, so (assuming no symbol exceeds `maxSymbolValue`, which this
+    // `src` is non-empty, so (assuming no symbol exceeds `maxSymbolValue`, which this
     // variant deliberately does not check) at least one symbol has a non-zero count
     while *count.add(usize::from(maxSymbolValue)) == 0 {
         maxSymbolValue -= 1;
@@ -185,12 +184,7 @@ pub unsafe fn HIST_countFast_wksp(
     // checked before the workspace, which this path does not touch
     if source.len() < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
-        return Ok(HIST_count_simple(
-            count,
-            maxSymbolValuePtr,
-            source.as_ptr().cast(),
-            source.len(),
-        ));
+        return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
     if workSpace as size_t & 3 != 0 {
         // must be aligned on 4-bytes boundaries
@@ -218,12 +212,7 @@ pub unsafe fn HIST_countFast_wksp_array(
 ) -> Result<core::ffi::c_uint, Error> {
     if source.len() < HIST_FAST_THRESHOLD as size_t {
         // heuristic threshold
-        return Ok(HIST_count_simple(
-            count,
-            maxSymbolValuePtr,
-            source.as_ptr().cast(),
-            source.len(),
-        ));
+        return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
 
     HIST_count_parallel_wksp(
