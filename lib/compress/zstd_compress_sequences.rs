@@ -28,6 +28,20 @@ pub struct ZSTD_BuildCTableWksp {
     pub wksp: [u32; 285],
 }
 
+// `LL_bits` and `ML_bits`, padded so that a lookup indexed by a `u8` needs no bounds check.
+static LL_bits_u8: [u8; 256] = pad_bits(&LL_bits);
+static ML_bits_u8: [u8; 256] = pad_bits(&ML_bits);
+
+const fn pad_bits(bits: &[u8]) -> [u8; 256] {
+    let mut padded = [0; 256];
+    let mut i = 0;
+    while i < bits.len() {
+        padded[i] = bits[i];
+        i += 1;
+    }
+    padded
+}
+
 /// -log2(x / 256) lookup table for x in [0, 256).
 /// If x == 0: Return 0
 /// Else: Return floor(-log2(x / 256) * 256)
@@ -345,7 +359,7 @@ unsafe fn ZSTD_encodeSequences_body(
     BIT_addBits(
         &mut blockStream,
         (*sequences.add(nbSeq.wrapping_sub(1))).litLength as BitContainerType,
-        LL_bits[*llCodeTable.add(nbSeq.wrapping_sub(1)) as usize] as core::ffi::c_uint,
+        LL_bits_u8[usize::from(*llCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
@@ -353,7 +367,7 @@ unsafe fn ZSTD_encodeSequences_body(
     BIT_addBits(
         &mut blockStream,
         (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
-        ML_bits[*mlCodeTable.add(nbSeq.wrapping_sub(1)) as usize] as core::ffi::c_uint,
+        ML_bits_u8[usize::from(*mlCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
@@ -387,9 +401,9 @@ unsafe fn ZSTD_encodeSequences_body(
         let llCode = *llCodeTable.add(n);
         let ofCode = *ofCodeTable.add(n);
         let mlCode = *mlCodeTable.add(n);
-        let llBits = LL_bits[llCode as usize] as u32;
+        let llBits = LL_bits_u8[usize::from(llCode)] as u32;
         let ofBits_0 = ofCode as u32;
-        let mlBits = ML_bits[mlCode as usize] as u32;
+        let mlBits = ML_bits_u8[usize::from(mlCode)] as u32;
         FSE_encodeSymbol(
             &mut blockStream,
             &mut stateOffsetBits,
