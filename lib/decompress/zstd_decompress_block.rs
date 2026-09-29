@@ -1575,9 +1575,7 @@ fn ZSTD_decodeSequence(
     debug_assert!(llBits <= MaxLLBits);
     debug_assert!(mlBits <= MaxMLBits);
 
-    // NOTE: experimentally this assert provides valuable information for downstream optimizations.
-    // it is deliberately not a debug_assert!.
-    assert!(ofBits <= MaxOff);
+    debug_assert!(ofBits <= MaxOff);
 
     let mut offset: size_t;
     if ofBits > 1 {
