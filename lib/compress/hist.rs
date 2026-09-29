@@ -77,8 +77,7 @@ pub unsafe fn HIST_count_simple(
 unsafe fn HIST_count_parallel_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    source: *const core::ffi::c_void,
-    sourceSize: size_t,
+    source: &[u8],
     check: CheckInput,
     workSpace: &mut [u32; 1024],
 ) -> Result<core::ffi::c_uint, Error> {
@@ -87,8 +86,8 @@ unsafe fn HIST_count_parallel_wksp(
     // with the `&mut` reference, skip writes to `count`.
     let aliasesWorkSpace = count as *mut u8 == workSpace.as_mut_ptr().cast::<u8>();
 
-    let mut ip = source as *const u8;
-    let iend = ip.add(sourceSize);
+    let mut ip = source.as_ptr();
+    let iend = ip.add(source.len());
     let countSize = (usize::from(*maxSymbolValuePtr) + 1) * size_of::<core::ffi::c_uint>();
     let mut max = 0;
 
@@ -98,7 +97,7 @@ unsafe fn HIST_count_parallel_wksp(
     };
 
     // safety checks
-    if sourceSize == 0 {
+    if source.is_empty() {
         if !aliasesWorkSpace {
             ptr::write_bytes(count as *mut u8, 0, countSize);
         }
@@ -155,7 +154,7 @@ unsafe fn HIST_count_parallel_wksp(
         max = Ord::max(max, Counting1[s]);
     }
 
-    // `sourceSize` is non-zero, so at least one symbol has a non-zero count
+    // `source` is non-empty, so at least one symbol has a non-zero count
     let mut maxSymbolValue = u8::MAX;
     let mut it = Counting1.iter().rev();
     while let Some(0) = it.next() {
@@ -230,8 +229,7 @@ pub unsafe fn HIST_countFast_wksp_array(
     HIST_count_parallel_wksp(
         count,
         maxSymbolValuePtr,
-        source.as_ptr().cast(),
-        source.len(),
+        source,
         CheckInput::Trust,
         workSpace,
     )
@@ -280,8 +278,7 @@ pub unsafe fn HIST_count_wksp_array(
         HIST_count_parallel_wksp(
             count,
             maxSymbolValuePtr,
-            source.as_ptr().cast(),
-            source.len(),
+            source,
             CheckInput::CheckMaxSymbolValue,
             workSpace,
         )
