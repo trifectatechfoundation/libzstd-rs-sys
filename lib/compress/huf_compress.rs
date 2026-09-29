@@ -1628,8 +1628,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     let largest = HIST_count_wksp_array(
         ((*table).count).as_mut_ptr(),
         &mut maxSymbolValue,
-        src.as_ptr().cast(),
-        src.len(),
+        src,
         &mut (*table).wksps.hist_wksp,
     )? as usize;
     if largest == src.len() {

@@ -266,13 +266,7 @@ pub unsafe fn HIST_count_wksp(
         unsafe { core::ptr::write_bytes(workSpace, 0u8, HIST_WKSP_SIZE) };
         let workSpace = unsafe { &mut *workSpace.cast::<[u32; HIST_WKSP_SIZE_U32]>() };
 
-        return HIST_count_wksp_array(
-            count,
-            maxSymbolValuePtr,
-            source.as_ptr().cast(),
-            source.len(),
-            workSpace,
-        );
+        return HIST_count_wksp_array(count, maxSymbolValuePtr, source, workSpace);
     }
 
     // this path may not touch the workspace at all, so leave the zeroing to it
@@ -286,23 +280,28 @@ pub unsafe fn HIST_count_wksp(
 pub unsafe fn HIST_count_wksp_array(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: &mut u8,
-    source: *const core::ffi::c_void,
-    sourceSize: size_t,
+    source: &[u8],
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
 ) -> Result<core::ffi::c_uint, Error> {
     if *maxSymbolValuePtr < u8::MAX {
         HIST_count_parallel_wksp(
             count,
             maxSymbolValuePtr,
-            source,
-            sourceSize,
+            source.as_ptr().cast(),
+            source.len(),
             CheckInput::CheckMaxSymbolValue,
             workSpace,
         )
     } else {
         *maxSymbolValuePtr = u8::MAX;
 
-        HIST_countFast_wksp_array(count, maxSymbolValuePtr, source, sourceSize, workSpace)
+        HIST_countFast_wksp_array(
+            count,
+            maxSymbolValuePtr,
+            source.as_ptr().cast(),
+            source.len(),
+            workSpace,
+        )
     }
 }
 
@@ -330,11 +329,5 @@ pub unsafe fn HIST_count(
 ) -> Result<core::ffi::c_uint, Error> {
     // zeroed, as `HIST_count_wksp_array` requires
     let mut tmpCounters: [core::ffi::c_uint; HIST_WKSP_SIZE_U32] = [0; HIST_WKSP_SIZE_U32];
-    HIST_count_wksp_array(
-        count,
-        maxSymbolValuePtr,
-        src.as_ptr().cast(),
-        src.len(),
-        &mut tmpCounters,
-    )
+    HIST_count_wksp_array(count, maxSymbolValuePtr, src, &mut tmpCounters)
 }
