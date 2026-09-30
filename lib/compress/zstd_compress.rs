@@ -3436,7 +3436,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     let windowLog = params.cParams.windowLog;
 
     if (*cdict).matchState.dedicatedDictSearch != 0 {
-        ZSTD_dedicatedDictSearch_revertCParams(&mut adjusted_cdict_cParams);
+        adjusted_cdict_cParams.revert_dedicated_dict_search();
     }
 
     params.cParams = adjusted_cdict_cParams.optimize(
@@ -9960,16 +9960,16 @@ impl ZSTD_compressionParameters {
             && self.hashLog > self.chainLog
             && self.chainLog <= 24
     }
-}
 
-/// Reverses the adjustment applied to cparams when enabling dedicated dict
-/// search. This is used to recover the params set to be used in the working
-/// context. (Otherwise, those tables would also grow.)
-fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParameters) {
-    if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog = (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
-        if cParams.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
-            cParams.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
+    /// Reverses the adjustment applied to cparams when enabling dedicated dict
+    /// search. This is used to recover the params set to be used in the working
+    /// context. (Otherwise, those tables would also grow.)
+    fn revert_dedicated_dict_search(&mut self) {
+        if (ZSTD_greedy..=ZSTD_lazy2).contains(&self.strategy) {
+            self.hashLog = (self.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
+            if self.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
+                self.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
+            }
         }
     }
 }
