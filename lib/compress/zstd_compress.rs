@@ -1482,6 +1482,8 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init(
     0
 }
 
+pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
+
 impl ZSTD_CCtx_params {
     /// Safe version of [`ZSTD_CCtxParams_init`]
     pub fn new(compressionLevel: core::ffi::c_int) -> Self {
@@ -1494,35 +1496,33 @@ impl ZSTD_CCtx_params {
             ..Default::default()
         }
     }
-}
 
-pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
-
-/// Initializes `cctxParams` from `params` and `compressionLevel`.
-/// If params are derived from a compression level then that compression
-/// level, otherwise ZSTD_NO_CLEVEL.
-fn ZSTD_CCtxParams_init_internal(
-    cctxParams: &mut ZSTD_CCtx_params,
-    params: &ZSTD_parameters,
-    compressionLevel: core::ffi::c_int,
-) {
-    *cctxParams = ZSTD_CCtx_params::default();
-    cctxParams.cParams = params.cParams;
-    cctxParams.fParams = params.fParams;
-    // Should not matter, as all cParams are presumed properly defined.
-    // But, set it for tracing anyway.
-    cctxParams.compressionLevel = compressionLevel;
-    cctxParams.useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &params.cParams);
-    cctxParams.postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &params.cParams);
-    cctxParams.ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &params.cParams);
-    cctxParams.validateSequences =
-        ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
-    cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
-    cctxParams.searchForExternalRepcodes =
-        ZSTD_resolveExternalRepcodeSearch(cctxParams.searchForExternalRepcodes, compressionLevel);
+    /// Initializes `cctxParams` from `params` and `compressionLevel`.
+    ///
+    /// If params are derived from a compression level then that compression level,
+    /// otherwise [`ZSTD_NO_CLEVEL`].
+    pub fn new_internal(params: &ZSTD_parameters, compressionLevel: core::ffi::c_int) -> Self {
+        Self {
+            cParams: params.cParams,
+            fParams: params.fParams,
+            // Should not matter, as all cParams are presumed properly defined.
+            // But, set it for tracing anyway.
+            compressionLevel,
+            useRowMatchFinder: ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &params.cParams),
+            postBlockSplitter: ZSTD_resolveBlockSplitterMode(ParamSwitch::Auto, &params.cParams),
+            ldmParams: ldmParams_t {
+                enableLdm: ZSTD_resolveEnableLdm(ParamSwitch::Auto, &params.cParams),
+                ..Default::default()
+            },
+            validateSequences: ZSTD_resolveExternalSequenceValidation(0),
+            maxBlockSize: ZSTD_resolveMaxBlockSize(0),
+            searchForExternalRepcodes: ZSTD_resolveExternalRepcodeSearch(
+                ParamSwitch::Auto,
+                compressionLevel,
+            ),
+            ..Default::default()
+        }
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced))]
@@ -1537,7 +1537,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_CCtxParams_init_internal(&mut *cctxParams, &params, ZSTD_NO_CLEVEL);
+    *cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
 
     0
 }
@@ -6905,8 +6905,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     params: ZSTD_parameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, ZSTD_NO_CLEVEL);
+    let cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
     ZSTD_compressBegin_advanced_internal(
         cctx,
         dict,
@@ -6925,16 +6924,13 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-
     let params = ZSTD_getParams_internal(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
         CParamMode::NoAttachDict,
     );
-    ZSTD_CCtxParams_init_internal(
-        &mut cctxParams,
+    let cctxParams = ZSTD_CCtx_params_s::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7114,7 +7110,7 @@ pub unsafe extern "C" fn ZSTD_compress_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_CCtxParams_init_internal(&mut (*cctx).simpleApiParams, &params, ZSTD_NO_CLEVEL);
+    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
     ZSTD_compress_advanced_internal(
         cctx,
         dst,
@@ -7170,8 +7166,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
         if !dict.is_null() { dictSize } else { 0 },
         CParamMode::NoAttachDict,
     );
-    ZSTD_CCtxParams_init_internal(
-        &mut (*cctx).simpleApiParams,
+    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7678,7 +7673,6 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
     if cdict.is_null() {
         return Error::dictionary_wrong.to_error_code();
     }
@@ -7703,7 +7697,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         },
         fParams,
     };
-    ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, (*cdict).compressionLevel);
+    let mut cctxParams = ZSTD_CCtx_params_s::new_internal(&params, (*cdict).compressionLevel);
 
     // Increase window log to fit the entire dictionary and source if the
     // source size is known. Limit the increase to 19, which is the
