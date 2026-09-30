@@ -1532,13 +1532,15 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     0
 }
 
-/// Sets cctxParams' cParams and fParams from validated zstd params, but otherwise leaves them alone.
-fn ZSTD_CCtxParams_setZstdParams(cctxParams: &mut ZSTD_CCtx_params, params: &ZSTD_parameters) {
-    cctxParams.cParams = params.cParams;
-    cctxParams.fParams = params.fParams;
-    // Should not matter, as all cParams are presumed properly defined.
-    // But, set it for tracing anyway.
-    cctxParams.compressionLevel = ZSTD_NO_CLEVEL;
+impl ZSTD_CCtx_params {
+    /// Sets cctxParams' cParams and fParams from validated zstd params, but otherwise leaves them alone.
+    fn set_zstd_params(&mut self, params: &ZSTD_parameters) {
+        self.cParams = params.cParams;
+        self.fParams = params.fParams;
+        // Should not matter, as all cParams are presumed properly defined.
+        // But, set it for tracing anyway.
+        self.compressionLevel = ZSTD_NO_CLEVEL;
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
@@ -8004,7 +8006,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     if ERR_isError(err_code_1) {
         return err_code_1;
     }
-    ZSTD_CCtxParams_setZstdParams(&mut (*zcs).requestedParams, &params);
+    (*zcs).requestedParams.set_zstd_params(&params);
     let err_code_2 = ZSTD_CCtx_loadDictionary(zcs, dict, dictSize);
     if ERR_isError(err_code_2) {
         return err_code_2;
