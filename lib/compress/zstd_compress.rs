@@ -6926,7 +6926,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let params = ZSTD_getParams_internal(
+    let params = ZSTD_parameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -7162,7 +7162,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let params = ZSTD_getParams_internal(
+    let params = ZSTD_parameters::new(
         compressionLevel,
         srcSize as core::ffi::c_ulonglong,
         if !dict.is_null() { dictSize } else { 0 },
@@ -10021,7 +10021,7 @@ pub extern "C" fn ZSTD_getParams(
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
+    ZSTD_parameters::new(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
 
 pub const ZSTD_MAX_CLEVEL: core::ffi::c_int = 22;
@@ -11100,26 +11100,27 @@ impl ZSTD_compressionParameters {
     }
 }
 
-/// Same idea as ZSTD_getCParams().
-/// Fields of `ZSTD_frameParameters` are set to default values.
-///
-/// # Returns
-///
-/// a `ZSTD_parameters` structure (instead of `ZSTD_compressionParameters`).
-fn ZSTD_getParams_internal(
-    compressionLevel: core::ffi::c_int,
-    srcSizeHint: core::ffi::c_ulonglong,
-    dictSize: size_t,
-    mode: CParamMode,
-) -> ZSTD_parameters {
-    let cParams = ZSTD_compressionParameters::new(compressionLevel, srcSizeHint, dictSize, mode);
-    ZSTD_parameters {
-        cParams,
-        fParams: ZSTD_frameParameters {
-            contentSizeFlag: 1,
-            checksumFlag: 0,
-            noDictIDFlag: 0,
-        },
+impl ZSTD_parameters {
+    /// Get `ZSTD_parameters` for a selected compression level, srcSize and dictSize.
+    /// Fields of `ZSTD_frameParameters` are set to default values.
+    ///
+    /// - `srcSizeHint == 0` means 0, use ZSTD_CONTENTSIZE_UNKNOWN for unknown
+    /// - `dictSize == 0` does mean unknown or unused
+    /// - `mode` controls how we treat the `dictSize`, see docs for [`CParamMode`]
+    fn new(
+        compressionLevel: core::ffi::c_int,
+        srcSizeHint: core::ffi::c_ulonglong,
+        dictSize: size_t,
+        mode: CParamMode,
+    ) -> Self {
+        ZSTD_parameters {
+            cParams: ZSTD_compressionParameters::new(compressionLevel, srcSizeHint, dictSize, mode),
+            fParams: ZSTD_frameParameters {
+                contentSizeFlag: 1,
+                checksumFlag: 0,
+                noDictIDFlag: 0,
+            },
+        }
     }
 }
 
