@@ -1401,10 +1401,12 @@ fn ZSTD_resolveExternalRepcodeSearch(value: ParamSwitch, cLevel: core::ffi::c_in
     }
 }
 
-/// Returns 1 if compression parameters are such that CDict hashtable and chaintable indices are
-/// tagged. If so, the tags need to be removed in ZSTD_resetCCtx_byCopyingCDict.
-fn ZSTD_CDictIndicesAreTagged(cParams: &ZSTD_compressionParameters) -> bool {
-    cParams.strategy == ZSTD_fast || cParams.strategy == ZSTD_dfast
+impl ZSTD_compressionParameters {
+    /// Returns true if compression parameters are such that CDict hashtable and chaintable indices
+    /// are tagged. If so, the tags need to be removed in [`ZSTD_resetCCtx_byCopyingCDict`].
+    fn cdict_indices_are_tagged(&self) -> bool {
+        self.strategy == ZSTD_fast || self.strategy == ZSTD_dfast
+    }
 }
 
 unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
@@ -2511,7 +2513,7 @@ impl ZSTD_compressionParameters {
 
         // We can't use more than 32 bits of hash in total, so that means that we require:
         // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
-        if mode == CParamMode::CreateCDict && ZSTD_CDictIndicesAreTagged(&self) {
+        if mode == CParamMode::CreateCDict && self.cdict_indices_are_tagged() {
             let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
             if self.hashLog > maxShortCacheHashLog {
                 self.hashLog = maxShortCacheHashLog;
@@ -3477,7 +3479,7 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
     tableSize: size_t,
     cParams: &ZSTD_compressionParameters,
 ) {
-    if ZSTD_CDictIndicesAreTagged(cParams) {
+    if cParams.cdict_indices_are_tagged() {
         // Remove tags from the CDict table if they are present.
         // See docs on "short cache" in zstd_compress_internal.h for context.
         for i in 0..tableSize {
@@ -6420,8 +6422,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     // Ensure large dictionaries can't cause index overflow
     let mut maxDictSize = ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
 
-    let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
-    if CDictTaggedIndices && tfp == TableFillPurpose::ForCDict {
+    if params.cParams.cdict_indices_are_tagged() && tfp == TableFillPurpose::ForCDict {
         let shortCacheMaxDictSize = (1usize << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
             .wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
         maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
