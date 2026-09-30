@@ -1409,30 +1409,32 @@ impl ZSTD_compressionParameters {
     }
 }
 
-fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
-    // should not matter, as all cParams are presumed properly defined
-    let mut cctxParams = ZSTD_CCtx_params_s::new(ZSTD_CLEVEL_DEFAULT);
-    cctxParams.cParams = cParams;
+impl From<ZSTD_compressionParameters> for ZSTD_CCtx_params {
+    fn from(cParams: ZSTD_compressionParameters) -> Self {
+        // should not matter, as all cParams are presumed properly defined
+        let mut cctxParams = ZSTD_CCtx_params_s::new(ZSTD_CLEVEL_DEFAULT);
+        cctxParams.cParams = cParams;
 
-    // Adjust advanced params according to cParams
-    cctxParams.ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
-    if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
+        // Adjust advanced params according to cParams
+        cctxParams.ldmParams.enableLdm =
+            ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
+        if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
+            ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
+        }
+        cctxParams.postBlockSplitter =
+            ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &cParams);
+        cctxParams.useRowMatchFinder =
+            ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
+        cctxParams.validateSequences =
+            ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
+        cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
+        cctxParams.searchForExternalRepcodes = ZSTD_resolveExternalRepcodeSearch(
+            cctxParams.searchForExternalRepcodes,
+            cctxParams.compressionLevel,
+        );
+
+        cctxParams
     }
-    cctxParams.postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &cParams);
-    cctxParams.useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
-    cctxParams.validateSequences =
-        ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
-    cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
-    cctxParams.searchForExternalRepcodes = ZSTD_resolveExternalRepcodeSearch(
-        cctxParams.searchForExternalRepcodes,
-        cctxParams.compressionLevel,
-    );
-
-    cctxParams
 }
 
 unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
@@ -2818,7 +2820,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
     cParams: ZSTD_compressionParameters,
 ) -> size_t {
-    let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
+    let mut initialParams = ZSTD_CCtx_params::from(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) {
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         initialParams.useRowMatchFinder = ParamSwitch::Disable;
@@ -2908,7 +2910,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
     cParams: ZSTD_compressionParameters,
 ) -> size_t {
-    let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
+    let mut initialParams = ZSTD_CCtx_params::from(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) {
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         initialParams.useRowMatchFinder = ParamSwitch::Disable;
