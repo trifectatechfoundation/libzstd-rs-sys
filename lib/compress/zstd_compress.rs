@@ -1409,11 +1409,9 @@ impl ZSTD_compressionParameters {
     }
 }
 
-unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-
+fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
     // should not matter, as all cParams are presumed properly defined
-    ZSTD_CCtxParams_init(&mut cctxParams, ZSTD_CLEVEL_DEFAULT);
+    let mut cctxParams = ZSTD_CCtx_params_s::new(ZSTD_CLEVEL_DEFAULT);
     cctxParams.cParams = cParams;
 
     // Adjust advanced params according to cParams
@@ -1479,11 +1477,23 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init(
     if cctxParams.is_null() {
         return Error::GENERIC.to_error_code();
     }
-    ptr::write_bytes(cctxParams as *mut u8, 0, size_of::<ZSTD_CCtx_params>());
-    (*cctxParams).compressionLevel = compressionLevel;
-    (*cctxParams).fParams.contentSizeFlag = 1;
+    *cctxParams = ZSTD_CCtx_params::new(compressionLevel);
 
     0
+}
+
+impl ZSTD_CCtx_params {
+    /// Safe version of [`ZSTD_CCtxParams_init`]
+    pub fn new(compressionLevel: core::ffi::c_int) -> Self {
+        Self {
+            compressionLevel,
+            fParams: ZSTD_frameParameters {
+                contentSizeFlag: 1,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
 }
 
 pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
@@ -7400,8 +7410,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     cParams: ZSTD_compressionParameters,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init(&mut cctxParams, 0);
+    let mut cctxParams = ZSTD_CCtx_params_s::new(0);
     cctxParams.cParams = cParams;
     cctxParams.customMem = customMem;
     ZSTD_createCDict_advanced2(
@@ -7619,8 +7628,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         return core::ptr::null();
     }
 
-    let mut params = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init(&mut params, 0);
+    let mut params = ZSTD_CCtx_params_s::new(0);
     params.cParams = cParams;
     params.useRowMatchFinder = useRowMatchFinder;
     (*cdict).useRowMatchFinder = useRowMatchFinder;
