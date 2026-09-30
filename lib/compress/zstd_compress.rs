@@ -2564,30 +2564,29 @@ pub extern "C" fn ZSTD_adjustCParams(
     )
 }
 
-fn ZSTD_overrideCParams(
-    cParams: &mut ZSTD_compressionParameters,
-    overrides: &ZSTD_compressionParameters,
-) {
-    if overrides.windowLog != 0 {
-        cParams.windowLog = overrides.windowLog;
-    }
-    if overrides.hashLog != 0 {
-        cParams.hashLog = overrides.hashLog;
-    }
-    if overrides.chainLog != 0 {
-        cParams.chainLog = overrides.chainLog;
-    }
-    if overrides.searchLog != 0 {
-        cParams.searchLog = overrides.searchLog;
-    }
-    if overrides.minMatch != 0 {
-        cParams.minMatch = overrides.minMatch;
-    }
-    if overrides.targetLength != 0 {
-        cParams.targetLength = overrides.targetLength;
-    }
-    if overrides.strategy as u64 != 0 {
-        cParams.strategy = overrides.strategy;
+impl ZSTD_compressionParameters {
+    fn override_cparams(&mut self, overrides: &ZSTD_compressionParameters) {
+        if overrides.windowLog != 0 {
+            self.windowLog = overrides.windowLog;
+        }
+        if overrides.hashLog != 0 {
+            self.hashLog = overrides.hashLog;
+        }
+        if overrides.chainLog != 0 {
+            self.chainLog = overrides.chainLog;
+        }
+        if overrides.searchLog != 0 {
+            self.searchLog = overrides.searchLog;
+        }
+        if overrides.minMatch != 0 {
+            self.minMatch = overrides.minMatch;
+        }
+        if overrides.targetLength != 0 {
+            self.targetLength = overrides.targetLength;
+        }
+        if overrides.strategy != 0 {
+            self.strategy = overrides.strategy;
+        }
     }
 }
 
@@ -2623,7 +2622,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     if CCtxParams.ldmParams.enableLdm == ParamSwitch::Enable {
         cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG as core::ffi::c_uint;
     }
-    ZSTD_overrideCParams(&mut cParams, &CCtxParams.cParams);
+    cParams.override_cparams(&CCtxParams.cParams);
 
     // srcSizeHint == 0 means 0
     ZSTD_adjustCParams_internal(
@@ -7440,7 +7439,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     let mut cParams = if cctxParams.enableDedicatedDictSearch != 0 {
         let mut cParams =
             ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
-        ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
+        cParams.override_cparams(&cctxParams.cParams);
         cParams
     } else {
         ZSTD_getCParamsFromCCtxParams_internal(
