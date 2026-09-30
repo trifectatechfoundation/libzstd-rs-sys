@@ -300,6 +300,89 @@ pub struct ZSTD_CCtx_params_s {
     pub searchForExternalRepcodes: ParamSwitch,
 }
 
+impl ZSTD_CCtx_params {
+    /// Safe version of [`ZSTD_CCtxParams_init`]
+    pub fn new(compressionLevel: core::ffi::c_int) -> Self {
+        Self {
+            compressionLevel,
+            fParams: ZSTD_frameParameters {
+                contentSizeFlag: 1,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    /// Initializes `cctxParams` from `params` and `compressionLevel`.
+    ///
+    /// If params are derived from a compression level then that compression level,
+    /// otherwise [`ZSTD_NO_CLEVEL`].
+    pub fn new_internal(params: &ZSTD_parameters, compressionLevel: core::ffi::c_int) -> Self {
+        Self {
+            cParams: params.cParams,
+            fParams: params.fParams,
+            // Should not matter, as all cParams are presumed properly defined.
+            // But, set it for tracing anyway.
+            compressionLevel,
+            useRowMatchFinder: ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &params.cParams),
+            postBlockSplitter: ZSTD_resolveBlockSplitterMode(ParamSwitch::Auto, &params.cParams),
+            ldmParams: ldmParams_t {
+                enableLdm: ZSTD_resolveEnableLdm(ParamSwitch::Auto, &params.cParams),
+                ..Default::default()
+            },
+            validateSequences: ZSTD_resolveExternalSequenceValidation(0),
+            maxBlockSize: ZSTD_resolveMaxBlockSize(0),
+            searchForExternalRepcodes: ZSTD_resolveExternalRepcodeSearch(
+                ParamSwitch::Auto,
+                compressionLevel,
+            ),
+            ..Default::default()
+        }
+    }
+
+    /// Sets cctxParams' cParams and fParams from validated zstd params, but otherwise leaves them alone.
+    fn set_zstd_params(&mut self, params: &ZSTD_parameters) {
+        self.cParams = params.cParams;
+        self.fParams = params.fParams;
+        // Should not matter, as all cParams are presumed properly defined.
+        // But, set it for tracing anyway.
+        self.compressionLevel = ZSTD_NO_CLEVEL;
+    }
+
+    #[inline]
+    fn literals_compression_is_disabled(&self) -> bool {
+        match self.literalCompressionMode {
+            ParamSwitch::Enable => false,
+            ParamSwitch::Disable => true,
+            ParamSwitch::Auto => {
+                self.cParams.strategy == ZSTD_fast && self.cParams.targetLength > 0
+            }
+        }
+    }
+
+    /// Returns `true` if an external sequence producer is registered.
+    #[inline]
+    fn has_ext_seq_prod(&self) -> bool {
+        self.extSeqProdFunc.is_some()
+    }
+
+    /// Returns whether the target compressed block size param is being used.
+    ///
+    /// If used, compression will do best effort to make a compressed block size to be around
+    /// `targetCBlockSize`.
+    fn use_target_cblock_size(&self) -> bool {
+        self.targetCBlockSize != 0
+    }
+
+    /// Returns whether the block splitting param is being used.
+    ///
+    /// If used, compression will do best effort to split a block in order to improve compression ratio.
+    /// At the time this function is called, the parameter must be finalized.
+    fn block_splitter_enabled(&self) -> bool {
+        self.postBlockSplitter == ParamSwitch::Enable
+    }
+}
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_symbolEncodingTypeStats_t {
@@ -472,6 +555,21 @@ impl ZSTD_cParameter {
             Err(Error::parameter_outOfBound)
         }
     }
+
+    /// Returns true if parameter is authorized to be updated mid-stream
+    fn is_update_authorized(&self) -> bool {
+        matches!(
+            *self,
+            ZSTD_cParameter::ZSTD_c_compressionLevel
+                | ZSTD_cParameter::ZSTD_c_hashLog
+                | ZSTD_cParameter::ZSTD_c_chainLog
+                | ZSTD_cParameter::ZSTD_c_searchLog
+                | ZSTD_cParameter::ZSTD_c_minMatch
+                | ZSTD_cParameter::ZSTD_c_targetLength
+                | ZSTD_cParameter::ZSTD_c_strategy
+                | ZSTD_cParameter::ZSTD_c_blockSplitterLevel
+        )
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -543,17 +641,6 @@ unsafe fn ZSTD_rleCompressBlock(
     Ok(4)
 }
 
-#[inline]
-fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
-    match cctxParams.literalCompressionMode {
-        ParamSwitch::Enable => false,
-        ParamSwitch::Disable => true,
-        ParamSwitch::Auto => {
-            cctxParams.cParams.strategy == ZSTD_fast && cctxParams.cParams.targetLength > 0
-        }
-    }
-}
-
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
 /// progresses beyond window size.
 /// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
@@ -577,12 +664,6 @@ fn ZSTD_checkDictValidity(
         // FIXME: add log
         // *loadedDictEndPtr != 0;
     }
-}
-
-/// Returns `true` if an external sequence producer is registered.
-#[inline]
-fn ZSTD_hasExtSeqProd(params: &ZSTD_CCtx_params) -> bool {
-    params.extSeqProdFunc.is_some()
 }
 
 use libc::{ptrdiff_t, size_t};
@@ -1401,38 +1482,58 @@ fn ZSTD_resolveExternalRepcodeSearch(value: ParamSwitch, cLevel: core::ffi::c_in
     }
 }
 
-/// Returns 1 if compression parameters are such that CDict hashtable and chaintable indices are
-/// tagged. If so, the tags need to be removed in ZSTD_resetCCtx_byCopyingCDict.
-fn ZSTD_CDictIndicesAreTagged(cParams: &ZSTD_compressionParameters) -> bool {
-    cParams.strategy == ZSTD_fast || cParams.strategy == ZSTD_dfast
+impl ZSTD_compressionParameters {
+    /// Returns true if compression parameters are such that CDict hashtable and chaintable indices
+    /// are tagged. If so, the tags need to be removed in [`ZSTD_resetCCtx_byCopyingCDict`].
+    fn cdict_indices_are_tagged(&self) -> bool {
+        self.strategy == ZSTD_fast || self.strategy == ZSTD_dfast
+    }
+
+    fn supports_dedicated_dict_search(&self) -> bool {
+        (ZSTD_greedy..=ZSTD_lazy2).contains(&self.strategy)
+            && self.hashLog > self.chainLog
+            && self.chainLog <= 24
+    }
+
+    /// Reverses the adjustment applied to cparams when enabling dedicated dict
+    /// search. This is used to recover the params set to be used in the working
+    /// context. (Otherwise, those tables would also grow.)
+    fn revert_dedicated_dict_search(&mut self) {
+        if (ZSTD_greedy..=ZSTD_lazy2).contains(&self.strategy) {
+            self.hashLog = (self.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
+            if self.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
+                self.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
+            }
+        }
+    }
 }
 
-unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
+impl From<ZSTD_compressionParameters> for ZSTD_CCtx_params {
+    fn from(cParams: ZSTD_compressionParameters) -> Self {
+        // should not matter, as all cParams are presumed properly defined
+        let mut cctxParams = ZSTD_CCtx_params_s::new(ZSTD_CLEVEL_DEFAULT);
+        cctxParams.cParams = cParams;
 
-    // should not matter, as all cParams are presumed properly defined
-    ZSTD_CCtxParams_init(&mut cctxParams, ZSTD_CLEVEL_DEFAULT);
-    cctxParams.cParams = cParams;
+        // Adjust advanced params according to cParams
+        cctxParams.ldmParams.enableLdm =
+            ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
+        if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
+            ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
+        }
+        cctxParams.postBlockSplitter =
+            ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &cParams);
+        cctxParams.useRowMatchFinder =
+            ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
+        cctxParams.validateSequences =
+            ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
+        cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
+        cctxParams.searchForExternalRepcodes = ZSTD_resolveExternalRepcodeSearch(
+            cctxParams.searchForExternalRepcodes,
+            cctxParams.compressionLevel,
+        );
 
-    // Adjust advanced params according to cParams
-    cctxParams.ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
-    if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
+        cctxParams
     }
-    cctxParams.postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &cParams);
-    cctxParams.useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
-    cctxParams.validateSequences =
-        ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
-    cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
-    cctxParams.searchForExternalRepcodes = ZSTD_resolveExternalRepcodeSearch(
-        cctxParams.searchForExternalRepcodes,
-        cctxParams.compressionLevel,
-    );
-
-    cctxParams
 }
 
 unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
@@ -1477,41 +1578,12 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init(
     if cctxParams.is_null() {
         return Error::GENERIC.to_error_code();
     }
-    ptr::write_bytes(cctxParams as *mut u8, 0, size_of::<ZSTD_CCtx_params>());
-    (*cctxParams).compressionLevel = compressionLevel;
-    (*cctxParams).fParams.contentSizeFlag = 1;
+    *cctxParams = ZSTD_CCtx_params::new(compressionLevel);
 
     0
 }
 
 pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
-
-/// Initializes `cctxParams` from `params` and `compressionLevel`.
-/// If params are derived from a compression level then that compression
-/// level, otherwise ZSTD_NO_CLEVEL.
-fn ZSTD_CCtxParams_init_internal(
-    cctxParams: &mut ZSTD_CCtx_params,
-    params: &ZSTD_parameters,
-    compressionLevel: core::ffi::c_int,
-) {
-    *cctxParams = ZSTD_CCtx_params::default();
-    cctxParams.cParams = params.cParams;
-    cctxParams.fParams = params.fParams;
-    // Should not matter, as all cParams are presumed properly defined.
-    // But, set it for tracing anyway.
-    cctxParams.compressionLevel = compressionLevel;
-    cctxParams.useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &params.cParams);
-    cctxParams.postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &params.cParams);
-    cctxParams.ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &params.cParams);
-    cctxParams.validateSequences =
-        ZSTD_resolveExternalSequenceValidation(cctxParams.validateSequences);
-    cctxParams.maxBlockSize = ZSTD_resolveMaxBlockSize(cctxParams.maxBlockSize);
-    cctxParams.searchForExternalRepcodes =
-        ZSTD_resolveExternalRepcodeSearch(cctxParams.searchForExternalRepcodes, compressionLevel);
-}
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
@@ -1525,39 +1597,14 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_CCtxParams_init_internal(&mut *cctxParams, &params, ZSTD_NO_CLEVEL);
+    *cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
 
     0
-}
-
-/// Sets cctxParams' cParams and fParams from validated zstd params, but otherwise leaves them alone.
-fn ZSTD_CCtxParams_setZstdParams(cctxParams: &mut ZSTD_CCtx_params, params: &ZSTD_parameters) {
-    cctxParams.cParams = params.cParams;
-    cctxParams.fParams = params.fParams;
-    // Should not matter, as all cParams are presumed properly defined.
-    // But, set it for tracing anyway.
-    cctxParams.compressionLevel = ZSTD_NO_CLEVEL;
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
 pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
     ZSTD_bounds::from(param)
-}
-
-fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> bool {
-    match param {
-        ZSTD_cParameter::ZSTD_c_compressionLevel
-        | ZSTD_cParameter::ZSTD_c_hashLog
-        | ZSTD_cParameter::ZSTD_c_chainLog
-        | ZSTD_cParameter::ZSTD_c_searchLog
-        | ZSTD_cParameter::ZSTD_c_minMatch
-        | ZSTD_cParameter::ZSTD_c_targetLength
-        | ZSTD_cParameter::ZSTD_c_strategy => true,
-
-        _ if param == ZSTD_cParameter::ZSTD_c_blockSplitterLevel => true,
-
-        _ => false,
-    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParameter))]
@@ -1579,7 +1626,7 @@ impl ZSTD_CCtx {
         value: core::ffi::c_int,
     ) -> Result<size_t, Error> {
         if self.streamStage != StreamStage::Init {
-            if ZSTD_isUpdateAuthorized(param) {
+            if param.is_update_authorized() {
                 self.cParamsChanged = 1;
             } else {
                 return Err(Error::stage_wrong);
@@ -1638,6 +1685,65 @@ impl ZSTD_CCtx {
 
             _ => Err(Error::parameter_unsupported),
         }
+    }
+
+    /// Safe version of [`ZSTD_CCtx_setCParams`]
+    pub fn set_cparams(&mut self, cparams: ZSTD_compressionParameters) -> Result<(), Error> {
+        cparams.check_bounds()?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_windowLog,
+            cparams.windowLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_chainLog,
+            cparams.chainLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_hashLog,
+            cparams.hashLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_searchLog,
+            cparams.searchLog as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_minMatch,
+            cparams.minMatch as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_targetLength,
+            cparams.targetLength as core::ffi::c_int,
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_strategy,
+            cparams.strategy as core::ffi::c_int,
+        )?;
+        Ok(())
+    }
+
+    /// Safe version of [`ZSTD_CCtx_setFParams`]
+    pub fn set_fparams(&mut self, fparams: ZSTD_frameParameters) -> Result<(), Error> {
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_contentSizeFlag,
+            core::ffi::c_int::from(fparams.contentSizeFlag != 0),
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_checksumFlag,
+            core::ffi::c_int::from(fparams.checksumFlag != 0),
+        )?;
+        self.set_parameter(
+            ZSTD_cParameter::ZSTD_c_dictIDFlag,
+            core::ffi::c_int::from(fparams.noDictIDFlag == 0),
+        )?;
+        Ok(())
+    }
+
+    /// Safe version of [`ZSTD_CCtx_setParams`]
+    pub fn set_params(&mut self, params: ZSTD_parameters) -> Result<(), Error> {
+        params.cParams.check_bounds()?;
+        self.set_fparams(params.fParams)?;
+        self.set_cparams(params.cParams)?;
+        Ok(())
     }
 }
 
@@ -2101,67 +2207,6 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
         .unwrap_or_else(|e| e.to_error_code())
 }
 
-impl ZSTD_CCtx {
-    /// Safe version of [`ZSTD_CCtx_setCParams`]
-    pub fn set_cparams(&mut self, cparams: ZSTD_compressionParameters) -> Result<(), Error> {
-        cparams.check_bounds()?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_windowLog,
-            cparams.windowLog as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_chainLog,
-            cparams.chainLog as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_hashLog,
-            cparams.hashLog as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_searchLog,
-            cparams.searchLog as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_minMatch,
-            cparams.minMatch as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_targetLength,
-            cparams.targetLength as core::ffi::c_int,
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_strategy,
-            cparams.strategy as core::ffi::c_int,
-        )?;
-        Ok(())
-    }
-
-    /// Safe version of [`ZSTD_CCtx_setFParams`]
-    pub fn set_fparams(&mut self, fparams: ZSTD_frameParameters) -> Result<(), Error> {
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_contentSizeFlag,
-            core::ffi::c_int::from(fparams.contentSizeFlag != 0),
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_checksumFlag,
-            core::ffi::c_int::from(fparams.checksumFlag != 0),
-        )?;
-        self.set_parameter(
-            ZSTD_cParameter::ZSTD_c_dictIDFlag,
-            core::ffi::c_int::from(fparams.noDictIDFlag == 0),
-        )?;
-        Ok(())
-    }
-
-    /// Safe version of [`ZSTD_CCtx_setParams`]
-    pub fn set_params(&mut self, params: ZSTD_parameters) -> Result<(), Error> {
-        params.cParams.check_bounds()?;
-        self.set_fparams(params.fParams)?;
-        self.set_cparams(params.cParams)?;
-        Ok(())
-    }
-}
-
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize))]
 pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
     cctx: *mut ZSTD_CCtx,
@@ -2376,32 +2421,158 @@ impl ZSTD_compressionParameters {
         ZSTD_cParameter::ZSTD_c_strategy.check_bounds(self.strategy as core::ffi::c_int)?;
         Ok(())
     }
-}
 
-/// Make CParam values within valid range.
-fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_compressionParameters {
-    ZSTD_cParameter::ZSTD_c_windowLog
-        .clamp_bounds_unsigned(&mut cParams.windowLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_chainLog
-        .clamp_bounds_unsigned(&mut cParams.chainLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_hashLog
-        .clamp_bounds_unsigned(&mut cParams.hashLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_searchLog
-        .clamp_bounds_unsigned(&mut cParams.searchLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_minMatch
-        .clamp_bounds_unsigned(&mut cParams.minMatch)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_targetLength
-        .clamp_bounds_unsigned(&mut cParams.targetLength)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_strategy
-        .clamp_bounds_unsigned(&mut cParams.strategy)
-        .unwrap();
-    cParams
+    /// Clamp CParam values within valid range
+    pub fn clamp_bounds(&mut self) {
+        ZSTD_cParameter::ZSTD_c_windowLog
+            .clamp_bounds_unsigned(&mut self.windowLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_chainLog
+            .clamp_bounds_unsigned(&mut self.chainLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_hashLog
+            .clamp_bounds_unsigned(&mut self.hashLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_searchLog
+            .clamp_bounds_unsigned(&mut self.searchLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_minMatch
+            .clamp_bounds_unsigned(&mut self.minMatch)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_targetLength
+            .clamp_bounds_unsigned(&mut self.targetLength)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_strategy
+            .clamp_bounds_unsigned(&mut self.strategy)
+            .unwrap();
+    }
+
+    /// Optimize `cPar` for a specified input (`srcSize` and `dictSize`).
+    ///
+    /// Mostly downsize to reduce memory consumption and initialization latency.
+    /// - `srcSize` can be `ZSTD_CONTENTSIZE_UNKNOWN` when not known (`srcSize==0` means 0!)
+    /// - `mode` is the mode for parameter adjustment. See docs for [`CParamMode`].
+    ///
+    /// Condition: cPar is presumed validated (can be checked using [`ZSTD_checkCParams`]).
+    fn optimize(
+        mut self,
+        mut srcSize: core::ffi::c_ulonglong,
+        mut dictSize: size_t,
+        mode: CParamMode,
+        mut useRowMatchFinder: ParamSwitch,
+    ) -> Self {
+        let minSrcSize = 513; // (1<<9) + 1
+        let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
+
+        match mode {
+            CParamMode::CreateCDict => {
+                // Assume a small source size when creating a dictionary
+                // with an unknown source size.
+                if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
+                    srcSize = minSrcSize as core::ffi::c_ulonglong;
+                }
+            }
+            CParamMode::AttachDict => {
+                // Dictionary has its own dedicated parameters which have
+                // already been selected. We are selecting parameters
+                // for only the source.
+                dictSize = 0;
+            }
+            CParamMode::NoAttachDict | CParamMode::Unknown => {
+                // If we don't know the source size, don't make any
+                // assumptions about it. We will already have selected
+                // smaller parameters if a dictionary is in use.
+            }
+        }
+
+        // resize windowLog if input is small enough, to use less memory
+        if srcSize <= maxWindowResize && dictSize as u64 <= maxWindowResize {
+            let tSize = srcSize.wrapping_add(dictSize as core::ffi::c_ulonglong) as u32;
+            static hashSizeMin: u32 = (1 << ZSTD_HASHLOG_MIN) as u32;
+            let srcLog = if tSize < hashSizeMin {
+                ZSTD_HASHLOG_MIN as core::ffi::c_uint
+            } else {
+                (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
+            };
+            if self.windowLog > srcLog {
+                self.windowLog = srcLog;
+            }
+        }
+        if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
+            let dictAndWindowLog = ZSTD_dictAndWindowLog(self.windowLog, srcSize, dictSize as u64);
+            let cycleLog = ZSTD_cycleLog(self.chainLog, self.strategy);
+            if self.hashLog > dictAndWindowLog.wrapping_add(1) {
+                self.hashLog = dictAndWindowLog.wrapping_add(1);
+            }
+            if cycleLog > dictAndWindowLog {
+                self.chainLog =
+                    (self.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
+            }
+        }
+
+        if self.windowLog < ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint {
+            // minimum wlog required for valid frame header
+            self.windowLog = ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
+        }
+
+        // We can't use more than 32 bits of hash in total, so that means that we require:
+        // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
+        if mode == CParamMode::CreateCDict && self.cdict_indices_are_tagged() {
+            let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
+            if self.hashLog > maxShortCacheHashLog {
+                self.hashLog = maxShortCacheHashLog;
+            }
+            if self.chainLog > maxShortCacheHashLog {
+                self.chainLog = maxShortCacheHashLog;
+            }
+        }
+
+        // At this point, we aren't 100% sure if we are using the row match finder.
+        // Unless it is explicitly disabled, conservatively assume that it is enabled.
+        // In this case it will only be disabled for small sources, so shrinking the
+        // hash log a little bit shouldn't result in any ratio loss.
+        if useRowMatchFinder == ParamSwitch::Auto {
+            useRowMatchFinder = ParamSwitch::Enable;
+        }
+
+        // We can't hash more than 32-bits in total. So that means that we require:
+        // (hashLog - rowLog + 8) <= 32
+        if ZSTD_rowMatchFinderUsed(self.strategy, useRowMatchFinder) {
+            // Switch to 32-entry rows if searchLog is 5 (or more)
+            let rowLog = self.searchLog.clamp(4, 6);
+            let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
+            let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
+            if self.hashLog > maxHashLog {
+                self.hashLog = maxHashLog;
+            }
+        }
+
+        self
+    }
+
+    fn override_cparams(&mut self, overrides: &ZSTD_compressionParameters) {
+        if overrides.windowLog != 0 {
+            self.windowLog = overrides.windowLog;
+        }
+        if overrides.hashLog != 0 {
+            self.hashLog = overrides.hashLog;
+        }
+        if overrides.chainLog != 0 {
+            self.chainLog = overrides.chainLog;
+        }
+        if overrides.searchLog != 0 {
+            self.searchLog = overrides.searchLog;
+        }
+        if overrides.minMatch != 0 {
+            self.minMatch = overrides.minMatch;
+        }
+        if overrides.targetLength != 0 {
+            self.targetLength = overrides.targetLength;
+        }
+        if overrides.strategy != 0 {
+            self.strategy = overrides.strategy;
+        }
+    }
 }
 
 /// Condition for correct operation: hashLog > 1.
@@ -2441,154 +2612,18 @@ fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
     }
 }
 
-/// Optimize `cPar` for a specified input (`srcSize` and `dictSize`).
-/// Mostly downsize to reduce memory consumption and initialization latency.
-/// `srcSize` can be ZSTD_CONTENTSIZE_UNKNOWN when not known.
-/// `mode` is the mode for parameter adjustment. See docs for [`CParamMode`].
-///
-/// Note: `srcSize==0` means 0!
-///
-/// Condition: cPar is presumed validated (can be checked using ZSTD_checkCParams()).
-fn ZSTD_adjustCParams_internal(
-    mut cPar: ZSTD_compressionParameters,
-    mut srcSize: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
-    mode: CParamMode,
-    mut useRowMatchFinder: ParamSwitch,
-) -> ZSTD_compressionParameters {
-    let minSrcSize = 513; // (1<<9) + 1
-    let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
-
-    match mode {
-        CParamMode::CreateCDict => {
-            // Assume a small source size when creating a dictionary
-            // with an unknown source size.
-            if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
-                srcSize = minSrcSize as core::ffi::c_ulonglong;
-            }
-        }
-        CParamMode::AttachDict => {
-            // Dictionary has its own dedicated parameters which have
-            // already been selected. We are selecting parameters
-            // for only the source.
-            dictSize = 0;
-        }
-        CParamMode::NoAttachDict | CParamMode::Unknown => {
-            // If we don't know the source size, don't make any
-            // assumptions about it. We will already have selected
-            // smaller parameters if a dictionary is in use.
-        }
-    }
-
-    // resize windowLog if input is small enough, to use less memory
-    if srcSize <= maxWindowResize && dictSize as u64 <= maxWindowResize {
-        let tSize = srcSize.wrapping_add(dictSize as core::ffi::c_ulonglong) as u32;
-        static hashSizeMin: u32 = (1 << ZSTD_HASHLOG_MIN) as u32;
-        let srcLog = if tSize < hashSizeMin {
-            ZSTD_HASHLOG_MIN as core::ffi::c_uint
-        } else {
-            (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
-        };
-        if cPar.windowLog > srcLog {
-            cPar.windowLog = srcLog;
-        }
-    }
-    if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
-        let dictAndWindowLog = ZSTD_dictAndWindowLog(cPar.windowLog, srcSize, dictSize as u64);
-        let cycleLog = ZSTD_cycleLog(cPar.chainLog, cPar.strategy);
-        if cPar.hashLog > dictAndWindowLog.wrapping_add(1) {
-            cPar.hashLog = dictAndWindowLog.wrapping_add(1);
-        }
-        if cycleLog > dictAndWindowLog {
-            cPar.chainLog = (cPar.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
-        }
-    }
-
-    if cPar.windowLog < ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint {
-        // minimum wlog required for valid frame header
-        cPar.windowLog = ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
-    }
-
-    // We can't use more than 32 bits of hash in total, so that means that we require:
-    // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
-    if mode == CParamMode::CreateCDict && ZSTD_CDictIndicesAreTagged(&cPar) {
-        let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
-        if cPar.hashLog > maxShortCacheHashLog {
-            cPar.hashLog = maxShortCacheHashLog;
-        }
-        if cPar.chainLog > maxShortCacheHashLog {
-            cPar.chainLog = maxShortCacheHashLog;
-        }
-    }
-
-    // At this point, we aren't 100% sure if we are using the row match finder.
-    // Unless it is explicitly disabled, conservatively assume that it is enabled.
-    // In this case it will only be disabled for small sources, so shrinking the
-    // hash log a little bit shouldn't result in any ratio loss.
-    if useRowMatchFinder == ParamSwitch::Auto {
-        useRowMatchFinder = ParamSwitch::Enable;
-    }
-
-    // We can't hash more than 32-bits in total. So that means that we require:
-    // (hashLog - rowLog + 8) <= 32
-    if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) {
-        // Switch to 32-entry rows if searchLog is 5 (or more)
-        let rowLog = cPar.searchLog.clamp(4, 6);
-        let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
-        let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
-        if cPar.hashLog > maxHashLog {
-            cPar.hashLog = maxHashLog;
-        }
-    }
-
-    cPar
-}
-
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_adjustCParams))]
 pub extern "C" fn ZSTD_adjustCParams(
     mut cPar: ZSTD_compressionParameters,
     mut srcSize: core::ffi::c_ulonglong,
     dictSize: size_t,
 ) -> ZSTD_compressionParameters {
-    cPar = ZSTD_clampCParams(cPar);
+    cPar.clamp_bounds();
     if srcSize == 0 {
         srcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
 
-    ZSTD_adjustCParams_internal(
-        cPar,
-        srcSize,
-        dictSize,
-        CParamMode::Unknown,
-        ParamSwitch::Auto,
-    )
-}
-
-fn ZSTD_overrideCParams(
-    cParams: &mut ZSTD_compressionParameters,
-    overrides: &ZSTD_compressionParameters,
-) {
-    if overrides.windowLog != 0 {
-        cParams.windowLog = overrides.windowLog;
-    }
-    if overrides.hashLog != 0 {
-        cParams.hashLog = overrides.hashLog;
-    }
-    if overrides.chainLog != 0 {
-        cParams.chainLog = overrides.chainLog;
-    }
-    if overrides.searchLog != 0 {
-        cParams.searchLog = overrides.searchLog;
-    }
-    if overrides.minMatch != 0 {
-        cParams.minMatch = overrides.minMatch;
-    }
-    if overrides.targetLength != 0 {
-        cParams.targetLength = overrides.targetLength;
-    }
-    if overrides.strategy as u64 != 0 {
-        cParams.strategy = overrides.strategy;
-    }
+    cPar.optimize(srcSize, dictSize, CParamMode::Unknown, ParamSwitch::Auto)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCCtxParams))]
@@ -2609,30 +2644,18 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     dictSize: size_t,
     mode: CParamMode,
 ) -> ZSTD_compressionParameters {
-    if srcSizeHint as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-        && CCtxParams.srcSizeHint > 0
-    {
+    if srcSizeHint == ZSTD_CONTENTSIZE_UNKNOWN && CCtxParams.srcSizeHint > 0 {
         srcSizeHint = CCtxParams.srcSizeHint as u64;
     }
-    let mut cParams = ZSTD_getCParams_internal(
-        CCtxParams.compressionLevel,
-        srcSizeHint as core::ffi::c_ulonglong,
-        dictSize,
-        mode,
-    );
+    let mut cParams =
+        ZSTD_compressionParameters::new(CCtxParams.compressionLevel, srcSizeHint, dictSize, mode);
     if CCtxParams.ldmParams.enableLdm == ParamSwitch::Enable {
         cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG as core::ffi::c_uint;
     }
-    ZSTD_overrideCParams(&mut cParams, &CCtxParams.cParams);
+    cParams.override_cparams(&CCtxParams.cParams);
 
     // srcSizeHint == 0 means 0
-    ZSTD_adjustCParams_internal(
-        cParams,
-        srcSizeHint as core::ffi::c_ulonglong,
-        dictSize,
-        mode,
-        CCtxParams.useRowMatchFinder,
-    )
+    cParams.optimize(srcSizeHint, dictSize, mode, CCtxParams.useRowMatchFinder)
 }
 
 fn ZSTD_sizeof_matchState(
@@ -2809,7 +2832,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
         0,
         0,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(&*params),
+        (*params).has_ext_seq_prod(),
         (*params).maxBlockSize,
     )
 }
@@ -2818,7 +2841,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
     cParams: ZSTD_compressionParameters,
 ) -> size_t {
-    let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
+    let mut initialParams = ZSTD_CCtx_params::from(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) {
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         initialParams.useRowMatchFinder = ParamSwitch::Disable;
@@ -2842,8 +2865,12 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi:
     let mut largestSize = 0;
     for srcSizeHint in SRC_SIZE_TIERS {
         // Choose the set of cParams for a given level across all srcSizes that give the largest cctxSize
-        let cParams =
-            ZSTD_getCParams_internal(compressionLevel, srcSizeHint, 0, CParamMode::NoAttachDict);
+        let cParams = ZSTD_compressionParameters::new(
+            compressionLevel,
+            srcSizeHint,
+            0,
+            CParamMode::NoAttachDict,
+        );
         largestSize = ZSTD_estimateCCtxSize_usingCParams(cParams).max(largestSize);
     }
     largestSize
@@ -2899,7 +2926,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
         inBuffSize,
         outBuffSize,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(&*params),
+        (*params).has_ext_seq_prod(),
         (*params).maxBlockSize,
     )
 }
@@ -2908,7 +2935,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
     cParams: ZSTD_compressionParameters,
 ) -> size_t {
-    let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
+    let mut initialParams = ZSTD_CCtx_params::from(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) {
         // Pick bigger of not using and using row-based matchfinder for greedy and lazy strategies
         initialParams.useRowMatchFinder = ParamSwitch::Disable;
@@ -2922,7 +2949,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
 }
 
 unsafe fn ZSTD_estimateCStreamSize_internal(compressionLevel: core::ffi::c_int) -> size_t {
-    let cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_compressionParameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         0,
@@ -3202,7 +3229,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     let maxNbSeq = ZSTD_maxNbSeq(
         blockSize,
         params.cParams.minMatch,
-        ZSTD_hasExtSeqProd(params),
+        params.has_ext_seq_prod(),
     );
     let buffOutSize =
         if zbuff == BufferedPolicy::Buffered && params.outBufferMode == ZSTD_bm_buffered {
@@ -3234,7 +3261,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         buffInSize,
         buffOutSize,
         pledgedSrcSize,
-        ZSTD_hasExtSeqProd(params),
+        params.has_ext_seq_prod(),
         params.maxBlockSize,
     );
 
@@ -3344,7 +3371,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     }
 
     // reserve space for block-level external sequences
-    if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+    if (*zc).appliedParams.has_ext_seq_prod() {
         let maxNbExternalSeq = ZSTD_sequenceBound(blockSize);
         (*zc).extSeqBufCapacity = maxNbExternalSeq;
         (*zc).extSeqBuf = ZSTD_cwksp_reserve_aligned64(
@@ -3434,12 +3461,11 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     let windowLog = params.cParams.windowLog;
 
     if (*cdict).matchState.dedicatedDictSearch != 0 {
-        ZSTD_dedicatedDictSearch_revertCParams(&mut adjusted_cdict_cParams);
+        adjusted_cdict_cParams.revert_dedicated_dict_search();
     }
 
-    params.cParams = ZSTD_adjustCParams_internal(
-        adjusted_cdict_cParams,
-        pledgedSrcSize as core::ffi::c_ulonglong,
+    params.cParams = adjusted_cdict_cParams.optimize(
+        pledgedSrcSize,
         (*cdict).dictContentSize,
         CParamMode::AttachDict,
         params.useRowMatchFinder,
@@ -3492,7 +3518,7 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
     tableSize: size_t,
     cParams: &ZSTD_compressionParameters,
 ) {
-    if ZSTD_CDictIndicesAreTagged(cParams) {
+    if cParams.cdict_indices_are_tagged() {
         // Remove tags from the CDict table if they are present.
         // See docs on "short cache" in zstd_compress_internal.h for context.
         for i in 0..tableSize {
@@ -3834,20 +3860,6 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
     longOffsets
 }
 
-/// Returns whether the target compressed block size param is being used.
-/// If used, compression will do best effort to make a compressed block size to be around
-/// targetCBlockSize.
-fn ZSTD_useTargetCBlockSize(cctxParams: &ZSTD_CCtx_params) -> bool {
-    cctxParams.targetCBlockSize != 0
-}
-
-/// Returns whether the block splitting param is being used.
-/// If used, compression will do best effort to split a block in order to improve compression ratio.
-/// At the time this function is called, the parameter must be finalized.
-fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
-    cctxParams.postBlockSplitter == ParamSwitch::Enable
-}
-
 /// Returns a ZSTD_symbolEncodingTypeStats_t, or a zstd error.
 /// Modifies `nextEntropy` to have the appropriate values as a side effect.
 /// nbSeq must be greater than 0.
@@ -4088,7 +4100,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         &prevEntropy.huf,
         &mut nextEntropy.huf,
         cctxParams.cParams.strategy,
-        ZSTD_literalsCompressionIsDisabled(cctxParams),
+        cctxParams.literals_compression_is_disabled(),
         suspectUncompressible,
         bmi2,
     )?;
@@ -4490,7 +4502,7 @@ unsafe fn ZSTD_buildSeqStore(
             (*(*zc).blockState.prevCBlock).rep[i as usize];
     }
     let lastLLSize: size_t = if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
-        if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+        if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
 
@@ -4505,7 +4517,7 @@ unsafe fn ZSTD_buildSeqStore(
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore_t::default();
-        if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+        if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
         ldmSeqStore.seq = (*zc).ldmSequences;
@@ -4528,7 +4540,7 @@ unsafe fn ZSTD_buildSeqStore(
             src,
             srcSize,
         )
-    } else if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+    } else if (*zc).appliedParams.has_ext_seq_prod() {
         let windowSize = 1 << (*zc).appliedParams.cParams.windowLog;
 
         let nbExternalSeqs = ((*zc).appliedParams.extSeqProdFunc).unwrap_unchecked()(
@@ -5066,7 +5078,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         &prevEntropy.huf,
         &mut nextEntropy.huf,
         &mut (*entropyMetadata).hufMetadata,
-        ZSTD_literalsCompressionIsDisabled(cctxParams),
+        cctxParams.literals_compression_is_disabled(),
         workspace,
         wkspSize,
         hufFlags,
@@ -6043,7 +6055,7 @@ unsafe fn ZSTD_compress_frameChunk(
         }
 
         let mut cSize: size_t;
-        if ZSTD_useTargetCBlockSize(&(*cctx).appliedParams) {
+        if (*cctx).appliedParams.use_target_cblock_size() {
             cSize = ZSTD_compressBlock_targetCBlockSize(
                 cctx,
                 op as *mut core::ffi::c_void,
@@ -6052,7 +6064,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 blockSize,
                 lastBlock,
             )?;
-        } else if ZSTD_blockSplitterEnabled(&(*cctx).appliedParams) {
+        } else if (*cctx).appliedParams.block_splitter_enabled() {
             cSize = ZSTD_compressBlock_splitBlock(
                 cctx,
                 op as *mut core::ffi::c_void,
@@ -6435,8 +6447,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     // Ensure large dictionaries can't cause index overflow
     let mut maxDictSize = ZSTD_CURRENT_MAX.wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
 
-    let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
-    if CDictTaggedIndices && tfp == TableFillPurpose::ForCDict {
+    if params.cParams.cdict_indices_are_tagged() && tfp == TableFillPurpose::ForCDict {
         let shortCacheMaxDictSize = (1usize << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
             .wrapping_sub(ZSTD_WINDOW_START_INDEX as usize);
         maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
@@ -6907,8 +6918,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     params: ZSTD_parameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, ZSTD_NO_CLEVEL);
+    let cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
     ZSTD_compressBegin_advanced_internal(
         cctx,
         dict,
@@ -6927,16 +6937,13 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-
-    let params = ZSTD_getParams_internal(
+    let params = ZSTD_parameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
         CParamMode::NoAttachDict,
     );
-    ZSTD_CCtxParams_init_internal(
-        &mut cctxParams,
+    let cctxParams = ZSTD_CCtx_params_s::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7116,7 +7123,7 @@ pub unsafe extern "C" fn ZSTD_compress_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_CCtxParams_init_internal(&mut (*cctx).simpleApiParams, &params, ZSTD_NO_CLEVEL);
+    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
     ZSTD_compress_advanced_internal(
         cctx,
         dst,
@@ -7166,14 +7173,13 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let params = ZSTD_getParams_internal(
+    let params = ZSTD_parameters::new(
         compressionLevel,
         srcSize as core::ffi::c_ulonglong,
         if !dict.is_null() { dictSize } else { 0 },
         CParamMode::NoAttachDict,
     );
-    ZSTD_CCtxParams_init_internal(
-        &mut (*cctx).simpleApiParams,
+    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7271,7 +7277,7 @@ pub extern "C" fn ZSTD_estimateCDictSize(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_compressionParameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -7412,8 +7418,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     cParams: ZSTD_compressionParameters,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init(&mut cctxParams, 0);
+    let mut cctxParams = ZSTD_CCtx_params_s::new(0);
     cctxParams.cParams = cParams;
     cctxParams.customMem = customMem;
     ZSTD_createCDict_advanced2(
@@ -7439,8 +7444,8 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
 
     let mut cParams = if cctxParams.enableDedicatedDictSearch != 0 {
         let mut cParams =
-            ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
-        ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
+            ZSTD_compressionParameters::new_for_dds(cctxParams.compressionLevel, dictSize);
+        cParams.override_cparams(&cctxParams.cParams);
         cParams
     } else {
         ZSTD_getCParamsFromCCtxParams_internal(
@@ -7451,7 +7456,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         )
     };
 
-    if !ZSTD_dedicatedDictSearch_isSupported(&cParams) {
+    if !cParams.supports_dedicated_dict_search() {
         // Fall back to non-DDSS params
         cctxParams.enableDedicatedDictSearch = 0;
         cParams = ZSTD_getCParamsFromCCtxParams_internal(
@@ -7499,7 +7504,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_compressionParameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -7531,7 +7536,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_compressionParameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -7631,8 +7636,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         return core::ptr::null();
     }
 
-    let mut params = ZSTD_CCtx_params_s::default();
-    ZSTD_CCtxParams_init(&mut params, 0);
+    let mut params = ZSTD_CCtx_params_s::new(0);
     params.cParams = cParams;
     params.useRowMatchFinder = useRowMatchFinder;
     (*cdict).useRowMatchFinder = useRowMatchFinder;
@@ -7682,7 +7686,6 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let mut cctxParams = ZSTD_CCtx_params_s::default();
     if cdict.is_null() {
         return Error::dictionary_wrong.to_error_code();
     }
@@ -7707,7 +7710,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         },
         fParams,
     };
-    ZSTD_CCtxParams_init_internal(&mut cctxParams, &params, (*cdict).compressionLevel);
+    let mut cctxParams = ZSTD_CCtx_params_s::new_internal(&params, (*cdict).compressionLevel);
 
     // Increase window log to fit the entire dictionary and source if the
     // source size is known. Limit the increase to 19, which is the
@@ -8018,7 +8021,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     if ERR_isError(err_code_1) {
         return err_code_1;
     }
-    ZSTD_CCtxParams_setZstdParams(&mut (*zcs).requestedParams, &params);
+    (*zcs).requestedParams.set_zstd_params(&params);
     let err_code_2 = ZSTD_CCtx_loadDictionary(zcs, dict, dictSize);
     if ERR_isError(err_code_2) {
         return err_code_2;
@@ -8519,7 +8522,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         params.compressionLevel,
     );
 
-    if ZSTD_hasExtSeqProd(&params) && params.nbWorkers >= 1 {
+    if params.has_ext_seq_prod() && params.nbWorkers >= 1 {
         return Error::parameter_combination_unsupported.to_error_code();
     }
 
@@ -8922,7 +8925,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 seqPos.posInSrc,
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize as size_t,
-                ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
+                (*cctx).appliedParams.has_ext_seq_prod(),
             )?;
         }
         if idx.wrapping_sub(seqPos.idx) as size_t >= (*cctx).seqStore.maxNbSeq {
@@ -9108,7 +9111,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
                 seqPos.posInSrc,
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize,
-                ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
+                (*cctx).appliedParams.has_ext_seq_prod(),
             )?;
         }
 
@@ -9962,25 +9965,6 @@ pub const extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
 
-fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) -> bool {
-    cParams.strategy >= ZSTD_greedy
-        && cParams.strategy <= ZSTD_lazy2
-        && cParams.hashLog > cParams.chainLog
-        && cParams.chainLog <= 24
-}
-
-/// Reverses the adjustment applied to cparams when enabling dedicated dict
-/// search. This is used to recover the params set to be used in the working
-/// context. (Otherwise, those tables would also grow.)
-fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParameters) {
-    if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog = (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
-        if cParams.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
-            cParams.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
-        }
-    }
-}
-
 fn ZSTD_getCParamRowSize(srcSizeHint: u64, mut dictSize: size_t, mode: CParamMode) -> u64 {
     if mode == CParamMode::AttachDict {
         dictSize = 0;
@@ -10011,7 +9995,7 @@ pub extern "C" fn ZSTD_getCParams(
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
+    ZSTD_compressionParameters::new(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
 
 /// Same idea as ZSTD_getCParams().
@@ -10029,7 +10013,7 @@ pub extern "C" fn ZSTD_getParams(
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
-    ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
+    ZSTD_parameters::new(compressionLevel, srcSizeHint, dictSize, CParamMode::Unknown)
 }
 
 pub const ZSTD_MAX_CLEVEL: core::ffi::c_int = 22;
@@ -11061,75 +11045,75 @@ static ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     ],
 ];
 
-fn ZSTD_dedicatedDictSearch_getCParams(
-    compressionLevel: core::ffi::c_int,
-    dictSize: size_t,
-) -> ZSTD_compressionParameters {
-    let mut cParams =
-        ZSTD_getCParams_internal(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
-    if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
-    }
-    cParams
-}
+impl ZSTD_compressionParameters {
+    /// Get `ZSTD_compressionParameters` for a selected compression level, srcSize and dictSize.
+    ///
+    /// - `srcSizeHint == 0` means 0, use ZSTD_CONTENTSIZE_UNKNOWN for unknown
+    /// - `dictSize == 0` does mean unknown or unused
+    /// - `mode` controls how we treat the `dictSize`, see docs for [`CParamMode`]
+    fn new(
+        compressionLevel: core::ffi::c_int,
+        srcSizeHint: core::ffi::c_ulonglong,
+        dictSize: size_t,
+        mode: CParamMode,
+    ) -> Self {
+        let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
+        let tableID = u32::from(rSize <= (256 * (1 << 10)) as u64)
+            + u32::from(rSize <= (128 * (1 << 10)) as u64)
+            + u32::from(rSize <= (16 * (1 << 10)) as u64);
 
-/// # Returns
-///
-/// `ZSTD_compressionParameters` structure for a selected compression level, srcSize and dictSize.
-///
-/// # Note
-///
-/// srcSizeHint 0 means 0, use ZSTD_CONTENTSIZE_UNKNOWN for unknown.
-/// Use dictSize == 0 for unknown or unused.
-/// `mode` controls how we treat the `dictSize`. See docs for [`CParamMode`].
-fn ZSTD_getCParams_internal(
-    compressionLevel: core::ffi::c_int,
-    srcSizeHint: core::ffi::c_ulonglong,
-    dictSize: size_t,
-    mode: CParamMode,
-) -> ZSTD_compressionParameters {
-    let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
-    let tableID = u32::from(rSize <= (256 * (1 << 10)) as u64)
-        + u32::from(rSize <= (128 * (1 << 10)) as u64)
-        + u32::from(rSize <= (16 * (1 << 10)) as u64);
+        let row = if compressionLevel == 0 {
+            ZSTD_CLEVEL_DEFAULT
+        } else {
+            compressionLevel.clamp(0, ZSTD_MAX_CLEVEL) // entry 0 is baseline for fast mode
+        };
 
-    let row = if compressionLevel == 0 {
-        ZSTD_CLEVEL_DEFAULT
-    } else {
-        compressionLevel.clamp(0, ZSTD_MAX_CLEVEL) // entry 0 is baseline for fast mode
-    };
+        let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
+        // acceleration factor
+        if compressionLevel < 0 {
+            let clampedCompressionLevel = ZSTD_minCLevel().max(compressionLevel);
+            cp.targetLength = -clampedCompressionLevel as core::ffi::c_uint;
+        }
 
-    let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
-    // acceleration factor
-    if compressionLevel < 0 {
-        let clampedCompressionLevel = ZSTD_minCLevel().max(compressionLevel);
-        cp.targetLength = -clampedCompressionLevel as core::ffi::c_uint;
+        // refine parameters based on srcSize & dictSize
+        cp.optimize(srcSizeHint, dictSize, mode, ParamSwitch::Auto)
     }
 
-    // refine parameters based on srcSize & dictSize
-    ZSTD_adjustCParams_internal(cp, srcSizeHint, dictSize, mode, ParamSwitch::Auto)
+    /// Same as [`Self::new`], but initialized for dedicated dict search.
+    fn new_for_dds(
+        compressionLevel: core::ffi::c_int,
+        dictSize: size_t,
+    ) -> ZSTD_compressionParameters {
+        let mut cParams =
+            ZSTD_compressionParameters::new(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
+        if (ZSTD_greedy..=ZSTD_lazy2).contains(&cParams.strategy) {
+            cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
+        }
+        cParams
+    }
 }
 
-/// Same idea as ZSTD_getCParams().
-/// Fields of `ZSTD_frameParameters` are set to default values.
-///
-/// # Returns
-///
-/// a `ZSTD_parameters` structure (instead of `ZSTD_compressionParameters`).
-fn ZSTD_getParams_internal(
-    compressionLevel: core::ffi::c_int,
-    srcSizeHint: core::ffi::c_ulonglong,
-    dictSize: size_t,
-    mode: CParamMode,
-) -> ZSTD_parameters {
-    let cParams = ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, mode);
-    ZSTD_parameters {
-        cParams,
-        fParams: ZSTD_frameParameters {
-            contentSizeFlag: 1,
-            checksumFlag: 0,
-            noDictIDFlag: 0,
-        },
+impl ZSTD_parameters {
+    /// Get `ZSTD_parameters` for a selected compression level, srcSize and dictSize.
+    /// Fields of `ZSTD_frameParameters` are set to default values.
+    ///
+    /// - `srcSizeHint == 0` means 0, use ZSTD_CONTENTSIZE_UNKNOWN for unknown
+    /// - `dictSize == 0` does mean unknown or unused
+    /// - `mode` controls how we treat the `dictSize`, see docs for [`CParamMode`]
+    fn new(
+        compressionLevel: core::ffi::c_int,
+        srcSizeHint: core::ffi::c_ulonglong,
+        dictSize: size_t,
+        mode: CParamMode,
+    ) -> Self {
+        ZSTD_parameters {
+            cParams: ZSTD_compressionParameters::new(compressionLevel, srcSizeHint, dictSize, mode),
+            fParams: ZSTD_frameParameters {
+                contentSizeFlag: 1,
+                checksumFlag: 0,
+                noDictIDFlag: 0,
+            },
+        }
     }
 }
 
