@@ -1548,19 +1548,19 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
     ZSTD_bounds::from(param)
 }
 
-fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> bool {
-    match param {
-        ZSTD_cParameter::ZSTD_c_compressionLevel
-        | ZSTD_cParameter::ZSTD_c_hashLog
-        | ZSTD_cParameter::ZSTD_c_chainLog
-        | ZSTD_cParameter::ZSTD_c_searchLog
-        | ZSTD_cParameter::ZSTD_c_minMatch
-        | ZSTD_cParameter::ZSTD_c_targetLength
-        | ZSTD_cParameter::ZSTD_c_strategy => true,
-
-        _ if param == ZSTD_cParameter::ZSTD_c_blockSplitterLevel => true,
-
-        _ => false,
+impl ZSTD_cParameter {
+    fn is_update_authorized(&self) -> bool {
+        matches!(
+            *self,
+            ZSTD_cParameter::ZSTD_c_compressionLevel
+                | ZSTD_cParameter::ZSTD_c_hashLog
+                | ZSTD_cParameter::ZSTD_c_chainLog
+                | ZSTD_cParameter::ZSTD_c_searchLog
+                | ZSTD_cParameter::ZSTD_c_minMatch
+                | ZSTD_cParameter::ZSTD_c_targetLength
+                | ZSTD_cParameter::ZSTD_c_strategy
+                | ZSTD_cParameter::ZSTD_c_blockSplitterLevel
+        )
     }
 }
 
@@ -1583,7 +1583,7 @@ impl ZSTD_CCtx {
         value: core::ffi::c_int,
     ) -> Result<size_t, Error> {
         if self.streamStage != StreamStage::Init {
-            if ZSTD_isUpdateAuthorized(param) {
+            if param.is_update_authorized() {
                 self.cParamsChanged = 1;
             } else {
                 return Err(Error::stage_wrong);
