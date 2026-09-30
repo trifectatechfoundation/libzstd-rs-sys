@@ -554,6 +554,12 @@ impl ZSTD_CCtx_params {
             }
         }
     }
+
+    /// Returns `true` if an external sequence producer is registered.
+    #[inline]
+    fn has_ext_seq_prod(&self) -> bool {
+        self.extSeqProdFunc.is_some()
+    }
 }
 
 /// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
@@ -579,12 +585,6 @@ fn ZSTD_checkDictValidity(
         // FIXME: add log
         // *loadedDictEndPtr != 0;
     }
-}
-
-/// Returns `true` if an external sequence producer is registered.
-#[inline]
-fn ZSTD_hasExtSeqProd(params: &ZSTD_CCtx_params) -> bool {
-    params.extSeqProdFunc.is_some()
 }
 
 use libc::{ptrdiff_t, size_t};
@@ -2809,7 +2809,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
         0,
         0,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(&*params),
+        (*params).has_ext_seq_prod(),
         (*params).maxBlockSize,
     )
 }
@@ -2903,7 +2903,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
         inBuffSize,
         outBuffSize,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        ZSTD_hasExtSeqProd(&*params),
+        (*params).has_ext_seq_prod(),
         (*params).maxBlockSize,
     )
 }
@@ -3206,7 +3206,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     let maxNbSeq = ZSTD_maxNbSeq(
         blockSize,
         params.cParams.minMatch,
-        ZSTD_hasExtSeqProd(params),
+        params.has_ext_seq_prod(),
     );
     let buffOutSize =
         if zbuff == BufferedPolicy::Buffered && params.outBufferMode == ZSTD_bm_buffered {
@@ -3238,7 +3238,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         buffInSize,
         buffOutSize,
         pledgedSrcSize,
-        ZSTD_hasExtSeqProd(params),
+        params.has_ext_seq_prod(),
         params.maxBlockSize,
     );
 
@@ -3348,7 +3348,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     }
 
     // reserve space for block-level external sequences
-    if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+    if (*zc).appliedParams.has_ext_seq_prod() {
         let maxNbExternalSeq = ZSTD_sequenceBound(blockSize);
         (*zc).extSeqBufCapacity = maxNbExternalSeq;
         (*zc).extSeqBuf = ZSTD_cwksp_reserve_aligned64(
@@ -4493,7 +4493,7 @@ unsafe fn ZSTD_buildSeqStore(
             (*(*zc).blockState.prevCBlock).rep[i as usize];
     }
     let lastLLSize: size_t = if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
-        if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+        if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
 
@@ -4508,7 +4508,7 @@ unsafe fn ZSTD_buildSeqStore(
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore_t::default();
-        if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+        if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
         ldmSeqStore.seq = (*zc).ldmSequences;
@@ -4531,7 +4531,7 @@ unsafe fn ZSTD_buildSeqStore(
             src,
             srcSize,
         )
-    } else if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
+    } else if (*zc).appliedParams.has_ext_seq_prod() {
         let windowSize = 1 << (*zc).appliedParams.cParams.windowLog;
 
         let nbExternalSeqs = ((*zc).appliedParams.extSeqProdFunc).unwrap_unchecked()(
@@ -8513,7 +8513,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         params.compressionLevel,
     );
 
-    if ZSTD_hasExtSeqProd(&params) && params.nbWorkers >= 1 {
+    if params.has_ext_seq_prod() && params.nbWorkers >= 1 {
         return Error::parameter_combination_unsupported.to_error_code();
     }
 
@@ -8916,7 +8916,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 seqPos.posInSrc,
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize as size_t,
-                ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
+                (*cctx).appliedParams.has_ext_seq_prod(),
             )?;
         }
         if idx.wrapping_sub(seqPos.idx) as size_t >= (*cctx).seqStore.maxNbSeq {
@@ -9102,7 +9102,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
                 seqPos.posInSrc,
                 (*cctx).appliedParams.cParams.windowLog,
                 dictSize,
-                ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
+                (*cctx).appliedParams.has_ext_seq_prod(),
             )?;
         }
 
