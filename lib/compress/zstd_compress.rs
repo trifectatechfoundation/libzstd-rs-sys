@@ -3837,11 +3837,14 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
     longOffsets
 }
 
-/// Returns whether the target compressed block size param is being used.
-/// If used, compression will do best effort to make a compressed block size to be around
-/// targetCBlockSize.
-fn ZSTD_useTargetCBlockSize(cctxParams: &ZSTD_CCtx_params) -> bool {
-    cctxParams.targetCBlockSize != 0
+impl ZSTD_CCtx_params {
+    /// Returns whether the target compressed block size param is being used.
+    ///
+    /// If used, compression will do best effort to make a compressed block size to be around
+    /// `targetCBlockSize`.
+    fn use_target_cblock_size(&self) -> bool {
+        self.targetCBlockSize != 0
+    }
 }
 
 /// Returns whether the block splitting param is being used.
@@ -6046,7 +6049,7 @@ unsafe fn ZSTD_compress_frameChunk(
         }
 
         let mut cSize: size_t;
-        if ZSTD_useTargetCBlockSize(&(*cctx).appliedParams) {
+        if (*cctx).appliedParams.use_target_cblock_size() {
             cSize = ZSTD_compressBlock_targetCBlockSize(
                 cctx,
                 op as *mut core::ffi::c_void,
