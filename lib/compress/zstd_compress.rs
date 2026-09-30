@@ -543,13 +543,15 @@ unsafe fn ZSTD_rleCompressBlock(
     Ok(4)
 }
 
-#[inline]
-fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
-    match cctxParams.literalCompressionMode {
-        ParamSwitch::Enable => false,
-        ParamSwitch::Disable => true,
-        ParamSwitch::Auto => {
-            cctxParams.cParams.strategy == ZSTD_fast && cctxParams.cParams.targetLength > 0
+impl ZSTD_CCtx_params {
+    #[inline]
+    fn literals_compression_is_disabled(&self) -> bool {
+        match self.literalCompressionMode {
+            ParamSwitch::Enable => false,
+            ParamSwitch::Disable => true,
+            ParamSwitch::Auto => {
+                self.cParams.strategy == ZSTD_fast && self.cParams.targetLength > 0
+            }
         }
     }
 }
@@ -4089,7 +4091,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         &prevEntropy.huf,
         &mut nextEntropy.huf,
         cctxParams.cParams.strategy,
-        ZSTD_literalsCompressionIsDisabled(cctxParams),
+        cctxParams.literals_compression_is_disabled(),
         suspectUncompressible,
         bmi2,
     )?;
@@ -5067,7 +5069,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         &prevEntropy.huf,
         &mut nextEntropy.huf,
         &mut (*entropyMetadata).hufMetadata,
-        ZSTD_literalsCompressionIsDisabled(cctxParams),
+        cctxParams.literals_compression_is_disabled(),
         workspace,
         wkspSize,
         hufFlags,
