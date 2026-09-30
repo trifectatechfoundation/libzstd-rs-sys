@@ -2440,107 +2440,109 @@ fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
     }
 }
 
-/// Optimize `cPar` for a specified input (`srcSize` and `dictSize`).
-/// Mostly downsize to reduce memory consumption and initialization latency.
-/// `srcSize` can be ZSTD_CONTENTSIZE_UNKNOWN when not known.
-/// `mode` is the mode for parameter adjustment. See docs for [`CParamMode`].
-///
-/// Note: `srcSize==0` means 0!
-///
-/// Condition: cPar is presumed validated (can be checked using ZSTD_checkCParams()).
-fn ZSTD_adjustCParams_internal(
-    mut cPar: ZSTD_compressionParameters,
-    mut srcSize: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
-    mode: CParamMode,
-    mut useRowMatchFinder: ParamSwitch,
-) -> ZSTD_compressionParameters {
-    let minSrcSize = 513; // (1<<9) + 1
-    let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
+impl ZSTD_compressionParameters {
+    /// Optimize `cPar` for a specified input (`srcSize` and `dictSize`).
+    ///
+    /// Mostly downsize to reduce memory consumption and initialization latency.
+    /// - `srcSize` can be `ZSTD_CONTENTSIZE_UNKNOWN` when not known (`srcSize==0` means 0!)
+    /// - `mode` is the mode for parameter adjustment. See docs for [`CParamMode`].
+    ///
+    /// Condition: cPar is presumed validated (can be checked using [`ZSTD_checkCParams`]).
+    fn optimize(
+        mut self,
+        mut srcSize: core::ffi::c_ulonglong,
+        mut dictSize: size_t,
+        mode: CParamMode,
+        mut useRowMatchFinder: ParamSwitch,
+    ) -> Self {
+        let minSrcSize = 513; // (1<<9) + 1
+        let maxWindowResize = (1 << (ZSTD_WINDOWLOG_MAX - 1)) as u64;
 
-    match mode {
-        CParamMode::CreateCDict => {
-            // Assume a small source size when creating a dictionary
-            // with an unknown source size.
-            if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
-                srcSize = minSrcSize as core::ffi::c_ulonglong;
+        match mode {
+            CParamMode::CreateCDict => {
+                // Assume a small source size when creating a dictionary
+                // with an unknown source size.
+                if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
+                    srcSize = minSrcSize as core::ffi::c_ulonglong;
+                }
+            }
+            CParamMode::AttachDict => {
+                // Dictionary has its own dedicated parameters which have
+                // already been selected. We are selecting parameters
+                // for only the source.
+                dictSize = 0;
+            }
+            CParamMode::NoAttachDict | CParamMode::Unknown => {
+                // If we don't know the source size, don't make any
+                // assumptions about it. We will already have selected
+                // smaller parameters if a dictionary is in use.
             }
         }
-        CParamMode::AttachDict => {
-            // Dictionary has its own dedicated parameters which have
-            // already been selected. We are selecting parameters
-            // for only the source.
-            dictSize = 0;
-        }
-        CParamMode::NoAttachDict | CParamMode::Unknown => {
-            // If we don't know the source size, don't make any
-            // assumptions about it. We will already have selected
-            // smaller parameters if a dictionary is in use.
-        }
-    }
 
-    // resize windowLog if input is small enough, to use less memory
-    if srcSize <= maxWindowResize && dictSize as u64 <= maxWindowResize {
-        let tSize = srcSize.wrapping_add(dictSize as core::ffi::c_ulonglong) as u32;
-        static hashSizeMin: u32 = (1 << ZSTD_HASHLOG_MIN) as u32;
-        let srcLog = if tSize < hashSizeMin {
-            ZSTD_HASHLOG_MIN as core::ffi::c_uint
-        } else {
-            (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
-        };
-        if cPar.windowLog > srcLog {
-            cPar.windowLog = srcLog;
+        // resize windowLog if input is small enough, to use less memory
+        if srcSize <= maxWindowResize && dictSize as u64 <= maxWindowResize {
+            let tSize = srcSize.wrapping_add(dictSize as core::ffi::c_ulonglong) as u32;
+            static hashSizeMin: u32 = (1 << ZSTD_HASHLOG_MIN) as u32;
+            let srcLog = if tSize < hashSizeMin {
+                ZSTD_HASHLOG_MIN as core::ffi::c_uint
+            } else {
+                (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
+            };
+            if self.windowLog > srcLog {
+                self.windowLog = srcLog;
+            }
         }
-    }
-    if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
-        let dictAndWindowLog = ZSTD_dictAndWindowLog(cPar.windowLog, srcSize, dictSize as u64);
-        let cycleLog = ZSTD_cycleLog(cPar.chainLog, cPar.strategy);
-        if cPar.hashLog > dictAndWindowLog.wrapping_add(1) {
-            cPar.hashLog = dictAndWindowLog.wrapping_add(1);
+        if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
+            let dictAndWindowLog = ZSTD_dictAndWindowLog(self.windowLog, srcSize, dictSize as u64);
+            let cycleLog = ZSTD_cycleLog(self.chainLog, self.strategy);
+            if self.hashLog > dictAndWindowLog.wrapping_add(1) {
+                self.hashLog = dictAndWindowLog.wrapping_add(1);
+            }
+            if cycleLog > dictAndWindowLog {
+                self.chainLog =
+                    (self.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
+            }
         }
-        if cycleLog > dictAndWindowLog {
-            cPar.chainLog = (cPar.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
-        }
-    }
 
-    if cPar.windowLog < ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint {
-        // minimum wlog required for valid frame header
-        cPar.windowLog = ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
-    }
-
-    // We can't use more than 32 bits of hash in total, so that means that we require:
-    // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
-    if mode == CParamMode::CreateCDict && ZSTD_CDictIndicesAreTagged(&cPar) {
-        let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
-        if cPar.hashLog > maxShortCacheHashLog {
-            cPar.hashLog = maxShortCacheHashLog;
+        if self.windowLog < ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint {
+            // minimum wlog required for valid frame header
+            self.windowLog = ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
         }
-        if cPar.chainLog > maxShortCacheHashLog {
-            cPar.chainLog = maxShortCacheHashLog;
+
+        // We can't use more than 32 bits of hash in total, so that means that we require:
+        // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
+        if mode == CParamMode::CreateCDict && ZSTD_CDictIndicesAreTagged(&self) {
+            let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
+            if self.hashLog > maxShortCacheHashLog {
+                self.hashLog = maxShortCacheHashLog;
+            }
+            if self.chainLog > maxShortCacheHashLog {
+                self.chainLog = maxShortCacheHashLog;
+            }
         }
-    }
 
-    // At this point, we aren't 100% sure if we are using the row match finder.
-    // Unless it is explicitly disabled, conservatively assume that it is enabled.
-    // In this case it will only be disabled for small sources, so shrinking the
-    // hash log a little bit shouldn't result in any ratio loss.
-    if useRowMatchFinder == ParamSwitch::Auto {
-        useRowMatchFinder = ParamSwitch::Enable;
-    }
-
-    // We can't hash more than 32-bits in total. So that means that we require:
-    // (hashLog - rowLog + 8) <= 32
-    if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) {
-        // Switch to 32-entry rows if searchLog is 5 (or more)
-        let rowLog = cPar.searchLog.clamp(4, 6);
-        let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
-        let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
-        if cPar.hashLog > maxHashLog {
-            cPar.hashLog = maxHashLog;
+        // At this point, we aren't 100% sure if we are using the row match finder.
+        // Unless it is explicitly disabled, conservatively assume that it is enabled.
+        // In this case it will only be disabled for small sources, so shrinking the
+        // hash log a little bit shouldn't result in any ratio loss.
+        if useRowMatchFinder == ParamSwitch::Auto {
+            useRowMatchFinder = ParamSwitch::Enable;
         }
-    }
 
-    cPar
+        // We can't hash more than 32-bits in total. So that means that we require:
+        // (hashLog - rowLog + 8) <= 32
+        if ZSTD_rowMatchFinderUsed(self.strategy, useRowMatchFinder) {
+            // Switch to 32-entry rows if searchLog is 5 (or more)
+            let rowLog = self.searchLog.clamp(4, 6);
+            let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
+            let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
+            if self.hashLog > maxHashLog {
+                self.hashLog = maxHashLog;
+            }
+        }
+
+        self
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_adjustCParams))]
@@ -2554,13 +2556,7 @@ pub extern "C" fn ZSTD_adjustCParams(
         srcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
 
-    ZSTD_adjustCParams_internal(
-        cPar,
-        srcSize,
-        dictSize,
-        CParamMode::Unknown,
-        ParamSwitch::Auto,
-    )
+    cPar.optimize(srcSize, dictSize, CParamMode::Unknown, ParamSwitch::Auto)
 }
 
 impl ZSTD_compressionParameters {
@@ -2607,9 +2603,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     dictSize: size_t,
     mode: CParamMode,
 ) -> ZSTD_compressionParameters {
-    if srcSizeHint as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-        && CCtxParams.srcSizeHint > 0
-    {
+    if srcSizeHint == ZSTD_CONTENTSIZE_UNKNOWN && CCtxParams.srcSizeHint > 0 {
         srcSizeHint = CCtxParams.srcSizeHint as u64;
     }
     let mut cParams = ZSTD_getCParams_internal(
@@ -2624,13 +2618,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     cParams.override_cparams(&CCtxParams.cParams);
 
     // srcSizeHint == 0 means 0
-    ZSTD_adjustCParams_internal(
-        cParams,
-        srcSizeHint as core::ffi::c_ulonglong,
-        dictSize,
-        mode,
-        CCtxParams.useRowMatchFinder,
-    )
+    cParams.optimize(srcSizeHint, dictSize, mode, CCtxParams.useRowMatchFinder)
 }
 
 fn ZSTD_sizeof_matchState(
@@ -3435,9 +3423,8 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         ZSTD_dedicatedDictSearch_revertCParams(&mut adjusted_cdict_cParams);
     }
 
-    params.cParams = ZSTD_adjustCParams_internal(
-        adjusted_cdict_cParams,
-        pledgedSrcSize as core::ffi::c_ulonglong,
+    params.cParams = adjusted_cdict_cParams.optimize(
+        pledgedSrcSize,
         (*cdict).dictContentSize,
         CParamMode::AttachDict,
         params.useRowMatchFinder,
@@ -11105,7 +11092,7 @@ fn ZSTD_getCParams_internal(
     }
 
     // refine parameters based on srcSize & dictSize
-    ZSTD_adjustCParams_internal(cp, srcSizeHint, dictSize, mode, ParamSwitch::Auto)
+    cp.optimize(srcSizeHint, dictSize, mode, ParamSwitch::Auto)
 }
 
 /// Same idea as ZSTD_getCParams().
