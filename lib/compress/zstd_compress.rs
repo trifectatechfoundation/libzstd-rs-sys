@@ -7439,7 +7439,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
 
     let mut cParams = if cctxParams.enableDedicatedDictSearch != 0 {
         let mut cParams =
-            ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
+            ZSTD_compressionParameters::new_for_dds(cctxParams.compressionLevel, dictSize);
         cParams.override_cparams(&cctxParams.cParams);
         cParams
     } else {
@@ -11060,18 +11060,6 @@ static ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     ],
 ];
 
-fn ZSTD_dedicatedDictSearch_getCParams(
-    compressionLevel: core::ffi::c_int,
-    dictSize: size_t,
-) -> ZSTD_compressionParameters {
-    let mut cParams =
-        ZSTD_compressionParameters::new(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
-    if let 3..=5 = cParams.strategy as core::ffi::c_uint {
-        cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
-    }
-    cParams
-}
-
 impl ZSTD_compressionParameters {
     /// Get `ZSTD_compressionParameters` for a selected compression level, srcSize and dictSize.
     ///
@@ -11104,6 +11092,19 @@ impl ZSTD_compressionParameters {
 
         // refine parameters based on srcSize & dictSize
         cp.optimize(srcSizeHint, dictSize, mode, ParamSwitch::Auto)
+    }
+
+    /// Same as [`Self::new`], but initialized for dedicated dict search.
+    fn new_for_dds(
+        compressionLevel: core::ffi::c_int,
+        dictSize: size_t,
+    ) -> ZSTD_compressionParameters {
+        let mut cParams =
+            ZSTD_compressionParameters::new(compressionLevel, 0, dictSize, CParamMode::CreateCDict);
+        if (ZSTD_greedy..=ZSTD_lazy2).contains(&cParams.strategy) {
+            cParams.hashLog = (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG);
+        }
+        cParams
     }
 }
 
