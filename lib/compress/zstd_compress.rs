@@ -7445,7 +7445,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         )
     };
 
-    if !ZSTD_dedicatedDictSearch_isSupported(&cParams) {
+    if !cParams.supports_dedicated_dict_search() {
         // Fall back to non-DDSS params
         cctxParams.enableDedicatedDictSearch = 0;
         cParams = ZSTD_getCParamsFromCCtxParams_internal(
@@ -9954,11 +9954,12 @@ pub const extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
 
-fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) -> bool {
-    cParams.strategy >= ZSTD_greedy
-        && cParams.strategy <= ZSTD_lazy2
-        && cParams.hashLog > cParams.chainLog
-        && cParams.chainLog <= 24
+impl ZSTD_compressionParameters {
+    fn supports_dedicated_dict_search(&self) -> bool {
+        (ZSTD_greedy..=ZSTD_lazy2).contains(&self.strategy)
+            && self.hashLog > self.chainLog
+            && self.chainLog <= 24
+    }
 }
 
 /// Reverses the adjustment applied to cparams when enabling dedicated dict
