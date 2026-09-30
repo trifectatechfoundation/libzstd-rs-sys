@@ -2376,32 +2376,31 @@ impl ZSTD_compressionParameters {
         ZSTD_cParameter::ZSTD_c_strategy.check_bounds(self.strategy as core::ffi::c_int)?;
         Ok(())
     }
-}
 
-/// Make CParam values within valid range.
-fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_compressionParameters {
-    ZSTD_cParameter::ZSTD_c_windowLog
-        .clamp_bounds_unsigned(&mut cParams.windowLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_chainLog
-        .clamp_bounds_unsigned(&mut cParams.chainLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_hashLog
-        .clamp_bounds_unsigned(&mut cParams.hashLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_searchLog
-        .clamp_bounds_unsigned(&mut cParams.searchLog)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_minMatch
-        .clamp_bounds_unsigned(&mut cParams.minMatch)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_targetLength
-        .clamp_bounds_unsigned(&mut cParams.targetLength)
-        .unwrap();
-    ZSTD_cParameter::ZSTD_c_strategy
-        .clamp_bounds_unsigned(&mut cParams.strategy)
-        .unwrap();
-    cParams
+    /// Clamp CParam values within valid range
+    pub fn clamp_bounds(&mut self) {
+        ZSTD_cParameter::ZSTD_c_windowLog
+            .clamp_bounds_unsigned(&mut self.windowLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_chainLog
+            .clamp_bounds_unsigned(&mut self.chainLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_hashLog
+            .clamp_bounds_unsigned(&mut self.hashLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_searchLog
+            .clamp_bounds_unsigned(&mut self.searchLog)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_minMatch
+            .clamp_bounds_unsigned(&mut self.minMatch)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_targetLength
+            .clamp_bounds_unsigned(&mut self.targetLength)
+            .unwrap();
+        ZSTD_cParameter::ZSTD_c_strategy
+            .clamp_bounds_unsigned(&mut self.strategy)
+            .unwrap();
+    }
 }
 
 /// Condition for correct operation: hashLog > 1.
@@ -2550,7 +2549,7 @@ pub extern "C" fn ZSTD_adjustCParams(
     mut srcSize: core::ffi::c_ulonglong,
     dictSize: size_t,
 ) -> ZSTD_compressionParameters {
-    cPar = ZSTD_clampCParams(cPar);
+    cPar.clamp_bounds();
     if srcSize == 0 {
         srcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
