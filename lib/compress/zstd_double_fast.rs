@@ -181,9 +181,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     ];
 
     // init
-    ip = ip.offset(isize::from(
-        ip.offset_from(prefixLowest) as core::ffi::c_long == 0,
-    ));
+    ip = ip.add(usize::from(ip == prefixLowest));
     let current = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let windowLow = ZSTD_getLowestPrefixIndex(ms, current, cParams.windowLog);
     let maxRep = current.wrapping_sub(windowLow);
@@ -265,7 +263,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             }
                         {
                             mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
-                            offset = ip.offset_from(matchl0) as core::ffi::c_long as u32;
+                            offset = ip.offset_from_unsigned(matchl0) as u32;
                             while (ip > anchor) & (matchl0 > prefixLowest)
                                 && *ip.sub(1) as core::ffi::c_int
                                     == *matchl0.sub(1) as core::ffi::c_int
@@ -327,7 +325,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                         if current_block_83 == 6142208486753608565 {
                             // short match found: let's check for a longer one
                             mLength = (ZSTD_count(ip.add(4), matchs0.add(4), iend)).wrapping_add(4);
-                            offset = ip.offset_from(matchs0) as core::ffi::c_long as u32;
+                            offset = ip.offset_from_unsigned(matchs0) as u32;
 
                             // check long match at +1 position
                             if idxl1 > prefixLowestIndex
@@ -340,7 +338,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                                     // use the long match instead
                                     ip = ip1;
                                     mLength = l1len;
-                                    offset = ip.offset_from(matchl1) as core::ffi::c_long as u32;
+                                    offset = ip.offset_from_unsigned(matchl1) as u32;
                                     matchs0 = matchl1;
                                 }
                             }
