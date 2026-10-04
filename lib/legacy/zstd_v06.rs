@@ -1308,10 +1308,7 @@ unsafe fn HUFv06_fillDTableX4(
         let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut sortedRank: u32 = 0;
-            let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
-            if minWeight < 1 {
-                minWeight = 1;
-            }
+            let minWeight = Ord::max(nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int, 1);
             sortedRank = *rankStart.offset(minWeight as isize);
             HUFv06_fillDTableX4Level2(
                 DTable.offset(start as isize),
@@ -1458,9 +1455,7 @@ unsafe fn HUFv06_decodeLastSymbolX4(
         BITv06_skipBits(DStream, (*dt.add(val)).nbBits as u32);
     } else if (*DStream).bitsConsumed < size_t::BITS {
         BITv06_skipBits(DStream, (*dt.add(val)).nbBits as u32);
-        if (*DStream).bitsConsumed > size_t::BITS {
-            (*DStream).bitsConsumed = size_t::BITS;
-        }
+        (*DStream).bitsConsumed = Ord::min((*DStream).bitsConsumed, size_t::BITS);
     }
     1
 }
