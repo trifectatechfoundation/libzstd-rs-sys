@@ -119,7 +119,8 @@ fuzz_target!(|data: &[u8]| {
 
     assert_eq!(rs_err, c_err);
 
-    if rs_err.is_ok() {
-        assert_eq!(rs_out, c_out);
+    // Bytes past the decompressed size are scratch space, their contents are unspecified.
+    if let Ok(n) = rs_err {
+        assert_eq!(rs_out.get(..n), c_out.get(..n));
     }
 });
