@@ -5292,7 +5292,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         seqStore.ofCode,
         seqStore.llCode,
         seqStore.mlCode,
-        (seqStore.sequences).offset_from(seqStore.sequencesStart) as core::ffi::c_long as size_t,
+        (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart),
         &(*(*zc).blockState.nextCBlock).entropy,
         entropyMetadata,
         (*zc).tmpWorkspace,
