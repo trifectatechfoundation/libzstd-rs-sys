@@ -14,9 +14,9 @@ use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
 use crate::lib::compress::zstd_compress::{
     SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBegin_usingCDict_deprecated,
-    ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCCtx,
-    ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
-    ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
+    ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCDict_advanced,
+    ZSTD_freeCCtxContent, ZSTD_freeCDict, ZSTD_getParams, ZSTD_initCCtx, ZSTD_loadCEntropy,
+    ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
 };
 use crate::lib::dictBuilder::divsufsort::divsufsort;
 use crate::lib::dictBuilder::fastcover::ZDICT_optimizeTrainFromBuffer_fastCover;
@@ -30,13 +30,12 @@ use crate::lib::zstd::{
     ZSTD_CLEVEL_DEFAULT, ZSTD_MAGIC_DICTIONARY,
 };
 
-#[derive(Clone)]
 #[repr(C)]
 struct EStats_ress_t {
     /// dictionary
     dict: *mut ZSTD_CDict,
     /// working context
-    zc: *mut ZSTD_CCtx,
+    zc: Box<ZSTD_CCtx>,
     /// must be [`ZSTD_BLOCKSIZE_MAX`] allocated
     workPlace: Box<[MaybeUninit<u8>]>,
 }
@@ -626,7 +625,7 @@ unsafe fn ZDICT_countEStats(
 ) {
     let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
     let srcSize = Ord::min(src.len(), blockSizeMax);
-    let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
+    let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc.as_mut(), esr.dict);
     if ERR_isError(errorCode) {
         if notificationLevel >= 1 {
             eprintln!("warning : ZSTD_compressBegin_usingCDict failed");
@@ -634,7 +633,7 @@ unsafe fn ZDICT_countEStats(
         return;
     }
     let cSize = ZSTD_compressBlock_deprecated(
-        esr.zc,
+        esr.zc.as_mut(),
         esr.workPlace.as_mut_ptr().cast(),
         ZSTD_BLOCKSIZE_MAX as size_t,
         src.as_ptr().cast::<core::ffi::c_void>(),
@@ -652,35 +651,35 @@ unsafe fn ZDICT_countEStats(
         return;
     }
 
-    let seqStorePtr = ZSTD_getSeqStore(esr.zc);
+    let seqStore = &esr.zc.seqStore;
 
     // literals stats
-    let mut bytePtr = (*seqStorePtr).litStart as *const u8;
-    while bytePtr < (*seqStorePtr).lit as *const u8 {
+    let mut bytePtr = seqStore.litStart as *const u8;
+    while bytePtr < seqStore.lit as *const u8 {
         countLit[usize::from(*bytePtr)] += 1;
         bytePtr = bytePtr.add(1);
     }
 
     // seqStats
-    let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as usize;
-    ZSTD_seqToCodes(seqStorePtr);
+    let nbSeq = seqStore.sequences.offset_from(seqStore.sequencesStart) as usize;
+    ZSTD_seqToCodes(seqStore);
 
-    let codePtr: *const u8 = (*seqStorePtr).ofCode;
+    let codePtr: *const u8 = seqStore.ofCode;
     for u in 0..nbSeq {
         offsetcodeCount[*codePtr.add(u) as usize] += 1;
     }
-    let codePtr: *const u8 = (*seqStorePtr).mlCode;
+    let codePtr: *const u8 = seqStore.mlCode;
     for u in 0..nbSeq {
         matchlengthCount[*codePtr.add(u) as usize] += 1;
     }
-    let codePtr: *const u8 = (*seqStorePtr).llCode;
+    let codePtr: *const u8 = seqStore.llCode;
     for u in 0..nbSeq {
         litlengthCount[*codePtr.add(u) as usize] += 1;
     }
 
     if nbSeq >= 2 {
         // rep offsets
-        let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
+        let seq: *const SeqDef = seqStore.sequencesStart;
         let mut offset1 = (*seq).offBase.wrapping_sub(ZSTD_REP_NUM) as usize;
         let mut offset2 = (*seq.add(1)).offBase.wrapping_sub(ZSTD_REP_NUM) as usize;
         if offset1 >= MAXREPOFFSET {
@@ -729,9 +728,12 @@ unsafe fn ZDICT_analyzeEntropy(
     dictBufferSize: size_t,
     notificationLevel: core::ffi::c_uint,
 ) -> Result<size_t, Error> {
+    let mut cctx = Box::new_uninit();
+    ZSTD_initCCtx(cctx.as_mut_ptr(), ZSTD_customMem::default());
+
     let mut esr = EStats_ress_t {
         dict: core::ptr::null_mut(),
-        zc: core::ptr::null_mut(),
+        zc: cctx.assume_init(),
         workPlace: Box::default(),
     };
 
@@ -748,7 +750,7 @@ unsafe fn ZDICT_analyzeEntropy(
     );
 
     ZSTD_freeCDict(esr.dict);
-    ZSTD_freeCCtx(esr.zc);
+    ZSTD_freeCCtxContent(esr.zc.as_mut());
 
     eSize
 }
@@ -809,9 +811,9 @@ unsafe fn analyze_entropy_internal(
         params.cParams,
         ZSTD_customMem::default(),
     );
-    esr.zc = ZSTD_createCCtx();
+
     esr.workPlace = Box::new_uninit_slice(ZSTD_BLOCKSIZE_MAX as size_t);
-    if (esr.dict).is_null() || (esr.zc).is_null() {
+    if (esr.dict).is_null() {
         if notificationLevel >= 1 {
             eprintln!("Not enough memory");
         }

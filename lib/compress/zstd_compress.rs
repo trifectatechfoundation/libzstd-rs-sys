@@ -27,7 +27,7 @@ pub struct ZSTD_CCtx_s {
     pub(super) seqCollector: SeqCollector,
     pub(super) isFirstBlock: core::ffi::c_int,
     pub(super) initialized: core::ffi::c_int,
-    pub(super) seqStore: SeqStore_t,
+    pub(crate) seqStore: SeqStore_t,
     pub(super) ldmState: ldmState_t,
     pub(super) ldmSequences: *mut rawSeq,
     pub(super) maxNbLdmSequences: size_t,
@@ -1217,7 +1217,7 @@ pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
     ZSTD_createCCtx_advanced(ZSTD_customMem::default())
 }
 
-unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
+pub(crate) unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, size_of::<ZSTD_CCtx>());
     (*cctx).customMem = memManager;
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
@@ -1321,7 +1321,7 @@ unsafe fn ZSTD_sizeof_localDict(dict: ZSTD_localDict) -> size_t {
     bufferSize.wrapping_add(cdictSize)
 }
 
-unsafe fn ZSTD_freeCCtxContent(cctx: *mut ZSTD_CCtx) {
+pub(crate) unsafe fn ZSTD_freeCCtxContent(cctx: *mut ZSTD_CCtx) {
     ZSTD_clearAllDicts(cctx);
     ZSTDMT_freeCCtx((*cctx).mtctx);
     (*cctx).mtctx = core::ptr::null_mut();
@@ -1377,8 +1377,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_CStream(zcs: *const ZSTD_CStream) -> size_t
     ZSTD_sizeof_CCtx(zcs)
 }
 
-/// private API call, for dictBuilder only
-pub unsafe fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
+unsafe fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
     &(*ctx).seqStore
 }
 
