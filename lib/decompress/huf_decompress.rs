@@ -1612,12 +1612,12 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
     debug_assert_eq!(ilowest, args.ilowest);
     debug_assert_eq!(ilowest.add(6), args.iend[0]);
 
-    let segmentSize = dst.capacity().div_ceil(4) as isize;
+    let segmentSize = dst.capacity().div_ceil(4);
     let mut segmentEnd = dst.as_mut_ptr();
 
     for (i, op) in args.op.iter().copied().enumerate() {
-        if segmentSize <= oend.offset_from(segmentEnd) {
-            segmentEnd = segmentEnd.offset(segmentSize);
+        if segmentSize <= oend.offset_from_unsigned(segmentEnd) {
+            segmentEnd = segmentEnd.add(segmentSize);
         } else {
             segmentEnd = oend;
         }
