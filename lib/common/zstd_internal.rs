@@ -128,7 +128,7 @@ pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
     // be located within the dst buffer. In circumstances where the op "catches up" to where the
     // literal buffer is, there can be partial overlaps in this call on the final
     // copy if the literal is being shifted by less than 16 bytes.
-    crate::lib::polyfill::cfg_select!(
+    crate::lib::polyfill::cfg_select! {
         target_arch = "x86_64" => {
             #[repr(C)]
             struct V {
@@ -143,7 +143,7 @@ pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
         _ => {
             core::ptr::copy(src, dst, 16);
         }
-    );
+    };
 }
 
 pub(crate) const WILDCOPY_OVERLENGTH: usize = 32;
