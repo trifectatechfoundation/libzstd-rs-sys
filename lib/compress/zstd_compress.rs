@@ -5366,7 +5366,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
     if endIdx
         != originalSeqStore
             .sequences
-            .offset_from(originalSeqStore.sequencesStart) as size_t
+            .offset_from_unsigned(originalSeqStore.sequencesStart)
     {
         let literalsBytes = ZSTD_countSeqStoreLiteralsBytes(resultSeqStore);
         resultSeqStore.lit = (resultSeqStore.litStart).add(literalsBytes);
