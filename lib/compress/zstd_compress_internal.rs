@@ -971,12 +971,8 @@ pub(crate) fn ZSTD_window_enforceMaxDist(
     //   so it can be directly compared against blockEndIdx.
     if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
         let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
-        if window.lowLimit < newLowLimit {
-            window.lowLimit = newLowLimit;
-        }
-        if window.dictLimit < window.lowLimit {
-            window.dictLimit = window.lowLimit;
-        }
+        window.lowLimit = Ord::max(window.lowLimit, newLowLimit);
+        window.dictLimit = Ord::max(window.dictLimit, window.lowLimit);
         // On reaching window size, dictionaries are invalidated
         *loadedDictEndPtr = 0;
         if let Some(dictMatchStatePtr) = dictMatchStatePtr {
