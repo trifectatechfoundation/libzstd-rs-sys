@@ -558,9 +558,8 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let dictEnd = (*dms).window.nextSrc;
     let dictIndexDelta =
         prefixStartIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
-    let dictAndPrefixLength = dictEnd
-        .offset(istart.offset_from(prefixStart) as core::ffi::c_long as isize)
-        .offset_from(dictStart) as core::ffi::c_long as u32;
+    let dictAndPrefixLength =
+        istart.offset_from_unsigned(prefixStart) + dictEnd.offset_from_unsigned(dictStart);
     let dictHBits =
         ((*dictCParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
 
@@ -689,7 +688,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
 
                 if ZSTD_match4Found_cmov(ip0, match_0, matchIndex, prefixStartIndex) {
                     // found a regular match of size >= 4
-                    let offset_0 = ip0.offset_from(match_0) as core::ffi::c_long as u32;
+                    let offset_0 = ip0.offset_from_unsigned(match_0) as u32;
                     mLength = (ZSTD_count(ip0.add(4), match_0.add(4), iend)).wrapping_add(4);
                     while (ip0 > anchor) & (match_0 > prefixStart)
                         && *ip0.sub(1) as core::ffi::c_int == *match_0.sub(1) as core::ffi::c_int
