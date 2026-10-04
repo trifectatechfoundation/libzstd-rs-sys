@@ -387,7 +387,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
             // Compute the offset code.
             match0 = base.wrapping_offset(matchIdx as isize);
             rep_offset2 = rep_offset1;
-            rep_offset1 = ip0.offset_from(match0) as core::ffi::c_long as u32;
+            rep_offset1 = ip0.offset_from_unsigned(match0) as u32;
             offcode = rep_offset1.wrapping_add(ZSTD_REP_NUM);
             mLength = 4;
 
