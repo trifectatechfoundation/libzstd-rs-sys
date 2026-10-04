@@ -659,7 +659,9 @@ unsafe fn ZDICT_countEStats(
     }
 
     // seqStats
-    let nbSeq = seqStore.sequences.offset_from(seqStore.sequencesStart) as usize;
+    let nbSeq = seqStore
+        .sequences
+        .offset_from_unsigned(seqStore.sequencesStart);
     ZSTD_seqToCodes(seqStore);
 
     let codePtr: *const u8 = seqStore.ofCode;
