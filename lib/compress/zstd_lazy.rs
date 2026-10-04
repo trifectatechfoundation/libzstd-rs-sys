@@ -1687,9 +1687,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
     } else {
         0
     };
-    let dictAndPrefixLength = (ip.offset_from(prefixLowest) as core::ffi::c_long
-        + dictEnd.offset_from(dictLowest) as core::ffi::c_long)
-        as u32;
+    let dictAndPrefixLength =
+        ip.offset_from_unsigned(prefixLowest) + dictEnd.offset_from_unsigned(dictLowest);
 
     ip = ip.add(usize::from(dictAndPrefixLength == 0));
     if dictMode == DictMode::NoDict {
@@ -1708,8 +1707,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
     if isDxS {
         // dictMatchState repCode checks don't currently handle repCode == 0 disabling.
-        assert!(offset_1 <= dictAndPrefixLength);
-        assert!(offset_2 <= dictAndPrefixLength);
+        assert!(offset_1 as usize <= dictAndPrefixLength);
+        assert!(offset_2 as usize <= dictAndPrefixLength);
     }
 
     // Reset the lazy skipping state
