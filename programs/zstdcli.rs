@@ -1932,9 +1932,7 @@ unsafe fn main_0(
                                     let mut fastLevel: u32 = 0;
                                     argument = argument.offset(1);
                                     fastLevel = readU32FromChar(&mut argument);
-                                    if fastLevel > maxFast {
-                                        fastLevel = maxFast;
-                                    }
+                                    fastLevel = Ord::min(fastLevel, maxFast);
                                     if fastLevel != 0 {
                                         cLevel = -(fastLevel as core::ffi::c_int);
                                         dictCLevel = cLevel;
@@ -2277,15 +2275,9 @@ unsafe fn main_0(
                     cLevelLast = 0;
                     cLevel = cLevelLast;
                 }
-                if cLevel > ZSTD_maxCLevel() {
-                    cLevel = ZSTD_maxCLevel();
-                }
-                if cLevelLast > ZSTD_maxCLevel() {
-                    cLevelLast = ZSTD_maxCLevel();
-                }
-                if cLevelLast < cLevel {
-                    cLevelLast = cLevel;
-                }
+                cLevel = Ord::min(cLevel, ZSTD_maxCLevel());
+                cLevelLast = Ord::min(cLevelLast, ZSTD_maxCLevel());
+                cLevelLast = Ord::max(cLevelLast, cLevel);
                 if g_displayLevel >= 3 {
                     fprintf(stderr, c"Benchmarking ".as_ptr());
                 }
@@ -2574,12 +2566,8 @@ unsafe fn main_0(
                         FIO_setSrcSizeHint(prefs, srcSizeHint);
                         FIO_setLiteralCompressionMode(prefs, literalCompressionMode);
                         FIO_setSparseWrite(prefs, 0);
-                        if adaptMin > cLevel {
-                            cLevel = adaptMin;
-                        }
-                        if adaptMax < cLevel {
-                            cLevel = adaptMax;
-                        }
+                        cLevel = Ord::max(cLevel, adaptMin);
+                        cLevel = Ord::min(cLevel, adaptMax);
                         let strategyBounds =
                             ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_strategy);
                         assert_eq!(

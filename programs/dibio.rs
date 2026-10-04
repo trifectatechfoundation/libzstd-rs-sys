@@ -218,9 +218,7 @@ unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
     let mut testmem = core::ptr::null_mut::<core::ffi::c_void>();
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
     requiredMem = requiredMem.wrapping_add(step as core::ffi::c_ulonglong);
-    if requiredMem > g_maxMemory as core::ffi::c_ulonglong {
-        requiredMem = g_maxMemory as core::ffi::c_ulonglong;
-    }
+    requiredMem = Ord::min(requiredMem, g_maxMemory as core::ffi::c_ulonglong);
     while testmem.is_null() {
         testmem = malloc(requiredMem as size_t);
         requiredMem = requiredMem.wrapping_sub(step as core::ffi::c_ulonglong);
