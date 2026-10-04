@@ -858,8 +858,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if rawSeqStore.size == rawSeqStore.capacity {
                         return Err(Error::dstSize_tooSmall);
                     }
-                    (*seq).litLength = split.sub(backwardMatchLength).offset_from(anchor)
-                        as core::ffi::c_long as u32;
+                    (*seq).litLength =
+                        split.sub(backwardMatchLength).offset_from_unsigned(anchor) as u32;
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
                     rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
