@@ -508,9 +508,7 @@ fn ZDICT_trainBuffer_legacy(
         eprintln!("\r{:70 }\r", ""); // clean display line
     }
 
-    if minRatio < MINRATIO {
-        minRatio = MINRATIO;
-    }
+    minRatio = Ord::max(minRatio, MINRATIO);
 
     // limit sample set size (divsufsort limitation)
     if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
