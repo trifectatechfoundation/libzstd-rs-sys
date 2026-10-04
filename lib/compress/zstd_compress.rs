@@ -957,19 +957,8 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
     let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
     let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, CwkspAllocPhase::AlignedInitOnce);
     if !ptr.is_null() && ptr < ws.initOnceStart {
-        ptr::write_bytes(
-            ptr as *mut u8,
-            0,
-            (if ((ws.initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
-                as size_t)
-                < alignedBytes
-            {
-                (ws.initOnceStart as *mut u8).offset_from(ptr as *mut u8) as core::ffi::c_long
-                    as size_t
-            } else {
-                alignedBytes
-            }) as libc::size_t,
-        );
+        let initBytes = (ws.initOnceStart as *mut u8).offset_from_unsigned(ptr as *mut u8);
+        ptr::write_bytes(ptr as *mut u8, 0, initBytes.min(alignedBytes));
         ws.initOnceStart = ptr;
     }
     ptr
