@@ -115,7 +115,9 @@ pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
     if bitC.ptr >= bitC.endPtr {
         return 0;
     }
-    (bitC.ptr.offset_from(bitC.startPtr) as usize).wrapping_add((bitC.bitPos > 0) as usize)
+    bitC.ptr
+        .offset_from_unsigned(bitC.startPtr)
+        .wrapping_add((bitC.bitPos > 0) as usize)
 }
 
 /// Bitstream decoder
