@@ -1142,9 +1142,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 mLength,
             );
         } else {
-            ip = ip.offset(
-                ((ip.offset_from(anchor) as core::ffi::c_long >> kSearchStrength) + 1) as isize,
-            );
+            ip = ip.add((ip.offset_from_unsigned(anchor) >> kSearchStrength) + 1);
             continue;
         }
 
