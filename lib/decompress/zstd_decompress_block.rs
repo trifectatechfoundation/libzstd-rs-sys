@@ -1910,7 +1910,7 @@ unsafe fn ZSTD_decompressSequences_body(
     }
 
     let lastLLSize = litEnd.offset_from_unsigned(litPtr);
-    if lastLLSize > oend.offset_from(op.as_mut_ptr()) as size_t {
+    if lastLLSize > oend.offset_from_unsigned(op.as_mut_ptr()) {
         return Err(Error::dstSize_tooSmall);
     }
 
