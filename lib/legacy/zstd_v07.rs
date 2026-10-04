@@ -342,14 +342,14 @@ impl<'a> BITv07_DStream_t<'a> {
             }
             return StreamStatus::Completed;
         }
-        let mut nbBytes = self.bitsConsumed >> 3;
+        let mut nbBytes = self.bitsConsumed as usize >> 3;
         let mut result = StreamStatus::Unfinished;
-        if unsafe { (self.ptr).sub(nbBytes as usize) } < self.start {
-            nbBytes = unsafe { (self.ptr).offset_from(self.start) } as u32;
+        if unsafe { self.ptr.sub(nbBytes) } < self.start {
+            nbBytes = unsafe { self.ptr.offset_from_unsigned(self.start) };
             result = StreamStatus::EndOfBuffer;
         }
-        self.ptr = unsafe { (self.ptr).sub(nbBytes as usize) };
-        self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
+        self.ptr = unsafe { self.ptr.sub(nbBytes) };
+        self.bitsConsumed = (self.bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
         self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
         result
     }
