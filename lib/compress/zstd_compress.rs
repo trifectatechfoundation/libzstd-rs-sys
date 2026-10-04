@@ -9100,9 +9100,9 @@ unsafe fn ZSTD_transferSequences_noDelim(
     iend = iend.sub(bytesAdjustment as usize);
     if ip != iend {
         // Store any last literals
-        let lastLLSize = iend.offset_from(ip) as core::ffi::c_long as u32;
-        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, ip, lastLLSize as size_t);
-        seqPos.posInSrc = seqPos.posInSrc.wrapping_add(lastLLSize as size_t);
+        let lastLLSize = iend.offset_from_unsigned(ip);
+        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, ip, lastLLSize);
+        seqPos.posInSrc = seqPos.posInSrc.wrapping_add(lastLLSize);
     }
 
     Ok(iend.offset_from_unsigned(istart))
