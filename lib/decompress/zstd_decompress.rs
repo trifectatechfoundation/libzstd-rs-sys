@@ -3863,8 +3863,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
 
     // result
-    input.pos = ip.byte_offset_from(input.src) as size_t;
-    output.pos = op.byte_offset_from(output.dst) as size_t;
+    input.pos = ip.byte_offset_from_unsigned(input.src);
+    output.pos = op.byte_offset_from_unsigned(output.dst);
 
     // Update the expected output buffer for ZSTD_obm_stable.
     zds.expectedOutBuffer = *output;
