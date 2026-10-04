@@ -5407,16 +5407,16 @@ fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: bool) -> u3
 unsafe fn ZSTD_seqStore_resolveOffCodes(
     dRepcodes: &mut RepCodes,
     cRepcodes: &mut RepCodes,
-    seqStore: *const SeqStore_t,
-    nbSeq: u32,
+    seqStore: &SeqStore_t,
+    nbSeq: usize,
 ) {
-    let longLitLenIdx = if (*seqStore).longLengthType == LongLengthType::Literal {
-        (*seqStore).longLengthPos
-    } else {
-        nbSeq
+    let longLitLenIdx = match seqStore.longLengthType {
+        LongLengthType::Literal => seqStore.longLengthPos as usize,
+        LongLengthType::None | LongLengthType::Match => nbSeq,
     };
+
     for idx in 0..nbSeq {
-        let seq = ((*seqStore).sequencesStart).offset(idx as isize);
+        let seq = (seqStore.sequencesStart).add(idx);
         let ll0 = (*seq).litLength == 0 && idx != longLitLenIdx;
         let offBase = (*seq).offBase;
         if (1..=ZSTD_REP_NUM).contains(&offBase) {
@@ -5465,7 +5465,9 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             dRep,
             cRep,
             seqStore,
-            seqStore.sequences.offset_from(seqStore.sequencesStart) as core::ffi::c_long as u32,
+            seqStore
+                .sequences
+                .offset_from_unsigned(seqStore.sequencesStart),
         );
     }
 
