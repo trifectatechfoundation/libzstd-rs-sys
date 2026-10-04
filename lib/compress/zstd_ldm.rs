@@ -1140,11 +1140,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     // Loop through each sequence and apply the block compressor to the literals
     while rawSeqStore.pos < rawSeqStore.size && ip < iend {
         // maybeSplitSequence updates rawSeqStore->pos
-        let sequence = maybeSplitSequence(
-            rawSeqStore,
-            iend.offset_from(ip) as core::ffi::c_long as u32,
-            minMatch,
-        );
+        let sequence =
+            maybeSplitSequence(rawSeqStore, iend.offset_from_unsigned(ip) as u32, minMatch);
 
         // End signal
         if sequence.offset == 0 {
