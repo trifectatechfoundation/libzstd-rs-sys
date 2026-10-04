@@ -4973,7 +4973,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     wkspSize: size_t,
 ) -> Result<size_t, Error> {
     let strategy = cctxParams.cParams.strategy;
-    let nbSeq = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart) as size_t;
+    let nbSeq = (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart);
     let ostart = (fseMetadata.fseTablesBuffer).as_mut_ptr();
     let oend = ostart.add(size_of::<[u8; 133]>());
     let op = ostart;
