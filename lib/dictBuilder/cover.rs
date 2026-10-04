@@ -11,11 +11,12 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_64bits;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
-    ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx, ZSTD_createCDict, ZSTD_freeCCtx,
-    ZSTD_freeCDict,
+    ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCDict, ZSTD_freeCCtxContent,
+    ZSTD_freeCDict, ZSTD_initCCtx,
 };
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
+use crate::lib::zstd::ZSTD_customMem;
 use crate::ZDICT_params_t;
 
 #[repr(C)]
@@ -920,7 +921,11 @@ pub(super) fn COVER_checkTotalCompressedSize(
         .unwrap_or(0);
     let dstCapacity = ZSTD_compressBound(maxSampleSize);
     let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
-    let cctx = unsafe { ZSTD_createCCtx() };
+
+    let mut cctx = Box::new_uninit();
+    unsafe { ZSTD_initCCtx(cctx.as_mut_ptr(), ZSTD_customMem::default()) };
+    let mut cctx = unsafe { cctx.assume_init() };
+
     let cdict = unsafe {
         ZSTD_createCDict(
             dict.as_ptr() as *const core::ffi::c_void,
@@ -928,12 +933,12 @@ pub(super) fn COVER_checkTotalCompressedSize(
             parameters.zParams.compressionLevel,
         )
     };
-    if !(cctx.is_null() || cdict.is_null()) {
+    if !cdict.is_null() {
         totalCompressedSize = dict.len();
         for i in start..nbSamples {
             let size = unsafe {
                 ZSTD_compress_usingCDict(
-                    cctx,
+                    &mut *cctx,
                     dst.as_mut_ptr().cast::<core::ffi::c_void>(),
                     dstCapacity,
                     samples[offsets[i]..].as_ptr() as *const core::ffi::c_void,
@@ -948,7 +953,7 @@ pub(super) fn COVER_checkTotalCompressedSize(
             totalCompressedSize = totalCompressedSize.wrapping_add(size);
         }
     }
-    unsafe { ZSTD_freeCCtx(cctx) };
+    unsafe { ZSTD_freeCCtxContent(&mut *cctx) };
     unsafe { ZSTD_freeCDict(cdict) };
     drop(dst);
     totalCompressedSize
