@@ -558,16 +558,16 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
 ) {
     if litLength > 0xffff {
         seqStorePtr.longLengthType = LongLengthType::Literal;
-        seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
-            as core::ffi::c_long as u32;
+        seqStorePtr.longLengthPos =
+            (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart) as u32;
     }
     (*(seqStorePtr.sequences)).litLength = litLength as u16;
     (*(seqStorePtr.sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(usize::from(MINMATCH));
     if mlBase > 0xffff {
         seqStorePtr.longLengthType = LongLengthType::Match;
-        seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
-            as core::ffi::c_long as u32;
+        seqStorePtr.longLengthPos =
+            (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart) as u32;
     }
     (*(seqStorePtr.sequences)).mlBase = mlBase as u16;
     seqStorePtr.sequences = (seqStorePtr.sequences).add(1);
