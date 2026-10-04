@@ -516,8 +516,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
         ((*dictCParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let dictHBitsS =
         ((*dictCParams).chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
-    let dictAndPrefixLength = (ip.offset_from(prefixLowest) as core::ffi::c_long
-        + dictEnd.offset_from(dictStart) as core::ffi::c_long) as u32;
+    let dictAndPrefixLength =
+        ip.offset_from_unsigned(prefixLowest) + dictEnd.offset_from_unsigned(dictStart);
 
     if ms.prefetchCDictTables != 0 {
         let hashTableBytes =
@@ -597,7 +597,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                     == MEM_read64(ip as *const core::ffi::c_void)
             {
                 mLength = (ZSTD_count(ip.add(8), matchLong.add(8), iend)).wrapping_add(8);
-                offset = ip.offset_from(matchLong) as core::ffi::c_long as u32;
+                offset = ip.offset_from_unsigned(matchLong) as u32;
                 while (ip > anchor) & (matchLong > prefixLowest)
                     && *ip.sub(1) as core::ffi::c_int == *matchLong.sub(1) as core::ffi::c_int
                 {
@@ -675,11 +675,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
 
                         match current_block {
                             5372832139739605200 => {
-                                ip = ip.offset(
-                                    ((ip.offset_from(anchor) as core::ffi::c_long
-                                        >> kSearchStrength)
-                                        + 1) as isize,
-                                );
+                                ip = ip
+                                    .add((ip.offset_from_unsigned(anchor) >> kSearchStrength) + 1);
                                 continue;
                             }
                             _ => {
@@ -708,7 +705,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                     mLength = (ZSTD_count(ip.add(9), matchL3.add(8), iend))
                                         .wrapping_add(8);
                                     ip = ip.add(1);
-                                    offset = ip.offset_from(matchL3) as core::ffi::c_long as u32;
+                                    offset = ip.offset_from_unsigned(matchL3) as u32;
                                     while (ip > anchor) & (matchL3 > prefixLowest)
                                         && *ip.sub(1) as core::ffi::c_int
                                             == *matchL3.sub(1) as core::ffi::c_int
@@ -783,9 +780,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                                 mLength =
                                                     (ZSTD_count(ip.add(4), match_0.add(4), iend))
                                                         .wrapping_add(4);
-                                                offset = ip.offset_from(match_0)
-                                                    as core::ffi::c_long
-                                                    as u32;
+                                                offset = ip.offset_from_unsigned(match_0) as u32;
                                                 while (ip > anchor) & (match_0 > prefixLowest)
                                                     && *ip.sub(1) as core::ffi::c_int
                                                         == *match_0.sub(1) as core::ffi::c_int
