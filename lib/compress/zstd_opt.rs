@@ -1195,8 +1195,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
     ZSTD_opt_getNextMatchAndUpdateSeqStore(
         &mut optLdm,
-        ip.offset_from(istart) as core::ffi::c_long as u32,
-        iend.offset_from(ip) as core::ffi::c_long as u32,
+        ip.offset_from_unsigned(istart) as u32,
+        iend.offset_from_unsigned(ip) as u32,
     );
 
     // init
@@ -1206,7 +1206,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     // Match Loop
     while ip < ilimit {
         // find first match
-        let litlen = ip.offset_from(anchor) as core::ffi::c_long as u32;
+        let litlen = ip.offset_from_unsigned(anchor) as u32;
         let mut nbMatches = getAllMatches(
             matches,
             ms,
@@ -1221,8 +1221,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
             &mut optLdm,
             matches,
             &mut nbMatches,
-            ip.offset_from(istart) as core::ffi::c_long as u32,
-            iend.offset_from(ip) as core::ffi::c_long as u32,
+            ip.offset_from_unsigned(istart) as u32,
+            iend.offset_from_unsigned(ip) as u32,
             minMatch,
         );
         if nbMatches == 0 {
@@ -1392,8 +1392,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 &mut optLdm,
                                 matches,
                                 &mut nbMatches,
-                                inr.offset_from(istart) as core::ffi::c_long as u32,
-                                iend.offset_from(inr) as core::ffi::c_long as u32,
+                                inr.offset_from_unsigned(istart) as u32,
+                                iend.offset_from_unsigned(inr) as u32,
                                 minMatch,
                             );
 
