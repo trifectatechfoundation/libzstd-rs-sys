@@ -290,10 +290,10 @@ unsafe fn ZSTD_rawLiteralsCost(
     let mut price = opt_state.litSumBasePrice * litLength;
     let litPriceMax = (opt_state.litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER);
     for u in 0..litLength {
-        let mut litPrice = WEIGHT(litFreq[usize::from(*literals.add(u as usize))], optLevel);
-        if litPrice > litPriceMax {
-            litPrice = litPriceMax;
-        }
+        let litPrice = Ord::min(
+            WEIGHT(litFreq[usize::from(*literals.add(u as usize))], optLevel),
+            litPriceMax,
+        );
         price = price.wrapping_sub(litPrice);
     }
 
@@ -1347,9 +1347,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                                 opt[cur + 1].rep = newReps;
                                 opt[cur + 1].litlen = 1;
                                 opt[cur + 1].price = with1literal;
-                                if last_pos < cur + 1 {
-                                    last_pos = cur + 1;
-                                }
+                                last_pos = Ord::max(last_pos, cur + 1);
                             }
                         }
                     }
