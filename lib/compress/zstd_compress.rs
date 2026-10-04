@@ -1369,10 +1369,6 @@ pub unsafe extern "C" fn ZSTD_sizeof_CStream(zcs: *const ZSTD_CStream) -> size_t
     ZSTD_sizeof_CCtx(zcs)
 }
 
-unsafe fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
-    &(*ctx).seqStore
-}
-
 /// Returns true if the strategy supports using a row based matchfinder
 fn ZSTD_rowMatchFinderSupported(strategy: ZSTD_strategy) -> bool {
     (ZSTD_greedy..=ZSTD_lazy2).contains(&strategy)
