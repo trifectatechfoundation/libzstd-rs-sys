@@ -881,9 +881,7 @@ fn ZSTD_cwksp_reserve_internal_buffer_space(
         ws.allocFailed = 1;
         return core::ptr::null_mut();
     }
-    if alloc < ws.tableValidEnd {
-        ws.tableValidEnd = alloc;
-    }
+    ws.tableValidEnd = Ord::min(ws.tableValidEnd, alloc);
     ws.allocStart = alloc;
     alloc
 }
@@ -910,9 +908,7 @@ fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase
             }
             ws.objectEnd = objectEnd;
             ws.tableEnd = objectEnd;
-            if ws.tableValidEnd < ws.tableEnd {
-                ws.tableValidEnd = ws.tableEnd;
-            }
+            ws.tableValidEnd = Ord::max(ws.tableValidEnd, ws.tableEnd);
         }
         ws.phase = phase;
         ZSTD_cwksp_assert_internal_consistency(ws);
@@ -1035,9 +1031,7 @@ fn ZSTD_cwksp_mark_tables_dirty(ws: &mut ZSTD_cwksp) {
 
 #[inline]
 fn ZSTD_cwksp_mark_tables_clean(ws: &mut ZSTD_cwksp) {
-    if ws.tableValidEnd < ws.tableEnd {
-        ws.tableValidEnd = ws.tableEnd;
-    }
+    ws.tableValidEnd = Ord::max(ws.tableValidEnd, ws.tableEnd);
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
@@ -1068,9 +1062,7 @@ fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
     ws.tableEnd = ws.objectEnd;
     ws.allocStart = ZSTD_cwksp_initialAllocStart(ws);
     ws.allocFailed = 0;
-    if ws.phase > CwkspAllocPhase::AlignedInitOnce {
-        ws.phase = CwkspAllocPhase::AlignedInitOnce;
-    }
+    ws.phase = Ord::min(ws.phase, CwkspAllocPhase::AlignedInitOnce);
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 
@@ -1501,9 +1493,7 @@ impl ZSTD_compressionParameters {
     fn revert_dedicated_dict_search(&mut self) {
         if (ZSTD_greedy..=ZSTD_lazy2).contains(&self.strategy) {
             self.hashLog = (self.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
-            if self.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
-                self.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
-            }
+            self.hashLog = Ord::max(self.hashLog, ZSTD_HASHLOG_MIN as core::ffi::c_uint);
         }
     }
 }
@@ -2494,16 +2484,12 @@ impl ZSTD_compressionParameters {
             } else {
                 (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
             };
-            if self.windowLog > srcLog {
-                self.windowLog = srcLog;
-            }
+            self.windowLog = Ord::min(self.windowLog, srcLog);
         }
         if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
             let dictAndWindowLog = ZSTD_dictAndWindowLog(self.windowLog, srcSize, dictSize as u64);
             let cycleLog = ZSTD_cycleLog(self.chainLog, self.strategy);
-            if self.hashLog > dictAndWindowLog.wrapping_add(1) {
-                self.hashLog = dictAndWindowLog.wrapping_add(1);
-            }
+            self.hashLog = Ord::min(self.hashLog, dictAndWindowLog.wrapping_add(1));
             if cycleLog > dictAndWindowLog {
                 self.chainLog =
                     (self.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
@@ -2519,12 +2505,8 @@ impl ZSTD_compressionParameters {
         // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
         if mode == CParamMode::CreateCDict && self.cdict_indices_are_tagged() {
             let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
-            if self.hashLog > maxShortCacheHashLog {
-                self.hashLog = maxShortCacheHashLog;
-            }
-            if self.chainLog > maxShortCacheHashLog {
-                self.chainLog = maxShortCacheHashLog;
-            }
+            self.hashLog = Ord::min(self.hashLog, maxShortCacheHashLog);
+            self.chainLog = Ord::min(self.chainLog, maxShortCacheHashLog);
         }
 
         // At this point, we aren't 100% sure if we are using the row match finder.
@@ -2542,9 +2524,7 @@ impl ZSTD_compressionParameters {
             let rowLog = self.searchLog.clamp(4, 6);
             let maxRowHashLog = 32u32 - ZSTD_ROW_HASH_TAG_BITS;
             let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
-            if self.hashLog > maxHashLog {
-                self.hashLog = maxHashLog;
-            }
+            self.hashLog = Ord::min(self.hashLog, maxHashLog);
         }
 
         self
@@ -2883,10 +2863,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize(compressionLevel: core::ffi::c_in
     let start = compressionLevel.min(1);
     for level in start..compressionLevel + 1 {
         // Ensure monotonically increasing memory usage as compression level increases
-        let newMB = ZSTD_estimateCCtxSize_internal(level);
-        if newMB > memBudget {
-            memBudget = newMB;
-        }
+        memBudget = Ord::max(memBudget, ZSTD_estimateCCtxSize_internal(level));
     }
     memBudget
 }
@@ -2963,10 +2940,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize(compressionLevel: core::ffi::c
     let mut memBudget = 0;
     let start = compressionLevel.min(1);
     for level in start..compressionLevel + 1 {
-        let newMB = ZSTD_estimateCStreamSize_internal(level);
-        if newMB > memBudget {
-            memBudget = newMB;
-        }
+        memBudget = Ord::max(memBudget, ZSTD_estimateCStreamSize_internal(level));
     }
     memBudget
 }
@@ -6050,9 +6024,7 @@ unsafe fn ZSTD_compress_frameChunk(
         );
 
         // Ensure hash/chain table insertion resumes no sooner than lowlimit
-        if ms.nextToUpdate < ms.window.lowLimit {
-            ms.nextToUpdate = ms.window.lowLimit;
-        }
+        ms.nextToUpdate = Ord::max(ms.nextToUpdate, ms.window.lowLimit);
 
         let mut cSize: size_t;
         if (*cctx).appliedParams.use_target_cblock_size() {
