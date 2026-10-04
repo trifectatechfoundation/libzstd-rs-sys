@@ -265,7 +265,7 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
         matchLength: u32::from((*seq).mlBase) + u32::from(MINMATCH),
     };
 
-    if seqStore.longLengthPos == seq.offset_from(seqStore.sequencesStart) as u32 {
+    if seqStore.longLengthPos as usize == seq.offset_from_unsigned(seqStore.sequencesStart) {
         if seqStore.longLengthType == LongLengthType::Literal {
             seqLen.litLength += 0x10000;
         }
