@@ -3836,16 +3836,15 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
     let llCodeTable = seqStorePtr.llCode;
     let ofCodeTable = seqStorePtr.ofCode;
     let mlCodeTable = seqStorePtr.mlCode;
-    let nbSeq = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
-        as core::ffi::c_long as u32;
+    let nbSeq = (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart);
     let mut longOffsets = false;
     for u in 0..nbSeq {
-        let llv = (*sequences.offset(u as isize)).litLength as u32;
-        let ofCode = ZSTD_highbit32((*sequences.offset(u as isize)).offBase);
-        let mlv = (*sequences.offset(u as isize)).mlBase as u32;
-        *llCodeTable.offset(u as isize) = ZSTD_LLcode(llv) as u8;
-        *ofCodeTable.offset(u as isize) = ofCode as u8;
-        *mlCodeTable.offset(u as isize) = ZSTD_MLcode(mlv) as u8;
+        let llv = (*sequences.add(u)).litLength as u32;
+        let ofCode = ZSTD_highbit32((*sequences.add(u)).offBase);
+        let mlv = (*sequences.add(u)).mlBase as u32;
+        *llCodeTable.add(u) = ZSTD_LLcode(llv) as u8;
+        *ofCodeTable.add(u) = ofCode as u8;
+        *mlCodeTable.add(u) = ZSTD_MLcode(mlv) as u8;
         if MEM_32bits() && ofCode >= STREAM_ACCUMULATOR_MIN {
             longOffsets = true;
         }
