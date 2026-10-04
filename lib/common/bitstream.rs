@@ -357,17 +357,17 @@ impl<'a> BIT_DStream_t<'a> {
             };
         }
 
-        let mut nbBytes = self.bitsConsumed / 8;
-        let result = if unsafe { self.ptr.sub(nbBytes as usize) } < self.start {
-            nbBytes = unsafe { self.ptr.offset_from(self.start) } as u32;
+        let mut nbBytes = self.bitsConsumed as usize / 8;
+        let result = if unsafe { self.ptr.sub(nbBytes) } < self.start {
+            nbBytes = unsafe { self.ptr.offset_from_unsigned(self.start) };
 
             StreamStatus::EndOfBuffer
         } else {
             StreamStatus::Unfinished
         };
 
-        self.ptr = unsafe { self.ptr.sub(nbBytes as usize) };
-        self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
+        self.ptr = unsafe { self.ptr.sub(nbBytes) };
+        self.bitsConsumed = (self.bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
         self.bitContainer = unsafe { core::ptr::read_unaligned(self.ptr as *const usize) }.to_le();
 
         result
