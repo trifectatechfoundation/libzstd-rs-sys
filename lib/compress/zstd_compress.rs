@@ -4598,7 +4598,7 @@ unsafe fn ZSTD_copyBlockSequences(
 ) -> Result<(), Error> {
     let inSeqs: *const SeqDef = seqStore.sequencesStart;
     let nbInSequences = (seqStore.sequences).offset_from_unsigned(inSeqs);
-    let nbInLiterals = (seqStore.lit).offset_from(seqStore.litStart) as size_t;
+    let nbInLiterals = (seqStore.lit).offset_from_unsigned(seqStore.litStart);
 
     let outSeqs = if seqCollector.seqIndex == 0 {
         seqCollector.seqStart
