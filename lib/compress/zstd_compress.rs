@@ -1042,7 +1042,7 @@ unsafe fn ZSTD_cwksp_clean_tables(ws: &mut ZSTD_cwksp) {
         ptr::write_bytes(
             ws.tableValidEnd,
             0,
-            (ws.tableEnd as *mut u8).offset_from(ws.tableValidEnd as *mut u8) as usize,
+            (ws.tableEnd as *mut u8).offset_from_unsigned(ws.tableValidEnd as *mut u8),
         );
     }
     ZSTD_cwksp_mark_tables_clean(ws);
