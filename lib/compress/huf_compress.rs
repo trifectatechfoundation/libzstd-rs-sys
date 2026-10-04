@@ -1087,7 +1087,7 @@ unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
-    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + size_t::from(nbBits > 0)
+    (bitC.ptr).offset_from_unsigned(bitC.startPtr) + size_t::from(nbBits > 0)
 }
 
 #[inline(always)]
