@@ -674,15 +674,15 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
         /* Compute olimit */
 
         // Each iteration consumes up to 11 bits * 5 = 55 bits < 7 bytes per stream.
-        let oiters = oend.offset_from(op[3]) / 5;
-        let iiters = (ip[0]).offset_from(ilowest) / 7;
+        let oiters = oend.offset_from_unsigned(op[3]) / 5;
+        let iiters = ip[0].offset_from_unsigned(ilowest) / 7;
         let iters = Ord::min(oiters, iiters);
         let symbols = iters * 5;
 
         // We can simply check that op[3] < olimit, instead of checking all
         // of our bounds, since we can't hit the other bounds until we've run
         // iters iterations, which only happens when op[3] == olimit.
-        let olimit = op[3].offset(symbols);
+        let olimit = op[3].add(symbols);
 
         /* Exit fast decoding loop once we reach the end. */
         if op[3] == olimit {
