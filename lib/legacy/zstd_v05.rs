@@ -340,14 +340,14 @@ impl<'a> BITv05_DStream_t<'a> {
             }
             return StreamStatus::Completed;
         }
-        let mut nbBytes = self.bitsConsumed >> 3;
+        let mut nbBytes = self.bitsConsumed as usize >> 3;
         let mut result = StreamStatus::Unfinished;
-        if unsafe { self.ptr.sub(nbBytes as usize) < self.start } {
-            nbBytes = unsafe { self.ptr.offset_from(self.start) } as u32;
+        if unsafe { self.ptr.sub(nbBytes) < self.start } {
+            nbBytes = unsafe { self.ptr.offset_from_unsigned(self.start) };
             result = StreamStatus::EndOfBuffer;
         }
-        self.ptr = unsafe { self.ptr.sub(nbBytes as usize) };
-        self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
+        self.ptr = unsafe { self.ptr.sub(nbBytes) };
+        self.bitsConsumed = (self.bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
         self.bitContainer = unsafe { MEM_readLEST(self.ptr.cast()) };
         result
     }
@@ -2437,7 +2437,7 @@ unsafe fn ZSTDv05_execSequence(
     if oMatchEnd > oend.sub((16 - MINMATCH) as usize) {
         if op < oend_8 {
             ZSTDv05_wildcopy(op, match_0, oend_8.offset_from(op) as ptrdiff_t);
-            match_0 = match_0.offset(oend_8.offset_from(op) as core::ffi::c_long as isize);
+            match_0 = match_0.add(oend_8.offset_from_unsigned(op));
             op = oend_8;
         }
         while op < oMatchEnd {
