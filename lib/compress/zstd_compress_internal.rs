@@ -710,9 +710,8 @@ pub(crate) unsafe fn ZSTD_count_2segments(
     mEnd: *const u8,
     iStart: *const u8,
 ) -> usize {
-    let vEnd = if ip.wrapping_offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd
-    {
-        ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize)
+    let vEnd = if ip.wrapping_add(mEnd.offset_from_unsigned(match_0)) < iEnd {
+        ip.add(mEnd.offset_from_unsigned(match_0))
     } else {
         iEnd
     };
