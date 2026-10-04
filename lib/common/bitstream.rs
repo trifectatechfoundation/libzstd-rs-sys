@@ -94,10 +94,7 @@ fn BIT_addBitsFast(bitC: &mut BIT_CStream_t, value: BitContainerType, nbBits: co
 pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
     let nbBytes = (bitC.bitPos >> 3) as size_t;
     MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
-    bitC.ptr = bitC.ptr.add(nbBytes);
-    if bitC.ptr > bitC.endPtr {
-        bitC.ptr = bitC.endPtr;
-    }
+    bitC.ptr = Ord::min(bitC.ptr.add(nbBytes), bitC.endPtr);
     bitC.bitPos &= 7;
     bitC.bitContainer >>= nbBytes * 8;
 }
