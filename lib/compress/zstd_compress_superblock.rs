@@ -232,7 +232,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
 
     *entropyWritten = false;
     // Sequences Header
-    if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
+    if oend.offset_from_unsigned(op) < 3 + 1 {
         return Err(Error::dstSize_tooSmall);
     }
     if nbSeq < 128 {
@@ -313,7 +313,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // This can happen when the previous sequences section block is compressed
     // with rle mode and the current block's sequences section is compressed
     // with repeat mode where sequences section body size can be 1 byte.
-    if (op.offset_from(seqHead) as core::ffi::c_long) < 4 {
+    if op.offset_from_unsigned(seqHead) < 4 {
         return Ok(0);
     }
 
