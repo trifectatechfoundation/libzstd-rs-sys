@@ -5020,7 +5020,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> Result<(), Error> {
-    let litSize = (seqStorePtr.lit).offset_from(seqStorePtr.litStart) as size_t;
+    let litSize = (seqStorePtr.lit).offset_from_unsigned(seqStorePtr.litStart);
     let huf_useOptDepth =
         cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint;
     let hufFlags = if huf_useOptDepth {
