@@ -82,10 +82,7 @@ fn adjust_table_log(table_log: usize, max_symbol: usize) -> usize {
 fuzz_target!(|input: HufRoundTripInput| {
     // Limit input size to 256KB like the C version
     const MAX_SIZE: usize = 256 * 1024;
-    let mut size = input.data.len();
-    if size > MAX_SIZE {
-        size = MAX_SIZE;
-    }
+    let size = Ord::min(input.data.len(), MAX_SIZE);
 
     // C version checks size <= 1
     if size <= 1 {
