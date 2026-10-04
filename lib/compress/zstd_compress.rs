@@ -4028,7 +4028,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let sequences: *const SeqDef = seqStorePtr.sequencesStart;
     let nbSeq = seqStorePtr
         .sequences
-        .offset_from(seqStorePtr.sequencesStart) as size_t;
+        .offset_from_unsigned(seqStorePtr.sequencesStart);
     let ofCodeTable: *const u8 = seqStorePtr.ofCode;
     let llCodeTable: *const u8 = seqStorePtr.llCode;
     let mlCodeTable: *const u8 = seqStorePtr.mlCode;
@@ -4043,7 +4043,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     // Compress literals
     let numSequences = seqStorePtr
         .sequences
-        .offset_from(seqStorePtr.sequencesStart) as size_t;
+        .offset_from_unsigned(seqStorePtr.sequencesStart);
     // Base suspicion of uncompressibility on ratio of literals to sequences
     let suspectUncompressible = numSequences == 0
         || literals.len() / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t;
@@ -4064,7 +4064,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     op = op.add(cSize);
 
     // Sequences Header
-    if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
+    if oend.offset_from_unsigned(op) < 3 + 1 {
         return Err(Error::dstSize_tooSmall);
     }
     if nbSeq < 128 {
