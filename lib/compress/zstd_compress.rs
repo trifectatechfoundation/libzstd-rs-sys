@@ -4781,8 +4781,8 @@ fn ZSTD_isRLE(src: &[u8]) -> bool {
 /// This is just a heuristic based on the compressibility.
 /// It may return both false positives and false negatives.
 unsafe fn ZSTD_maybeRLE(seqStore: &SeqStore_t) -> bool {
-    let nbSeqs = (seqStore.sequences).offset_from(seqStore.sequencesStart) as size_t;
-    let nbLits = (seqStore.lit).offset_from(seqStore.litStart) as size_t;
+    let nbSeqs = (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart);
+    let nbLits = (seqStore.lit).offset_from_unsigned(seqStore.litStart);
 
     nbSeqs < 4 && nbLits < 10
 }
