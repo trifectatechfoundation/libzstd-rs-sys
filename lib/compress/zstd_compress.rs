@@ -3831,12 +3831,12 @@ unsafe fn ZSTD_reduceIndex(
 }
 
 /// See doc/zstd_compression_format.md for detailed format description
-pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
-    let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
-    let llCodeTable = (*seqStorePtr).llCode;
-    let ofCodeTable = (*seqStorePtr).ofCode;
-    let mlCodeTable = (*seqStorePtr).mlCode;
-    let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
+pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
+    let sequences: *const SeqDef = seqStorePtr.sequencesStart;
+    let llCodeTable = seqStorePtr.llCode;
+    let ofCodeTable = seqStorePtr.ofCode;
+    let mlCodeTable = seqStorePtr.mlCode;
+    let nbSeq = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
         as core::ffi::c_long as u32;
     let mut longOffsets = false;
     for u in 0..nbSeq {
@@ -3850,11 +3850,11 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
             longOffsets = true;
         }
     }
-    if (*seqStorePtr).longLengthType == LongLengthType::Literal {
-        *llCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxLL;
+    if seqStorePtr.longLengthType == LongLengthType::Literal {
+        *llCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxLL;
     }
-    if (*seqStorePtr).longLengthType == LongLengthType::Match {
-        *mlCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxML;
+    if seqStorePtr.longLengthType == LongLengthType::Match {
+        *mlCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxML;
     }
     longOffsets
 }
