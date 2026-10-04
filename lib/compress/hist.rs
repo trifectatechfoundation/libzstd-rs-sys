@@ -53,9 +53,7 @@ pub unsafe fn HIST_count_simple(
     *maxSymbolValuePtr = maxSymbolValue;
 
     for s in 0..usize::from(maxSymbolValue) + 1 {
-        if *count.add(s) > largestCount {
-            largestCount = *count.add(s);
-        }
+        largestCount = Ord::max(largestCount, *count.add(s));
     }
 
     largestCount
