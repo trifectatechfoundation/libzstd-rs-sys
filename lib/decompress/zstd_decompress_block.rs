@@ -1125,8 +1125,8 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
             oend.sub(WILDCOPY_OVERLENGTH).offset_from_unsigned(op),
             Overlap::NoOverlap,
         );
-        ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
-        op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
+        ip = ip.add(oend.sub(WILDCOPY_OVERLENGTH).offset_from_unsigned(op));
+        op = op.add(oend.sub(WILDCOPY_OVERLENGTH).offset_from_unsigned(op));
     }
 
     /* Handle the leftovers. */
