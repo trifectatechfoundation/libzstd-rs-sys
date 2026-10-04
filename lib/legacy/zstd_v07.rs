@@ -1055,10 +1055,7 @@ fn HUFv07_fillDTableX4(
         let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut sortedRank: u32 = 0;
-            let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
-            if minWeight < 1 {
-                minWeight = 1;
-            }
+            let minWeight = Ord::max(nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int, 1);
             sortedRank = rankStart[minWeight as usize];
             HUFv07_fillDTableX4Level2(
                 &mut DTable[start as usize..],
@@ -1182,9 +1179,7 @@ fn HUFv07_decodeLastSymbolX4(
         DStream.skip_bits(dt[val].nbBits as u32);
     } else if DStream.bitsConsumed < usize::BITS {
         DStream.skip_bits(dt[val].nbBits as u32);
-        if DStream.bitsConsumed > usize::BITS {
-            DStream.bitsConsumed = usize::BITS;
-        }
+        DStream.bitsConsumed = Ord::min(DStream.bitsConsumed, usize::BITS);
     }
 }
 #[inline]
