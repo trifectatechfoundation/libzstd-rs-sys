@@ -5588,7 +5588,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
 /// # Returns
 ///
 /// The number of splits made (which equals the size of the partition table - 1).
-unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq: u32) -> size_t {
+unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq: usize) -> size_t {
     let mut splits = seqStoreSplits {
         splitLocations: partitions,
         idx: 0,
@@ -5597,8 +5597,8 @@ unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq
         // Refuse to try and split anything with less than 4 sequences
         return 0;
     }
-    ZSTD_deriveBlockSplitsHelper(&mut splits, 0, nbSeq as size_t, zc, &(*zc).seqStore);
-    *(splits.splitLocations).add(splits.idx) = nbSeq;
+    ZSTD_deriveBlockSplitsHelper(&mut splits, 0, nbSeq, zc, &(*zc).seqStore);
+    *(splits.splitLocations).add(splits.idx) = nbSeq as u32;
     splits.idx
 }
 
@@ -5615,7 +5615,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     src: *const core::ffi::c_void,
     blockSize: size_t,
     lastBlock: bool,
-    nbSeq: u32,
+    nbSeq: usize,
 ) -> Result<size_t, Error> {
     let mut cSize = 0usize;
     let mut ip = src as *const u8;
@@ -5717,7 +5717,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         return ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
     }
 
-    let nbSeq = ((*zc).seqStore.sequences).offset_from((*zc).seqStore.sequencesStart) as u32;
+    let nbSeq = ((*zc).seqStore.sequences).offset_from_unsigned((*zc).seqStore.sequencesStart);
     ZSTD_compressBlock_splitBlock_internal(zc, dst, dstCapacity, src, srcSize, lastBlock, nbSeq)
 }
 
