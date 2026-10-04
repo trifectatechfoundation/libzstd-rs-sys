@@ -343,14 +343,14 @@ unsafe fn BITv06_reloadDStream(bitD: *mut BITv06_DStream_t) -> BITv06_DStream_st
         }
         return BITv06_DStream_completed;
     }
-    let mut nbBytes = (*bitD).bitsConsumed >> 3;
+    let mut nbBytes = (*bitD).bitsConsumed as usize >> 3;
     let mut result = BITv06_DStream_unfinished;
-    if ((*bitD).ptr).offset(-(nbBytes as isize)) < (*bitD).start {
-        nbBytes = ((*bitD).ptr).offset_from((*bitD).start) as core::ffi::c_long as u32;
+    if ((*bitD).ptr).sub(nbBytes) < (*bitD).start {
+        nbBytes = ((*bitD).ptr).offset_from_unsigned((*bitD).start);
         result = BITv06_DStream_endOfBuffer;
     }
-    (*bitD).ptr = ((*bitD).ptr).offset(-(nbBytes as isize));
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8);
+    (*bitD).ptr = ((*bitD).ptr).sub(nbBytes);
+    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
     (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
     result
 }
@@ -2939,7 +2939,7 @@ unsafe fn ZSTDv06_execSequence(
                 match_0 as *const core::ffi::c_void,
                 oend_8.offset_from(op) as ptrdiff_t,
             );
-            match_0 = match_0.offset(oend_8.offset_from(op) as core::ffi::c_long as isize);
+            match_0 = match_0.add(oend_8.offset_from_unsigned(op));
             op = oend_8;
         }
         while op < oMatchEnd {
