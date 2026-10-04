@@ -1092,8 +1092,8 @@ unsafe fn ZSTD_safecopy(
     if op <= oend_w as *mut u8 {
         /* Wildcopy until we get close to the end. */
         ZSTD_wildcopy(op, ip, oend_w.offset_from_unsigned(op), ovtype);
-        ip = ip.offset(oend_w.offset_from(op));
-        op = op.offset(oend_w.offset_from(op));
+        ip = ip.add(oend_w.offset_from_unsigned(op));
+        op = op.add(oend_w.offset_from_unsigned(op));
     }
 
     /* Handle the leftovers. */
