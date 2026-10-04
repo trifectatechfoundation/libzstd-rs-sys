@@ -4608,12 +4608,12 @@ unsafe fn ZSTD_buildSeqStore(
 
 unsafe fn ZSTD_copyBlockSequences(
     seqCollector: &mut SeqCollector,
-    seqStore: *const SeqStore_t,
+    seqStore: &SeqStore_t,
     prevRepcodes: &RepCodes,
 ) -> Result<(), Error> {
-    let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
-    let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
-    let nbInLiterals = ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t;
+    let inSeqs: *const SeqDef = seqStore.sequencesStart;
+    let nbInSequences = (seqStore.sequences).offset_from_unsigned(inSeqs);
+    let nbInLiterals = (seqStore.lit).offset_from(seqStore.litStart) as size_t;
 
     let outSeqs = if seqCollector.seqIndex == 0 {
         seqCollector.seqStart
@@ -4636,11 +4636,11 @@ unsafe fn ZSTD_copyBlockSequences(
         // Handle the possible single length >= 64K
         // There can only be one because we add MINMATCH to every match length,
         // and blocks are at most 128K.
-        if i == (*seqStore).longLengthPos as size_t {
-            if (*seqStore).longLengthType == LongLengthType::Literal {
+        if i == seqStore.longLengthPos as size_t {
+            if seqStore.longLengthType == LongLengthType::Literal {
                 let fresh4 = &mut (*outSeqs.add(i)).litLength;
                 *fresh4 = (*fresh4).wrapping_add(0x10000);
-            } else if (*seqStore).longLengthType == LongLengthType::Match {
+            } else if seqStore.longLengthType == LongLengthType::Match {
                 let fresh5 = &mut (*outSeqs.add(i)).matchLength;
                 *fresh5 = (*fresh5).wrapping_add(0x10000);
             }
@@ -5759,7 +5759,7 @@ unsafe fn ZSTD_compressBlock_internal(
         if (*zc).seqCollector.collectSequences != 0 {
             ZSTD_copyBlockSequences(
                 &mut (*zc).seqCollector,
-                ZSTD_getSeqStore(zc),
+                &(*zc).seqStore,
                 &(*(*zc).blockState.prevCBlock).rep,
             )?;
             ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
