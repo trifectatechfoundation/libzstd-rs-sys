@@ -178,7 +178,7 @@ pub mod internal {
     };
 }
 
-crate::lib::polyfill::cfg_select!(
+crate::lib::polyfill::cfg_select! {
     feature = "custom-prefix" => {
         #[cfg(feature = "export-symbols")]
         macro_rules! prefix {
@@ -210,7 +210,7 @@ crate::lib::polyfill::cfg_select!(
             };
         }
     }
-);
+}
 
 #[cfg(feature = "export-symbols")]
 pub(crate) use prefix;
