@@ -634,7 +634,7 @@ pub(crate) unsafe fn ZSTD_safecopyLiterals(
             ilimit_w.offset_from_unsigned(ip),
             Overlap::NoOverlap,
         );
-        op = op.offset(ilimit_w.offset_from(ip));
+        op = op.add(ilimit_w.offset_from_unsigned(ip));
         ip = ilimit_w;
     }
     while ip < iend {
