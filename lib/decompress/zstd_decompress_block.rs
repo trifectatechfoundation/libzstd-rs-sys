@@ -1471,7 +1471,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         if sequence.offset > oLitEnd.offset_from_unsigned(virtualStart) {
             return Err(Error::corruption_detected);
         }
-        match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
+        match_0 = dictEnd.sub(sequence.offset - oLitEnd.offset_from_unsigned(prefixStart));
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return Ok(sequenceLength);
