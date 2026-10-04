@@ -1176,10 +1176,7 @@ unsafe fn UTIL_readFileContent(
                 free(buf as *mut core::ffi::c_void);
                 return core::ptr::null_mut();
             }
-            let mut newBufSize = bufSize * 2;
-            if newBufSize > MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
-                newBufSize = MAX_FILE_OF_FILE_NAMES_SIZE as size_t;
-            }
+            let newBufSize = Ord::min(bufSize * 2, MAX_FILE_OF_FILE_NAMES_SIZE as size_t);
             let newBuf =
                 realloc(buf as *mut core::ffi::c_void, newBufSize) as *mut core::ffi::c_char;
             if newBuf.is_null() {

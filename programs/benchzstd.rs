@@ -1128,9 +1128,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 (srcSize as core::ffi::c_double * TIMELOOP_NANOSEC as core::ffi::c_double
                     / cResult.nanoSecPerRun) as u64 as core::ffi::c_ulonglong;
             benchResult.cSize = cSize;
-            if newResult.cSpeed > benchResult.cSpeed {
-                benchResult.cSpeed = newResult.cSpeed;
-            }
+            benchResult.cSpeed = Ord::max(benchResult.cSpeed, newResult.cSpeed);
             let ratioDigits =
                 1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
             assert!(cSize < core::ffi::c_uint::MAX as size_t);
@@ -1191,9 +1189,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             let newDSpeed = (srcSize as core::ffi::c_double
                 * TIMELOOP_NANOSEC as core::ffi::c_double
                 / dResult.nanoSecPerRun) as u64;
-            if newDSpeed as core::ffi::c_ulonglong > benchResult.dSpeed {
-                benchResult.dSpeed = newDSpeed as core::ffi::c_ulonglong;
-            }
+            benchResult.dSpeed = Ord::max(benchResult.dSpeed, newDSpeed as core::ffi::c_ulonglong);
             let ratioDigits_0 =
                 1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
             if displayLevel >= 2 {
@@ -1734,9 +1730,7 @@ unsafe fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
     let mut testmem = core::ptr::null_mut();
     requiredMem = (requiredMem >> 26).wrapping_add(1) << 26;
     requiredMem = requiredMem.wrapping_add(step as u64);
-    if requiredMem > maxMemory as u64 {
-        requiredMem = maxMemory as u64;
-    }
+    requiredMem = Ord::min(requiredMem, maxMemory as u64);
     loop {
         testmem = malloc(requiredMem as size_t) as *mut u8;
         requiredMem = requiredMem.wrapping_sub(step as u64);
@@ -1956,9 +1950,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
 
         // Memory allocation & restrictions
         benchedSize = BMK_findMaxMem(totalSizeToLoad * 3) / 3;
-        if benchedSize > totalSizeToLoad as size_t {
-            benchedSize = totalSizeToLoad as size_t;
-        }
+        benchedSize = Ord::min(benchedSize, totalSizeToLoad as size_t);
         if benchedSize < totalSizeToLoad as size_t {
             eprintln!(
                 "Not enough memory; testing {} MB only...",

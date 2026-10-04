@@ -195,10 +195,7 @@ unsafe fn AIO_fwriteSparse(
     }
     while ptrT < bufferTEnd {
         let mut nb0T: size_t = 0;
-        let mut seg0SizeT = segmentSizeT;
-        if seg0SizeT > bufferSizeT {
-            seg0SizeT = bufferSizeT;
-        }
+        let seg0SizeT = Ord::min(segmentSizeT, bufferSizeT);
         bufferSizeT = bufferSizeT.wrapping_sub(seg0SizeT);
         nb0T = 0;
         while nb0T < seg0SizeT && *ptrT.add(nb0T) == 0 {
@@ -973,9 +970,7 @@ unsafe fn AIO_ReadPool_releaseCurrentHeldAndGetNext(ctx: *mut ReadPoolCtx_t) -> 
 pub unsafe fn AIO_ReadPool_fillBuffer(ctx: *mut ReadPoolCtx_t, mut n: size_t) -> size_t {
     let mut job = core::ptr::null_mut::<IOJob_t>();
     let mut useCoalesce = 0;
-    if n > (*ctx).base.jobBufferSize {
-        n = (*ctx).base.jobBufferSize;
-    }
+    n = Ord::min(n, (*ctx).base.jobBufferSize);
     if (*ctx).srcBufferLoaded >= n {
         return 0;
     }

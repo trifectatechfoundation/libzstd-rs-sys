@@ -2849,9 +2849,7 @@ unsafe fn FIO_compressGzFrame(
         reserved: 0,
     };
     let mut writeJob = core::ptr::null_mut();
-    if compressionLevel > Z_BEST_COMPRESSION {
-        compressionLevel = Z_BEST_COMPRESSION;
-    }
+    compressionLevel = Ord::min(compressionLevel, Z_BEST_COMPRESSION);
     strm.zalloc = None;
     strm.zfree = None;
     strm.opaque = core::ptr::null_mut();
@@ -3709,12 +3707,8 @@ unsafe fn FIO_compressZstdFrame(
                             fprintf(stderr, c"slower speed , higher compression \n".as_ptr());
                         }
                         compressionLevel += 1;
-                        if compressionLevel > ZSTD_maxCLevel() {
-                            compressionLevel = ZSTD_maxCLevel();
-                        }
-                        if compressionLevel > (*prefs).maxAdaptLevel {
-                            compressionLevel = (*prefs).maxAdaptLevel;
-                        }
+                        compressionLevel = Ord::min(compressionLevel, ZSTD_maxCLevel());
+                        compressionLevel = Ord::min(compressionLevel, (*prefs).maxAdaptLevel);
                         compressionLevel += (compressionLevel == 0) as core::ffi::c_int;
                         ZSTD_CCtx_setParameter(
                             ress.cctx,
@@ -3729,9 +3723,7 @@ unsafe fn FIO_compressZstdFrame(
                             fprintf(stderr, c"faster speed , lighter compression \n".as_ptr());
                         }
                         compressionLevel -= 1;
-                        if compressionLevel < (*prefs).minAdaptLevel {
-                            compressionLevel = (*prefs).minAdaptLevel;
-                        }
+                        compressionLevel = Ord::max(compressionLevel, (*prefs).minAdaptLevel);
                         compressionLevel -= (compressionLevel == 0) as core::ffi::c_int;
                         ZSTD_CCtx_setParameter(
                             ress.cctx,

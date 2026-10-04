@@ -206,9 +206,7 @@ pub unsafe fn BMK_resetTimedFnState(
     if run_ms == 0 {
         run_ms = 1;
     }
-    if run_ms > total_ms {
-        run_ms = total_ms;
-    }
+    run_ms = Ord::min(run_ms, total_ms);
     (*timedFnState).timeSpent_ns = 0;
     (*timedFnState).timeBudget_ns = (total_ms as PTime as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
