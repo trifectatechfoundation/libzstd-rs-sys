@@ -9519,7 +9519,6 @@ const fn matchLengthHalfIsZero(litMatchLength: u64) -> bool {
 }
 
 pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
-    let mut current_block: u64;
     // Use multiple accumulators for efficient use of wide out-of-order machines.
     let mut litMatchSize0 = 0u64;
     let mut litMatchSize1 = 0u64;
@@ -9527,95 +9526,79 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
     let mut litMatchSize3 = 0u64;
     let mut n = 0usize;
 
-    if seqs.len() > 3 {
-        // Process the input in 4 independent streams to reach high throughput.
-        loop {
-            let mut litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
-            litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
-            if matchLengthHalfIsZero(litMatchLength) {
-                current_block = 13744635599856597681;
-                break;
-            }
+    'out: {
+        if seqs.len() > 3 {
+            // Process the input in 4 independent streams to reach high throughput.
+            loop {
+                let mut litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
+                litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
+                if matchLengthHalfIsZero(litMatchLength) {
+                    break 'out;
+                }
 
-            litMatchLength = MEM_read64((&raw const seqs[n + 1].litLength).cast());
-            litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
-            if matchLengthHalfIsZero(litMatchLength) {
-                n = n.wrapping_add(1);
-                current_block = 13744635599856597681;
-                break;
-            } else {
+                litMatchLength = MEM_read64((&raw const seqs[n + 1].litLength).cast());
+                litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
+                if matchLengthHalfIsZero(litMatchLength) {
+                    n = n.wrapping_add(1);
+                    break 'out;
+                }
+
                 litMatchLength = MEM_read64((&raw const seqs[n + 2].litLength).cast());
                 litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
                 if matchLengthHalfIsZero(litMatchLength) {
                     n = n.wrapping_add(2);
-                    current_block = 13744635599856597681;
+                    break 'out;
+                }
+
+                litMatchLength = MEM_read64((&raw const seqs[n + 3].litLength).cast());
+                litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
+                if matchLengthHalfIsZero(litMatchLength) {
+                    n = n.wrapping_add(3);
+                    break 'out;
+                }
+
+                n = n.wrapping_add(4);
+                if n >= seqs.len().wrapping_sub(3) {
                     break;
-                } else {
-                    litMatchLength = MEM_read64((&raw const seqs[n + 3].litLength).cast());
-                    litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
-                    if matchLengthHalfIsZero(litMatchLength) {
-                        n = n.wrapping_add(3);
-                        current_block = 13744635599856597681;
-                        break;
-                    } else {
-                        n = n.wrapping_add(4);
-                        if n >= seqs.len().wrapping_sub(3) {
-                            current_block = 2668756484064249700;
-                            break;
-                        }
-                    }
                 }
             }
         }
-    } else {
-        current_block = 2668756484064249700;
+
+        while n < seqs.len() {
+            let litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
+            litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
+            if matchLengthHalfIsZero(litMatchLength) {
+                break 'out;
+            }
+            n = n.wrapping_add(1);
+        }
+
+        // At this point n == seqs.len(), so no end terminator.
+        return BlockSummary {
+            nbSequences: Error::externalSequences_invalid.to_error_code(),
+            blockSize: 0,
+            litSize: 0,
+        };
     }
 
-    loop {
-        match current_block {
-            13744635599856597681 => {
-                litMatchSize0 = litMatchSize0.wrapping_add(
-                    litMatchSize1
-                        .wrapping_add(litMatchSize2)
-                        .wrapping_add(litMatchSize3),
-                );
-                let mut bs_0 = BlockSummary {
-                    nbSequences: 0,
-                    blockSize: 0,
-                    litSize: 0,
-                };
-                bs_0.nbSequences = n.wrapping_add(1);
-                if cfg!(target_endian = "little") {
-                    bs_0.litSize = litMatchSize0 as u32 as size_t;
-                    bs_0.blockSize =
-                        (bs_0.litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize;
-                } else {
-                    bs_0.litSize = (litMatchSize0 >> 32) as usize;
-                    bs_0.blockSize = (bs_0.litSize).wrapping_add(litMatchSize0 as u32 as size_t);
-                }
-                return bs_0;
-            }
-            _ => {
-                if n < seqs.len() {
-                    let litMatchLength_0 = MEM_read64((&raw const seqs[n].litLength).cast());
-                    litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength_0);
-                    if matchLengthHalfIsZero(litMatchLength_0) {
-                        current_block = 13744635599856597681;
-                        continue;
-                    }
-                    n = n.wrapping_add(1);
-                    current_block = 2668756484064249700;
-                } else {
-                    // At this point n == seqs.len(), so no end terminator.
-                    let mut bs = BlockSummary {
-                        nbSequences: 0,
-                        blockSize: 0,
-                        litSize: 0,
-                    };
-                    bs.nbSequences = Error::externalSequences_invalid.to_error_code();
-                    return bs;
-                }
-            }
+    litMatchSize0 = litMatchSize0.wrapping_add(
+        litMatchSize1
+            .wrapping_add(litMatchSize2)
+            .wrapping_add(litMatchSize3),
+    );
+    if cfg!(target_endian = "little") {
+        let litSize = litMatchSize0 as u32 as size_t;
+        BlockSummary {
+            nbSequences: n.wrapping_add(1),
+            blockSize: (litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize,
+            litSize,
+        }
+    } else {
+        let litSize = (litMatchSize0 >> 32) as usize;
+        BlockSummary {
+            nbSequences: n.wrapping_add(1),
+            blockSize: litSize.wrapping_add(litMatchSize0 as u32 as size_t),
+            litSize,
         }
     }
 }
