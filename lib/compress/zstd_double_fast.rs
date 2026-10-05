@@ -71,7 +71,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     let hBitsS = cParams.chainLog;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
