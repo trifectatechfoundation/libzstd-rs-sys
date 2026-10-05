@@ -470,13 +470,11 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         return codeTable.len() * 10;
     }
     for &code in codeTable {
-        if !additionalBits.is_empty() {
-            cSymbolTypeSizeEstimateInBits = cSymbolTypeSizeEstimateInBits
-                .wrapping_add(usize::from(additionalBits[usize::from(code)]));
-        } else {
+        cSymbolTypeSizeEstimateInBits += if additionalBits.is_empty() {
             // for offset, offset code is also the number of additional bits
-            cSymbolTypeSizeEstimateInBits =
-                cSymbolTypeSizeEstimateInBits.wrapping_add(usize::from(code));
+            usize::from(code)
+        } else {
+            usize::from(additionalBits[usize::from(code)])
         }
     }
     cSymbolTypeSizeEstimateInBits / 8

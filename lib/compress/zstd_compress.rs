@@ -5130,10 +5130,10 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     }
 
     for &code in codeTable {
-        cSymbolTypeSizeEstimateInBits = if !additionalBits.is_empty() {
-            cSymbolTypeSizeEstimateInBits.wrapping_add(additionalBits[usize::from(code)] as size_t)
+        cSymbolTypeSizeEstimateInBits += if additionalBits.is_empty() {
+            usize::from(code)
         } else {
-            cSymbolTypeSizeEstimateInBits.wrapping_add(usize::from(code))
+            usize::from(additionalBits[usize::from(code)])
         };
     }
 
