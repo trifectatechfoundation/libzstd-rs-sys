@@ -9518,7 +9518,7 @@ const fn matchLengthHalfIsZero(litMatchLength: u64) -> bool {
     }
 }
 
-pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) -> BlockSummary {
+pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
     let mut current_block: u64;
     // Use multiple accumulators for efficient use of wide out-of-order machines.
     let mut litMatchSize0 = 0u64;
@@ -9527,42 +9527,31 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
     let mut litMatchSize3 = 0u64;
     let mut n = 0usize;
 
-    if nbSeqs > 3 as size_t {
+    if seqs.len() > 3 {
         // Process the input in 4 independent streams to reach high throughput.
         loop {
-            let mut litMatchLength = MEM_read64(
-                &(*seqs.add(n)).litLength as *const core::ffi::c_uint as *const core::ffi::c_void,
-            );
+            let mut litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
             litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 current_block = 13744635599856597681;
                 break;
             }
 
-            litMatchLength = MEM_read64(
-                &(*seqs.add(n.wrapping_add(1))).litLength as *const core::ffi::c_uint
-                    as *const core::ffi::c_void,
-            );
+            litMatchLength = MEM_read64((&raw const seqs[n + 1].litLength).cast());
             litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 n = n.wrapping_add(1);
                 current_block = 13744635599856597681;
                 break;
             } else {
-                litMatchLength = MEM_read64(
-                    &(*seqs.add(n.wrapping_add(2))).litLength as *const core::ffi::c_uint
-                        as *const core::ffi::c_void,
-                );
+                litMatchLength = MEM_read64((&raw const seqs[n + 2].litLength).cast());
                 litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
                 if matchLengthHalfIsZero(litMatchLength) {
                     n = n.wrapping_add(2);
                     current_block = 13744635599856597681;
                     break;
                 } else {
-                    litMatchLength = MEM_read64(
-                        &(*seqs.add(n.wrapping_add(3))).litLength as *const core::ffi::c_uint
-                            as *const core::ffi::c_void,
-                    );
+                    litMatchLength = MEM_read64((&raw const seqs[n + 3].litLength).cast());
                     litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
                     if matchLengthHalfIsZero(litMatchLength) {
                         n = n.wrapping_add(3);
@@ -9570,7 +9559,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                         break;
                     } else {
                         n = n.wrapping_add(4);
-                        if n >= nbSeqs.wrapping_sub(3) {
+                        if n >= seqs.len().wrapping_sub(3) {
                             current_block = 2668756484064249700;
                             break;
                         }
@@ -9607,11 +9596,8 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                 return bs_0;
             }
             _ => {
-                if n < nbSeqs {
-                    let litMatchLength_0 = MEM_read64(
-                        &(*seqs.add(n)).litLength as *const core::ffi::c_uint
-                            as *const core::ffi::c_void,
-                    );
+                if n < seqs.len() {
+                    let litMatchLength_0 = MEM_read64((&raw const seqs[n].litLength).cast());
                     litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength_0);
                     if matchLengthHalfIsZero(litMatchLength_0) {
                         current_block = 13744635599856597681;
@@ -9620,7 +9606,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                     n = n.wrapping_add(1);
                     current_block = 2668756484064249700;
                 } else {
-                    // At this point n == nbSeqs, so no end terminator.
+                    // At this point n == seqs.len(), so no end terminator.
                     let mut bs = BlockSummary {
                         nbSequences: 0,
                         blockSize: 0,
@@ -9664,7 +9650,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
 
     while !inSeqs.is_empty() {
-        let block = ZSTD_get1BlockSummary(inSeqs.as_ptr(), inSeqs.len());
+        let block = ZSTD_get1BlockSummary(inSeqs);
         let lastBlock = block.nbSequences == inSeqs.len();
         let err_code = block.nbSequences;
         if ERR_isError(err_code) {
