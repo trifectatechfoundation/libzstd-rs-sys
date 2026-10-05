@@ -9524,62 +9524,53 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
     let mut litMatchSize1 = 0u64;
     let mut litMatchSize2 = 0u64;
     let mut litMatchSize3 = 0u64;
-    let mut n = 0usize;
 
-    'out: {
-        if seqs.len() > 3 {
-            // Process the input in 4 independent streams to reach high throughput.
-            loop {
-                let mut litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
-                litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
-                if matchLengthHalfIsZero(litMatchLength) {
-                    break 'out;
-                }
+    // Index of the block delimiter (the first sequence with a matchLength of 0).
+    let n = 'out: {
+        let (chunks, remainder) = seqs.as_chunks::<4>();
 
-                litMatchLength = MEM_read64((&raw const seqs[n + 1].litLength).cast());
-                litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
-                if matchLengthHalfIsZero(litMatchLength) {
-                    n = n.wrapping_add(1);
-                    break 'out;
-                }
-
-                litMatchLength = MEM_read64((&raw const seqs[n + 2].litLength).cast());
-                litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
-                if matchLengthHalfIsZero(litMatchLength) {
-                    n = n.wrapping_add(2);
-                    break 'out;
-                }
-
-                litMatchLength = MEM_read64((&raw const seqs[n + 3].litLength).cast());
-                litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
-                if matchLengthHalfIsZero(litMatchLength) {
-                    n = n.wrapping_add(3);
-                    break 'out;
-                }
-
-                n = n.wrapping_add(4);
-                if n >= seqs.len().wrapping_sub(3) {
-                    break;
-                }
-            }
-        }
-
-        while n < seqs.len() {
-            let litMatchLength = MEM_read64((&raw const seqs[n].litLength).cast());
+        // Process the input in 4 independent streams to reach high throughput.
+        for (i, [s0, s1, s2, s3]) in chunks.iter().enumerate() {
+            let mut litMatchLength = MEM_read64((&raw const s0.litLength).cast());
             litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
-                break 'out;
+                break 'out 4 * i;
             }
-            n = n.wrapping_add(1);
+
+            litMatchLength = MEM_read64((&raw const s1.litLength).cast());
+            litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
+            if matchLengthHalfIsZero(litMatchLength) {
+                break 'out 4 * i + 1;
+            }
+
+            litMatchLength = MEM_read64((&raw const s2.litLength).cast());
+            litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
+            if matchLengthHalfIsZero(litMatchLength) {
+                break 'out 4 * i + 2;
+            }
+
+            litMatchLength = MEM_read64((&raw const s3.litLength).cast());
+            litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
+            if matchLengthHalfIsZero(litMatchLength) {
+                break 'out 4 * i + 3;
+            }
         }
 
-        // At this point n == seqs.len(), so no end terminator.
+        for (j, seq) in remainder.iter().enumerate() {
+            let litMatchLength = MEM_read64((&raw const seq.litLength).cast());
+            litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
+            if matchLengthHalfIsZero(litMatchLength) {
+                break 'out 4 * chunks.len() + j;
+            }
+        }
+
+        // No end terminator.
         return BlockSummary {
             nbSequences: Error::externalSequences_invalid.to_error_code(),
             blockSize: 0,
             litSize: 0,
         };
-    }
+    };
 
     litMatchSize0 = litMatchSize0.wrapping_add(
         litMatchSize1
