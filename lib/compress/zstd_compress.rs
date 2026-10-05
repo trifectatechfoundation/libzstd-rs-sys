@@ -9429,11 +9429,10 @@ pub unsafe fn convertSequences_noRepcodes(
 /// It may be re-inserted later.
 pub unsafe fn ZSTD_convertBlockSequences(
     cctx: *mut ZSTD_CCtx,
-    inSeqs: *const ZSTD_Sequence,
-    nbSequences: size_t,
+    inSeqs: &[ZSTD_Sequence],
     repcodeResolution: bool,
 ) -> size_t {
-    if nbSequences >= (*cctx).seqStore.maxNbSeq {
+    if inSeqs.len() >= (*cctx).seqStore.maxNbSeq {
         return Error::externalSequences_invalid.to_error_code();
     }
 
@@ -9443,27 +9442,26 @@ pub unsafe fn ZSTD_convertBlockSequences(
     if !repcodeResolution {
         let longl = convertSequences_noRepcodes(
             (*cctx).seqStore.sequencesStart,
-            inSeqs,
-            nbSequences.wrapping_sub(1),
+            inSeqs.as_ptr(),
+            inSeqs.len() - 1,
         );
-        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(nbSequences).sub(1);
+        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(inSeqs.len() - 1);
         if longl != 0 {
-            if longl <= nbSequences.wrapping_sub(1) {
+            if longl < inSeqs.len() {
                 (*cctx).seqStore.longLengthType = LongLengthType::Match;
                 (*cctx).seqStore.longLengthPos = longl.wrapping_sub(1) as u32;
             } else {
                 (*cctx).seqStore.longLengthType = LongLengthType::Literal;
-                (*cctx).seqStore.longLengthPos = longl
-                    .wrapping_sub(nbSequences.wrapping_sub(1))
-                    .wrapping_sub(1) as u32;
+                (*cctx).seqStore.longLengthPos =
+                    longl.wrapping_sub(inSeqs.len() - 1).wrapping_sub(1) as u32;
             }
         }
     } else {
-        for seqNb in 0..nbSequences.wrapping_sub(1) {
-            let litLength = (*inSeqs.add(seqNb)).litLength;
-            let matchLength = (*inSeqs.add(seqNb)).matchLength;
+        for seq in &inSeqs[..inSeqs.len() - 1] {
+            let litLength = seq.litLength;
+            let matchLength = seq.matchLength;
             let ll0 = litLength == 0;
-            let offBase = ZSTD_finalizeOffBase((*inSeqs.add(seqNb)).offset, &updatedRepcodes, ll0);
+            let offBase = ZSTD_finalizeOffBase(seq.offset, &updatedRepcodes, ll0);
             ZSTD_storeSeqOnly(
                 &mut (*cctx).seqStore,
                 litLength as size_t,
@@ -9475,22 +9473,22 @@ pub unsafe fn ZSTD_convertBlockSequences(
     }
 
     // If we skipped repcode search while parsing, we need to update repcodes now
-    if !repcodeResolution && nbSequences > 1 {
+    if !repcodeResolution && inSeqs.len() > 1 {
         let rep = &mut updatedRepcodes;
 
-        if nbSequences >= 4 {
-            let lastSeqIdx = (nbSequences as u32).wrapping_sub(2); // index of last full sequence
-            rep[2] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
-            rep[1] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            rep[0] = (*inSeqs.offset(lastSeqIdx as isize)).offset;
-        } else if nbSequences == 3 {
+        if inSeqs.len() >= 4 {
+            let lastSeqIdx = inSeqs.len() - 2; // index of last full sequence
+            rep[2] = inSeqs[lastSeqIdx - 2].offset;
+            rep[1] = inSeqs[lastSeqIdx - 1].offset;
+            rep[0] = inSeqs[lastSeqIdx].offset;
+        } else if inSeqs.len() == 3 {
             rep[2] = rep[0];
-            rep[1] = (*inSeqs).offset;
-            rep[0] = (*inSeqs.add(1)).offset;
+            rep[1] = inSeqs[0].offset;
+            rep[0] = inSeqs[1].offset;
         } else {
             rep[2] = rep[1];
             rep[1] = rep[0];
-            rep[0] = (*inSeqs).offset;
+            rep[0] = inSeqs[0].offset;
         }
     }
 
@@ -9630,7 +9628,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
         let conversionStatus =
-            ZSTD_convertBlockSequences(cctx, inSeqs.as_ptr(), block.nbSequences, repcodeResolution);
+            ZSTD_convertBlockSequences(cctx, &inSeqs[..block.nbSequences], repcodeResolution);
         let err_code_0 = conversionStatus;
         if ERR_isError(err_code_0) {
             return err_code_0;
