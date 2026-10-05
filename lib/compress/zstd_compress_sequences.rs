@@ -338,6 +338,11 @@ unsafe fn ZSTD_encodeSequences_body(
     sequences: &[SeqDef],
     longOffsets: bool,
 ) -> Result<size_t, Error> {
+    // `longOffsets` can only be set on 32-bit targets, on 64-bit targets this
+    // value is known to be false, reducing register pressure below.
+    debug_assert!(MEM_32bits() || !longOffsets);
+    let longOffsets = MEM_32bits() && longOffsets;
+
     let nbSeq = sequences.len();
     let mlCodeTable = &mlCodeTable[..nbSeq];
     let ofCodeTable = &ofCodeTable[..nbSeq];
