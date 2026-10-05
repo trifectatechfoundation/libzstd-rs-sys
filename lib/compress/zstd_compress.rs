@@ -2197,15 +2197,15 @@ pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
 ///
 /// NOTE: Initialization does not employ the pledged src size,
 /// because the dictionary may be used for multiple compressions.
-unsafe fn ZSTD_initLocalDict(cctx: *mut ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_initLocalDict(cctx: *mut ZSTD_CCtx) -> Result<(), Error> {
     let dl: *mut ZSTD_localDict = &mut (*cctx).localDict;
     if ((*dl).dict).is_null() {
         // No local dictionary
-        return 0;
+        return Ok(());
     }
     if !((*dl).cdict).is_null() {
         // Local dictionary already initialized
-        return 0;
+        return Ok(());
     }
 
     (*dl).cdict = ZSTD_createCDict_advanced2(
@@ -2217,11 +2217,11 @@ unsafe fn ZSTD_initLocalDict(cctx: *mut ZSTD_CCtx) -> size_t {
         (*cctx).customMem,
     );
     if ((*dl).cdict).is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     (*cctx).cdict = (*dl).cdict;
 
-    0
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_advanced))]
@@ -8400,9 +8400,8 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
 ) -> size_t {
     let mut params = (*cctx).requestedParams;
     let prefixDict = (*cctx).prefixDict;
-    let err_code = ZSTD_initLocalDict(cctx);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_initLocalDict(cctx) {
+        return err.to_error_code();
     }
     ptr::write_bytes(
         &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut u8,
