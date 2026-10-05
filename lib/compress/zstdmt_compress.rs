@@ -654,8 +654,7 @@ unsafe fn ZSTDMT_serialState_reset(
             ZSTD_window_update(&mut serialState.ldmState.window, dict, dictSize, false);
             ZSTD_ldm_fillHashTable(
                 &mut serialState.ldmState,
-                dict as *const u8,
-                dictEnd,
+                core::slice::from_raw_parts(dict.cast::<u8>(), dictSize),
                 &params.ldmParams,
             );
             serialState.ldmState.loadedDictEnd = if params.forceWindow != 0 {
