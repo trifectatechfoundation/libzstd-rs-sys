@@ -5049,8 +5049,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
 
 /// Returns the size estimate for the literals section (header + content) of a block
 unsafe fn ZSTD_estimateBlockSize_literal(
-    literals: *const u8,
-    litSize: size_t,
+    literals: &[u8],
     huf: &ZSTD_hufCTables_t,
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
@@ -5060,24 +5059,24 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
     let literalSectionHeaderSize = 3
-        + size_t::from(litSize >= (1 << 10) as size_t)
-        + size_t::from(litSize >= (16 * (1 << 10)) as size_t);
-    let singleStream = litSize < 256;
+        + size_t::from(literals.len() >= (1 << 10) as size_t)
+        + size_t::from(literals.len() >= (16 * (1 << 10)) as size_t);
+    let singleStream = literals.len() < 256;
 
     match hufMetadata.hType {
-        SymbolEncodingType::Basic => litSize,
+        SymbolEncodingType::Basic => literals.len(),
         SymbolEncodingType::Rle => 1,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
             if HIST_count_wksp(
                 countWksp,
                 &mut maxSymbolValue,
-                core::slice::from_raw_parts(literals, litSize),
+                literals,
                 workspace,
                 wkspSize,
             )
             .is_err()
             {
-                return litSize;
+                return literals.len();
             };
             // `HIST_count_wksp` has filled every entry of the count table.
             let count = core::slice::from_raw_parts(countWksp, HUF_SYMBOLVALUE_MAX as usize + 1);
@@ -5218,8 +5217,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
 
 /// Returns the size estimate for a given stream of literals, of, ll, ml
 unsafe fn ZSTD_estimateBlockSize(
-    literals: *const u8,
-    litSize: size_t,
+    literals: &[u8],
     ofCodeTable: *const u8,
     llCodeTable: *const u8,
     mlCodeTable: *const u8,
@@ -5233,7 +5231,6 @@ unsafe fn ZSTD_estimateBlockSize(
 ) -> size_t {
     let literalsSize = ZSTD_estimateBlockSize_literal(
         literals,
-        litSize,
         &entropy.huf,
         &(*entropyMetadata).hufMetadata,
         workspace,
@@ -5280,8 +5277,10 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
     }
 
     ZSTD_estimateBlockSize(
-        seqStore.litStart,
-        (seqStore.lit).offset_from_unsigned(seqStore.litStart),
+        core::slice::from_raw_parts(
+            seqStore.litStart,
+            (seqStore.lit).offset_from_unsigned(seqStore.litStart),
+        ),
         seqStore.ofCode,
         seqStore.llCode,
         seqStore.mlCode,
