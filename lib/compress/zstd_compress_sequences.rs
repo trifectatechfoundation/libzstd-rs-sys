@@ -335,10 +335,10 @@ unsafe fn ZSTD_encodeSequences_body(
     ofCodeTable: &[u8],
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
-    sequences: *const SeqDef,
-    nbSeq: size_t,
+    sequences: &[SeqDef],
     longOffsets: bool,
 ) -> Result<size_t, Error> {
+    let nbSeq = sequences.len();
     let mlCodeTable = &mlCodeTable[..nbSeq];
     let ofCodeTable = &ofCodeTable[..nbSeq];
     let llCodeTable = &llCodeTable[..nbSeq];
@@ -353,7 +353,7 @@ unsafe fn ZSTD_encodeSequences_body(
     let mut stateLitLength = FSE_initCState2(CTable_LitLength, llCodeTable[nbSeq - 1] as u32);
     BIT_addBits(
         &mut blockStream,
-        (*sequences.add(nbSeq.wrapping_sub(1))).litLength as BitContainerType,
+        sequences[nbSeq - 1].litLength as BitContainerType,
         LL_bits_u8[usize::from(llCodeTable[nbSeq - 1])] as core::ffi::c_uint,
     );
     if MEM_32bits() {
@@ -361,7 +361,7 @@ unsafe fn ZSTD_encodeSequences_body(
     }
     BIT_addBits(
         &mut blockStream,
-        (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
+        sequences[nbSeq - 1].mlBase as BitContainerType,
         ML_bits_u8[usize::from(mlCodeTable[nbSeq - 1])] as core::ffi::c_uint,
     );
     if MEM_32bits() {
@@ -373,20 +373,20 @@ unsafe fn ZSTD_encodeSequences_body(
         if extraBits != 0 {
             BIT_addBits(
                 &mut blockStream,
-                (*sequences.add(nbSeq.wrapping_sub(1))).offBase as BitContainerType,
+                sequences[nbSeq - 1].offBase as BitContainerType,
                 extraBits,
             );
             BIT_flushBits(&mut blockStream);
         }
         BIT_addBits(
             &mut blockStream,
-            ((*sequences.add(nbSeq.wrapping_sub(1))).offBase >> extraBits) as BitContainerType,
+            (sequences[nbSeq - 1].offBase >> extraBits) as BitContainerType,
             ofBits.wrapping_sub(extraBits),
         );
     } else {
         BIT_addBits(
             &mut blockStream,
-            (*sequences.add(nbSeq.wrapping_sub(1))).offBase as BitContainerType,
+            sequences[nbSeq - 1].offBase as BitContainerType,
             ofCodeTable[nbSeq - 1] as core::ffi::c_uint,
         );
     }
@@ -396,8 +396,9 @@ unsafe fn ZSTD_encodeSequences_body(
     let codes = llCodeTable[..last]
         .iter()
         .zip(&ofCodeTable[..last])
-        .zip(&mlCodeTable[..last]);
-    for (n, ((&llCode, &ofCode), &mlCode)) in codes.enumerate().rev() {
+        .zip(&mlCodeTable[..last])
+        .zip(&sequences[..last]);
+    for (((&llCode, &ofCode), &mlCode), seq) in codes.rev() {
         let llBits = LL_bits_u8[usize::from(llCode)] as u32;
         let ofBits_0 = ofCode as u32;
         let mlBits = ML_bits_u8[usize::from(mlCode)] as u32;
@@ -425,19 +426,11 @@ unsafe fn ZSTD_encodeSequences_body(
         {
             BIT_flushBits(&mut blockStream);
         }
-        BIT_addBits(
-            &mut blockStream,
-            (*sequences.add(n)).litLength as BitContainerType,
-            llBits,
-        );
+        BIT_addBits(&mut blockStream, seq.litLength as BitContainerType, llBits);
         if MEM_32bits() && llBits.wrapping_add(mlBits) > 24 {
             BIT_flushBits(&mut blockStream);
         }
-        BIT_addBits(
-            &mut blockStream,
-            (*sequences.add(n)).mlBase as BitContainerType,
-            mlBits,
-        );
+        BIT_addBits(&mut blockStream, seq.mlBase as BitContainerType, mlBits);
         if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
             BIT_flushBits(&mut blockStream);
         }
@@ -446,22 +439,18 @@ unsafe fn ZSTD_encodeSequences_body(
             if extraBits_0 != 0 {
                 BIT_addBits(
                     &mut blockStream,
-                    (*sequences.add(n)).offBase as BitContainerType,
+                    seq.offBase as BitContainerType,
                     extraBits_0,
                 );
                 BIT_flushBits(&mut blockStream);
             }
             BIT_addBits(
                 &mut blockStream,
-                ((*sequences.add(n)).offBase >> extraBits_0) as BitContainerType,
+                (seq.offBase >> extraBits_0) as BitContainerType,
                 ofBits_0.wrapping_sub(extraBits_0),
             );
         } else {
-            BIT_addBits(
-                &mut blockStream,
-                (*sequences.add(n)).offBase as BitContainerType,
-                ofBits_0,
-            );
+            BIT_addBits(&mut blockStream, seq.offBase as BitContainerType, ofBits_0);
         }
         BIT_flushBits(&mut blockStream);
     }
@@ -486,8 +475,7 @@ unsafe fn ZSTD_encodeSequences_default(
     ofCodeTable: &[u8],
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
-    sequences: *const SeqDef,
-    nbSeq: size_t,
+    sequences: &[SeqDef],
     longOffsets: bool,
 ) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
@@ -500,7 +488,6 @@ unsafe fn ZSTD_encodeSequences_default(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }
@@ -515,8 +502,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     ofCodeTable: &[u8],
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
-    sequences: *const SeqDef,
-    nbSeq: size_t,
+    sequences: &[SeqDef],
     longOffsets: bool,
 ) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
@@ -529,7 +515,6 @@ unsafe fn ZSTD_encodeSequences_bmi2(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }
@@ -543,8 +528,7 @@ pub unsafe fn ZSTD_encodeSequences(
     ofCodeTable: &[u8],
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
-    sequences: *const SeqDef,
-    nbSeq: size_t,
+    sequences: &[SeqDef],
     longOffsets: bool,
     bmi2: bool,
 ) -> Result<size_t, Error> {
@@ -559,7 +543,6 @@ pub unsafe fn ZSTD_encodeSequences(
             CTable_LitLength,
             llCodeTable,
             sequences,
-            nbSeq,
             longOffsets,
         );
     }
@@ -573,7 +556,6 @@ pub unsafe fn ZSTD_encodeSequences(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }
