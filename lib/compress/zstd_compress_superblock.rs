@@ -396,8 +396,7 @@ unsafe fn ZSTD_compressSubBlock(
 }
 
 unsafe fn ZSTD_estimateSubBlockSize_literal(
-    literals: *const u8,
-    litSize: size_t,
+    literals: &[u8],
     huf: &ZSTD_hufCTables_t,
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
@@ -409,19 +408,19 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
     match hufMetadata.hType {
-        SymbolEncodingType::Basic => litSize,
+        SymbolEncodingType::Basic => literals.len(),
         SymbolEncodingType::Rle => 1,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
             if HIST_count_wksp(
                 countWksp,
                 &mut maxSymbolValue,
-                core::slice::from_raw_parts(literals, litSize),
+                literals,
                 workspace,
                 wkspSize,
             )
             .is_err()
             {
-                return litSize;
+                return literals.len();
             };
             // `HIST_count_wksp` has filled every entry of the count table.
             let count = core::slice::from_raw_parts(countWksp, HUF_SYMBOLVALUE_MAX as usize + 1);
@@ -557,8 +556,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
 }
 
 unsafe fn ZSTD_estimateSubBlockSize(
-    literals: *const u8,
-    litSize: size_t,
+    literals: &[u8],
     ofCodeTable: *const u8,
     llCodeTable: *const u8,
     mlCodeTable: *const u8,
@@ -572,7 +570,6 @@ unsafe fn ZSTD_estimateSubBlockSize(
 ) -> EstimatedBlockSize {
     let estLitSize = ZSTD_estimateSubBlockSize_literal(
         literals,
-        litSize,
         &entropy.huf,
         &entropyMetadata.hufMetadata,
         workspace,
@@ -718,8 +715,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     // let's start by a general estimation for the full block
     if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
-            lstart,
-            nbLiterals,
+            literals,
             ofCodePtr,
             llCodePtr,
             mlCodePtr,
