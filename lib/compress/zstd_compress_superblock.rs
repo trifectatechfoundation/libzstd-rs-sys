@@ -695,6 +695,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut writeSeqEntropy = true;
 
     // let's start by a general estimation for the full block
+    #[allow(clippy::manual_checked_ops)]
     if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
             literals,
