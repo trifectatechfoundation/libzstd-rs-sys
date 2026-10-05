@@ -81,6 +81,10 @@ pub(crate) fn BIT_addBits<const BMI2: bool>(
     value: BitContainerType,
     nbBits: core::ffi::c_uint,
 ) {
+    // Masking once lets `bzhi` and the `bitPos` update share the shift amount.
+    debug_assert_eq!(nbBits & 63, nbBits);
+    let nbBits = if BMI2 { nbBits & 63 } else { nbBits };
+
     bitC.bitContainer |= BIT_getLowerBits::<BMI2>(value, nbBits) << bitC.bitPos;
     bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
