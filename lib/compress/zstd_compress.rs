@@ -9518,7 +9518,7 @@ const fn matchLengthHalfIsZero(litMatchLength: u64) -> bool {
     }
 }
 
-pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
+pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> Result<BlockSummary, Error> {
     // Use multiple accumulators for efficient use of wide out-of-order machines.
     let mut litMatchSize0 = 0u64;
     let mut litMatchSize1 = 0u64;
@@ -9564,12 +9564,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
             }
         }
 
-        // No end terminator.
-        return BlockSummary {
-            nbSequences: Error::externalSequences_invalid.to_error_code(),
-            blockSize: 0,
-            litSize: 0,
-        };
+        return Err(Error::externalSequences_invalid); // No end terminator.
     };
 
     litMatchSize0 = litMatchSize0.wrapping_add(
@@ -9579,18 +9574,18 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> BlockSummary {
     );
     if cfg!(target_endian = "little") {
         let litSize = litMatchSize0 as u32 as size_t;
-        BlockSummary {
+        Ok(BlockSummary {
             nbSequences: n.wrapping_add(1),
             blockSize: (litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize,
             litSize,
-        }
+        })
     } else {
         let litSize = (litMatchSize0 >> 32) as usize;
-        BlockSummary {
+        Ok(BlockSummary {
             nbSequences: n.wrapping_add(1),
             blockSize: litSize.wrapping_add(litMatchSize0 as u32 as size_t),
             litSize,
-        }
+        })
     }
 }
 
@@ -9624,12 +9619,11 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
 
     while !inSeqs.is_empty() {
-        let block = ZSTD_get1BlockSummary(inSeqs);
+        let block = match ZSTD_get1BlockSummary(inSeqs) {
+            Ok(block) => block,
+            Err(err) => return err.to_error_code(),
+        };
         let lastBlock = block.nbSequences == inSeqs.len();
-        let err_code = block.nbSequences;
-        if ERR_isError(err_code) {
-            return err_code;
-        }
         if block.litSize > literals.len() {
             return Error::externalSequences_invalid.to_error_code();
         }
