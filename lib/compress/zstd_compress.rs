@@ -887,12 +887,11 @@ fn ZSTD_cwksp_reserve_internal_buffer_space(
 
 /// Moves the cwksp to the next phase, and does any necessary allocations.
 /// cwksp initialization must necessarily go through each phase in order.
-///
-/// # Returns
-///
-/// 0 on success, or zstd error
 #[inline]
-fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase) -> size_t {
+fn ZSTD_cwksp_internal_advance_phase(
+    ws: &mut ZSTD_cwksp,
+    phase: CwkspAllocPhase,
+) -> Result<(), Error> {
     if phase > ws.phase {
         if ws.phase < CwkspAllocPhase::AlignedInitOnce && phase >= CwkspAllocPhase::AlignedInitOnce
         {
@@ -903,7 +902,7 @@ fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase
                 ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
             let objectEnd = alloc.wrapping_byte_add(bytesToAlign);
             if objectEnd > ws.workspaceEnd {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             ws.objectEnd = objectEnd;
             ws.tableEnd = objectEnd;
@@ -912,7 +911,7 @@ fn ZSTD_cwksp_internal_advance_phase(ws: &mut ZSTD_cwksp, phase: CwkspAllocPhase
         ws.phase = phase;
         ZSTD_cwksp_assert_internal_consistency(ws);
     }
-    0
+    Ok(())
 }
 
 /// Returns whether this object/buffer/etc was allocated in this workspace.
@@ -930,7 +929,7 @@ fn ZSTD_cwksp_reserve_internal(
     bytes: size_t,
     phase: CwkspAllocPhase,
 ) -> *mut core::ffi::c_void {
-    if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) || bytes == 0 {
+    if ZSTD_cwksp_internal_advance_phase(ws, phase).is_err() || bytes == 0 {
         return core::ptr::null_mut();
     }
     ZSTD_cwksp_reserve_internal_buffer_space(ws, bytes)
@@ -978,7 +977,7 @@ fn ZSTD_cwksp_reserve_aligned64(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core
 #[inline]
 fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let phase = CwkspAllocPhase::AlignedInitOnce;
-    if ws.phase < phase && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) {
+    if ws.phase < phase && ZSTD_cwksp_internal_advance_phase(ws, phase).is_err() {
         return core::ptr::null_mut();
     }
     let alloc = ws.tableEnd;
