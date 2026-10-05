@@ -436,8 +436,24 @@ fn test_compress_stream_2() {
     }
 }
 
+fn pseudo_random_step(state: &mut u64) -> u64 {
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
+    *state >> 33
+}
+
+fn pseudo_random(len: usize, seed: u64) -> Vec<u8> {
+    let mut state = seed | 1;
+
+    (0..len)
+        .map(|_| pseudo_random_step(&mut state) as u8)
+        .collect()
+}
+
 /// Long-distance matching (see `lib/compress/zstd_ldm.rs`).
 mod long_distance_matching {
+    use super::{pseudo_random, pseudo_random_step};
     use crate::assert_eq_rs_c;
     use std::ffi::c_void;
 
@@ -445,20 +461,6 @@ mod long_distance_matching {
     const SIZE: usize = 1 << 13;
     #[cfg(not(miri))]
     const SIZE: usize = 1 << 18;
-
-    fn pseudo_random_step(state: &mut u64) -> u64 {
-        *state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        *state >> 33
-    }
-
-    fn pseudo_random(len: usize, seed: u64) -> Vec<u8> {
-        let mut state = seed | 1;
-        (0..len)
-            .map(|_| pseudo_random_step(&mut state) as u8)
-            .collect()
-    }
 
     /// Random data with many short repeats copied from the first half into the
     /// second, at lengths around the default `ldmMinMatch` of 64.
@@ -716,5 +718,175 @@ mod long_distance_matching {
         assert_eq!(written, input.len());
         assert_eq!(decompressed, input);
         assert!(compressed.len() < input.len());
+    }
+}
+
+mod sequences_and_literals {
+    use super::pseudo_random;
+    use crate::assert_eq_rs_c;
+    use libzstd_rs_sys::ZSTD_Sequence;
+    use std::ffi::c_void;
+
+    #[cfg(miri)]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-tiny.dat");
+    #[cfg(not(miri))]
+    const INPUT: &[u8] = include_bytes!("../test-data/compress-input-small.dat");
+
+    /// A sequence with `offset == 0` and `matchLength == 0` ends a block,
+    /// its `litLength` are the literals that follow the last match of the block.
+    const DELIMITER: ZSTD_Sequence = ZSTD_Sequence {
+        offset: 0,
+        litLength: 0,
+        matchLength: 0,
+        rep: 0,
+    };
+
+    /// The literals buffer must be at least 8 bytes larger than the literals
+    const LITERALS_PADDING: usize = 8;
+
+    // `ZSTD_ParamSwitch_e` values for `ZSTD_c_repcodeResolution`
+    const ENABLE: i32 = 1;
+    const DISABLE: i32 = 2;
+    const REPCODE_RESOLUTIONS: [i32; 2] = [ENABLE, DISABLE];
+
+    struct Case {
+        input: Vec<u8>,
+        seqs: Vec<ZSTD_Sequence>,
+        /// The literals, followed by `LITERALS_PADDING` bytes
+        literals: Vec<u8>,
+    }
+
+    impl Case {
+        fn new(input: &[u8], max_block_size: Option<i32>) -> Self {
+            use libzstd_rs_sys::*;
+
+            let seqs = unsafe {
+                let cctx = ZSTD_createCCtx();
+                assert!(!cctx.is_null());
+
+                if let Some(max_block_size) = max_block_size {
+                    let param = ZSTD_cParameter::ZSTD_c_experimentalParam18; // ZSTD_c_maxBlockSize
+                    let err = ZSTD_CCtx_setParameter(cctx, param, max_block_size);
+                    assert_eq!(ZSTD_isError(err), 0);
+                }
+
+                let mut seqs = vec![DELIMITER; ZSTD_sequenceBound(input.len())];
+                let n = ZSTD_generateSequences(
+                    cctx,
+                    seqs.as_mut_ptr(),
+                    seqs.len(),
+                    input.as_ptr() as *const c_void,
+                    input.len(),
+                );
+                assert_eq!(ZSTD_isError(n), 0);
+                seqs.truncate(n);
+
+                ZSTD_freeCCtx(cctx);
+                seqs
+            };
+            assert_eq!(seqs.last().map(|seq| seq.matchLength), Some(0));
+
+            let mut literals = Vec::new();
+            let mut pos = 0;
+            for seq in &seqs {
+                literals.extend_from_slice(&input[pos..][..seq.litLength as usize]);
+                pos += (seq.litLength + seq.matchLength) as usize;
+            }
+            assert_eq!(pos, input.len());
+            literals.extend_from_slice(&[0; LITERALS_PADDING]);
+
+            Self {
+                input: input.to_vec(),
+                seqs,
+                literals,
+            }
+        }
+
+        /// Splits the single block of `self` into blocks of `k` sequences,
+        /// each followed by a delimiter without literals.
+        fn regroup(&self, k: usize) -> Self {
+            let (last, body) = self.seqs.split_last().unwrap();
+            assert!(body.iter().all(|seq| seq.matchLength != 0));
+
+            let mut seqs = Vec::new();
+            for chunk in body.chunks(k) {
+                seqs.extend_from_slice(chunk);
+                seqs.push(DELIMITER);
+            }
+            seqs.push(*last);
+
+            Self {
+                input: self.input.clone(),
+                seqs,
+                literals: self.literals.clone(),
+            }
+        }
+
+        /// Test `ZSTD_compressSequencesAndLiterals`
+        fn check(&self) {
+            for repcode_resolution in REPCODE_RESOLUTIONS {
+                assert_eq_rs_c!({
+                    let cctx = ZSTD_createCCtx();
+                    assert!(!cctx.is_null());
+
+                    for (parameter, value) in [
+                        (ZSTD_cParameter::ZSTD_c_experimentalParam11, 1), // ZSTD_c_blockDelimiters = ZSTD_sf_explicitBlockDelimiters
+                        (
+                            ZSTD_cParameter::ZSTD_c_experimentalParam19, // ZSTD_c_repcodeResolution
+                            repcode_resolution,
+                        ),
+                    ] {
+                        let err = ZSTD_CCtx_setParameter(cctx, parameter, value);
+                        assert_eq!(ZSTD_isError(err), 0);
+                    }
+
+                    let mut dst = vec![0u8; ZSTD_compressBound(self.input.len())];
+                    let written = ZSTD_compressSequencesAndLiterals(
+                        cctx,
+                        dst.as_mut_ptr() as *mut c_void,
+                        dst.len(),
+                        self.seqs.as_ptr().cast(),
+                        self.seqs.len(),
+                        self.literals.as_ptr() as *const c_void,
+                        self.literals.len() - LITERALS_PADDING,
+                        self.literals.len(),
+                        self.input.len(),
+                    );
+                    assert_eq!(ZSTD_isError(written), 0);
+                    dst.truncate(written);
+
+                    ZSTD_freeCCtx(cctx);
+
+                    dst
+                });
+            }
+        }
+    }
+
+    #[test]
+    fn many_blocks() {
+        Case::new(INPUT, Some(1024)).check();
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "slow")]
+    fn small_blocks() {
+        let case = Case::new(INPUT, None);
+        for k in 1..=5 {
+            case.regroup(k).check();
+        }
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "slow")]
+    fn long_lengths() {
+        // Literal and match lengths above 65535 need the `longLengthType` escape
+        let mut input = pseudo_random(66_000, 3);
+        input.extend(std::iter::repeat_n(0u8, 200_000));
+
+        let case = Case::new(&input, None);
+        assert!(case.seqs.iter().any(|seq| seq.litLength > 65535));
+        assert!(case.seqs.iter().any(|seq| seq.matchLength > 65535 + 3));
+        case.check();
     }
 }
