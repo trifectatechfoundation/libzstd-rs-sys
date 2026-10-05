@@ -9638,8 +9638,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     cctx: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut nbSequences: size_t,
+    mut inSeqs: &[ZSTD_Sequence],
     mut literals: &[u8],
     srcSize: size_t,
 ) -> size_t {
@@ -9648,12 +9647,12 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     let mut op = dst as *mut u8;
     let repcodeResolution = (*cctx).appliedParams.searchForExternalRepcodes == ParamSwitch::Enable;
 
-    if nbSequences == 0 {
+    if inSeqs.is_empty() {
         return Error::externalSequences_invalid.to_error_code();
     }
 
     // Special case: empty frame
-    if nbSequences == 1 && (*inSeqs).litLength == 0 {
+    if inSeqs.len() == 1 && inSeqs[0].litLength == 0 {
         let cBlockHeader24 = 1u32.wrapping_add((BlockType::Raw as u32) << 1);
         if dstCapacity < 3 {
             return Error::dstSize_tooSmall.to_error_code();
@@ -9664,9 +9663,9 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         cSize = cSize.wrapping_add(ZSTD_BLOCKHEADERSIZE);
     }
 
-    while nbSequences != 0 {
-        let block = ZSTD_get1BlockSummary(inSeqs, nbSequences);
-        let lastBlock = block.nbSequences == nbSequences;
+    while !inSeqs.is_empty() {
+        let block = ZSTD_get1BlockSummary(inSeqs.as_ptr(), inSeqs.len());
+        let lastBlock = block.nbSequences == inSeqs.len();
         let err_code = block.nbSequences;
         if ERR_isError(err_code) {
             return err_code;
@@ -9677,13 +9676,12 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
         let conversionStatus =
-            ZSTD_convertBlockSequences(cctx, inSeqs, block.nbSequences, repcodeResolution);
+            ZSTD_convertBlockSequences(cctx, inSeqs.as_ptr(), block.nbSequences, repcodeResolution);
         let err_code_0 = conversionStatus;
         if ERR_isError(err_code_0) {
             return err_code_0;
         }
-        inSeqs = inSeqs.add(block.nbSequences);
-        nbSequences = nbSequences.wrapping_sub(block.nbSequences);
+        inSeqs = &inSeqs[block.nbSequences..];
         remaining = remaining.wrapping_sub(block.blockSize);
 
         // Note: when blockSize is very small, other variant send it uncompressed.
@@ -9814,12 +9812,16 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     } else {
         core::slice::from_raw_parts(literals.cast::<u8>(), litSize)
     };
+    let inSeqs = if inSeqs.is_null() || inSeqsSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(inSeqs, inSeqsSize)
+    };
     let cBlocksSize = ZSTD_compressSequencesAndLiterals_internal(
         cctx,
         op as *mut core::ffi::c_void,
         dstCapacity,
         inSeqs,
-        inSeqsSize,
         literals,
         decompressedSize,
     );
