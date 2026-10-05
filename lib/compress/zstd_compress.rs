@@ -5097,8 +5097,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
 /// Returns the size estimate for the FSE-compressed symbols (of, ml, ll) of a block
 unsafe fn ZSTD_estimateBlockSize_symbolType(
     encodingType: SymbolEncodingType,
-    codeTable: *const u8,
-    nbSeq: size_t,
+    codeTable: &[u8],
     maxCode: u8,
     fseCTable: &[FSE_CTable],
     additionalBits: &[u8],
@@ -5109,19 +5108,9 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     wkspSize: size_t,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
-    let mut ctp = codeTable;
-    let ctStart = ctp;
-    let ctEnd = ctStart.add(nbSeq);
     let mut max = maxCode;
 
-    HIST_countFast_wksp(
-        countWksp,
-        &mut max,
-        core::slice::from_raw_parts(codeTable, nbSeq),
-        workspace,
-        wkspSize,
-    )
-    .expect("can't fail");
+    HIST_countFast_wksp(countWksp, &mut max, codeTable, workspace, wkspSize).expect("can't fail");
     // `HIST_countFast_wksp` has filled every entry of the count table up to `max`.
     let count = core::slice::from_raw_parts(countWksp, usize::from(max) + 1);
     let mut cSymbolTypeSizeEstimateInBits = match encodingType {
@@ -5137,16 +5126,15 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         }
     };
     if ERR_isError(cSymbolTypeSizeEstimateInBits) {
-        return nbSeq * 10;
+        return codeTable.len() * 10;
     }
 
-    while ctp < ctEnd {
+    for &code in codeTable {
         cSymbolTypeSizeEstimateInBits = if !additionalBits.is_empty() {
-            cSymbolTypeSizeEstimateInBits.wrapping_add(additionalBits[usize::from(*ctp)] as size_t)
+            cSymbolTypeSizeEstimateInBits.wrapping_add(additionalBits[usize::from(code)] as size_t)
         } else {
-            cSymbolTypeSizeEstimateInBits.wrapping_add(usize::from(*ctp))
+            cSymbolTypeSizeEstimateInBits.wrapping_add(usize::from(code))
         };
-        ctp = ctp.add(1);
     }
 
     cSymbolTypeSizeEstimateInBits >> 3
@@ -5154,16 +5142,16 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
 
 /// Returns the size estimate for the sequences section (header + content) of a block
 unsafe fn ZSTD_estimateBlockSize_sequences(
-    ofCodeTable: *const u8,
-    llCodeTable: *const u8,
-    mlCodeTable: *const u8,
-    nbSeq: size_t,
+    ofCodeTable: &[u8],
+    llCodeTable: &[u8],
+    mlCodeTable: &[u8],
     fseTables: &ZSTD_fseCTables_t,
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
     writeEntropy: bool,
 ) -> size_t {
+    let nbSeq = ofCodeTable.len();
     let sequencesSectionHeaderSize =
         1 + 1 + usize::from(nbSeq >= 128) + usize::from(nbSeq >= LONGNBSEQ as size_t);
     let mut cSeqSizeEstimate = 0usize;
@@ -5171,7 +5159,6 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
         fseMetadata.ofType,
         ofCodeTable,
-        nbSeq,
         MaxOff,
         &fseTables.offcodeCTable,
         &[],
@@ -5184,7 +5171,6 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
         fseMetadata.llType,
         llCodeTable,
-        nbSeq,
         MaxLL,
         &fseTables.litlengthCTable,
         &LL_bits,
@@ -5197,7 +5183,6 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
         fseMetadata.mlType,
         mlCodeTable,
-        nbSeq,
         MaxML,
         &fseTables.matchlengthCTable,
         &ML_bits,
@@ -5218,10 +5203,9 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
 /// Returns the size estimate for a given stream of literals, of, ll, ml
 unsafe fn ZSTD_estimateBlockSize(
     literals: &[u8],
-    ofCodeTable: *const u8,
-    llCodeTable: *const u8,
-    mlCodeTable: *const u8,
-    nbSeq: size_t,
+    ofCodeTable: &[u8],
+    llCodeTable: &[u8],
+    mlCodeTable: &[u8],
     entropy: &ZSTD_entropyCTables_t,
     entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
@@ -5241,7 +5225,6 @@ unsafe fn ZSTD_estimateBlockSize(
         ofCodeTable,
         llCodeTable,
         mlCodeTable,
-        nbSeq,
         &entropy.fse,
         &(*entropyMetadata).fseMetadata,
         workspace,
@@ -5276,15 +5259,15 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         return err.to_error_code();
     }
 
+    let nbSeq = (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart);
     ZSTD_estimateBlockSize(
         core::slice::from_raw_parts(
             seqStore.litStart,
             (seqStore.lit).offset_from_unsigned(seqStore.litStart),
         ),
-        seqStore.ofCode,
-        seqStore.llCode,
-        seqStore.mlCode,
-        (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart),
+        core::slice::from_raw_parts(seqStore.ofCode, nbSeq),
+        core::slice::from_raw_parts(seqStore.llCode, nbSeq),
+        core::slice::from_raw_parts(seqStore.mlCode, nbSeq),
         &(*(*zc).blockState.nextCBlock).entropy,
         entropyMetadata,
         (*zc).tmpWorkspace,
