@@ -59,7 +59,7 @@ pub struct ldmRollingHashState_t {
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::xxhash::{ZSTD_XXH64_slice, ZSTD_XXH64};
+use crate::lib::common::xxhash::ZSTD_XXH64_slice;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
@@ -728,9 +728,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let split = ip
                 .add(ldmState.splitIndices[n])
                 .sub(minMatchLength as usize);
-            let xxhash = ZSTD_XXH64(
-                split as *const core::ffi::c_void,
-                minMatchLength as usize,
+            let xxhash = ZSTD_XXH64_slice(
+                core::slice::from_raw_parts(split, minMatchLength as usize),
                 0,
             );
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
