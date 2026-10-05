@@ -215,9 +215,9 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
     sequences: *const SeqDef,
     nbSeq: size_t,
-    llCode: *const u8,
-    mlCode: *const u8,
-    ofCode: *const u8,
+    llCode: &[u8],
+    mlCode: &[u8],
+    ofCode: &[u8],
     cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -282,11 +282,11 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &fseTables.matchlengthCTable,
-        mlCode,
+        mlCode.as_ptr(),
         &fseTables.offcodeCTable,
-        ofCode,
+        ofCode.as_ptr(),
         &fseTables.litlengthCTable,
-        llCode,
+        llCode.as_ptr(),
         sequences,
         nbSeq,
         longOffsets,
@@ -333,9 +333,9 @@ unsafe fn ZSTD_compressSubBlock(
     sequences: *const SeqDef,
     nbSeq: size_t,
     literals: &[u8],
-    llCode: *const u8,
-    mlCode: *const u8,
-    ofCode: *const u8,
+    llCode: &[u8],
+    mlCode: &[u8],
+    ofCode: &[u8],
     cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -686,9 +686,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
-    let mut llCodePtr: *const u8 = seqStorePtr.llCode;
-    let mut mlCodePtr: *const u8 = seqStorePtr.mlCode;
-    let mut ofCodePtr: *const u8 = seqStorePtr.ofCode;
+    let mut llCodes = core::slice::from_raw_parts(seqStorePtr.llCode, nbSeqs);
+    let mut mlCodes = core::slice::from_raw_parts(seqStorePtr.mlCode, nbSeqs);
+    let mut ofCodes = core::slice::from_raw_parts(seqStorePtr.ofCode, nbSeqs);
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
     let targetCBlockSize = minTarget.max(cctxParams.targetCBlockSize);
     let mut writeLitEntropy = entropyMetadata.hufMetadata.hType == SymbolEncodingType::Compressed;
@@ -698,9 +698,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
     if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
             literals,
-            core::slice::from_raw_parts(ofCodePtr, nbSeqs),
-            core::slice::from_raw_parts(llCodePtr, nbSeqs),
-            core::slice::from_raw_parts(mlCodePtr, nbSeqs),
+            ofCodes,
+            llCodes,
+            mlCodes,
             &(*nextCBlock).entropy,
             entropyMetadata,
             workspace,
@@ -754,9 +754,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 sp,
                 seqCount,
                 &literals[..litSize],
-                llCodePtr,
-                mlCodePtr,
-                ofCodePtr,
+                &llCodes[..seqCount],
+                &mlCodes[..seqCount],
+                &ofCodes[..seqCount],
                 cctxParams,
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
@@ -773,9 +773,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 ip = ip.add(decompressedSize);
                 literals = &literals[litSize..];
                 op = op.add(cSize);
-                llCodePtr = llCodePtr.add(seqCount);
-                mlCodePtr = mlCodePtr.add(seqCount);
-                ofCodePtr = ofCodePtr.add(seqCount);
+                llCodes = &llCodes[seqCount..];
+                mlCodes = &mlCodes[seqCount..];
+                ofCodes = &ofCodes[seqCount..];
                 // Entropy only needs to be written once
                 if litEntropyWritten {
                     writeLitEntropy = false;
@@ -802,9 +802,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
         sp,
         seqCount_0,
         literals,
-        llCodePtr,
-        mlCodePtr,
-        ofCodePtr,
+        llCodes,
+        mlCodes,
+        ofCodes,
         cctxParams,
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
