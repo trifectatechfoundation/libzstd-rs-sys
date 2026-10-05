@@ -9587,21 +9587,21 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     mut inSeqs: &[ZSTD_Sequence],
     mut literals: &[u8],
     srcSize: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut remaining = srcSize;
     let mut cSize = 0usize;
     let mut op = dst as *mut u8;
     let repcodeResolution = (*cctx).appliedParams.searchForExternalRepcodes == ParamSwitch::Enable;
 
     if inSeqs.is_empty() {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
     // Special case: empty frame
     if inSeqs.len() == 1 && inSeqs[0].litLength == 0 {
         let cBlockHeader24 = 1u32.wrapping_add((BlockType::Raw as u32) << 1);
         if dstCapacity < 3 {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
         op = op.add(ZSTD_BLOCKHEADERSIZE);
@@ -9610,21 +9610,14 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
 
     while !inSeqs.is_empty() {
-        let block = match ZSTD_get1BlockSummary(inSeqs) {
-            Ok(block) => block,
-            Err(err) => return err.to_error_code(),
-        };
+        let block = ZSTD_get1BlockSummary(inSeqs)?;
         let lastBlock = block.nbSequences == inSeqs.len();
         if block.litSize > literals.len() {
-            return Error::externalSequences_invalid.to_error_code();
+            return Err(Error::externalSequences_invalid);
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        if let Err(err) =
-            ZSTD_convertBlockSequences(cctx, &inSeqs[..block.nbSequences], repcodeResolution)
-        {
-            return err.to_error_code();
-        }
+        ZSTD_convertBlockSequences(cctx, &inSeqs[..block.nbSequences], repcodeResolution)?;
         inSeqs = &inSeqs[block.nbSequences..];
         remaining = remaining.wrapping_sub(block.blockSize);
 
@@ -9634,10 +9627,10 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         // but that's complex and costly memory intensive, and goes against the objectives of this variant.
 
         if dstCapacity < ZSTD_BLOCKHEADERSIZE {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
 
-        let mut compressedSeqsSize = match ZSTD_entropyCompressSeqStore_internal(
+        let mut compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
             op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
             &literals[..block.litSize],
@@ -9648,10 +9641,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             (*cctx).tmpWorkspace,
             (*cctx).tmpWkspSize,
             (*cctx).bmi2 != 0,
-        ) {
-            Ok(compressedSeqsSize) => compressedSeqsSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
         // Note: the spec forbids for any compressed block to be larger than maximum block size
         if compressedSeqsSize > (*cctx).blockSizeMax {
             compressedSeqsSize = 0;
@@ -9666,7 +9656,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             // In theory, one could use the sequences to regenerate the source, like a decompressor,
             // but it's complex, and memory hungry, killing the purpose of this variant.
             // Current outcome: generate an error code.
-            return Error::cannotProduce_uncompressedBlock.to_error_code();
+            return Err(Error::cannotProduce_uncompressedBlock);
         }
 
         // Error checking and repcodes update
@@ -9695,13 +9685,13 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
 
     if !literals.is_empty() {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
     if remaining != 0 {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
-    cSize
+    Ok(cSize)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequencesAndLiterals))]
@@ -9761,18 +9751,17 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     } else {
         core::slice::from_raw_parts(inSeqs, inSeqsSize)
     };
-    let cBlocksSize = ZSTD_compressSequencesAndLiterals_internal(
+    let cBlocksSize = match ZSTD_compressSequencesAndLiterals_internal(
         cctx,
         op as *mut core::ffi::c_void,
         dstCapacity,
         inSeqs,
         literals,
         decompressedSize,
-    );
-    let err_code_0 = cBlocksSize;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    ) {
+        Ok(cBlocksSize) => cBlocksSize,
+        Err(err) => return err.to_error_code(),
+    };
     cSize = cSize.wrapping_add(cBlocksSize);
 
     cSize
