@@ -9396,22 +9396,20 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
 /// - > 0 if there is one long length (> 65535), indicating the position and type.
 pub unsafe fn convertSequences_noRepcodes(
     dstSeqs: *mut SeqDef,
-    inSeqs: *const ZSTD_Sequence,
-    nbSequences: size_t,
+    inSeqs: &[ZSTD_Sequence],
 ) -> size_t {
     let mut longLen = 0;
 
-    for n in 0..nbSequences {
-        (*dstSeqs.add(n)).offBase = ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM);
-        (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
-        (*dstSeqs.add(n)).mlBase =
-            ((*inSeqs.add(n)).matchLength).wrapping_sub(u32::from(MINMATCH)) as u16;
+    for (n, seq) in inSeqs.iter().enumerate() {
+        (*dstSeqs.add(n)).offBase = seq.offset.wrapping_add(ZSTD_REP_NUM);
+        (*dstSeqs.add(n)).litLength = seq.litLength as u16;
+        (*dstSeqs.add(n)).mlBase = seq.matchLength.wrapping_sub(u32::from(MINMATCH)) as u16;
         // Check for long length > 65535
-        if (*inSeqs.add(n)).matchLength > 65535 + 3 {
+        if seq.matchLength > 65535 + 3 {
             longLen = n.wrapping_add(1);
         }
-        if (*inSeqs.add(n)).litLength > 65535 {
-            longLen = n.wrapping_add(nbSequences).wrapping_add(1);
+        if seq.litLength > 65535 {
+            longLen = n.wrapping_add(inSeqs.len()).wrapping_add(1);
         }
     }
 
@@ -9442,8 +9440,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
     if !repcodeResolution {
         let longl = convertSequences_noRepcodes(
             (*cctx).seqStore.sequencesStart,
-            inSeqs.as_ptr(),
-            inSeqs.len() - 1,
+            &inSeqs[..inSeqs.len() - 1],
         );
         (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(inSeqs.len() - 1);
         if longl != 0 {
