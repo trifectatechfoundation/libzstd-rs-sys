@@ -9418,10 +9418,6 @@ pub unsafe fn convertSequences_noRepcodes(
 
 /// Precondition: Sequences must end on an explicit Block Delimiter.
 ///
-/// # Returns
-///
-/// 0 on success, or an error code.
-///
 /// Note: sequence validation functionality has been disabled (removed).
 /// This is helpful to generate a lean main pipeline, improving performance.
 /// It may be re-inserted later.
@@ -9429,9 +9425,9 @@ pub unsafe fn ZSTD_convertBlockSequences(
     cctx: *mut ZSTD_CCtx,
     inSeqs: &[ZSTD_Sequence],
     repcodeResolution: bool,
-) -> size_t {
+) -> Result<(), Error> {
     if inSeqs.len() >= (*cctx).seqStore.maxNbSeq {
-        return Error::externalSequences_invalid.to_error_code();
+        return Err(Error::externalSequences_invalid);
     }
 
     let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
@@ -9491,7 +9487,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
 
     (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes;
 
-    0
+    Ok(())
 }
 
 /// The function assumes `litMatchLength` is a packed 64-bit value where the
@@ -9624,11 +9620,10 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
 
-        let conversionStatus =
-            ZSTD_convertBlockSequences(cctx, &inSeqs[..block.nbSequences], repcodeResolution);
-        let err_code_0 = conversionStatus;
-        if ERR_isError(err_code_0) {
-            return err_code_0;
+        if let Err(err) =
+            ZSTD_convertBlockSequences(cctx, &inSeqs[..block.nbSequences], repcodeResolution)
+        {
+            return err.to_error_code();
         }
         inSeqs = &inSeqs[block.nbSequences..];
         remaining = remaining.wrapping_sub(block.blockSize);
