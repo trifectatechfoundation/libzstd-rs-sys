@@ -59,7 +59,7 @@ pub struct ldmRollingHashState_t {
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::common::xxhash::{ZSTD_XXH64_slice, ZSTD_XXH64};
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
@@ -594,42 +594,34 @@ unsafe fn ZSTD_ldm_fillFastTables(
     0
 }
 
-pub unsafe fn ZSTD_ldm_fillHashTable(
-    ldmState: &mut ldmState_t,
-    mut ip: *const u8,
-    iend: *const u8,
-    params: &ldmParams_t,
-) {
-    let minMatchLength = params.minMatchLength;
+pub unsafe fn ZSTD_ldm_fillHashTable(ldmState: &mut ldmState_t, src: &[u8], params: &ldmParams_t) {
+    let minMatchLength = params.minMatchLength as usize;
     let bucketSizeLog = params.bucketSizeLog;
     let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
     let base = ldmState.window.base;
-    let istart = ip;
     let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
     let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
 
     let mut hashState = ZSTD_ldm_gear_init(params);
 
-    while ip < iend {
+    let mut pos = 0;
+    while pos < src.len() {
         let mut numSplits = 0;
         let hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
-            core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
+            &src[pos..],
             &mut ldmState.splitIndices,
             &mut numSplits,
         );
 
         for &splitIndex in &ldmState.splitIndices[..numSplits] {
-            if ip.add(splitIndex) >= istart.offset(minMatchLength as isize) {
-                let split = ip.add(splitIndex).sub(minMatchLength as usize);
-                let xxhash = ZSTD_XXH64(
-                    split as *const core::ffi::c_void,
-                    minMatchLength as usize,
-                    0,
-                );
+            let splitEnd = pos + splitIndex;
+            if splitEnd >= minMatchLength {
+                let split = &src[splitEnd - minMatchLength..splitEnd];
+                let xxhash = ZSTD_XXH64_slice(split, 0);
                 let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
                 let entry = ldmEntry_t {
-                    offset: split.wrapping_offset_from(base) as u32,
+                    offset: split.as_ptr().wrapping_offset_from(base) as u32,
                     checksum: (xxhash >> 32) as u32,
                 };
 
@@ -643,7 +635,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             }
         }
 
-        ip = ip.add(hashed);
+        pos += hashed;
     }
 }
 
