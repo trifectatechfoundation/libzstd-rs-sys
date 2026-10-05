@@ -8074,7 +8074,7 @@ unsafe fn ZSTD_compressStream_generic(
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
     flushMode: ZSTD_EndDirective,
-) -> size_t {
+) -> Result<size_t, Error> {
     let istart = (*input).src as *const u8;
     let iend = if !istart.is_null() {
         istart.add((*input).size)
@@ -8120,7 +8120,7 @@ unsafe fn ZSTD_compressStream_generic(
     while someMoreWork {
         let mut current_block_156: u64;
         match (*zcs).streamStage {
-            StreamStage::Init => return Error::init_missing.to_error_code(),
+            StreamStage::Init => return Err(Error::init_missing),
             StreamStage::Load => {
                 if flushMode == ZSTD_e_end
                     && (oend.offset_from_unsigned(op)
@@ -8136,9 +8136,8 @@ unsafe fn ZSTD_compressStream_generic(
                         ip as *const core::ffi::c_void,
                         iend.offset_from_unsigned(ip),
                     );
-                    let err_code = cSize;
-                    if ERR_isError(err_code) {
-                        return err_code;
+                    if let Some(err) = Error::from_error_code(cSize) {
+                        return Err(err);
                     }
                     ip = iend;
                     op = op.add(cSize);
@@ -8224,9 +8223,8 @@ unsafe fn ZSTD_compressStream_generic(
                                         iSize,
                                     )
                                 };
-                                let err_code_0 = cSize_0;
-                                if ERR_isError(err_code_0) {
-                                    return err_code_0;
+                                if let Some(err) = Error::from_error_code(cSize_0) {
+                                    return Err(err);
                                 }
                                 (*zcs).frameEnded = u32::from(lastBlock);
                                 (*zcs).inBuffTarget =
@@ -8261,9 +8259,8 @@ unsafe fn ZSTD_compressStream_generic(
                                 if !ip.is_null() {
                                     ip = ip.add(iSize);
                                 }
-                                let err_code_1 = cSize_0;
-                                if ERR_isError(err_code_1) {
-                                    return err_code_1;
+                                if let Some(err) = Error::from_error_code(cSize_0) {
+                                    return Err(err);
                                 }
                                 (*zcs).frameEnded = u32::from(lastBlock_0);
                                 if lastBlock_0 {
@@ -8324,9 +8321,9 @@ unsafe fn ZSTD_compressStream_generic(
     (*input).pos = ip.offset_from_unsigned(istart);
     (*output).pos = op.offset_from_unsigned(ostart);
     if (*zcs).frameEnded != 0 {
-        return 0;
+        return Ok(0);
     }
-    ZSTD_nextInputSizeHint(zcs)
+    Ok(ZSTD_nextInputSizeHint(zcs))
 }
 
 unsafe fn ZSTD_nextInputSizeHint_MTorST(cctx: *const ZSTD_CCtx) -> size_t {
@@ -8657,9 +8654,8 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
         return flushMin;
     }
 
-    let err_code_2 = ZSTD_compressStream_generic(cctx, output, input, endOp);
-    if ERR_isError(err_code_2) {
-        return err_code_2;
+    if let Err(err) = ZSTD_compressStream_generic(cctx, output, input, endOp) {
+        return err.to_error_code();
     }
     ZSTD_setBufferExpectations(cctx, output, input);
 
