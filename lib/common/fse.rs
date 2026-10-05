@@ -161,7 +161,7 @@ pub(crate) fn FSE_initCState2(ct: &[FSE_CTable], symbol: u32) -> FSE_CState_t {
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_encodeSymbol(
+pub(crate) unsafe fn FSE_encodeSymbol<const BMI2: bool>(
     bitC: &mut BIT_CStream_t,
     statePtr: &mut FSE_CState_t,
     symbol: core::ffi::c_uint,
@@ -170,15 +170,18 @@ pub(crate) unsafe fn FSE_encodeSymbol(
         *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
     let stateTable = statePtr.stateTable as *const u16;
     let nbBitsOut = ((statePtr.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, statePtr.value as BitContainerType, nbBitsOut);
+    BIT_addBits::<BMI2>(bitC, statePtr.value as BitContainerType, nbBitsOut);
     statePtr.value = *stateTable
         .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t) {
-    BIT_addBits(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
+pub(crate) unsafe fn FSE_flushCState<const BMI2: bool>(
+    bitC: &mut BIT_CStream_t,
+    statePtr: &FSE_CState_t,
+) {
+    BIT_addBits::<BMI2>(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
     BIT_flushBits(bitC);
 }
 

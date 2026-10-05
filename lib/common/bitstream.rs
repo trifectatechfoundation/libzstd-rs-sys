@@ -59,28 +59,29 @@ static BIT_mask: [core::ffi::c_uint; 256] = {
     mask
 };
 
+/// `BMI2` is set by callers that are compiled with `target_feature(enable = "bmi2")`.
 #[inline(always)]
-fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
-    cfg_select! {
-        target_feature = "bmi2" => {
-            // With bmi2 the bzhi instruction can be used.
-            bitContainer & ((1 << nbBits) - 1)
-        }
-        _ => {
-            // At least on x86_64, the lookup table is faster without bmi2.
-            debug_assert!(nbBits < 32);
-            bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
-        }
+fn BIT_getLowerBits<const BMI2: bool>(
+    bitContainer: BitContainerType,
+    nbBits: u32,
+) -> BitContainerType {
+    if BMI2 || cfg!(target_feature = "bmi2") {
+        // With bmi2 the bzhi instruction can be used.
+        bitContainer & ((1 << nbBits) - 1)
+    } else {
+        // At least on x86_64, the lookup table is faster without bmi2.
+        debug_assert!(nbBits < 32);
+        bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
     }
 }
 
 #[inline]
-pub(crate) fn BIT_addBits(
+pub(crate) fn BIT_addBits<const BMI2: bool>(
     bitC: &mut BIT_CStream_t,
     value: BitContainerType,
     nbBits: core::ffi::c_uint,
 ) {
-    bitC.bitContainer |= BIT_getLowerBits(value, nbBits) << bitC.bitPos;
+    bitC.bitContainer |= BIT_getLowerBits::<BMI2>(value, nbBits) << bitC.bitPos;
     bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
 

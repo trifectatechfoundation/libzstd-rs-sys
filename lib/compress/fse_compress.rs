@@ -590,7 +590,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         ip = ip.sub(1);
         let CState2 = FSE_initCState2(ct, *ip as u32);
         ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+        FSE_encodeSymbol::<false>(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         FSE_flushBits::<FAST>(&mut bitC);
         (CState1, CState2)
     } else {
@@ -605,16 +605,16 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     srcSize = srcSize.wrapping_sub(2);
     if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && srcSize & 2 != 0 {
         ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
+        FSE_encodeSymbol::<false>(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+        FSE_encodeSymbol::<false>(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         FSE_flushBits::<FAST>(&mut bitC);
     }
 
     // 2 or 4 encoding per loop
     while ip > istart {
         ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
+        FSE_encodeSymbol::<false>(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
 
         // this test must be static
         if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 } {
@@ -622,21 +622,21 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         }
 
         ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+        FSE_encodeSymbol::<false>(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
 
         // this test must be static
         if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 } {
             ip = ip.sub(1);
-            FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
+            FSE_encodeSymbol::<false>(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
             ip = ip.sub(1);
-            FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+            FSE_encodeSymbol::<false>(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         }
 
         FSE_flushBits::<FAST>(&mut bitC);
     }
 
-    FSE_flushCState(&mut bitC, &CState2);
-    FSE_flushCState(&mut bitC, &CState1);
+    FSE_flushCState::<false>(&mut bitC, &CState2);
+    FSE_flushCState::<false>(&mut bitC, &CState1);
     BIT_closeCStream(&mut bitC)
 }
 
