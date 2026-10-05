@@ -4820,8 +4820,7 @@ unsafe fn writeBlockHeader(
 /// - The size of huffman description table
 /// - Or an error code
 unsafe fn ZSTD_buildBlockEntropyStats_literals(
-    src: *mut core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     prevHuf: &ZSTD_hufCTables_t,
     nextHuf: &mut ZSTD_hufCTables_t,
     hufMetadata: &mut ZSTD_hufCTablesMetadata_t,
@@ -4856,25 +4855,20 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     } else {
         COMPRESS_LITERALS_SIZE_MIN
     }) as size_t;
-    if srcSize <= minLitSize {
+    if src.len() <= minLitSize {
         hufMetadata.hType = SymbolEncodingType::Basic;
         return Ok(0);
     }
 
     // Scan input and build symbol stats
-    let largest = HIST_count_wksp(
-        countWksp,
-        &mut maxSymbolValue,
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize),
-        workspace,
-        wkspSize,
-    )? as usize;
-    if largest == srcSize {
+    let largest =
+        HIST_count_wksp(countWksp, &mut maxSymbolValue, src, workspace, wkspSize)? as usize;
+    if largest == src.len() {
         // only one literal symbol
         hufMetadata.hType = SymbolEncodingType::Rle;
         return Ok(0);
     }
-    if largest <= (srcSize >> 7).wrapping_add(4) {
+    if largest <= (src.len() >> 7).wrapping_add(4) {
         // heuristic: likely not compressible
         hufMetadata.hType = SymbolEncodingType::Basic;
         return Ok(0);
@@ -4892,7 +4886,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     nextHuf.CTable = CTable::default();
     huffLog = HUF_optimalTableLog(
         huffLog,
-        srcSize,
+        src.len(),
         maxSymbolValue,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
@@ -4923,15 +4917,15 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     // Check against repeating the previous CTable
     if repeat != HUF_repeat::None {
         let oldCSize = HUF_estimateCompressedSize(&prevHuf.CTable, count, maxSymbolValue);
-        if oldCSize < srcSize
-            && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
+        if oldCSize < src.len()
+            && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= src.len())
         {
             core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
             hufMetadata.hType = SymbolEncodingType::Repeat;
             return Ok(0);
         }
     }
-    if newCSize.wrapping_add(hSize) >= srcSize {
+    if newCSize.wrapping_add(hSize) >= src.len() {
         core::ptr::copy_nonoverlapping(prevHuf, nextHuf, 1);
         hufMetadata.hType = SymbolEncodingType::Basic;
         return Ok(0);
@@ -5030,8 +5024,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     };
 
     (*entropyMetadata).hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
-        seqStorePtr.litStart as *mut core::ffi::c_void,
-        litSize,
+        core::slice::from_raw_parts(seqStorePtr.litStart, litSize),
         &prevEntropy.huf,
         &mut nextEntropy.huf,
         &mut (*entropyMetadata).hufMetadata,
