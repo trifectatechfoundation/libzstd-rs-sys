@@ -679,8 +679,7 @@ use crate::lib::common::huf::{
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_read64, MEM_readLE32, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
-    MEM_writeLE64,
+    MEM_32bits, MEM_readLE32, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
 };
 use crate::lib::common::pool::ZSTD_threadPool;
 use crate::lib::common::xxhash::{
@@ -9509,7 +9508,17 @@ const fn matchLengthHalfIsZero(litMatchLength: u64) -> bool {
     }
 }
 
-pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> Result<BlockSummary, Error> {
+#[inline(always)]
+fn readLitMatchLength(seq: &ZSTD_Sequence) -> u64 {
+    let (lo, hi) = if cfg!(target_endian = "little") {
+        (seq.litLength, seq.matchLength)
+    } else {
+        (seq.matchLength, seq.litLength)
+    };
+    u64::from(lo) | (u64::from(hi) << 32)
+}
+
+pub fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> Result<BlockSummary, Error> {
     // Use multiple accumulators for efficient use of wide out-of-order machines.
     let mut litMatchSize0 = 0u64;
     let mut litMatchSize1 = 0u64;
@@ -9522,25 +9531,25 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> Result<BlockSumma
 
         // Process the input in 4 independent streams to reach high throughput.
         for (i, [s0, s1, s2, s3]) in chunks.iter().enumerate() {
-            let mut litMatchLength = MEM_read64((&raw const s0.litLength).cast());
+            let mut litMatchLength = readLitMatchLength(s0);
             litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 break 'out 4 * i;
             }
 
-            litMatchLength = MEM_read64((&raw const s1.litLength).cast());
+            litMatchLength = readLitMatchLength(s1);
             litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 break 'out 4 * i + 1;
             }
 
-            litMatchLength = MEM_read64((&raw const s2.litLength).cast());
+            litMatchLength = readLitMatchLength(s2);
             litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 break 'out 4 * i + 2;
             }
 
-            litMatchLength = MEM_read64((&raw const s3.litLength).cast());
+            litMatchLength = readLitMatchLength(s3);
             litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 break 'out 4 * i + 3;
@@ -9548,7 +9557,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: &[ZSTD_Sequence]) -> Result<BlockSumma
         }
 
         for (j, seq) in remainder.iter().enumerate() {
-            let litMatchLength = MEM_read64((&raw const seq.litLength).cast());
+            let litMatchLength = readLitMatchLength(seq);
             litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) {
                 break 'out 4 * chunks.len() + j;
