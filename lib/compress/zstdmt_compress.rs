@@ -1157,7 +1157,7 @@ unsafe fn ZSTDMT_createJobsTable(
     jobTable
 }
 
-unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> size_t {
+unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> Result<(), Error> {
     let mut nbJobs = nbWorkers.wrapping_add(2);
     if nbJobs > ((*mtctx).jobIDMask).wrapping_add(1) {
         // need more job capacity
@@ -1169,12 +1169,12 @@ unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> siz
         (*mtctx).jobIDMask = 0;
         (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, (*mtctx).cMem);
         if ((*mtctx).jobs).is_null() {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         (*mtctx).jobIDMask = nbJobs.wrapping_sub(1);
     }
 
-    0
+    Ok(())
 }
 
 /// Internal use only.
@@ -1361,9 +1361,8 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
     if POOL_resize((*mtctx).factory, nbWorkers as size_t) != 0 {
         return Error::memory_allocation.to_error_code();
     }
-    let err_code = ZSTDMT_expandJobsTable(mtctx, nbWorkers);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTDMT_expandJobsTable(mtctx, nbWorkers) {
+        return err.to_error_code();
     }
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
         (*mtctx).bufPool,
