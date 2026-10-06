@@ -8389,20 +8389,14 @@ unsafe fn ZSTD_checkBufferStability(
 
 /// If @endOp == ZSTD_e_end, @inSize becomes pledgedSrcSize.
 /// Otherwise, it's ignored.
-///
-/// # Returns
-///
-/// 0 on success, or a ZSTD_error code otherwise.
 unsafe fn ZSTD_CCtx_init_compressStream2(
     cctx: *mut ZSTD_CCtx,
     endOp: ZSTD_EndDirective,
     inSize: size_t,
-) -> size_t {
+) -> Result<(), Error> {
     let mut params = (*cctx).requestedParams;
     let prefixDict = (*cctx).prefixDict;
-    if let Err(err) = ZSTD_initLocalDict(cctx) {
-        return err.to_error_code();
-    }
+    ZSTD_initLocalDict(cctx)?;
     ptr::write_bytes(
         &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut u8,
         0,
@@ -8451,7 +8445,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
     );
 
     if params.has_ext_seq_prod() && params.nbWorkers >= 1 {
-        return Error::parameter_combination_unsupported.to_error_code();
+        return Err(Error::parameter_combination_unsupported);
     }
 
     if ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1)
@@ -8471,12 +8465,12 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
                 (*cctx).pool,
             );
             if ((*cctx).mtctx).is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
         }
 
         // mt compression
-        if let Err(err) = ZSTDMT_initCStream_internal(
+        ZSTDMT_initCStream_internal(
             (*cctx).mtctx,
             prefixDict.dict,
             prefixDict.dictSize,
@@ -8484,9 +8478,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             (*cctx).cdict,
             params,
             ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
-        ) {
-            return err.to_error_code();
-        }
+        )?;
 
         (*cctx).dictID = if !((*cctx).cdict).is_null() {
             (*(*cctx).cdict).dictID
@@ -8504,7 +8496,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         (*cctx).appliedParams = params;
     } else {
         let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1);
-        if let Err(err) = ZSTD_compressBegin_internal(
+        ZSTD_compressBegin_internal(
             cctx,
             prefixDict.dict,
             prefixDict.dictSize,
@@ -8514,9 +8506,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             &params,
             pledgedSrcSize,
             BufferedPolicy::Buffered,
-        ) {
-            return err.to_error_code();
-        }
+        )?;
 
         (*cctx).inToCompress = 0;
         (*cctx).inBuffPos = 0;
@@ -8536,7 +8526,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         (*cctx).frameEnded = 0;
     }
 
-    0
+    Ok(())
 }
 
 /// # Returns
@@ -8586,9 +8576,8 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             // don't initialize yet, wait for the first block of flush() order, for better parameters adaptation
             return (*cctx).requestedParams.format.frame_header_size_min() as size_t;
         }
-        let err_code = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize);
-        if ERR_isError(err_code) {
-            return err_code;
+        if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize) {
+            return err.to_error_code();
         }
         ZSTD_setBufferExpectations(cctx, output, input);
     }
@@ -9318,9 +9307,8 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     let mut cSize = 0usize;
 
     // Transparent initialization stage, same as compressStream2()
-    let err_code = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, srcSize);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, srcSize) {
+        return err.to_error_code();
     }
 
     // Begin writing output, starting with frame header
@@ -9715,9 +9703,8 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     if litCapacity < litSize {
         return Error::workSpace_tooSmall.to_error_code();
     }
-    let err_code = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, decompressedSize);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, decompressedSize) {
+        return err.to_error_code();
     }
 
     if (*cctx).appliedParams.blockDelimiters == ZSTD_sf_noBlockDelimiters {
