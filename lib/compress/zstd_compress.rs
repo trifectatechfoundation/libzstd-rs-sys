@@ -8476,7 +8476,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         }
 
         // mt compression
-        let err_code_0 = ZSTDMT_initCStream_internal(
+        if let Err(err) = ZSTDMT_initCStream_internal(
             (*cctx).mtctx,
             prefixDict.dict,
             prefixDict.dictSize,
@@ -8484,9 +8484,8 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             (*cctx).cdict,
             params,
             ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
-        );
-        if ERR_isError(err_code_0) {
-            return err_code_0;
+        ) {
+            return err.to_error_code();
         }
 
         (*cctx).dictID = if !((*cctx).cdict).is_null() {

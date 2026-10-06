@@ -1536,12 +1536,10 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
     pledgedSrcSize: core::ffi::c_ulonglong,
-) -> size_t {
+) -> Result<(), Error> {
     // init
     if params.nbWorkers != (*mtctx).params.nbWorkers {
-        if let Err(err) = ZSTDMT_resize(mtctx, params.nbWorkers as core::ffi::c_uint) {
-            return err.to_error_code();
-        }
+        ZSTDMT_resize(mtctx, params.nbWorkers as core::ffi::c_uint)?;
     }
 
     if params.jobSize != 0 {
@@ -1571,7 +1569,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         );
         (*mtctx).cdict = (*mtctx).cdictLocal;
         if ((*mtctx).cdictLocal).is_null() {
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
     } else {
         (*mtctx).cdictLocal = core::ptr::null_mut();
@@ -1630,7 +1628,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         (*mtctx).roundBuff.buffer = ZSTD_customMalloc(capacity, (*mtctx).cMem) as *mut u8;
         if ((*mtctx).roundBuff.buffer).is_null() {
             (*mtctx).roundBuff.capacity = 0;
-            return Error::memory_allocation.to_error_code();
+            return Err(Error::memory_allocation);
         }
         (*mtctx).roundBuff.capacity = capacity;
     }
@@ -1666,7 +1664,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
             );
             (*mtctx).cdict = (*mtctx).cdictLocal;
             if ((*mtctx).cdictLocal).is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
         }
     } else {
@@ -1683,10 +1681,10 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         dictContentType,
     ) != 0
     {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
 
-    0
+    Ok(())
 }
 
 /// Write a single empty block with an end-of-frame to finish a frame.
