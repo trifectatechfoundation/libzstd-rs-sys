@@ -1354,16 +1354,14 @@ pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
         .wrapping_add((*mtctx).roundBuff.capacity)
 }
 
-/// # Returns
-///
-/// An error code if resize fails, or 0 on success
-unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -> size_t {
+unsafe fn ZSTDMT_resize(
+    mtctx: *mut ZSTDMT_CCtx,
+    nbWorkers: core::ffi::c_uint,
+) -> Result<(), Error> {
     if POOL_resize((*mtctx).factory, nbWorkers as size_t) != 0 {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
-    if let Err(err) = ZSTDMT_expandJobsTable(mtctx, nbWorkers) {
-        return err.to_error_code();
-    }
+    ZSTDMT_expandJobsTable(mtctx, nbWorkers)?;
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
         (*mtctx).bufPool,
         (2 as core::ffi::c_uint)
@@ -1371,18 +1369,18 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
             .wrapping_add(3),
     );
     if ((*mtctx).bufPool).is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     (*mtctx).cctxPool = ZSTDMT_expandCCtxPool((*mtctx).cctxPool, nbWorkers as core::ffi::c_int);
     if ((*mtctx).cctxPool).is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     (*mtctx).seqPool = ZSTDMT_expandSeqPool((*mtctx).seqPool, nbWorkers);
     if ((*mtctx).seqPool).is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     ZSTDMT_CCtxParam_setNbWorkers(&mut (*mtctx).params, nbWorkers);
-    0
+    Ok(())
 }
 
 /// Updates a selected set of compression parameters, remaining compatible with currently active frame.
@@ -1541,9 +1539,8 @@ pub unsafe fn ZSTDMT_initCStream_internal(
 ) -> size_t {
     // init
     if params.nbWorkers != (*mtctx).params.nbWorkers {
-        let err_code = ZSTDMT_resize(mtctx, params.nbWorkers as core::ffi::c_uint);
-        if ERR_isError(err_code) {
-            return err_code;
+        if let Err(err) = ZSTDMT_resize(mtctx, params.nbWorkers as core::ffi::c_uint) {
+            return err.to_error_code();
         }
     }
 
