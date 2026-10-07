@@ -105,12 +105,8 @@ fuzz_target!(|input: HufRoundTripInput| {
     let mut max_symbol = HUF_SYMBOLVALUE_MAX;
 
     let most_frequent = unsafe {
-        lib::compress::hist::HIST_count(
-            count.as_mut_ptr(),
-            &mut max_symbol,
-            &input.data[..size],
-        )
-        .unwrap()
+        lib::compress::hist::HIST_count(count.as_mut_ptr(), &mut max_symbol, &input.data[..size])
+            .unwrap()
     };
 
     // Skip RLE (all bytes the same)
@@ -194,7 +190,8 @@ fuzz_target!(|input: HufRoundTripInput| {
             &c_buf[..table_size],
             &mut x2_workspace,
             flags,
-        );
+        )
+        .unwrap_or_else(|err| err.to_error_code());
 
         // Fall back to X1 if tableLog_tooLarge
         if ERR_getErrorCode(result) == ZSTD_error_tableLog_tooLarge {

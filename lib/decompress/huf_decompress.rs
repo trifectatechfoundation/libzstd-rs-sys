@@ -1048,7 +1048,7 @@ pub fn HUF_readDTableX2_wksp(
     src: &[u8],
     wksp: &mut HUF_ReadDTableX2_Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut dtd = DTable.description;
 
     let mut tableLog: u32 = 0;
@@ -1062,10 +1062,10 @@ pub fn HUF_readDTableX2_wksp(
     let rankStart = &mut wksp.rankStart0[1..];
 
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
 
-    let iSize = match HUF_readStats_wksp(
+    let iSize = HUF_readStats_wksp(
         &mut wksp.weightList,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankStats,
@@ -1074,12 +1074,9 @@ pub fn HUF_readDTableX2_wksp(
         src,
         &mut wksp.calleeWksp,
         flags,
-    ) {
-        Ok(iSize) => iSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if tableLog > maxTableLog {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     if tableLog <= HUF_DECODER_FAST_TABLELOG as u32
         && maxTableLog > HUF_DECODER_FAST_TABLELOG as u32
@@ -1152,7 +1149,7 @@ pub fn HUF_readDTableX2_wksp(
 
     DTable.description = dtd;
 
-    iSize
+    Ok(iSize)
 }
 
 #[inline(always)]
@@ -1708,10 +1705,10 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
-    if ERR_isError(hSize) {
-        return hSize;
-    }
+    let hSize = match HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags) {
+        Ok(hSize) => hSize,
+        Err(err) => return err.to_error_code(),
+    };
     if hSize as usize >= src.len() {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -1726,10 +1723,10 @@ fn HUF_decompress4X2_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
-    if ERR_isError(hSize) {
-        return hSize;
-    }
+    let hSize = match HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags) {
+        Ok(hSize) => hSize,
+        Err(err) => return err.to_error_code(),
+    };
     if hSize as usize >= src.len() {
         return Error::srcSize_wrong.to_error_code();
     }

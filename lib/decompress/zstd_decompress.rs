@@ -2288,10 +2288,8 @@ pub fn ZSTD_loadDEntropy(
     let workspace = &mut entropy.LLTable;
     let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
 
-    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, 0);
-    if ERR_isError(hSize) {
-        return Err(Error::dictionary_corrupted);
-    }
+    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, 0)
+        .map_err(|_| Error::dictionary_corrupted)?;
 
     dictPtr = &dictPtr[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
