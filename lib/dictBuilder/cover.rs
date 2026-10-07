@@ -906,8 +906,7 @@ pub(super) fn COVER_checkTotalCompressedSize(
     nbTrainSamples: size_t,
     nbSamples: size_t,
     dict: &[u8],
-) -> size_t {
-    let mut totalCompressedSize = Error::GENERIC.to_error_code();
+) -> Result<size_t, Error> {
     let start = if parameters.splitPoint < 1.0f64 {
         nbTrainSamples
     } else {
@@ -932,9 +931,10 @@ pub(super) fn COVER_checkTotalCompressedSize(
             parameters.zParams.compressionLevel,
         )
     };
-    if !cdict.is_null() {
-        totalCompressedSize = dict.len();
-        for i in start..nbSamples {
+    let totalCompressedSize = if cdict.is_null() {
+        Err(Error::GENERIC)
+    } else {
+        (start..nbSamples).try_fold(dict.len(), |totalCompressedSize, i| {
             let size = unsafe {
                 ZSTD_compress_usingCDict(
                     &mut *cctx,
@@ -945,13 +945,12 @@ pub(super) fn COVER_checkTotalCompressedSize(
                     cdict,
                 )
             };
-            if ERR_isError(size) {
-                totalCompressedSize = size;
-                break;
+            if let Some(err) = Error::from_error_code(size) {
+                return Err(err);
             }
-            totalCompressedSize = totalCompressedSize.wrapping_add(size);
-        }
-    }
+            Ok(totalCompressedSize.wrapping_add(size))
+        })
+    };
     unsafe { ZSTD_freeCCtxContent(&mut *cctx) };
     unsafe { ZSTD_freeCDict(cdict) };
     drop(dst);
@@ -1055,7 +1054,7 @@ pub(super) fn COVER_selectDict(
         drop(candidateDictBuffer);
         return COVER_dictSelectionError(dictContentSize);
     }
-    let mut totalCompressedSize = COVER_checkTotalCompressedSize(
+    let mut totalCompressedSize = match COVER_checkTotalCompressedSize(
         params,
         samplesSizes,
         samplesBuffer,
@@ -1063,12 +1062,14 @@ pub(super) fn COVER_selectDict(
         nbCheckSamples,
         nbSamples,
         &largestDictbuffer[..dictContentSize],
-    );
-    if ERR_isError(totalCompressedSize) {
-        drop(largestDictbuffer);
-        drop(candidateDictBuffer);
-        return COVER_dictSelectionError(totalCompressedSize);
-    }
+    ) {
+        Ok(size) => size,
+        Err(err) => {
+            drop(largestDictbuffer);
+            drop(candidateDictBuffer);
+            return COVER_dictSelectionError(err.to_error_code());
+        }
+    };
     if params.shrinkDict == 0 {
         drop(candidateDictBuffer);
         return setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize);
@@ -1097,7 +1098,7 @@ pub(super) fn COVER_selectDict(
             drop(candidateDictBuffer);
             return COVER_dictSelectionError(dictContentSize);
         }
-        totalCompressedSize = COVER_checkTotalCompressedSize(
+        totalCompressedSize = match COVER_checkTotalCompressedSize(
             params,
             samplesSizes,
             samplesBuffer,
@@ -1105,12 +1106,14 @@ pub(super) fn COVER_selectDict(
             nbCheckSamples,
             nbSamples,
             &candidateDictBuffer[..dictContentSize],
-        );
-        if ERR_isError(totalCompressedSize) {
-            drop(largestDictbuffer);
-            drop(candidateDictBuffer);
-            return COVER_dictSelectionError(totalCompressedSize);
-        }
+        ) {
+            Ok(size) => size,
+            Err(err) => {
+                drop(largestDictbuffer);
+                drop(candidateDictBuffer);
+                return COVER_dictSelectionError(err.to_error_code());
+            }
+        };
         if totalCompressedSize as core::ffi::c_double
             <= largestCompressed as core::ffi::c_double * regressionTolerance
         {
