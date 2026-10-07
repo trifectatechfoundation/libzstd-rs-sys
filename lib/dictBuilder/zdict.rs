@@ -1051,7 +1051,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
 
 const HBUFFSIZE: usize = 256; // should be large enough for all entropy headers
 
-unsafe fn finalize_dictionary(
+pub(super) unsafe fn finalize_dictionary(
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
     customDictContent: *const core::ffi::c_void,
