@@ -6213,7 +6213,8 @@ pub unsafe fn ZSTD_referenceExternalSequences(
     (*cctx).externSeqStore.pos = 0;
     (*cctx).externSeqStore.posInSequence = 0;
 }
-unsafe extern "C" fn ZSTD_compressContinue_internal(
+
+unsafe fn ZSTD_compressContinue_internal(
     cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -6221,25 +6222,22 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     srcSize: size_t,
     frame: bool,
     lastFrameChunk: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
     let mut fhSize = 0;
 
     if (*cctx).stage == CompressionStage::Created {
-        return Error::stage_wrong.to_error_code();
+        return Err(Error::stage_wrong);
     }
 
     if frame && (*cctx).stage == CompressionStage::Init {
-        fhSize = match ZSTD_writeFrameHeader(
+        fhSize = ZSTD_writeFrameHeader(
             dst,
             dstCapacity,
             &(*cctx).appliedParams,
             ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
             (*cctx).dictID,
-        ) {
-            Ok(fhSize) => fhSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         dst = (dst as *mut core::ffi::c_char).add(fhSize) as *mut core::ffi::c_void;
         (*cctx).stage = CompressionStage::Ongoing;
@@ -6247,7 +6245,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
 
     if srcSize == 0 {
         // Do not generate an empty block if no input
-        return fhSize;
+        return Ok(fhSize);
     }
 
     if !ZSTD_window_update(&mut ms.window, src, srcSize, ms.forceNonContiguous != 0) {
@@ -6270,13 +6268,9 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     }
 
     let cSize = if frame {
-        ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)
+        ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)?
     } else {
-        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)
-    };
-    let cSize = match cSize {
-        Ok(cSize) => cSize,
-        Err(err) => return err.to_error_code(),
+        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)?
     };
     (*cctx).consumedSrcSize =
         ((*cctx).consumedSrcSize).wrapping_add(srcSize as core::ffi::c_ulonglong);
@@ -6285,10 +6279,10 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     if (*cctx).pledgedSrcSizePlusOne != 0
         && ((*cctx).consumedSrcSize).wrapping_add(1) > (*cctx).pledgedSrcSizePlusOne
     {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
-    cSize.wrapping_add(fhSize)
+    Ok(cSize.wrapping_add(fhSize))
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue_public))]
@@ -6299,7 +6293,10 @@ pub unsafe extern "C" fn ZSTD_compressContinue_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, false)
+    match ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, false) {
+        Ok(cSize) => cSize,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue))]
@@ -6339,7 +6336,10 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
         return Error::srcSize_wrong.to_error_code();
     }
 
-    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, false, false)
+    match ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, false, false) {
+        Ok(cSize) => cSize,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock))]
@@ -6996,11 +6996,11 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, true);
-    let err_code = cSize;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let cSize =
+        match ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, true) {
+            Ok(cSize) => cSize,
+            Err(err) => return err.to_error_code(),
+        };
     let endResult = match ZSTD_writeEpilogue(
         cctx,
         (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
