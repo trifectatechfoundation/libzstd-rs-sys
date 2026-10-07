@@ -2150,12 +2150,12 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
     mut endOp: ZSTD_EndDirective,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut forwardInputProgress = false;
 
     if (*mtctx).frameEnded != 0 && endOp == ZSTD_e_continue {
         // current frame being ended. Only flush/end are allowed
-        return Error::stage_wrong.to_error_code();
+        return Err(Error::stage_wrong);
     }
 
     // fill input buffer
@@ -2204,17 +2204,14 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     }
 
     // check for potential compressed data ready to be flushed
-    let remainingToFlush = match ZSTDMT_flushProduced(
+    let remainingToFlush = ZSTDMT_flushProduced(
         mtctx,
         output,
         !forwardInputProgress, // block if there was no forward input progress
         endOp,
-    ) {
-        Ok(remainingToFlush) => remainingToFlush,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if (*input).pos < (*input).size {
-        return remainingToFlush.max(1); // input not consumed: do not end flush yet
+        return Ok(remainingToFlush.max(1)); // input not consumed: do not end flush yet
     }
-    remainingToFlush
+    Ok(remainingToFlush)
 }
