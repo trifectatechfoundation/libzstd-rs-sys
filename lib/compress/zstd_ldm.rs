@@ -367,7 +367,7 @@ fn ZSTD_ldm_gear_init(params: &ldmParams_t) -> ldmRollingHashState_t {
     };
 
     ldmRollingHashState_t {
-        rolling: !0u32 as u64,
+        rolling: u64::from(u32::MAX),
         stopMask,
     }
 }
