@@ -203,6 +203,7 @@ fuzz_target!(|input: HufRoundTripInput| {
                 &mut x1_workspace,
                 flags,
             )
+            .unwrap_or_else(|err| err.to_error_code())
         } else {
             result
         }
@@ -215,6 +216,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             &mut x1_workspace,
             flags,
         )
+        .unwrap_or_else(|err| err.to_error_code())
     };
 
     assert!(

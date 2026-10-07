@@ -6,7 +6,7 @@ use libc::size_t;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::huf::{
     HUF_flags_bmi2, HUF_flags_disableAsm, HUF_flags_disableFast, HUF_SYMBOLVALUE_MAX,
     HUF_TABLELOG_MAX,
@@ -340,7 +340,7 @@ pub fn HUF_readDTableX1_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut dtd = DTable.description;
     let dt = DTable.data.as_x1_mut();
 
@@ -349,7 +349,7 @@ pub fn HUF_readDTableX1_wksp(
 
     let wksp = workSpace.as_x1_mut();
 
-    let iSize = match HUF_readStats_wksp(
+    let iSize = HUF_readStats_wksp(
         &mut wksp.huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
         &mut wksp.rankVal,
@@ -358,10 +358,7 @@ pub fn HUF_readDTableX1_wksp(
         src,
         &mut wksp.statsWksp,
         flags,
-    ) {
-        Ok(iSize) => iSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
 
     let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
@@ -373,7 +370,7 @@ pub fn HUF_readDTableX1_wksp(
         targetTableLog,
     );
     if tableLog > (dtd.maxTableLog as core::ffi::c_int + 1) as u32 {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     dtd.tableType = 0;
     dtd.tableLog = tableLog as u8;
@@ -435,7 +432,7 @@ pub fn HUF_readDTableX1_wksp(
         rankStart += symbolCount * length;
     }
 
-    iSize
+    Ok(iSize)
 }
 
 #[inline(always)]
@@ -877,10 +874,10 @@ fn HUF_decompress4X1_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags);
-    if ERR_isError(hSize) {
-        return hSize;
-    }
+    let hSize = match HUF_readDTableX1_wksp(dctx, src, workSpace, flags) {
+        Ok(hSize) => hSize,
+        Err(err) => return err.to_error_code(),
+    };
     if hSize as usize >= src.len() {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -2010,10 +2007,10 @@ pub fn HUF_decompress1X1_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = { HUF_readDTableX1_wksp(dctx, src, workSpace, flags) };
-    if ERR_isError(hSize) {
-        return hSize;
-    }
+    let hSize = match HUF_readDTableX1_wksp(dctx, src, workSpace, flags) {
+        Ok(hSize) => hSize,
+        Err(err) => return err.to_error_code(),
+    };
     if hSize as usize >= src.len() {
         return Error::srcSize_wrong.to_error_code();
     }
