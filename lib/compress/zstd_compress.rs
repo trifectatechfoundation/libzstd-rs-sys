@@ -5116,12 +5116,12 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         }
         SymbolEncodingType::Rle => 0,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
-            ZSTD_fseBitCost(fseCTable, count, max)
+            match ZSTD_fseBitCost(fseCTable, count, max) {
+                Ok(cost) => cost,
+                Err(_) => return codeTable.len() * 10,
+            }
         }
     };
-    if ERR_isError(cSymbolTypeSizeEstimateInBits) {
-        return codeTable.len() * 10;
-    }
 
     for &code in codeTable {
         cSymbolTypeSizeEstimateInBits += if additionalBits.is_empty() {

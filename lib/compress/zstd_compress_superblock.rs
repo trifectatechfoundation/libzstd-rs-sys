@@ -1,7 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{CTable, HUF_flags_bmi2, HUF_SYMBOLVALUE_MAX};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
@@ -458,17 +458,17 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
             if max <= defaultMax {
                 ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
             } else {
-                Error::GENERIC.to_error_code()
+                return codeTable.len() * 10;
             }
         }
         SymbolEncodingType::Rle => 0,
         SymbolEncodingType::Compressed | SymbolEncodingType::Repeat => {
-            ZSTD_fseBitCost(fseCTable, count, max)
+            match ZSTD_fseBitCost(fseCTable, count, max) {
+                Ok(cost) => cost,
+                Err(_) => return codeTable.len() * 10,
+            }
         }
     };
-    if ERR_isError(cSymbolTypeSizeEstimateInBits) {
-        return codeTable.len() * 10;
-    }
     for &code in codeTable {
         cSymbolTypeSizeEstimateInBits += if additionalBits.is_empty() {
             // for offset, offset code is also the number of additional bits
