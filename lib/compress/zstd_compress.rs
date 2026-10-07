@@ -8562,20 +8562,21 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
         loop {
             let ipos = (*input).pos;
             let opos = (*output).pos;
-            flushMin = ZSTDMT_compressStream_generic((*cctx).mtctx, output, input, endOp);
+            let result = ZSTDMT_compressStream_generic((*cctx).mtctx, output, input, endOp);
             (*cctx).consumedSrcSize = ((*cctx).consumedSrcSize)
                 .wrapping_add(((*input).pos).wrapping_sub(ipos) as core::ffi::c_ulonglong);
             (*cctx).producedCSize = ((*cctx).producedCSize)
                 .wrapping_add(((*output).pos).wrapping_sub(opos) as core::ffi::c_ulonglong);
-            if ERR_isError(flushMin) || endOp == ZSTD_e_end && flushMin == 0 {
-                if flushMin == 0 {
-                    ZSTD_CCtx_trace(cctx, 0);
+            flushMin = match result {
+                Ok(remaining) => remaining,
+                Err(err) => {
+                    ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
+                    return err.to_error_code();
                 }
+            };
+            if endOp == ZSTD_e_end && flushMin == 0 {
+                ZSTD_CCtx_trace(cctx, 0);
                 ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
-            }
-            let err_code_1 = flushMin;
-            if ERR_isError(err_code_1) {
-                return err_code_1;
             }
 
             if endOp == ZSTD_e_continue {
