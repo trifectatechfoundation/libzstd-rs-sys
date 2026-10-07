@@ -507,14 +507,14 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     // strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     };
 
     if dst.capacity() < 6 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
@@ -522,7 +522,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     let length3 = usize::from(u16::from_le_bytes([b4, b5]));
 
     if 6 + length1 + length2 + length3 > src.len() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let istart1 = &src[6..][..length1];
@@ -531,27 +531,15 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     let istart4 = &src[6 + length1 + length2 + length3..];
 
     let Some((mut w1, mut w2, mut w3, mut w4)) = dst.quarter() else {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     };
 
     let mut end_signal = true;
 
-    let mut bitD1 = match BIT_DStream_t::new(istart1) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD2 = match BIT_DStream_t::new(istart2) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD3 = match BIT_DStream_t::new(istart3) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD4 = match BIT_DStream_t::new(istart4) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
+    let mut bitD1 = BIT_DStream_t::new(istart1)?;
+    let mut bitD2 = BIT_DStream_t::new(istart2)?;
+    let mut bitD3 = BIT_DStream_t::new(istart3)?;
+    let mut bitD4 = BIT_DStream_t::new(istart4)?;
 
     let dt = DTable.data.as_x1();
     let dtLog = DTable.description.tableLog as u32;
@@ -597,10 +585,10 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     HUF_decodeStreamX1(w4, &mut bitD4, dt, dtLog);
 
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
-    dst.capacity()
+    Ok(dst.capacity())
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -608,7 +596,7 @@ fn HUF_decompress4X1_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress4X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -616,7 +604,7 @@ fn HUF_decompress4X1_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress4X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -755,13 +743,11 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     src: &[u8],
     DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
-) -> size_t {
+) -> Result<size_t, Error> {
     let oend = dst.as_mut_ptr_range().end;
 
-    let mut args = match HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable) {
-        Ok(Some(args)) => args,
-        Ok(None) => return 0,
-        Err(e) => return e.to_error_code(),
+    let Some(mut args) = HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable)? else {
+        return Ok(0);
     };
 
     debug_assert!(args.ip[0] >= args.ilowest);
@@ -785,10 +771,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     for (i, op) in args.op.iter().copied().enumerate() {
         segmentEnd = Ord::min(segmentEnd.wrapping_add(segmentSize), oend);
 
-        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
-            Ok(v) => v,
-            Err(e) => return e.to_error_code(),
-        };
+        let mut bit = init_remaining_dstream(&args, i, segmentEnd)?;
 
         // Decompress and validate that we've produced exactly the expected length.
         let length = HUF_decodeStreamX1(
@@ -799,11 +782,11 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         );
 
         if op.wrapping_add(length as usize) != segmentEnd {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
     }
 
-    dst.capacity()
+    Ok(dst.capacity())
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -840,7 +823,7 @@ fn HUF_decompress4X1_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as i32 {
             #[cfg(all(unix, target_arch = "x86_64"))]
@@ -851,9 +834,9 @@ fn HUF_decompress4X1_usingDTable_internal(
         if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
             let ret = unsafe {
                 HUF_decompress4X1_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
-            };
+            }?;
             if ret != 0 {
-                return ret;
+                return Ok(ret);
             }
         }
 
@@ -880,6 +863,7 @@ fn HUF_decompress4X1_DCtx_wksp(
     }
 
     HUF_decompress4X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 impl HUF_DEltX2 {
@@ -2022,7 +2006,8 @@ pub fn HUF_decompress4X_usingDTable(
     flags: core::ffi::c_int,
 ) -> size_t {
     match DTable.description.tableType {
-        0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags),
+        0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags)
+            .unwrap_or_else(|err| err.to_error_code()),
         _ => HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags),
     }
 }
