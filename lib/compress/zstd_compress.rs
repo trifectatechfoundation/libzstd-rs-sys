@@ -3606,20 +3606,15 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
 /// The "context", in this case, refers to the hash and chain tables,
 /// entropy tables, and dictionary references.
 /// `windowLog` value is enforced if != 0, otherwise value is copied from srcCCtx.
-///
-/// # Returns
-///
-/// - 0
-/// - or an error code
 unsafe fn ZSTD_copyCCtx_internal(
     dstCCtx: *mut ZSTD_CCtx,
     srcCCtx: *const ZSTD_CCtx,
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
-) -> size_t {
+) -> Result<(), Error> {
     if (*srcCCtx).stage != CompressionStage::Init {
-        return Error::stage_wrong.to_error_code();
+        return Err(Error::stage_wrong);
     }
     (*dstCCtx).customMem = (*srcCCtx).customMem;
 
@@ -3631,16 +3626,14 @@ unsafe fn ZSTD_copyCCtx_internal(
     params.ldmParams = (*srcCCtx).appliedParams.ldmParams;
     params.fParams = fParams;
     params.maxBlockSize = (*srcCCtx).appliedParams.maxBlockSize;
-    if let Err(err) = ZSTD_resetCCtx_internal(
+    ZSTD_resetCCtx_internal(
         dstCCtx,
         &params,
         pledgedSrcSize,
         0,
         CompResetPolicy::LeaveDirty,
         zbuff,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     ZSTD_cwksp_mark_tables_dirty(&mut (*dstCCtx).workspace);
 
@@ -3696,7 +3689,7 @@ unsafe fn ZSTD_copyCCtx_internal(
         1,
     );
 
-    0
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyCCtx))]
@@ -3718,7 +3711,10 @@ pub unsafe extern "C" fn ZSTD_copyCCtx(
     }
     fParams.contentSizeFlag = core::ffi::c_int::from(pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN);
 
-    ZSTD_copyCCtx_internal(dstCCtx, srcCCtx, fParams, pledgedSrcSize, zbuff)
+    match ZSTD_copyCCtx_internal(dstCCtx, srcCCtx, fParams, pledgedSrcSize, zbuff) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 pub const ZSTD_ROWSIZE: core::ffi::c_int = 16;
