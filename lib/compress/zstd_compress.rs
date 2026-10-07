@@ -8369,22 +8369,22 @@ unsafe fn ZSTD_checkBufferStability(
     output: *const ZSTD_outBuffer,
     input: *const ZSTD_inBuffer,
     _endOp: ZSTD_EndDirective,
-) -> size_t {
+) -> Result<(), Error> {
     if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
         let expect = (*cctx).expectedInBuffer;
         if expect.src != (*input).src || expect.pos != (*input).pos {
-            return Error::stabilityCondition_notRespected.to_error_code();
+            return Err(Error::stabilityCondition_notRespected);
         }
     }
 
     if (*cctx).appliedParams.outBufferMode == ZSTD_bm_stable {
         let outBufferSize = ((*output).size).wrapping_sub((*output).pos);
         if (*cctx).expectedOutBufferSize != outBufferSize {
-            return Error::stabilityCondition_notRespected.to_error_code();
+            return Err(Error::stabilityCondition_notRespected);
         }
     }
 
-    0
+    Ok(())
 }
 
 /// If @endOp == ZSTD_e_end, @inSize becomes pledgedSrcSize.
@@ -8582,9 +8582,8 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
         ZSTD_setBufferExpectations(cctx, output, input);
     }
 
-    let err_code_0 = ZSTD_checkBufferStability(cctx, output, input, endOp);
-    if ERR_isError(err_code_0) {
-        return err_code_0;
+    if let Err(err) = ZSTD_checkBufferStability(cctx, output, input, endOp) {
+        return err.to_error_code();
     }
 
     // compression stage
