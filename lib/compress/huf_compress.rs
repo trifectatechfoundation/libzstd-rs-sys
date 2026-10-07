@@ -173,7 +173,7 @@ unsafe fn HUF_compressWeights(
 }
 
 fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
-    elt & 0xff as c_int as HUF_CElt
+    elt & 0xff
 }
 
 fn HUF_getNbBitsFast(elt: HUF_CElt) -> size_t {
@@ -181,7 +181,7 @@ fn HUF_getNbBitsFast(elt: HUF_CElt) -> size_t {
 }
 
 fn HUF_getValue(elt: HUF_CElt) -> size_t {
-    elt & !(0xff as c_int as size_t)
+    elt & !0xff
 }
 
 fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
@@ -302,7 +302,7 @@ pub fn HUF_readCTable(
     /* get symbol weights */
     let readSize = HUF_readStats(
         &mut huffWeight,
-        (255 + 1) as size_t,
+        255 + 1,
         &mut rankVal,
         &mut nbSymbols,
         &mut tableLog,
@@ -450,7 +450,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
 
         /* repay normalized cost */
         {
-            let noSymbol = 0xf0f0f0f0 as c_uint;
+            let noSymbol = 0xf0f0f0f0u32;
             /* Get pos of last (smallest = lowest cum. count) symbol per rank */
             let mut rankLast: [u32; HUF_TABLELOG_MAX + 2] = [noSymbol; HUF_TABLELOG_MAX + 2];
             {
@@ -1027,7 +1027,7 @@ fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
 #[inline(always)]
 fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
     debug_assert!((bitC.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
-    bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xff as c_int as size_t;
+    bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xff;
     bitC.bitContainer[0] |= bitC.bitContainer[1];
     bitC.bitPos[0] += bitC.bitPos[1];
     debug_assert!((bitC.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
@@ -1046,7 +1046,7 @@ fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
 #[inline(always)]
 unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: bool) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
-    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
+    let nbBits = bitC.bitPos[0] & 0xff;
     let nbBytes = nbBits >> 3;
     /* The top nbBits bits of bitContainer are the ones we need. */
     let bitContainer = bitC.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
@@ -1083,7 +1083,7 @@ fn HUF_endMark() -> HUF_CElt {
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), false, false);
     HUF_flushBits(bitC, false);
-    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
+    let nbBits = bitC.bitPos[0] & 0xff;
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
@@ -1434,7 +1434,7 @@ pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: usize = 4096;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: usize = 10; /* Must be >= 2 */
 
 pub fn HUF_cardinality(count: &[c_uint], maxSymbolValue: u8) -> c_uint {
-    let mut cardinality = 0 as c_uint;
+    let mut cardinality = 0;
     for &c in &count[..usize::from(maxSymbolValue) + 1] {
         if c != 0 {
             cardinality += 1;
@@ -1468,7 +1468,7 @@ pub unsafe fn HUF_optimalTableLog(
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
     let symbolCardinality = HUF_cardinality(count, maxSymbolValue);
     let minTableLog = HUF_minTableLog(symbolCardinality);
-    let mut optSize = (!(0) as size_t) - 1;
+    let mut optSize = !0 - 1;
     let mut optLog = maxTableLog;
 
     /* Search until size increases */

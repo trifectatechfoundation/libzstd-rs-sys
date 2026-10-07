@@ -148,9 +148,8 @@ pub unsafe fn ZSTD_compressLiterals(
     suspectUncompressible: bool,
     bmi2: bool,
 ) -> Result<size_t, Error> {
-    let lhSize = 3
-        + size_t::from(src.len() >= (1 << 10) as size_t)
-        + size_t::from(src.len() >= (16 * (1 << 10)) as size_t);
+    let lhSize =
+        3 + size_t::from(src.len() >= (1 << 10)) + size_t::from(src.len() >= (16 * (1 << 10)));
     let ostart = dst as *mut u8;
     let mut singleStream = src.len() < 256;
     let mut hType = SymbolEncodingType::Compressed;
@@ -255,7 +254,7 @@ pub unsafe fn ZSTD_compressLiterals(
         4 => {
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
-                .wrapping_add((2 << 2) as core::ffi::c_uint)
+                .wrapping_add(2 << 2)
                 .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
@@ -263,7 +262,7 @@ pub unsafe fn ZSTD_compressLiterals(
         5 => {
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
-                .wrapping_add((3 << 2) as core::ffi::c_uint)
+                .wrapping_add(3 << 2)
                 .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);

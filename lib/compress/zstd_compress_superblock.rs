@@ -71,8 +71,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> Result<size_t, Error> {
     let header = (if writeEntropy { 200 } else { 0 }) as size_t;
     let lhSize = 3
-        + size_t::from(literals.len() >= ((1 << 10) as size_t).wrapping_sub(header))
-        + size_t::from(literals.len() >= ((16 * (1 << 10)) as size_t).wrapping_sub(header));
+        + size_t::from(literals.len() >= (1usize << 10).wrapping_sub(header))
+        + size_t::from(literals.len() >= (16usize * (1 << 10)).wrapping_sub(header));
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
@@ -134,9 +134,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
     // If we are writing headers then allow expansion that doesn't change our header size.
-    if lhSize
-        < 3 + size_t::from(cLitSize >= (1 << 10) as size_t)
-            + size_t::from(cLitSize >= (16 * (1 << 10)) as size_t)
+    if lhSize < 3 + size_t::from(cLitSize >= (1 << 10)) + size_t::from(cLitSize >= (16 * (1 << 10)))
     {
         return ZSTD_noCompressLiterals(dst, dstSize, literals);
     }
@@ -154,7 +152,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         4 => {
             // 2 - 2 - 14 - 14
             let lhc_0 = (hType as core::ffi::c_uint)
-                .wrapping_add((2 << 2) as core::ffi::c_uint)
+                .wrapping_add(2 << 2)
                 .wrapping_add((literals.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_0);
@@ -162,7 +160,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         5 => {
             // 2 - 2 - 18 - 18
             let lhc_1 = (hType as core::ffi::c_uint)
-                .wrapping_add((3 << 2) as core::ffi::c_uint)
+                .wrapping_add(3 << 2)
                 .wrapping_add((literals.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);
@@ -239,11 +237,11 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         *op = nbSeq as u8;
         op = op.add(1);
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
+        *op = (nbSeq >> 8).wrapping_add(0x80) as u8;
         *op.add(1) = nbSeq as u8;
         op = op.add(2);
     } else {
-        *op = 0xff as core::ffi::c_int as u8;
+        *op = 0xff;
         MEM_writeLE16(
             op.add(1) as *mut core::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,

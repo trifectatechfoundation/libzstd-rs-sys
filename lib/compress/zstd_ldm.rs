@@ -453,8 +453,8 @@ pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compre
             }
         } else {
             // mapping from [fast, rate7] to [btultra2, rate4]
-            params.hashRateLog = (7 as core::ffi::c_uint)
-                .wrapping_sub((cParams.strategy as core::ffi::c_uint).wrapping_div(3));
+            params.hashRateLog =
+                7u32.wrapping_sub((cParams.strategy as core::ffi::c_uint).wrapping_div(3));
         }
     }
     if params.hashLog == 0 {
@@ -476,7 +476,7 @@ pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compre
 }
 
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
-    let ldmHSize = (1 as size_t) << params.hashLog;
+    let ldmHSize = 1usize << params.hashLog;
     let ldmBucketSizeLog = (params.bucketSizeLog.min(params.hashLog)) as size_t;
     let ldmBucketSize = 1 << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
@@ -509,9 +509,7 @@ fn ZSTD_ldm_insertEntry(
 
     let bucket = &mut hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog];
     bucket[offset as usize] = entry;
-    bucketOffsets[hash] = (offset.wrapping_add(1)
-        & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1))
-        as u8;
+    bucketOffsets[hash] = (offset.wrapping_add(1) & (1u32 << bucketSizeLog).wrapping_sub(1)) as u8;
 }
 
 /// Returns the number of bytes that match backwards before pIn and pMatch.
@@ -932,7 +930,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let maxDist = 1 << params.windowLog;
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
-    let kMaxChunkSize = (1 << 20) as size_t;
+    let kMaxChunkSize = 1 << 20;
     let nbChunks = (srcSize / kMaxChunkSize)
         .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
     let mut leftoverSize = 0;

@@ -192,8 +192,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     if (strategy as core::ffi::c_uint) < ZSTD_lazy {
         if isDefaultAllowed == DefaultPolicy::Allowed {
             let staticFse_nbSeq_max = 1000;
-            let mult =
-                (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
+            let mult = 10u32.wrapping_sub(strategy as core::ffi::c_uint) as size_t;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
             if *repeatMode == FSE_repeat::Valid && nbSeq < staticFse_nbSeq_max {
