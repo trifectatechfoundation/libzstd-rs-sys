@@ -1177,8 +1177,8 @@ pub extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
     } else {
         srcSize
             .wrapping_add(srcSize >> 8)
-            .wrapping_add(if srcSize < (128 << 10) as size_t {
-                ((128 << 10) as size_t).wrapping_sub(srcSize) >> 11
+            .wrapping_add(if srcSize < (128 << 10) {
+                (128usize << 10).wrapping_sub(srcSize) >> 11
             } else {
                 0
             })
@@ -1241,10 +1241,10 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     // statically sized space. tmpWorkspace never moves (but prev/next block swap places)
     if !ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
-        (((8 << 10) + 512) as size_t)
+        ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((MaxSeq + 2) as size_t))
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE)
-            .wrapping_add((2 as size_t).wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
+            .wrapping_add(2usize.wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
     ) {
         return core::ptr::null_mut();
     }
@@ -1258,11 +1258,11 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     ) as *mut ZSTD_compressedBlockState_t;
     (*cctx).tmpWorkspace = ZSTD_cwksp_reserve_object(
         &mut (*cctx).workspace,
-        (((8 << 10) + 512) as size_t)
+        ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
     );
-    (*cctx).tmpWkspSize = (((8 << 10) + 512) as size_t)
+    (*cctx).tmpWkspSize = ((8usize << 10) + 512)
         .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
         .max(ZSTD_SLIPBLOCK_WORKSPACESIZE);
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
@@ -2632,21 +2632,17 @@ fn ZSTD_sizeof_matchState(
         useRowMatchFinder,
         enableDedicatedDictSearch && !forCCtx,
     ) {
-        (1 as size_t) << cParams.chainLog
+        1usize << cParams.chainLog
     } else {
         0
     };
-    let hSize = (1 as size_t) << cParams.hashLog;
+    let hSize = 1usize << cParams.hashLog;
     let hashLog3 = if forCCtx && cParams.minMatch == 3 {
         cParams.windowLog.min(ZSTD_HASHLOG3_MAX)
     } else {
         0
     };
-    let h3Size = if hashLog3 != 0 {
-        (1 as size_t) << hashLog3
-    } else {
-        0
-    };
+    let h3Size = if hashLog3 != 0 { 1usize << hashLog3 } else { 0 };
     // We don't use ZSTD_cwksp_alloc_size() here because the tables aren't
     // surrounded by redzones in ASAN.
     let tableSpace = chainSize
@@ -2715,7 +2711,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     useSequenceProducer: bool,
     maxBlockSize: size_t,
 ) -> size_t {
-    let windowSize = ((1 as core::ffi::c_ulonglong) << cParams.windowLog)
+    let windowSize = (1u64 << cParams.windowLog)
         .min(pledgedSrcSize as core::ffi::c_ulonglong) // pledgedSrcSize can be 0, so .clamp() would panic
         .max(1) as size_t;
     let blockSize = ZSTD_resolveMaxBlockSize(maxBlockSize).min(windowSize);
@@ -2726,7 +2722,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         ))
         .wrapping_add(3 * ZSTD_cwksp_alloc_size(maxNbSeq.wrapping_mul(size_of::<u8>())));
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
-        (((8 << 10) + 512) as size_t)
+        ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
     );
@@ -2865,7 +2861,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     );
     let blockSize = ZSTD_resolveMaxBlockSize((*params).maxBlockSize).min(1 << cParams.windowLog);
     let inBuffSize = if (*params).inBufferMode == ZSTD_bm_buffered {
-        ((1 as size_t) << cParams.windowLog).wrapping_add(blockSize)
+        (1usize << cParams.windowLog).wrapping_add(blockSize)
     } else {
         0
     };
@@ -3032,21 +3028,17 @@ unsafe fn ZSTD_reset_matchState(
         useRowMatchFinder,
         ms.dedicatedDictSearch != 0 && forWho == ResetTarget::CDict,
     ) {
-        (1 as size_t) << cParams.chainLog
+        1usize << cParams.chainLog
     } else {
         0
     };
-    let hSize = (1 as size_t) << cParams.hashLog;
+    let hSize = 1usize << cParams.hashLog;
     let hashLog3 = if forWho == ResetTarget::CCtx && cParams.minMatch == 3 {
         cParams.windowLog.min(ZSTD_HASHLOG3_MAX)
     } else {
         0
     };
-    let h3Size = if hashLog3 != 0 {
-        (1 as size_t) << hashLog3
-    } else {
-        0
-    };
+    let h3Size = if hashLog3 != 0 { 1usize << hashLog3 } else { 0 };
 
     if forceResetIndex == IndexResetPolicy::Reset {
         ZSTD_window_init(&mut ms.window);
@@ -3178,7 +3170,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     // Point params at the applied params, now that LDM has modified them.
     let params = &(*zc).appliedParams;
 
-    let windowSize = ((1 as size_t) << params.cParams.windowLog)
+    let windowSize = (1usize << params.cParams.windowLog)
         .min(pledgedSrcSize as size_t) // pledgedSrcSize can be 0, so .clamp() would panic
         .max(1);
     let blockSize = params.maxBlockSize.min(windowSize);
@@ -3259,14 +3251,14 @@ unsafe fn ZSTD_resetCCtx_internal(
         }
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
-            (((8 << 10) + 512) as size_t)
+            ((8usize << 10) + 512)
                 .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
                 .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
         );
         if ((*zc).tmpWorkspace).is_null() {
             return Err(Error::memory_allocation);
         }
-        (*zc).tmpWkspSize = (((8 << 10) + 512) as size_t)
+        (*zc).tmpWkspSize = ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE);
     }
@@ -3308,7 +3300,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     // ldm hash table
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         // TODO: avoid memset?
-        let ldmHSize = (1 as size_t) << params.ldmParams.hashLog;
+        let ldmHSize = 1usize << params.ldmParams.hashLog;
         (*zc).ldmState.hashTable =
             ZSTD_cwksp_reserve_aligned64(ws, ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()))
                 as *mut ldmEntry_t;
@@ -3379,16 +3371,16 @@ pub unsafe fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx) {
 /// Approximate sizes for each strategy past which copying the dictionary tables into the working
 /// context is faster than using them in-place.
 static attachDictSizeCutoffs: [size_t; 10] = [
-    (8 * (1 << 10)) as size_t,
-    (8 * (1 << 10)) as size_t,
-    (16 * (1 << 10)) as size_t,
-    (32 * (1 << 10)) as size_t,
-    (32 * (1 << 10)) as size_t,
-    (32 * (1 << 10)) as size_t,
-    (32 * (1 << 10)) as size_t,
-    (32 * (1 << 10)) as size_t,
-    (8 * (1 << 10)) as size_t,
-    (8 * (1 << 10)) as size_t,
+    8 * (1 << 10),
+    8 * (1 << 10),
+    16 * (1 << 10),
+    32 * (1 << 10),
+    32 * (1 << 10),
+    32 * (1 << 10),
+    32 * (1 << 10),
+    32 * (1 << 10),
+    8 * (1 << 10),
+    8 * (1 << 10),
 ];
 
 unsafe fn ZSTD_shouldAttachDict(
@@ -3550,11 +3542,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     }
 
     let h3log = (*cctx).blockState.matchState.hashLog3;
-    let h3Size = if h3log != 0 {
-        (1 as size_t) << h3log
-    } else {
-        0
-    };
+    let h3Size = if h3log != 0 { 1usize << h3log } else { 0 };
     ptr::write_bytes(
         (*cctx).blockState.matchState.hashTable3 as *mut u8,
         0,
@@ -3643,17 +3631,13 @@ unsafe fn ZSTD_copyCCtx_internal(
         (*srcCCtx).appliedParams.useRowMatchFinder,
         false,
     ) {
-        (1 as size_t) << (*srcCCtx).appliedParams.cParams.chainLog
+        1usize << (*srcCCtx).appliedParams.cParams.chainLog
     } else {
         0
     };
-    let hSize = (1 as size_t) << (*srcCCtx).appliedParams.cParams.hashLog;
+    let hSize = 1usize << (*srcCCtx).appliedParams.cParams.hashLog;
     let h3log = (*srcCCtx).blockState.matchState.hashLog3;
-    let h3Size = if h3log != 0 {
-        (1 as size_t) << h3log
-    } else {
-        0
-    };
+    let h3Size = if h3log != 0 { 1usize << h3log } else { 0 };
     core::ptr::copy_nonoverlapping(
         (*srcCCtx).blockState.matchState.hashTable,
         (*dstCCtx).blockState.matchState.hashTable,
@@ -4065,11 +4049,11 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         *op = nbSeq as u8;
         op = op.add(1);
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
+        *op = (nbSeq >> 8).wrapping_add(0x80) as u8;
         *op.add(1) = nbSeq as u8;
         op = op.add(2);
     } else {
-        *op = 0xff as core::ffi::c_int as u8;
+        *op = 0xff;
         MEM_writeLE16(
             op.add(1) as *mut core::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,
@@ -5053,8 +5037,8 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX_U8;
     let literalSectionHeaderSize = 3
-        + size_t::from(literals.len() >= (1 << 10) as size_t)
-        + size_t::from(literals.len() >= (16 * (1 << 10)) as size_t);
+        + size_t::from(literals.len() >= (1 << 10))
+        + size_t::from(literals.len() >= (16 * (1 << 10)));
     let singleStream = literals.len() < 256;
 
     match hufMetadata.hType {
@@ -5281,7 +5265,7 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: &SeqStore_t) -> size_t {
         if i == seqStore.longLengthPos as size_t
             && seqStore.longLengthType == LongLengthType::Literal
         {
-            literalsBytes = literalsBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
+            literalsBytes = literalsBytes.wrapping_add(0x10000);
         }
     }
     literalsBytes
@@ -5296,7 +5280,7 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: &SeqStore_t) -> size_t {
         matchBytes = matchBytes.wrapping_add(usize::from(seq.mlBase) + usize::from(MINMATCH));
         if i == seqStore.longLengthPos as size_t && seqStore.longLengthType == LongLengthType::Match
         {
-            matchBytes = matchBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
+            matchBytes = matchBytes.wrapping_add(0x10000);
         }
     }
     matchBytes
@@ -5869,20 +5853,20 @@ unsafe fn ZSTD_optimalBlockSize(
     // Note: conservatively only split full blocks (128 KB) currently.
     // While it's possible to go lower, let's keep it simple for a first implementation.
     // Besides, benefits of splitting are reduced when blocks are already small.
-    if srcSize < (128 * (1 << 10)) as size_t || blockSizeMax < (128 * (1 << 10)) as size_t {
+    if srcSize < (128 * (1 << 10)) || blockSizeMax < (128 * (1 << 10)) {
         return srcSize.min(blockSizeMax);
     }
     // Do not split incompressible data though:
     // Require verified savings to allow pre-splitting.
     // Note: as a consequence, the first full block is not split.
     if savings < 3 {
-        return (128 * (1 << 10)) as size_t;
+        return 128 * (1 << 10);
     }
     // Apply @splitLevel, or use default value (which depends on @strat).
     // Note that splitting heuristic is still conditioned by @savings >= 3,
     // so the first block will not reach this code path.
     if splitLevel == 1 {
-        return (128 * (1 << 10)) as size_t;
+        return 128 * (1 << 10);
     }
     if splitLevel == 0 {
         splitLevel = splitLevels[strat as usize];
@@ -5942,11 +5926,7 @@ unsafe fn ZSTD_compress_frameChunk(
         );
         let lastBlock = lastFrameChunk && blockSize == remaining;
 
-        if dstCapacity
-            < ZSTD_BLOCKHEADERSIZE
-                .wrapping_add((1 + 1) as size_t)
-                .wrapping_add(1)
-        {
+        if dstCapacity < ZSTD_BLOCKHEADERSIZE.wrapping_add(1 + 1).wrapping_add(1) {
             return Err(Error::dstSize_tooSmall);
         }
 
@@ -6080,8 +6060,8 @@ unsafe fn ZSTD_writeFrameHeader(
         << 3) as u8;
     let fcsCode = if params.fParams.contentSizeFlag != 0 {
         u32::from(pledgedSrcSize >= 256)
-            + u32::from(pledgedSrcSize >= (65536 + 256) as u64)
-            + u32::from(pledgedSrcSize >= 0xffffffff as core::ffi::c_uint as u64)
+            + u32::from(pledgedSrcSize >= (65536 + 256))
+            + u32::from(pledgedSrcSize >= 0xffffffff)
     } else {
         0
     };
@@ -6163,7 +6143,7 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     if dstCapacity < srcSize.wrapping_add(8) {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if srcSize > 0xffffffff as core::ffi::c_uint as size_t {
+    if srcSize > 0xffffffff {
         return Error::srcSize_wrong.to_error_code();
     }
     if magicVariant > 15 {
@@ -6535,7 +6515,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         31,
         offcodeLog,
         workspace,
-        ((8 << 10) + 512) as size_t,
+        (8 << 10) + 512,
     )
     .map_err(|_| Error::dictionary_corrupted)?;
     // Defer checking offcodeMaxValue because we need to know the size of the dictionary content
@@ -6561,7 +6541,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         matchlengthMaxValue,
         matchlengthLog,
         workspace,
-        ((8 << 10) + 512) as size_t,
+        (8 << 10) + 512,
     )
     .map_err(|_| Error::dictionary_corrupted)?;
     (*bs).entropy.fse.matchlength_repeatMode =
@@ -6588,7 +6568,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         litlengthMaxValue,
         litlengthLog,
         workspace,
-        ((8 << 10) + 512) as size_t,
+        (8 << 10) + 512,
     )
     .map_err(|_| Error::dictionary_corrupted)?;
     (*bs).entropy.fse.litlength_repeatMode =
@@ -6605,12 +6585,8 @@ pub unsafe fn ZSTD_loadCEntropy(
 
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
     let mut offcodeMax = MaxOff;
-    if dictContentSize
-        <= (-(1 as core::ffi::c_int) as u32)
-            .wrapping_sub((128 as core::ffi::c_int * ((1 as core::ffi::c_int) << 10)) as u32)
-            as size_t
-    {
-        let maxOffset = (dictContentSize as u32).wrapping_add((128 * (1 << 10)) as u32);
+    if dictContentSize <= u32::MAX.wrapping_sub(128 * (1 << 10)) as size_t {
+        let maxOffset = (dictContentSize as u32).wrapping_add(128 * (1 << 10));
         // `maxOffset` is a `u32`, so its highest set bit is at most 31
         offcodeMax = ZSTD_highbit32(maxOffset) as u8;
     }
@@ -6936,7 +6912,7 @@ unsafe fn ZSTD_writeEpilogue(
         let cBlockHeader24 = 1u32
             .wrapping_add((BlockType::Raw as u32) << 1)
             .wrapping_add(0);
-        if dstCapacity < 3 as size_t {
+        if dstCapacity < 3 {
             return Err(Error::dstSize_tooSmall);
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
@@ -7631,7 +7607,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     // source size is known. Limit the increase to 19, which is the
     // window log for compression level 1 with the largest source size.
     if pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN {
-        let limitedSrcSize = (pledgedSrcSize.min((1 << 19) as core::ffi::c_ulonglong)) as u32;
+        let limitedSrcSize = pledgedSrcSize.min(1 << 19) as u32;
         let limitedSrcLog = if limitedSrcSize > 1 {
             (ZSTD_highbit32(limitedSrcSize.wrapping_sub(1))).wrapping_add(1)
         } else {
@@ -10906,9 +10882,9 @@ impl ZSTD_compressionParameters {
         mode: CParamMode,
     ) -> Self {
         let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
-        let tableID = u32::from(rSize <= (256 * (1 << 10)) as u64)
-            + u32::from(rSize <= (128 * (1 << 10)) as u64)
-            + u32::from(rSize <= (16 * (1 << 10)) as u64);
+        let tableID = u32::from(rSize <= (256 * (1 << 10)))
+            + u32::from(rSize <= (128 * (1 << 10)))
+            + u32::from(rSize <= (16 * (1 << 10)));
 
         let row = if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT

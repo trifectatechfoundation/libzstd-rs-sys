@@ -497,7 +497,7 @@ unsafe fn ZSTD_insertBt1(
     let windowLow = ZSTD_getLowestMatchIndex(ms, target, (*cParams).windowLog);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
     let mut bestLength = 8;
-    let mut nbCompares = (1 as core::ffi::c_uint) << (*cParams).searchLog;
+    let mut nbCompares = 1u32 << (*cParams).searchLog;
 
     *hashTable.add(h) = curr; // Update Hash Table
 
@@ -625,9 +625,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     mls: u32,
 ) -> usize {
     let cParams = &ms.cParams;
-    let sufficient_len = cParams
-        .targetLength
-        .min(((1 << 12) - 1) as core::ffi::c_uint);
+    let sufficient_len = cParams.targetLength.min((1 << 12) - 1);
     let base = ms.window.base;
     let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let hashLog = cParams.hashLog;
@@ -636,8 +634,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let mut matchIndex = *hashTable.add(h);
     let bt = ms.chainTable;
-    let btLog = (cParams.chainLog).wrapping_sub(1 as core::ffi::c_uint);
-    let btMask = ((1 as core::ffi::c_uint) << btLog).wrapping_sub(1);
+    let btLog = cParams.chainLog.wrapping_sub(1);
+    let btMask = (1u32 << btLog).wrapping_sub(1);
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
     let dictBase = ms.window.dictBase;
@@ -656,7 +654,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1); // farthest referenced position of any match => detects repetitive patterns
     let mut dummy32: u32 = 0;
     let mut mnum = 0usize;
-    let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
+    let mut nbCompares = 1u32 << cParams.searchLog;
 
     let dms = if dictMode == DictMode::DictMatchState {
         ms.dictMatchState
@@ -704,7 +702,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         btLog
     };
     let dmsBtMask = if dictMode == DictMode::DictMatchState {
-        ((1 as core::ffi::c_uint) << dmsBtLog).wrapping_sub(1)
+        (1u32 << dmsBtLog).wrapping_sub(1)
     } else {
         0
     };
@@ -802,7 +800,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     if mls == 3 && bestLength < mls as size_t {
         let matchIndex3 = ZSTD_insertAndFindFirstIndexHash3(ms, nextToUpdate3, ip);
         // heuristic: longer distance likely too expensive
-        if (matchIndex3 >= matchLow) & (curr.wrapping_sub(matchIndex3) < (1 << 18) as u32) {
+        if (matchIndex3 >= matchLow) & (curr.wrapping_sub(matchIndex3) < (1 << 18)) {
             let mlen = if dictMode == DictMode::NoDict
                 || dictMode == DictMode::DictMatchState
                 || matchIndex3 >= dictLimit
@@ -1167,9 +1165,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
 
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
 
-    let sufficient_len = (*cParams)
-        .targetLength
-        .min(((1 << 12) - 1) as core::ffi::c_uint);
+    let sufficient_len = (*cParams).targetLength.min((1 << 12) - 1);
     let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 

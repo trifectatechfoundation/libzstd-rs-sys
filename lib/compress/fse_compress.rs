@@ -206,8 +206,7 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
             }
             while symbol >= start.wrapping_add(24) {
                 start = start.wrapping_add(24);
-                bitStream = (bitStream as core::ffi::c_uint)
-                    .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
+                bitStream = (bitStream as core::ffi::c_uint).wrapping_add(0xffff << bitCount);
                 if !SAFE && out > oend.sub(2) {
                     return Err(Error::dstSize_tooSmall); // Buffer overflow
                 }

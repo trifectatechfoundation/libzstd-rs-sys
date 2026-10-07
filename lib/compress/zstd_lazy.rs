@@ -351,7 +351,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     let mut nextCandidate = bt.offset((2 * (matchIndex & btMask)) as isize);
     let mut unsortedMark = bt.offset((2 * (matchIndex & btMask)) as isize).add(1);
-    let mut nbCompares = (1 as core::ffi::c_uint) << cParams.searchLog;
+    let mut nbCompares = 1u32 << cParams.searchLog;
     let mut nbCandidates = nbCompares;
     let mut previousCandidate = 0;
 
@@ -720,7 +720,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let chainPackedPointer =
         *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
     let chainIndex = (chainPackedPointer >> 8) as usize;
-    let chainLength = chainPackedPointer & 0xff as core::ffi::c_int as u32;
+    let chainLength = chainPackedPointer & 0xff;
     let chainAttempts = nbAttempts.wrapping_sub(ddsAttempt);
     let chainLimit = chainAttempts.min(chainLength) as usize;
 
@@ -832,8 +832,8 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
     } else {
         0
     };
-    let mut nbAttempts = (1 as core::ffi::c_uint) << cParams.searchLog;
-    let mut ml = (4 - 1) as size_t;
+    let mut nbAttempts = 1u32 << cParams.searchLog;
+    let mut ml = 4 - 1;
 
     let dms = ms.dictMatchState;
     let ddsHashLog = if dictMode == DictMode::DedicatedDictSearch {
@@ -965,7 +965,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
 }
 
 pub const ZSTD_ROW_HASH_TAG_MASK: core::ffi::c_uint =
-    ((1 as core::ffi::c_uint) << ZSTD_ROW_HASH_TAG_BITS).wrapping_sub(1);
+    (1u32 << ZSTD_ROW_HASH_TAG_BITS).wrapping_sub(1);
 pub const ZSTD_ROW_HASH_CACHE_MASK: core::ffi::c_int = ZSTD_ROW_HASH_CACHE_SIZE - 1;
 
 /// Starting from the LSB, returns the idx of the next non-zero bit.
@@ -1159,7 +1159,7 @@ unsafe fn ZSTD_row_update_internal(
 /// processing.
 pub unsafe fn ZSTD_row_update(ms: &mut ZSTD_MatchState_t, ip: *const u8) {
     let rowLog = ms.cParams.searchLog.clamp(4, 6);
-    let rowMask = ((1 as core::ffi::c_uint) << rowLog).wrapping_sub(1);
+    let rowMask = (1u32 << rowLog).wrapping_sub(1);
     let mls = ms.cParams.minMatch.min(6);
 
     ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, false);
@@ -1337,13 +1337,13 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     } else {
         withinMaxDistance
     };
-    let rowEntries = (1 as core::ffi::c_uint) << ROW_LOG;
+    let rowEntries = 1u32 << ROW_LOG;
     let rowMask = rowEntries.wrapping_sub(1);
     let cappedSearchLog = cParams.searchLog.min(ROW_LOG);
     let groupWidth = ZSTD_row_matchMaskGroupWidth(rowEntries);
     let hashSalt = ms.hashSalt;
-    let mut nbAttempts = (1 as core::ffi::c_uint) << cappedSearchLog;
-    let mut ml = (4 - 1) as size_t;
+    let mut nbAttempts = 1u32 << cappedSearchLog;
+    let mut ml = 4 - 1;
 
     // DMS/DDS variables that may be referenced later
     let dms = ms.dictMatchState;

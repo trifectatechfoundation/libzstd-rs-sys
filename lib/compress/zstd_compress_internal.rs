@@ -115,7 +115,7 @@ pub(crate) fn ZSTD_window_correctOverflow(
     maxDist: u32,
     src: *const core::ffi::c_void,
 ) -> u32 {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
+    let cycleSize = 1u32 << cycleLog;
     let cycleMask = cycleSize.wrapping_sub(1);
     let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
     let currentCycle = curr & cycleMask;
@@ -155,7 +155,7 @@ pub(crate) fn ZSTD_window_correctOverflow(
 
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
-    ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
+    (1u32 << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
 
 /// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
 /// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
@@ -1011,7 +1011,7 @@ fn ZSTD_window_canOverflowCorrect(
     loadedDictEnd: u32,
     src: *const core::ffi::c_void,
 ) -> bool {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
+    let cycleSize = 1u32 << cycleLog;
     let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
     let minIndexToOverflowCorrect = cycleSize
         .wrapping_add(maxDist.max(cycleSize))

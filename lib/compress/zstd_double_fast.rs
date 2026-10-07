@@ -167,18 +167,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     // Array of ~random data, should have low probability of matching data.
     // We load from here instead of from tables if matchl0/matchl1 are
     // invalid indices. Used to avoid unpredictable branches.
-    let dummy: [u8; 10] = [
-        0x12 as core::ffi::c_int as u8,
-        0x34 as core::ffi::c_int as u8,
-        0x56 as core::ffi::c_int as u8,
-        0x78 as core::ffi::c_int as u8,
-        0x9a as core::ffi::c_int as u8,
-        0xbc as core::ffi::c_int as u8,
-        0xde as core::ffi::c_int as u8,
-        0xf0 as core::ffi::c_int as u8,
-        0xe2 as core::ffi::c_int as u8,
-        0xb4 as core::ffi::c_int as u8,
-    ];
+    let dummy: [u8; 10] = [0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0xe2, 0xb4];
 
     // init
     ip = ip.add(usize::from(ip == prefixLowest));
@@ -520,10 +509,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
         ip.offset_from_unsigned(prefixLowest) + dictEnd.offset_from_unsigned(dictStart);
 
     if ms.prefetchCDictTables != 0 {
-        let hashTableBytes =
-            ((1 as size_t) << (*dictCParams).hashLog).wrapping_mul(size_of::<u32>());
-        let chainTableBytes =
-            ((1 as size_t) << (*dictCParams).chainLog).wrapping_mul(size_of::<u32>());
+        let hashTableBytes = (1usize << (*dictCParams).hashLog).wrapping_mul(size_of::<u32>());
+        let chainTableBytes = (1usize << (*dictCParams).chainLog).wrapping_mul(size_of::<u32>());
         prefetch_area(dictHashLong as *const core::ffi::c_char, hashTableBytes);
         prefetch_area(dictHashSmall as *const core::ffi::c_char, chainTableBytes);
     }

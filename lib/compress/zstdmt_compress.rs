@@ -312,7 +312,7 @@ unsafe fn ZSTDMT_createBufferPool(
         ZSTDMT_freeBufferPool(bufPool);
         return core::ptr::null_mut();
     }
-    (*bufPool).bufferSize = (64 * (1 << 10)) as size_t;
+    (*bufPool).bufferSize = 64 * (1 << 10);
     (*bufPool).totalBuffers = maxNbBuffers;
     (*bufPool).nbBuffers = 0;
     (*bufPool).cMem = cMem;
@@ -610,7 +610,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
-        let hashSize = ((1 as size_t) << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
+        let hashSize = (1usize << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
         let bucketLog = (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
         let prevBucketLog = (serialState.params.ldmParams.hashLog)
             .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
@@ -682,7 +682,7 @@ unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
     core::ptr::drop_in_place(&raw mut serialState.ldmWindowMutex);
     core::ptr::drop_in_place(&raw mut serialState.ldmWindowCond);
     let hashLog = serialState.params.ldmParams.hashLog;
-    let hashSize = ((1 as size_t) << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
+    let hashSize = (1usize << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
     let bucketLog = (serialState.params.ldmParams.hashLog)
         .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
     let numBuckets = 1usize << bucketLog;
@@ -1215,12 +1215,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     }
     (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, cMem);
     (*mtctx).jobIDMask = nbJobs.wrapping_sub(1);
-    (*mtctx).bufPool = ZSTDMT_createBufferPool(
-        (2 as core::ffi::c_uint)
-            .wrapping_mul(nbWorkers)
-            .wrapping_add(3),
-        cMem,
-    );
+    (*mtctx).bufPool = ZSTDMT_createBufferPool(2u32.wrapping_mul(nbWorkers).wrapping_add(3), cMem);
     (*mtctx).cctxPool = ZSTDMT_createCCtxPool(nbWorkers as core::ffi::c_int, cMem);
     (*mtctx).seqPool = ZSTDMT_createSeqPool(nbWorkers, cMem);
     core::ptr::write(&raw mut (*mtctx).serial, SerialState::default());
@@ -1362,9 +1357,7 @@ unsafe fn ZSTDMT_resize(
     ZSTDMT_expandJobsTable(mtctx, nbWorkers)?;
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
         (*mtctx).bufPool,
-        (2 as core::ffi::c_uint)
-            .wrapping_mul(nbWorkers)
-            .wrapping_add(3),
+        2u32.wrapping_mul(nbWorkers).wrapping_add(3),
     );
     if ((*mtctx).bufPool).is_null() {
         return Err(Error::memory_allocation);

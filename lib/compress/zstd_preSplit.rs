@@ -1,6 +1,6 @@
 use core::ptr;
 
-use core::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
+use core::ffi::{c_char, c_int, c_uint, c_void};
 use libc::size_t;
 
 use crate::lib::common::mem::MEM_read16;
@@ -28,7 +28,7 @@ unsafe fn hash2(p: *const c_void, hashLog: c_uint) -> c_uint {
         return *(p as *const u8) as u32;
     }
     debug_assert!(hashLog <= HASHLOG_MAX);
-    (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as c_uint).wrapping_sub(hashLog)
+    (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> 32u32.wrapping_sub(hashLog)
 }
 
 #[repr(C)]
@@ -203,9 +203,8 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     const SEGMENT_SIZE: c_int = 512;
 
     let fpstats = workspace as *mut FPStats;
-    let middleEvents = (workspace as *mut c_char)
-        .offset((512 as c_ulong).wrapping_mul(size_of::<c_uint>() as c_ulong) as isize)
-        as *mut c_void as *mut Fingerprint;
+    let middleEvents = (workspace as *mut c_char).add(512 * size_of::<c_uint>()) as *mut c_void
+        as *mut Fingerprint;
 
     debug_assert_eq!(blockSize, (128 << 10));
     debug_assert!(!workspace.is_null());
@@ -234,7 +233,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
-        return (64 * (1 << 10)) as size_t;
+        return 64 * (1 << 10);
     }
     (if distFromBegin > distFromEnd {
         32 * (1 << 10)
