@@ -368,6 +368,10 @@ fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 
+#[expect(
+    clippy::boxed_local,
+    reason = "Box is needed because the main thread may destroy `data.ctx` immediately after the completion signal from `COVER_best_finish`"
+)]
 fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     let ctx = data.ctx;
     let parameters = data.parameters;
@@ -831,7 +835,7 @@ fn optimize_train_from_buffer_fastcover(
                         POOL_add(
                             pool,
                             FASTCOVER_tryParameters_wrapper,
-                            Box::leak(data) as *mut _ as *mut core::ffi::c_void,
+                            Box::into_raw(data).cast(),
                         )
                     }
                 } else {
