@@ -1468,7 +1468,7 @@ pub unsafe fn HUF_optimalTableLog(
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
     let symbolCardinality = HUF_cardinality(count, maxSymbolValue);
     let minTableLog = HUF_minTableLog(symbolCardinality);
-    let mut optSize = !0 - 1;
+    let mut optSize = usize::MAX - 1;
     let mut optLog = maxTableLog;
 
     /* Search until size increases */
