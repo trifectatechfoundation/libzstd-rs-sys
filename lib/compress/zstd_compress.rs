@@ -6917,25 +6917,22 @@ pub unsafe extern "C" fn ZSTD_compressBegin(
 ///
 /// # Returns
 ///
-/// The number of bytes written into dst (or an error code).
+/// The number of bytes written into `dst`, or an error.
 unsafe fn ZSTD_writeEpilogue(
     cctx: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ostart = dst as *mut u8;
     let mut op = ostart;
 
     if (*cctx).stage == CompressionStage::Created {
-        return Error::stage_wrong.to_error_code();
+        return Err(Error::stage_wrong);
     }
 
     // special case: empty frame
     if (*cctx).stage == CompressionStage::Init {
-        let fhSize = match ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0) {
-            Ok(fhSize) => fhSize,
-            Err(err) => return err.to_error_code(),
-        };
+        let fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0)?;
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         op = op.add(fhSize);
         (*cctx).stage = CompressionStage::Ongoing;
@@ -6947,7 +6944,7 @@ unsafe fn ZSTD_writeEpilogue(
             .wrapping_add((BlockType::Raw as u32) << 1)
             .wrapping_add(0);
         if dstCapacity < 3 as size_t {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
         op = op.add(ZSTD_BLOCKHEADERSIZE);
@@ -6957,7 +6954,7 @@ unsafe fn ZSTD_writeEpilogue(
     if (*cctx).appliedParams.fParams.checksumFlag != 0 {
         let checksum = ZSTD_XXH64_digest(&mut (*cctx).xxhState) as u32;
         if dstCapacity < 4 {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         MEM_writeLE32(op as *mut core::ffi::c_void, checksum);
         op = op.add(4);
@@ -6965,7 +6962,7 @@ unsafe fn ZSTD_writeEpilogue(
 
     // return to "created but no init" status
     (*cctx).stage = CompressionStage::Created;
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 
 pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
@@ -7004,15 +7001,14 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     if ERR_isError(err_code) {
         return err_code;
     }
-    let endResult = ZSTD_writeEpilogue(
+    let endResult = match ZSTD_writeEpilogue(
         cctx,
         (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(cSize),
-    );
-    let err_code_0 = endResult;
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
+    ) {
+        Ok(endResult) => endResult,
+        Err(err) => return err.to_error_code(),
+    };
     // control src size
     if (*cctx).pledgedSrcSizePlusOne != 0
         && (*cctx).pledgedSrcSizePlusOne != ((*cctx).consumedSrcSize).wrapping_add(1)
