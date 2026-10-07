@@ -838,7 +838,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                     );
 
                     if !((*job).cdict).is_null() {
-                        let initError = ZSTD_compressBegin_advanced_internal(
+                        if let Err(err) = ZSTD_compressBegin_advanced_internal(
                             cctx,
                             core::ptr::null(),
                             0,
@@ -847,10 +847,9 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                             (*job).cdict,
                             &jobParams,
                             (*job).fullFrameSize,
-                        );
-                        if ERR_isError(initError) {
+                        ) {
                             let guard = (*job).job_mutex.lock().unwrap();
-                            (*job).cSize = initError;
+                            (*job).cSize = err.to_error_code();
                             drop(guard);
                             current_block = 17100290475540901977;
                         } else {
@@ -894,7 +893,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                             match current_block {
                                 17100290475540901977 => {}
                                 _ => {
-                                    let initError_0 = ZSTD_compressBegin_advanced_internal(
+                                    if let Err(err) = ZSTD_compressBegin_advanced_internal(
                                         cctx,
                                         (*job).prefix.start,
                                         (*job).prefix.size,
@@ -903,10 +902,9 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                         core::ptr::null(),
                                         &jobParams,
                                         pledgedSrcSize as core::ffi::c_ulonglong,
-                                    );
-                                    if ERR_isError(initError_0) {
+                                    ) {
                                         let guard = (*job).job_mutex.lock().unwrap();
-                                        (*job).cSize = initError_0;
+                                        (*job).cSize = err.to_error_code();
                                         drop(guard);
                                         current_block = 17100290475540901977;
                                     } else {

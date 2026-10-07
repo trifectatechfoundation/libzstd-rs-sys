@@ -6812,14 +6812,11 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
     cdict: *const ZSTD_CDict,
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: core::ffi::c_ulonglong,
-) -> size_t {
+) -> Result<(), Error> {
     // compression parameters verification and optimization
-    let err_code = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    params.cParams.check_bounds()?;
 
-    match ZSTD_compressBegin_internal(
+    ZSTD_compressBegin_internal(
         cctx,
         dict,
         dictSize,
@@ -6829,10 +6826,7 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
         params,
         pledgedSrcSize,
         BufferedPolicy::NotBuffered,
-    ) {
-        Ok(()) => 0,
-        Err(err) => err.to_error_code(),
-    }
+    )
 }
 
 /// # Returns
@@ -6847,7 +6841,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
-    ZSTD_compressBegin_advanced_internal(
+    match ZSTD_compressBegin_advanced_internal(
         cctx,
         dict,
         dictSize,
@@ -6856,7 +6850,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         core::ptr::null(),
         &cctxParams,
         pledgedSrcSize,
-    )
+    ) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 unsafe fn ZSTD_compressBegin_usingDict_deprecated(
