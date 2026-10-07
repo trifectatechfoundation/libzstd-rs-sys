@@ -2265,11 +2265,14 @@ fn decompress_continue(
 /// # Returns
 ///
 /// - size of entropy tables read
-/// - an error code, which can be tested with [`ZSTD_isError`]
-pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> size_t {
+/// - [`Error::dictionary_corrupted`] if the dictionary entropy is invalid
+pub fn ZSTD_loadDEntropy(
+    entropy: &mut ZSTD_entropyDTables_t,
+    dict: &[u8],
+) -> Result<size_t, Error> {
     // skip header = magic + dictID
     let Some((_, mut dictPtr)) = dict.split_at_checked(8) else {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     };
 
     const _: () = assert!(
@@ -2287,7 +2290,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
 
     let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, 0);
     if ERR_isError(hSize) {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
 
     dictPtr = &dictPtr[hSize..];
@@ -2299,16 +2302,13 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dictPtr,
-    );
-
-    let Ok(offcodeHeaderSize) = offcodeHeaderSize else {
-        return Error::dictionary_corrupted.to_error_code();
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if offcodeMaxValue > 31 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     if offcodeLog > 8 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     ZSTD_buildFSETable(
         &mut entropy.OFTable,
@@ -2328,15 +2328,13 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dictPtr,
-    );
-    let Ok(matchlengthHeaderSize) = matchlengthHeaderSize else {
-        return Error::dictionary_corrupted.to_error_code();
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if matchlengthMaxValue > 52 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     if matchlengthLog > 9 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     ZSTD_buildFSETable(
         &mut entropy.MLTable,
@@ -2356,15 +2354,13 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dictPtr,
-    );
-    let Ok(litlengthHeaderSize) = litlengthHeaderSize else {
-        return Error::dictionary_corrupted.to_error_code();
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if litlengthMaxValue > 35 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     if litlengthLog > 9 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
     ZSTD_buildFSETable(
         &mut entropy.LLTable,
@@ -2377,19 +2373,19 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
     );
     dictPtr = &dictPtr[litlengthHeaderSize..];
     let Some((chunk, dict_content)) = dictPtr.split_first_chunk::<12>() else {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     };
 
     let dict_content_size = dict_content.len();
     for (i, rep) in chunk.as_chunks::<4>().0.iter().enumerate() {
         let rep = u32::from_le_bytes(*rep);
         if rep == 0 || rep as size_t > dict_content_size {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
         entropy.rep[i] = rep;
     }
 
-    dict.len() - dict_content_size
+    Ok(dict.len() - dict_content_size)
 }
 
 fn ZSTD_refDictContent(dctx: &mut ZSTD_DCtx, dict: &[u8]) {
@@ -2413,10 +2409,7 @@ fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> Result
     }
     dctx.dictID = u32::from_le_bytes(*dict_id);
 
-    let eSize = ZSTD_loadDEntropy(&mut dctx.entropy, dict);
-    if ERR_isError(eSize) {
-        return Err(Error::dictionary_corrupted);
-    }
+    let eSize = ZSTD_loadDEntropy(&mut dctx.entropy, dict)?;
 
     dctx.fseEntropy = true;
     dctx.litEntropy = dctx.fseEntropy;
