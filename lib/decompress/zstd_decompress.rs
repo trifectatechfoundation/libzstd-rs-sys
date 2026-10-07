@@ -471,24 +471,24 @@ fn ZSTD_DDictHashSet_getIndex(hashSet: &ZSTD_DDictHashSet, dictID: u32) -> size_
 unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     hashSet: &mut ZSTD_DDictHashSet,
     ddict: *const ZSTD_DDict,
-) -> size_t {
+) -> Result<(), Error> {
     let dictID = ZSTD_getDictID_fromDDict(ddict);
     let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
     let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
     if hashSet.ddictPtrCount == hashSet.ddictPtrTableSize {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
     while !(*(hashSet.ddictPtrTable).add(idx)).is_null() {
         if ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) == dictID {
             *(hashSet.ddictPtrTable).add(idx) = ddict;
-            return 0;
+            return Ok(());
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
     *(hashSet.ddictPtrTable).add(idx) = ddict;
     hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
-    0
+    Ok(())
 }
 
 /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
@@ -496,7 +496,7 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
 unsafe fn ZSTD_DDictHashSet_expand(
     hashSet: &mut ZSTD_DDictHashSet,
     customMem: ZSTD_customMem,
-) -> size_t {
+) -> Result<(), Error> {
     let newTableSize = hashSet.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let newTable = ZSTD_customCalloc(
         size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
@@ -505,17 +505,14 @@ unsafe fn ZSTD_DDictHashSet_expand(
     let oldTable = hashSet.ddictPtrTable;
     let oldTableSize = hashSet.ddictPtrTableSize;
     if newTable.is_null() {
-        return Error::memory_allocation.to_error_code();
+        return Err(Error::memory_allocation);
     }
     hashSet.ddictPtrTable = newTable;
     hashSet.ddictPtrTableSize = newTableSize;
     hashSet.ddictPtrCount = 0;
     for i in 0..oldTableSize {
         if !(*oldTable.add(i)).is_null() {
-            let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i));
-            if ERR_isError(err_code) {
-                return err_code;
-            }
+            ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i))?;
         }
     }
     ZSTD_customFree(
@@ -523,7 +520,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
         oldTableSize.wrapping_mul(size_of::<*mut ZSTD_DDict>()),
         customMem,
     );
-    0
+    Ok(())
 }
 
 /// Fetches a [`ZSTD_DDict`] with the given `dictID`.
@@ -613,22 +610,15 @@ unsafe fn ZSTD_DDictHashSet_addDDict(
     hashSet: &mut ZSTD_DDictHashSet,
     ddict: *const ZSTD_DDict,
     customMem: ZSTD_customMem,
-) -> size_t {
+) -> Result<(), Error> {
     if hashSet.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
         / hashSet.ddictPtrTableSize
         * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
         != 0
     {
-        let err_code = ZSTD_DDictHashSet_expand(hashSet, customMem);
-        if ERR_isError(err_code) {
-            return err_code;
-        }
+        ZSTD_DDictHashSet_expand(hashSet, customMem)?;
     }
-    let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, ddict);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
-    0
+    ZSTD_DDictHashSet_emplaceDDict(hashSet, ddict)
 }
 
 /// Get the _current_ memory usage of the [`ZSTD_DCtx`]
@@ -2891,9 +2881,8 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
             };
 
             debug_assert_eq!((*dctx).staticSize, 0); // ddictSet cannot have been allocated if static dctx
-            let err_code = ZSTD_DDictHashSet_addDDict(ddictSet, ddict, (*dctx).customMem);
-            if ERR_isError(err_code) {
-                return err_code;
+            if let Err(err) = ZSTD_DDictHashSet_addDDict(ddictSet, ddict, (*dctx).customMem) {
+                return err.to_error_code();
             }
         }
     }
