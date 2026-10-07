@@ -6861,7 +6861,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
-) -> size_t {
+) -> Result<(), Error> {
     let params = ZSTD_parameters::new(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
@@ -6877,7 +6877,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         },
     );
 
-    match ZSTD_compressBegin_internal(
+    ZSTD_compressBegin_internal(
         cctx,
         dict,
         dictSize,
@@ -6887,10 +6887,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         &cctxParams,
         ZSTD_CONTENTSIZE_UNKNOWN,
         BufferedPolicy::NotBuffered,
-    ) {
-        Ok(()) => 0,
-        Err(err) => err.to_error_code(),
-    }
+    )
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingDict))]
@@ -6900,7 +6897,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    ZSTD_compressBegin_usingDict_deprecated(cctx, dict, dictSize, compressionLevel)
+    match ZSTD_compressBegin_usingDict_deprecated(cctx, dict, dictSize, compressionLevel) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin))]
@@ -6908,7 +6908,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin(
     cctx: *mut ZSTD_CCtx,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    ZSTD_compressBegin_usingDict_deprecated(cctx, core::ptr::null(), 0, compressionLevel)
+    match ZSTD_compressBegin_usingDict_deprecated(cctx, core::ptr::null(), 0, compressionLevel) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 /// Ends a frame.
