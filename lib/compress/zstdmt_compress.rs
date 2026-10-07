@@ -594,7 +594,7 @@ unsafe fn ZSTDMT_serialState_reset(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
     dictContentType: ZSTD_dictContentType_e,
-) -> core::ffi::c_int {
+) -> Result<(), Error> {
     // Adjust parameters
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
@@ -641,7 +641,7 @@ unsafe fn ZSTDMT_serialState_reset(
         if (serialState.ldmState.hashTable).is_null()
             || (serialState.ldmState.bucketOffsets).is_null()
         {
-            return 1;
+            return Err(Error::memory_allocation);
         }
         // Zero the tables
         ptr::write_bytes(serialState.ldmState.hashTable as *mut u8, 0, hashSize);
@@ -672,7 +672,7 @@ unsafe fn ZSTDMT_serialState_reset(
     serialState.params = params;
     serialState.params.jobSize = jobSize as u32 as size_t;
 
-    0
+    Ok(())
 }
 
 unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
@@ -1669,7 +1669,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         (*mtctx).cdict = cdict;
     }
 
-    if ZSTDMT_serialState_reset(
+    ZSTDMT_serialState_reset(
         &mut (*mtctx).serial,
         (*mtctx).seqPool,
         params,
@@ -1677,12 +1677,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         dict,
         dictSize,
         dictContentType,
-    ) != 0
-    {
-        return Err(Error::memory_allocation);
-    }
-
-    Ok(())
+    )
 }
 
 /// Write a single empty block with an end-of-frame to finish a frame.
