@@ -1267,15 +1267,15 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     // Strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     };
 
     // Stream 4-way split would not work.
     if dst.capacity() < 6 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
@@ -1283,7 +1283,7 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     let length3 = usize::from(u16::from_le_bytes([b4, b5]));
 
     if 6 + length1 + length2 + length3 > src.len() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let istart1 = &src[6..][..length1];
@@ -1292,7 +1292,7 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     let istart4 = &src[6 + length1 + length2 + length3..];
 
     let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     };
 
     let mut end_signal = true;
@@ -1300,25 +1300,13 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     let dtLog = DTable.description.tableLog as u32;
 
     if op4.is_empty() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
-    let mut bitD1 = match BIT_DStream_t::new(istart1) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD2 = match BIT_DStream_t::new(istart2) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD3 = match BIT_DStream_t::new(istart3) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
-    let mut bitD4 = match BIT_DStream_t::new(istart4) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
+    let mut bitD1 = BIT_DStream_t::new(istart1)?;
+    let mut bitD2 = BIT_DStream_t::new(istart2)?;
+    let mut bitD3 = BIT_DStream_t::new(istart3)?;
+    let mut bitD4 = BIT_DStream_t::new(istart4)?;
 
     let dt = DTable.data.as_x2();
 
@@ -1379,13 +1367,13 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     // NOTE: these conditions do in fact trigger for invalid input. That is why currently
     // `Writer::write_symbol_x2` does not assert that it is in-bounds.
     if op1.ptr.unwrap().as_ptr() > op1.end {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op2.ptr.unwrap().as_ptr() > op2.end {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op3.ptr.unwrap().as_ptr() > op3.end {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     // NOTE: op4 is already verified within main loop.
 
@@ -1397,11 +1385,11 @@ fn HUF_decompress4X2_usingDTable_internal_body(
 
     // Check.
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     // The decoded size.
-    dst.capacity()
+    Ok(dst.capacity())
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -1409,7 +1397,7 @@ fn HUF_decompress4X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress4X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1417,7 +1405,7 @@ fn HUF_decompress4X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress4X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1561,13 +1549,11 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
     src: &[u8],
     DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
-) -> size_t {
+) -> Result<size_t, Error> {
     let oend = dst.as_mut_ptr_range().end;
 
-    let mut args = match HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable) {
-        Ok(Some(args)) => args,
-        Ok(None) => return 0,
-        Err(e) => return e.to_error_code(),
+    let Some(mut args) = HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable)? else {
+        return Ok(0);
     };
 
     debug_assert!(args.ip[0] >= args.ilowest);
@@ -1594,10 +1580,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
             segmentEnd = oend;
         }
 
-        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
-            Ok(v) => v,
-            Err(e) => return e.to_error_code(),
-        };
+        let mut bit = init_remaining_dstream(&args, i, segmentEnd)?;
 
         let length = HUF_decodeStreamX2(
             Writer::from_raw_parts(op, segmentEnd as usize - op as usize),
@@ -1607,11 +1590,11 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         );
 
         if op.add(length as usize) != segmentEnd {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
     }
 
-    dst.capacity()
+    Ok(dst.capacity())
 }
 
 fn HUF_decompress4X2_usingDTable_internal(
@@ -1619,7 +1602,7 @@ fn HUF_decompress4X2_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as core::ffi::c_int {
             #[cfg(all(unix, target_arch = "x86_64"))]
@@ -1630,9 +1613,9 @@ fn HUF_decompress4X2_usingDTable_internal(
         if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
             let ret = unsafe {
                 HUF_decompress4X2_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
-            };
+            }?;
             if ret != 0 {
-                return ret;
+                return Ok(ret);
             }
         }
 
@@ -1708,6 +1691,7 @@ fn HUF_decompress4X2_DCtx_wksp(
     }
 
     HUF_decompress4X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 static algoTime: [[algo_time_t; 2]; 16] = [
@@ -2006,10 +1990,10 @@ pub fn HUF_decompress4X_usingDTable(
     flags: core::ffi::c_int,
 ) -> size_t {
     match DTable.description.tableType {
-        0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags)
-            .unwrap_or_else(|err| err.to_error_code()),
+        0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags),
     }
+    .unwrap_or_else(|err| err.to_error_code())
 }
 
 pub fn HUF_decompress4X_hufOnly_wksp(
