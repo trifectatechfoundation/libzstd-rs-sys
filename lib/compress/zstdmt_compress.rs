@@ -1776,13 +1776,19 @@ unsafe fn ZSTDMT_createCompressionJob(
 /// Move to next job if current one is fully flushed.
 /// `output`: `pos` will be updated with amount of data flushed.
 /// `blockToFlush`: if true, the function will block and wait if there is no data available to flush.
-/// @return: amount of data remaining within internal buffer, 0 if no more, 1 if unknown but > 0, or an error code
+///
+/// # Returns
+///
+/// The amount of data remaining within the internal buffer:
+/// - 0 if no more
+/// - 1 if unknown but > 0
+/// - or an error
 unsafe fn ZSTDMT_flushProduced(
     mtctx: *mut ZSTDMT_CCtx,
     output: *mut ZSTD_outBuffer,
     blockToFlush: bool,
     end: ZSTD_EndDirective,
-) -> size_t {
+) -> Result<size_t, Error> {
     let wJobID = (*mtctx).doneJobID & (*mtctx).jobIDMask;
 
     let mut guard = (*((*mtctx).jobs).offset(wJobID as isize))
@@ -1813,10 +1819,10 @@ unsafe fn ZSTDMT_flushProduced(
     let srcConsumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed; // shared
     let srcSize = (*((*mtctx).jobs).offset(wJobID as isize)).src.size; // read-only, could be done after mutex lock, but no-declaration-after-statement
     drop(guard);
-    if ERR_isError(cSize) {
+    if let Some(err) = Error::from_error_code(cSize) {
         ZSTDMT_waitForAllJobsCompleted(mtctx);
         ZSTDMT_releaseAllJobResources(mtctx);
-        return cSize;
+        return Err(err);
     }
 
     // add frame checksum if necessary (can only happen once)
@@ -1871,27 +1877,27 @@ unsafe fn ZSTDMT_flushProduced(
 
     // return value: how many bytes left in buffer ; fake it to 1 when unknown but >0
     if cSize > (*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed {
-        return cSize.wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed);
+        return Ok(cSize.wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed));
     }
     if srcSize > srcConsumed {
-        return 1; // current job not completely compressed
+        return Ok(1); // current job not completely compressed
     }
 
     if (*mtctx).doneJobID < (*mtctx).nextJobID {
-        return 1; // some more jobs ongoing
+        return Ok(1); // some more jobs ongoing
     }
     if (*mtctx).jobReady != 0 {
-        return 1; // one job is ready to push, just not yet in the list
+        return Ok(1); // one job is ready to push, just not yet in the list
     }
     if (*mtctx).inBuff.filled > 0 {
-        return 1; // input is not empty, and still needs to be converted into a job
+        return Ok(1); // input is not empty, and still needs to be converted into a job
     }
     (*mtctx).allJobsCompleted = (*mtctx).frameEnded; // all jobs are entirely flushed => if this one is last one, frame is completed
     if end == ZSTD_e_end {
-        return size_t::from((*mtctx).frameEnded == 0); // for ZSTD_e_end, question becomes: is frame completed ?
+        return Ok(size_t::from((*mtctx).frameEnded == 0)); // for ZSTD_e_end, question becomes: is frame completed ?
     }
 
-    0 // internal buffers fully flushed
+    Ok(0) // internal buffers fully flushed
 }
 
 /// Returns the range of data used by the earliest job that is not yet complete.
@@ -2203,12 +2209,15 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     }
 
     // check for potential compressed data ready to be flushed
-    let remainingToFlush = ZSTDMT_flushProduced(
+    let remainingToFlush = match ZSTDMT_flushProduced(
         mtctx,
         output,
         !forwardInputProgress, // block if there was no forward input progress
         endOp,
-    );
+    ) {
+        Ok(remainingToFlush) => remainingToFlush,
+        Err(err) => return err.to_error_code(),
+    };
     if (*input).pos < (*input).size {
         return remainingToFlush.max(1); // input not consumed: do not end flush yet
     }
