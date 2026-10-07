@@ -6069,7 +6069,7 @@ unsafe fn ZSTD_writeFrameHeader(
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     dictID: u32,
-) -> size_t {
+) -> Result<size_t, Error> {
     let op = dst as *mut u8;
     let dictIDSizeCodeLength =
         u32::from(dictID > 0) + u32::from(dictID >= 256) + u32::from(dictID >= 65536);
@@ -6099,7 +6099,7 @@ unsafe fn ZSTD_writeFrameHeader(
     let mut pos = 0usize;
 
     if dstCapacity < 18 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if params.format == Format::ZSTD_f_zstd1 {
         MEM_writeLE32(dst, ZSTD_MAGICNUMBER);
@@ -6149,7 +6149,7 @@ unsafe fn ZSTD_writeFrameHeader(
             }
         }
     }
-    pos
+    Ok(pos)
 }
 
 /// Writes out a skippable frame with the specified magic number variant (16 are supported),
@@ -6230,17 +6230,16 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     }
 
     if frame && (*cctx).stage == CompressionStage::Init {
-        fhSize = ZSTD_writeFrameHeader(
+        fhSize = match ZSTD_writeFrameHeader(
             dst,
             dstCapacity,
             &(*cctx).appliedParams,
             ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
             (*cctx).dictID,
-        );
-        let err_code = fhSize;
-        if ERR_isError(err_code) {
-            return err_code;
-        }
+        ) {
+            Ok(fhSize) => fhSize,
+            Err(err) => return err.to_error_code(),
+        };
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         dst = (dst as *mut core::ffi::c_char).add(fhSize) as *mut core::ffi::c_void;
         (*cctx).stage = CompressionStage::Ongoing;
@@ -6933,11 +6932,10 @@ unsafe fn ZSTD_writeEpilogue(
 
     // special case: empty frame
     if (*cctx).stage == CompressionStage::Init {
-        let fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0);
-        let err_code = fhSize;
-        if ERR_isError(err_code) {
-            return err_code;
-        }
+        let fhSize = match ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0) {
+            Ok(fhSize) => fhSize,
+            Err(err) => return err.to_error_code(),
+        };
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
         op = op.add(fhSize);
         (*cctx).stage = CompressionStage::Ongoing;
@@ -9309,13 +9307,16 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     }
 
     // Begin writing output, starting with frame header
-    let frameHeaderSize = ZSTD_writeFrameHeader(
+    let frameHeaderSize = match ZSTD_writeFrameHeader(
         op as *mut core::ffi::c_void,
         dstCapacity,
         &(*cctx).appliedParams,
         srcSize as u64,
         (*cctx).dictID,
-    );
+    ) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
     op = op.add(frameHeaderSize);
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
@@ -9715,13 +9716,16 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     }
 
     // Begin writing output, starting with frame header
-    let frameHeaderSize = ZSTD_writeFrameHeader(
+    let frameHeaderSize = match ZSTD_writeFrameHeader(
         op as *mut core::ffi::c_void,
         dstCapacity,
         &(*cctx).appliedParams,
         decompressedSize as u64,
         (*cctx).dictID,
-    );
+    ) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
     op = op.add(frameHeaderSize);
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
