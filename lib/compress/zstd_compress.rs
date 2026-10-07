@@ -5238,10 +5238,10 @@ unsafe fn ZSTD_estimateBlockSize(
 unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
     seqStore: &mut SeqStore_t,
     zc: *mut ZSTD_CCtx,
-) -> size_t {
+) -> Result<size_t, Error> {
     let entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t =
         &mut (*zc).blockSplitCtx.entropyMetadata;
-    if let Err(err) = ZSTD_buildBlockEntropyStats(
+    ZSTD_buildBlockEntropyStats(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
@@ -5249,12 +5249,10 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
 
     let nbSeq = (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart);
-    ZSTD_estimateBlockSize(
+    Ok(ZSTD_estimateBlockSize(
         core::slice::from_raw_parts(
             seqStore.litStart,
             (seqStore.lit).offset_from_unsigned(seqStore.litStart),
@@ -5268,7 +5266,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         (*zc).tmpWkspSize,
         (*entropyMetadata).hufMetadata.hType == SymbolEncodingType::Compressed,
         true,
-    )
+    ))
 }
 
 /// Returns literals bytes represented in a seqStore
@@ -5506,11 +5504,11 @@ pub const MIN_SEQUENCES_BLOCK_SPLITTING: usize = 300;
 /// If not, or if an error occurred in estimation, then we do not recurse.
 ///
 /// Note: The recursion depth is capped by a heuristic minimum number of sequences, defined by
-/// MIN_SEQUENCES_BLOCK_SPLITTING. In theory, this means the absolute largest recursion depth is
+/// [`MIN_SEQUENCES_BLOCK_SPLITTING`]. In theory, this means the absolute largest recursion depth is
 /// 10 == log2(maxNbSeqInBlock/MIN_SEQUENCES_BLOCK_SPLITTING). In practice, recursion depth
 /// usually doesn't go beyond 4.
 ///
-/// Furthermore, the number of splits is capped by ZSTD_MAX_NB_BLOCK_SPLITS.
+/// Furthermore, the number of splits is capped by [`ZSTD_MAX_NB_BLOCK_SPLITS`].
 unsafe fn ZSTD_deriveBlockSplitsHelper(
     splits: &mut seqStoreSplits,
     startIdx: size_t,
@@ -5531,18 +5529,13 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     ZSTD_deriveSeqStoreChunk(fullSeqStoreChunk, origSeqStore, startIdx, endIdx);
     ZSTD_deriveSeqStoreChunk(firstHalfSeqStore, origSeqStore, startIdx, midIdx);
     ZSTD_deriveSeqStoreChunk(secondHalfSeqStore, origSeqStore, midIdx, endIdx);
-    let estimatedOriginalSize =
-        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(fullSeqStoreChunk, zc);
-    let estimatedFirstHalfSize =
-        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(firstHalfSeqStore, zc);
-    let estimatedSecondHalfSize =
-        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(secondHalfSeqStore, zc);
-    if ERR_isError(estimatedOriginalSize)
-        || ERR_isError(estimatedFirstHalfSize)
-        || ERR_isError(estimatedSecondHalfSize)
-    {
+    let (Ok(estimatedOriginalSize), Ok(estimatedFirstHalfSize), Ok(estimatedSecondHalfSize)) = (
+        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(fullSeqStoreChunk, zc),
+        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(firstHalfSeqStore, zc),
+        ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(secondHalfSeqStore, zc),
+    ) else {
         return;
-    }
+    };
     if estimatedFirstHalfSize.wrapping_add(estimatedSecondHalfSize) < estimatedOriginalSize {
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
         *splits.splitLocations.add(splits.idx) = midIdx as u32;
