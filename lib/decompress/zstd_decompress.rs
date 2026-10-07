@@ -313,6 +313,7 @@ unsafe fn ZSTD_freeLegacyStreamContext(
         _ => Error::version_unsupported.to_error_code(),
     }
 }
+
 #[inline]
 unsafe fn ZSTD_initLegacyStream(
     legacyContext: *mut *mut core::ffi::c_void,
@@ -320,7 +321,7 @@ unsafe fn ZSTD_initLegacyStream(
     newVersion: u32,
     mut dict: *const core::ffi::c_void,
     dictSize: size_t,
-) -> size_t {
+) -> Result<(), Error> {
     let mut x: core::ffi::c_char = 0;
     if dict.is_null() {
         dict = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
@@ -336,7 +337,7 @@ unsafe fn ZSTD_initLegacyStream(
                 *legacyContext as *mut ZBUFFv05_DCtx
             };
             if dctx.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             let _ = ZBUFFv05_decompressInitDictionary(
                 dctx,
@@ -347,7 +348,6 @@ unsafe fn ZSTD_initLegacyStream(
                 },
             );
             *legacyContext = dctx as *mut core::ffi::c_void;
-            0
         }
         6 => {
             let dctx = if prevVersion != newVersion {
@@ -356,11 +356,10 @@ unsafe fn ZSTD_initLegacyStream(
                 *legacyContext as *mut ZBUFFv06_DCtx
             };
             if dctx.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             ZBUFFv06_decompressInitDictionary(dctx, dict, dictSize);
             *legacyContext = dctx as *mut core::ffi::c_void;
-            0
         }
         7 => {
             let dctx = if prevVersion != newVersion {
@@ -369,14 +368,14 @@ unsafe fn ZSTD_initLegacyStream(
                 *legacyContext as *mut ZBUFFv07_DCtx
             };
             if dctx.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             let _ = ZBUFFv07_decompressInitDictionary(&mut *dctx, dict, dictSize);
             *legacyContext = dctx as *mut core::ffi::c_void;
-            0
         }
-        _ => 0,
+        _ => {}
     }
+    Ok(())
 }
 
 #[inline]
@@ -3555,15 +3554,14 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         if zds.staticSize != 0 {
                             return Error::memory_allocation.to_error_code();
                         }
-                        let err_code = ZSTD_initLegacyStream(
+                        if let Err(err) = ZSTD_initLegacyStream(
                             &mut zds.legacyContext,
                             zds.previousLegacyVersion,
                             legacyVersion,
                             dict,
                             dictSize,
-                        );
-                        if ERR_isError(err_code) {
-                            return err_code;
+                        ) {
+                            return err.to_error_code();
                         }
                         zds.previousLegacyVersion = legacyVersion;
                         zds.legacyVersion = zds.previousLegacyVersion;
