@@ -7613,9 +7613,9 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     cdict: *const ZSTD_CDict,
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
-) -> size_t {
+) -> Result<(), Error> {
     if cdict.is_null() {
-        return Error::dictionary_wrong.to_error_code();
+        return Err(Error::dictionary_wrong);
     }
 
     // Initialize the cctxParams from the cdict
@@ -7653,7 +7653,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         cctxParams.cParams.windowLog = cctxParams.cParams.windowLog.max(limitedSrcLog);
     }
 
-    match ZSTD_compressBegin_internal(
+    ZSTD_compressBegin_internal(
         cctx,
         core::ptr::null(),
         0,
@@ -7663,10 +7663,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         &cctxParams,
         pledgedSrcSize,
         BufferedPolicy::NotBuffered,
-    ) {
-        Ok(()) => 0,
-        Err(err) => err.to_error_code(),
-    }
+    )
 }
 
 /// This function is DEPRECATED.
@@ -7678,7 +7675,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, pledgedSrcSize)
+    match ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, pledgedSrcSize) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 /// cdict must be != NULL
@@ -7694,7 +7694,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
             noDictIDFlag: 0,
         }
     };
-    ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, ZSTD_CONTENTSIZE_UNKNOWN)
+    match ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, ZSTD_CONTENTSIZE_UNKNOWN) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict))]
@@ -7715,14 +7718,13 @@ unsafe fn ZSTD_compress_usingCDict_internal(
     cdict: *const ZSTD_CDict,
     fParams: ZSTD_frameParameters,
 ) -> size_t {
-    let err_code = ZSTD_compressBegin_usingCDict_internal(
+    if let Err(err) = ZSTD_compressBegin_usingCDict_internal(
         cctx,
         cdict,
         fParams,
         srcSize as core::ffi::c_ulonglong,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
+    ) {
+        return err.to_error_code();
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
