@@ -527,7 +527,7 @@ fn COVER_ctx_init<'a>(
     d: core::ffi::c_uint,
     splitPoint: core::ffi::c_double,
     displayLevel: core::ffi::c_int,
-) -> size_t {
+) -> Result<(), Error> {
     let nbSamples = samplesSizes.len();
     let totalSamplesSize = samples.len();
     let nbTrainSamples = if splitPoint < 1.0f64 {
@@ -561,7 +561,7 @@ fn COVER_ctx_init<'a>(
                 COVER_MAX_SAMPLES_SIZE >> 20,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
@@ -570,7 +570,7 @@ fn COVER_ctx_init<'a>(
                 nbTrainSamples,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
@@ -579,7 +579,7 @@ fn COVER_ctx_init<'a>(
                 nbTestSamples,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     *ctx = COVER_ctx_t::default();
     if displayLevel >= 2 {
@@ -634,7 +634,7 @@ fn COVER_ctx_init<'a>(
 
     core::mem::swap(&mut ctx.freqs, &mut ctx.suffix);
 
-    0
+    Ok(())
 }
 
 pub(super) fn COVER_warnOnSmallCorpus(
@@ -854,16 +854,15 @@ fn train_from_buffer_cover(
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    let initVal = COVER_ctx_init(
+    if let Err(err) = COVER_ctx_init(
         &mut ctx,
         samples,
         samplesSizes,
         parameters.d,
         parameters.splitPoint,
         displayLevel,
-    );
-    if ERR_isError(initVal) {
-        return initVal;
+    ) {
+        return err.to_error_code();
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
     let mut activeDmers =
@@ -1320,21 +1319,20 @@ unsafe fn optimize_train_from_buffer_cover(
             displayLevel - 1
         };
 
-        let initVal = COVER_ctx_init(
+        if let Err(err) = COVER_ctx_init(
             &mut ctx,
             samples,
             samplesSizes,
             d,
             splitPoint,
             childDisplayLevel,
-        );
-        if ERR_isError(initVal) {
+        ) {
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
             drop(COVER_best_wait(&best));
             POOL_free(pool);
-            return initVal;
+            return err.to_error_code();
         }
         if !warned {
             COVER_warnOnSmallCorpus(dict.len(), ctx.suffix.len(), displayLevel);
