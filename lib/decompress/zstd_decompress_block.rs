@@ -10,7 +10,7 @@ use crate::lib::common::bitstream::{
 };
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, prefetch_val, Locality};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::FSE_TABLESTEP;
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
@@ -487,7 +487,7 @@ fn ZSTD_decodeLiteralsBlock(
         }
     }
 
-    if ERR_isError(hufSuccess) {
+    if hufSuccess.is_err() {
         return Err(Error::corruption_detected);
     }
 

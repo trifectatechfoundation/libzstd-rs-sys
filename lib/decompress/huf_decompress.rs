@@ -853,17 +853,13 @@ fn HUF_decompress4X1_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
-    let hSize = match HUF_readDTableX1_wksp(dctx, src, workSpace, flags) {
-        Ok(hSize) => hSize,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags)?;
     if hSize as usize >= src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     HUF_decompress4X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
-        .unwrap_or_else(|err| err.to_error_code())
 }
 
 impl HUF_DEltX2 {
@@ -1662,17 +1658,13 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
-    let hSize = match HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags) {
-        Ok(hSize) => hSize,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags)?;
     if hSize as usize >= src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     HUF_decompress1X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
-        .unwrap_or_else(|err| err.to_error_code())
 }
 
 fn HUF_decompress4X2_DCtx_wksp(
@@ -1681,17 +1673,13 @@ fn HUF_decompress4X2_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
-    let hSize = match HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags) {
-        Ok(hSize) => hSize,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags)?;
     if hSize as usize >= src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     HUF_decompress4X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
-        .unwrap_or_else(|err| err.to_error_code())
 }
 
 static algoTime: [[algo_time_t; 2]; 16] = [
@@ -1956,12 +1944,11 @@ pub fn HUF_decompress1X_usingDTable(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     match DTable.description.tableType {
         0 => HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress1X2_usingDTable_internal(dst, src, DTable, flags),
     }
-    .unwrap_or_else(|err| err.to_error_code())
 }
 
 pub fn HUF_decompress1X1_DCtx_wksp(
@@ -1970,17 +1957,13 @@ pub fn HUF_decompress1X1_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
-    let hSize = match HUF_readDTableX1_wksp(dctx, src, workSpace, flags) {
-        Ok(hSize) => hSize,
-        Err(err) => return err.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags)?;
     if hSize as usize >= src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     HUF_decompress1X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
-        .unwrap_or_else(|err| err.to_error_code())
 }
 
 pub fn HUF_decompress4X_usingDTable(
@@ -1988,12 +1971,11 @@ pub fn HUF_decompress4X_usingDTable(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     match DTable.description.tableType {
         0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags),
     }
-    .unwrap_or_else(|err| err.to_error_code())
 }
 
 pub fn HUF_decompress4X_hufOnly_wksp(
@@ -2002,12 +1984,12 @@ pub fn HUF_decompress4X_hufOnly_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if dst.is_empty() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if src.is_empty() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     match HUF_selectDecoder(dst.capacity(), src.len()) {

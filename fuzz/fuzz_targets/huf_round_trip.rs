@@ -266,6 +266,7 @@ fuzz_target!(|input: HufRoundTripInput| {
             &dt,
             flags,
         )
+        .expect("decompression should succeed")
     } else {
         // 4X streams
         lib::decompress::huf_decompress::HUF_decompress4X_usingDTable(
@@ -274,11 +275,10 @@ fuzz_target!(|input: HufRoundTripInput| {
             &dt,
             flags,
         )
+        .expect("decompression should succeed")
     };
 
     // Step 10: Verify decompression
-    assert!(!ERR_isError(decompress_size), "decompression failed");
-
     assert_eq!(
         decompress_size, size,
         "Decompressed size doesn't match original"
