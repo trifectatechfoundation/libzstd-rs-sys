@@ -8300,9 +8300,8 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
 ) -> size_t {
-    let err_code = ZSTD_compressStream2(zcs, output, input, ZSTD_e_continue);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_compressStream2_internal(zcs, output, input, ZSTD_e_continue) {
+        return err.to_error_code();
     }
     ZSTD_nextInputSizeHint_MTorST(zcs)
 }
@@ -8500,14 +8499,24 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
     input: *mut ZSTD_inBuffer,
     endOp: ZSTD_EndDirective,
 ) -> size_t {
+    ZSTD_compressStream2_internal(cctx, output, input, endOp)
+        .unwrap_or_else(|err| err.to_error_code())
+}
+
+unsafe fn ZSTD_compressStream2_internal(
+    cctx: *mut ZSTD_CCtx,
+    output: *mut ZSTD_outBuffer,
+    input: *mut ZSTD_inBuffer,
+    endOp: ZSTD_EndDirective,
+) -> Result<size_t, Error> {
     if (*output).pos > (*output).size {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if (*input).pos > (*input).size {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if endOp > ZSTD_e_end as core::ffi::c_int as u32 {
-        return Error::parameter_outOfBound.to_error_code();
+        return Err(Error::parameter_outOfBound);
     }
 
     // transparent initialization stage
@@ -8522,10 +8531,10 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             if (*cctx).stableIn_notConsumed != 0 {
                 // check stable source guarantees
                 if (*input).src != (*cctx).expectedInBuffer.src {
-                    return Error::stabilityCondition_notRespected.to_error_code();
+                    return Err(Error::stabilityCondition_notRespected);
                 }
                 if (*input).pos != (*cctx).expectedInBuffer.size {
-                    return Error::stabilityCondition_notRespected.to_error_code();
+                    return Err(Error::stabilityCondition_notRespected);
                 }
             }
             // pretend input was consumed, to give a sense forward progress
@@ -8535,17 +8544,13 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             // but actually input wasn't consumed, so keep track of position from where compression shall resume
             (*cctx).stableIn_notConsumed = ((*cctx).stableIn_notConsumed).wrapping_add(inputSize);
             // don't initialize yet, wait for the first block of flush() order, for better parameters adaptation
-            return (*cctx).requestedParams.format.frame_header_size_min() as size_t;
+            return Ok((*cctx).requestedParams.format.frame_header_size_min());
         }
-        if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize) {
-            return err.to_error_code();
-        }
+        ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize)?;
         ZSTD_setBufferExpectations(cctx, output, input);
     }
 
-    if let Err(err) = ZSTD_checkBufferStability(cctx, output, input, endOp) {
-        return err.to_error_code();
-    }
+    ZSTD_checkBufferStability(cctx, output, input, endOp)?;
 
     // compression stage
     if (*cctx).appliedParams.nbWorkers > 0 {
@@ -8567,13 +8572,9 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 .wrapping_add(((*input).pos).wrapping_sub(ipos) as core::ffi::c_ulonglong);
             (*cctx).producedCSize = ((*cctx).producedCSize)
                 .wrapping_add(((*output).pos).wrapping_sub(opos) as core::ffi::c_ulonglong);
-            flushMin = match result {
-                Ok(remaining) => remaining,
-                Err(err) => {
-                    ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
-                    return err.to_error_code();
-                }
-            };
+            flushMin = result.inspect_err(|_| {
+                ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
+            })?;
             if endOp == ZSTD_e_end && flushMin == 0 {
                 ZSTD_CCtx_trace(cctx, 0);
                 ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
@@ -8599,15 +8600,13 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
         // Either we don't require maximum forward progress, we've finished the
         // flush, or we are out of output space.
         ZSTD_setBufferExpectations(cctx, output, input);
-        return flushMin;
+        return Ok(flushMin);
     }
 
-    if let Err(err) = ZSTD_compressStream_generic(cctx, output, input, endOp) {
-        return err.to_error_code();
-    }
+    ZSTD_compressStream_generic(cctx, output, input, endOp)?;
     ZSTD_setBufferExpectations(cctx, output, input);
 
-    ((*cctx).outBuffContentSize).wrapping_sub((*cctx).outBuffFlushedSize)
+    Ok(((*cctx).outBuffContentSize).wrapping_sub((*cctx).outBuffFlushedSize))
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream2_simpleArgs))]
@@ -9751,11 +9750,11 @@ pub unsafe extern "C" fn ZSTD_endStream(
     output: *mut ZSTD_outBuffer,
 ) -> size_t {
     let mut input = inBuffer_forEndFlush(zcs);
-    let remainingToFlush = ZSTD_compressStream2(zcs, output, &mut input, ZSTD_e_end);
-    let err_code = remainingToFlush;
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let remainingToFlush = match ZSTD_compressStream2_internal(zcs, output, &mut input, ZSTD_e_end)
+    {
+        Ok(remaining) => remaining,
+        Err(err) => return err.to_error_code(),
+    };
     if (*zcs).appliedParams.nbWorkers > 0 {
         return remainingToFlush; // minimal estimation
     }
