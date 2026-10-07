@@ -16,9 +16,9 @@ use crate::lib::common::xxhash::{
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
     ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
-    ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
-    ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
-    ZSTD_getCParamsFromCCtxParams_internal, ZSTD_invalidateRepCodes,
+    ZSTD_compressContinue_internal, ZSTD_compressContinue_public, ZSTD_compressEnd_internal,
+    ZSTD_createCCtx_advanced, ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx,
+    ZSTD_freeCDict, ZSTD_getCParamsFromCCtxParams_internal, ZSTD_invalidateRepCodes,
     ZSTD_referenceExternalSequences, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t,
     ZSTD_writeLastEmptyBlock,
 };
@@ -1013,7 +1013,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                     lastBlockSize1
                                                 };
                                                 let cSize_0 = if (*job).lastJob != 0 {
-                                                    ZSTD_compressEnd_public(
+                                                    ZSTD_compressEnd_internal(
                                                         cctx,
                                                         op as *mut core::ffi::c_void,
                                                         oend.offset_from_unsigned(op),
@@ -1021,22 +1021,28 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                         lastBlockSize,
                                                     )
                                                 } else {
-                                                    ZSTD_compressContinue_public(
+                                                    ZSTD_compressContinue_internal(
                                                         cctx,
                                                         op as *mut core::ffi::c_void,
                                                         oend.offset_from_unsigned(op),
                                                         ip as *const core::ffi::c_void,
                                                         lastBlockSize,
+                                                        true,
+                                                        false,
                                                     )
                                                 };
-                                                if ERR_isError(cSize_0) {
-                                                    let guard = (*job).job_mutex.lock().unwrap();
-                                                    (*job).cSize = cSize_0;
-                                                    drop(guard);
-                                                    current_block = 17100290475540901977;
-                                                } else {
-                                                    lastCBlockSize = cSize_0;
-                                                    current_block = 200744462051969938;
+                                                match cSize_0 {
+                                                    Ok(cSize) => {
+                                                        lastCBlockSize = cSize;
+                                                        current_block = 200744462051969938;
+                                                    }
+                                                    Err(err) => {
+                                                        let guard =
+                                                            (*job).job_mutex.lock().unwrap();
+                                                        (*job).cSize = err.to_error_code();
+                                                        drop(guard);
+                                                        current_block = 17100290475540901977;
+                                                    }
                                                 }
                                             } else {
                                                 current_block = 200744462051969938;

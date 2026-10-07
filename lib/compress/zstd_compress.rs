@@ -6187,7 +6187,7 @@ pub unsafe fn ZSTD_referenceExternalSequences(
     (*cctx).externSeqStore.posInSequence = 0;
 }
 
-unsafe fn ZSTD_compressContinue_internal(
+pub(crate) unsafe fn ZSTD_compressContinue_internal(
     cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -6965,27 +6965,31 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let cSize =
-        match ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, true) {
-            Ok(cSize) => cSize,
-            Err(err) => return err.to_error_code(),
-        };
-    let endResult = match ZSTD_writeEpilogue(
+    ZSTD_compressEnd_internal(cctx, dst, dstCapacity, src, srcSize)
+        .unwrap_or_else(|err| err.to_error_code())
+}
+
+pub(crate) unsafe fn ZSTD_compressEnd_internal(
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+) -> Result<size_t, Error> {
+    let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, true, true)?;
+    let endResult = ZSTD_writeEpilogue(
         cctx,
         (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(cSize),
-    ) {
-        Ok(endResult) => endResult,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     // control src size
     if (*cctx).pledgedSrcSizePlusOne != 0
         && (*cctx).pledgedSrcSizePlusOne != ((*cctx).consumedSrcSize).wrapping_add(1)
     {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     ZSTD_CCtx_trace(cctx, endResult);
-    cSize.wrapping_add(endResult)
+    Ok(cSize.wrapping_add(endResult))
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd))]
@@ -8090,16 +8094,13 @@ unsafe fn ZSTD_compressStream_generic(
                     && (*zcs).inBuffPos == 0
                 {
                     // shortcut to compression pass directly into output buffer
-                    let cSize = ZSTD_compressEnd_public(
+                    let cSize = ZSTD_compressEnd_internal(
                         zcs,
                         op as *mut core::ffi::c_void,
                         oend.offset_from_unsigned(op),
                         ip as *const core::ffi::c_void,
                         iend.offset_from_unsigned(ip),
-                    );
-                    if let Some(err) = Error::from_error_code(cSize) {
-                        return Err(err);
-                    }
+                    )?;
                     ip = iend;
                     op = op.add(cSize);
                     (*zcs).frameEnded = 1;
@@ -8166,27 +8167,26 @@ unsafe fn ZSTD_compressStream_generic(
                             if inputBuffered {
                                 let lastBlock = flushMode == ZSTD_e_end && ip == iend;
                                 cSize_0 = if lastBlock {
-                                    ZSTD_compressEnd_public(
+                                    ZSTD_compressEnd_internal(
                                         zcs,
                                         cDst,
                                         oSize,
                                         ((*zcs).inBuff).add((*zcs).inToCompress)
                                             as *const core::ffi::c_void,
                                         iSize,
-                                    )
+                                    )?
                                 } else {
-                                    ZSTD_compressContinue_public(
+                                    ZSTD_compressContinue_internal(
                                         zcs,
                                         cDst,
                                         oSize,
                                         ((*zcs).inBuff).add((*zcs).inToCompress)
                                             as *const core::ffi::c_void,
                                         iSize,
-                                    )
+                                        true,
+                                        false,
+                                    )?
                                 };
-                                if let Some(err) = Error::from_error_code(cSize_0) {
-                                    return Err(err);
-                                }
                                 (*zcs).frameEnded = u32::from(lastBlock);
                                 (*zcs).inBuffTarget =
                                     ((*zcs).inBuffPos).wrapping_add((*zcs).blockSizeMax);
@@ -8201,27 +8201,26 @@ unsafe fn ZSTD_compressStream_generic(
                             } else {
                                 let lastBlock_0 = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
                                 cSize_0 = if lastBlock_0 {
-                                    ZSTD_compressEnd_public(
+                                    ZSTD_compressEnd_internal(
                                         zcs,
                                         cDst,
                                         oSize,
                                         ip as *const core::ffi::c_void,
                                         iSize,
-                                    )
+                                    )?
                                 } else {
-                                    ZSTD_compressContinue_public(
+                                    ZSTD_compressContinue_internal(
                                         zcs,
                                         cDst,
                                         oSize,
                                         ip as *const core::ffi::c_void,
                                         iSize,
-                                    )
+                                        true,
+                                        false,
+                                    )?
                                 };
                                 if !ip.is_null() {
                                     ip = ip.add(iSize);
-                                }
-                                if let Some(err) = Error::from_error_code(cSize_0) {
-                                    return Err(err);
                                 }
                                 (*zcs).frameEnded = u32::from(lastBlock_0);
                                 if lastBlock_0 {
