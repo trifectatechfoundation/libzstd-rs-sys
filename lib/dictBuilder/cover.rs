@@ -1106,6 +1106,10 @@ fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 
+#[expect(
+    clippy::boxed_local,
+    reason = "Box is needed because the main thread may destroy `data.ctx` immediately after the completion signal from `COVER_best_finish`"
+)]
 fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let ctx = data.ctx;
     let parameters = data.parameters;
@@ -1350,7 +1354,7 @@ unsafe fn optimize_train_from_buffer_cover(
                     POOL_add(
                         pool,
                         COVER_tryParameters_wrapper,
-                        Box::leak(data) as *mut _ as *mut core::ffi::c_void,
+                        Box::into_raw(data).cast(),
                     );
                 } else {
                     COVER_tryParameters(data);
