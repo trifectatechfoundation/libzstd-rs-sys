@@ -855,11 +855,11 @@ fn HUF_decompress4X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags)?;
-    if hSize as usize >= src.len() {
+    if hSize >= src.len() {
         return Err(Error::srcSize_wrong);
     }
 
-    HUF_decompress4X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+    HUF_decompress4X1_usingDTable_internal(dst, &src[hSize..], dctx, flags)
 }
 
 impl HUF_DEltX2 {
@@ -1660,11 +1660,11 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags)?;
-    if hSize as usize >= src.len() {
+    if hSize >= src.len() {
         return Err(Error::srcSize_wrong);
     }
 
-    HUF_decompress1X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+    HUF_decompress1X2_usingDTable_internal(dst, &src[hSize..], dctx, flags)
 }
 
 fn HUF_decompress4X2_DCtx_wksp(
@@ -1675,11 +1675,11 @@ fn HUF_decompress4X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags)?;
-    if hSize as usize >= src.len() {
+    if hSize >= src.len() {
         return Err(Error::srcSize_wrong);
     }
 
-    HUF_decompress4X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+    HUF_decompress4X2_usingDTable_internal(dst, &src[hSize..], dctx, flags)
 }
 
 static algoTime: [[algo_time_t; 2]; 16] = [
@@ -1959,11 +1959,11 @@ pub fn HUF_decompress1X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags)?;
-    if hSize as usize >= src.len() {
+    if hSize >= src.len() {
         return Err(Error::srcSize_wrong);
     }
 
-    HUF_decompress1X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+    HUF_decompress1X1_usingDTable_internal(dst, &src[hSize..], dctx, flags)
 }
 
 pub fn HUF_decompress4X_usingDTable(
