@@ -123,13 +123,13 @@ pub unsafe fn ZSTD_fseBitCost(
     ctable: &[FSE_CTable],
     count: &[core::ffi::c_uint],
     max: u8,
-) -> size_t {
+) -> Result<size_t, Error> {
     let count = &count[..usize::from(max) + 1];
     let kAccuracyLog = 8;
     let mut cost = 0usize;
     let cstate = FSE_initCState(ctable);
     if ZSTD_getFSEMaxSymbolValue(ctable) < u16::from(max) {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
     for s in 0..u32::from(max) + 1 {
         let tableLog = cstate.stateLog;
@@ -137,12 +137,12 @@ pub unsafe fn ZSTD_fseBitCost(
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
         if count[s as usize] != 0 {
             if bitCost >= badCost {
-                return Error::GENERIC.to_error_code();
+                return Err(Error::GENERIC);
             }
             cost = cost.wrapping_add(count[s as usize] as size_t * bitCost as size_t);
         }
     }
-    cost >> kAccuracyLog
+    Ok(cost >> kAccuracyLog)
 }
 
 /// Returns the cost in bits of encoding the distribution in count using the
@@ -220,7 +220,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         let repeatCost = if *repeatMode != FSE_repeat::None {
             ZSTD_fseBitCost(prevCTable, count, max)
         } else {
-            Error::GENERIC.to_error_code()
+            Err(Error::GENERIC)
         };
         let nCountCost = match ZSTD_NCountCost(count, max, nbSeq, FSELog) {
             Ok(nCountCost) => nCountCost,
@@ -230,8 +230,9 @@ pub unsafe fn ZSTD_selectEncodingType(
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert_eq!(ZSTD_isError(basicCost), 0);
-            assert!(!(*repeatMode == FSE_repeat::Valid && ZSTD_isError(repeatCost) != 0));
+            assert!(!(*repeatMode == FSE_repeat::Valid && repeatCost.is_err()));
         }
+        let repeatCost = repeatCost.unwrap_or(usize::MAX);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat::None;
             return SymbolEncodingType::Basic;
