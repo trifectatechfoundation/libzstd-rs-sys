@@ -1690,13 +1690,13 @@ unsafe fn ZSTDMT_createCompressionJob(
     mtctx: *mut ZSTDMT_CCtx,
     srcSize: size_t,
     endOp: ZSTD_EndDirective,
-) -> size_t {
+) {
     let jobID = (*mtctx).nextJobID & (*mtctx).jobIDMask;
     let endFrame = endOp == ZSTD_e_end;
 
     if (*mtctx).nextJobID > ((*mtctx).doneJobID).wrapping_add((*mtctx).jobIDMask) {
         // will not create new job: table is full
-        return 0;
+        return;
     }
 
     if (*mtctx).jobReady == 0 {
@@ -1752,7 +1752,7 @@ unsafe fn ZSTDMT_createCompressionJob(
             // single job must also write frame header
             ZSTDMT_writeLastEmptyBlock(((*mtctx).jobs).offset(jobID as isize));
             (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
-            return 0;
+            return;
         }
     }
 
@@ -1768,8 +1768,6 @@ unsafe fn ZSTDMT_createCompressionJob(
     } else {
         (*mtctx).jobReady = 1;
     }
-
-    0
 }
 
 /// Flush whatever data has been produced but not yet flushed in current job.
@@ -2202,10 +2200,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
             && (*mtctx).frameEnded == 0
     {
         let jobSize = (*mtctx).inBuff.filled;
-        let err_code = ZSTDMT_createCompressionJob(mtctx, jobSize, endOp);
-        if ERR_isError(err_code) {
-            return err_code;
-        }
+        ZSTDMT_createCompressionJob(mtctx, jobSize, endOp);
     }
 
     // check for potential compressed data ready to be flushed
