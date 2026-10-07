@@ -1265,20 +1265,17 @@ fn HUF_decompress1X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
-    let mut bitD = match BIT_DStream_t::new(src) {
-        Ok(v) => v,
-        Err(e) => return e.to_error_code(),
-    };
+) -> Result<size_t, Error> {
+    let mut bitD = BIT_DStream_t::new(src)?;
 
     let dt = DTable.data.as_x2();
     let dtd = DTable.description;
     HUF_decodeStreamX2(dst.subslice(..), &mut bitD, dt, dtd.tableLog as u32);
     if !bitD.is_empty() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
-    dst.capacity()
+    Ok(dst.capacity())
 }
 
 #[inline(always)]
@@ -1667,14 +1664,14 @@ fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
 fn HUF_decompress1X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> Result<size_t, Error> {
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1683,7 +1680,7 @@ fn HUF_decompress1X2_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         // SAFETY: the bmi2 feature is enabled.
         unsafe { HUF_decompress1X2_usingDTable_internal_bmi2(dst, src, DTable) }
@@ -1708,6 +1705,7 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     }
 
     HUF_decompress1X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 fn HUF_decompress4X2_DCtx_wksp(
@@ -1992,10 +1990,10 @@ pub fn HUF_decompress1X_usingDTable(
     flags: core::ffi::c_int,
 ) -> size_t {
     match DTable.description.tableType {
-        0 => HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags)
-            .unwrap_or_else(|err| err.to_error_code()),
+        0 => HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress1X2_usingDTable_internal(dst, src, DTable, flags),
     }
+    .unwrap_or_else(|err| err.to_error_code())
 }
 
 pub fn HUF_decompress1X1_DCtx_wksp(
