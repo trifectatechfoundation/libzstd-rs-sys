@@ -9,8 +9,7 @@ use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hash64Ptr_array;
 use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
-    COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict,
-    COVER_warnOnSmallCorpus,
+    COVER_dictSelectionError, COVER_segment_t, COVER_selectDict, COVER_warnOnSmallCorpus,
 };
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
@@ -394,16 +393,13 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
         parameters,
         &ctx.offsets,
     );
-    if COVER_dictSelectionIsError(&selection) && displayLevel >= 1 {
+    if selection.is_err() && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
 
     drop(dict);
+    let selection = selection.unwrap_or_else(COVER_dictSelectionError);
     COVER_best_finish(data.best, parameters, &selection);
-    drop(data);
-    drop(segmentFreqs);
-    COVER_dictSelectionFree(selection);
-    drop(freqs);
 }
 
 fn FASTCOVER_convertToCoverParams(

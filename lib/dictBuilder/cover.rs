@@ -14,7 +14,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCDict, ZSTD_freeCCtxContent,
     ZSTD_freeCDict, ZSTD_initCCtx,
 };
-use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
+use crate::lib::dictBuilder::zdict::{finalize_dictionary, ZDICT_finalizeDictionary};
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::lib::zstd::ZSTD_customMem;
 use crate::ZDICT_params_t;
@@ -1006,18 +1006,8 @@ fn setDictSelection(buf: Box<[u8]>, s: size_t, csz: size_t) -> COVER_dictSelecti
     }
 }
 
-pub(super) fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
-    setDictSelection(Box::default(), 0, error)
-}
-
-pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> bool {
-    // NOTE: is_empty is a proxy for NULL in the C code. It indicates that the dictContent was not
-    // set, which is almost certainly a programmer error if it ever comes up.
-    ERR_isError(selection.totalCompressedSize) || selection.dictContent.is_empty()
-}
-
-pub(super) fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
-    drop(selection)
+pub(super) fn COVER_dictSelectionError(error: Error) -> COVER_dictSelection_t {
+    setDictSelection(Box::default(), 0, error.to_error_code())
 }
 
 pub(super) fn COVER_selectDict(
@@ -1030,7 +1020,9 @@ pub(super) fn COVER_selectDict(
     nbSamples: size_t,
     params: ZDICT_cover_params_t,
     offsets: &[size_t],
-) -> COVER_dictSelection_t {
+) -> Result<COVER_dictSelection_t, Error> {
+    let finalizeSamplesSizes = &samplesSizes[..nbFinalizeSamples as usize];
+    let finalizeSamples = &samplesBuffer[..finalizeSamplesSizes.iter().sum()];
     let mut dictContentSize = customDictContent.len();
     let mut largestDictbuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
@@ -1038,23 +1030,17 @@ pub(super) fn COVER_selectDict(
         params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
     largestDictbuffer[..customDictContent.len()].copy_from_slice(customDictContent);
     dictContentSize = unsafe {
-        ZDICT_finalizeDictionary(
+        finalize_dictionary(
             largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
             dictBufferCapacity,
             customDictContent.as_ptr() as *const core::ffi::c_void,
             dictContentSize,
-            samplesBuffer.as_ptr() as *const core::ffi::c_void,
-            samplesSizes.as_ptr(),
-            nbFinalizeSamples,
+            finalizeSamples,
+            finalizeSamplesSizes,
             params.zParams,
-        )
+        )?
     };
-    if ZDICT_isError(dictContentSize) != 0 {
-        drop(largestDictbuffer);
-        drop(candidateDictBuffer);
-        return COVER_dictSelectionError(dictContentSize);
-    }
-    let mut totalCompressedSize = match COVER_checkTotalCompressedSize(
+    let mut totalCompressedSize = COVER_checkTotalCompressedSize(
         params,
         samplesSizes,
         samplesBuffer,
@@ -1062,17 +1048,13 @@ pub(super) fn COVER_selectDict(
         nbCheckSamples,
         nbSamples,
         &largestDictbuffer[..dictContentSize],
-    ) {
-        Ok(size) => size,
-        Err(err) => {
-            drop(largestDictbuffer);
-            drop(candidateDictBuffer);
-            return COVER_dictSelectionError(err.to_error_code());
-        }
-    };
+    )?;
     if params.shrinkDict == 0 {
-        drop(candidateDictBuffer);
-        return setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize);
+        return Ok(setDictSelection(
+            largestDictbuffer,
+            dictContentSize,
+            totalCompressedSize,
+        ));
     }
     let largestDict = dictContentSize;
     let largestCompressed = totalCompressedSize;
@@ -1080,25 +1062,19 @@ pub(super) fn COVER_selectDict(
     while dictContentSize < largestDict {
         candidateDictBuffer[..largestDict].copy_from_slice(&largestDictbuffer[..largestDict]);
         dictContentSize = unsafe {
-            ZDICT_finalizeDictionary(
+            finalize_dictionary(
                 candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 dictBufferCapacity,
                 customDictContent[customDictContent.len() - dictContentSize..]
                     .as_ptr()
                     .cast(),
                 dictContentSize,
-                samplesBuffer.as_ptr() as *const core::ffi::c_void,
-                samplesSizes.as_ptr(),
-                nbFinalizeSamples,
+                finalizeSamples,
+                finalizeSamplesSizes,
                 params.zParams,
-            )
+            )?
         };
-        if ZDICT_isError(dictContentSize) != 0 {
-            drop(largestDictbuffer);
-            drop(candidateDictBuffer);
-            return COVER_dictSelectionError(dictContentSize);
-        }
-        totalCompressedSize = match COVER_checkTotalCompressedSize(
+        totalCompressedSize = COVER_checkTotalCompressedSize(
             params,
             samplesSizes,
             samplesBuffer,
@@ -1106,26 +1082,24 @@ pub(super) fn COVER_selectDict(
             nbCheckSamples,
             nbSamples,
             &candidateDictBuffer[..dictContentSize],
-        ) {
-            Ok(size) => size,
-            Err(err) => {
-                drop(largestDictbuffer);
-                drop(candidateDictBuffer);
-                return COVER_dictSelectionError(err.to_error_code());
-            }
-        };
+        )?;
         if totalCompressedSize as core::ffi::c_double
             <= largestCompressed as core::ffi::c_double * regressionTolerance
         {
-            drop(largestDictbuffer);
-            return setDictSelection(candidateDictBuffer, dictContentSize, totalCompressedSize);
+            return Ok(setDictSelection(
+                candidateDictBuffer,
+                dictContentSize,
+                totalCompressedSize,
+            ));
         }
         dictContentSize *= 2;
     }
-    dictContentSize = largestDict;
-    totalCompressedSize = largestCompressed;
-    drop(candidateDictBuffer);
-    setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
+
+    Ok(setDictSelection(
+        largestDictbuffer,
+        largestDict,
+        largestCompressed,
+    ))
 }
 
 fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
@@ -1156,15 +1130,12 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
         &ctx.offsets,
     );
 
-    if COVER_dictSelectionIsError(&selection) && displayLevel >= 1 {
+    if selection.is_err() && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);
+    let selection = selection.unwrap_or_else(COVER_dictSelectionError);
     COVER_best_finish(data.best, parameters, &selection);
-    drop(data);
-    COVER_map_destroy(&mut activeDmers);
-    COVER_dictSelectionFree(selection);
-    drop(freqs);
 }
 
 /// This function tries many parameter combinations (specifically, `k` and `d` combinations) and
