@@ -208,7 +208,7 @@ fn FASTCOVER_ctx_init<'a>(
     f: core::ffi::c_uint,
     accelParams: FASTCOVER_accel_t,
     displayLevel: core::ffi::c_int,
-) -> size_t {
+) -> Result<(), Error> {
     let nbSamples = samplesSizes.len() as core::ffi::c_uint;
     let totalSamplesSize = samplesSizes.iter().sum::<usize>();
     let nbTrainSamples = if splitPoint < 1.0f64 {
@@ -245,7 +245,7 @@ fn FASTCOVER_ctx_init<'a>(
                 FASTCOVER_MAX_SAMPLES_SIZE >> 20,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
@@ -254,7 +254,7 @@ fn FASTCOVER_ctx_init<'a>(
                 nbTrainSamples,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
@@ -263,7 +263,7 @@ fn FASTCOVER_ctx_init<'a>(
                 nbTestSamples,
             );
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if displayLevel >= 2 {
         eprintln!(
@@ -297,7 +297,7 @@ fn FASTCOVER_ctx_init<'a>(
         eprintln!("Computing frequencies");
     }
     FASTCOVER_computeFrequency(ctx);
-    0
+    Ok(())
 }
 
 fn FASTCOVER_buildDictionary<'a>(
@@ -546,7 +546,7 @@ fn train_from_buffer_fastcover(
     }
     let accelParams = FASTCOVER_defaultAccelParameters[parameters.accel as usize];
 
-    let initVal = FASTCOVER_ctx_init(
+    if let Err(err) = FASTCOVER_ctx_init(
         &mut ctx,
         samples,
         samplesSizes,
@@ -555,12 +555,11 @@ fn train_from_buffer_fastcover(
         parameters.f,
         accelParams,
         displayLevel,
-    );
-    if ERR_isError(initVal) {
+    ) {
         if displayLevel >= 1 {
             eprintln!("Failed to initialize context");
         }
-        return initVal;
+        return err.to_error_code();
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
     if displayLevel >= 2 {
@@ -775,7 +774,7 @@ fn optimize_train_from_buffer_fastcover(
             displayLevel - 1
         };
 
-        let initVal = FASTCOVER_ctx_init(
+        if let Err(err) = FASTCOVER_ctx_init(
             &mut ctx,
             samples,
             samplesSizes,
@@ -784,14 +783,13 @@ fn optimize_train_from_buffer_fastcover(
             f,
             accelParams,
             childDisplayLevel,
-        );
-        if ERR_isError(initVal) {
+        ) {
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
             drop(COVER_best_wait(&best));
             unsafe { POOL_free(pool) };
-            return initVal;
+            return err.to_error_code();
         }
         if warned == 0 {
             COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
