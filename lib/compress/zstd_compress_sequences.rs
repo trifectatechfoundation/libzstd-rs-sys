@@ -19,7 +19,6 @@ use crate::lib::compress::fse_compress::{
 };
 use crate::lib::compress::zstd_compress::{DefaultPolicy, SeqDef};
 use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
-use crate::ZSTD_isError;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -212,9 +211,14 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
     } else {
         let basicCost = if isDefaultAllowed == DefaultPolicy::Allowed {
-            ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
+            Ok(ZSTD_crossEntropyCost(
+                defaultNorm,
+                defaultNormLog,
+                count,
+                max,
+            ))
         } else {
-            Error::GENERIC.to_error_code()
+            Err(Error::GENERIC)
         };
         let repeatCost = if *repeatMode != FSE_repeat::None {
             ZSTD_fseBitCost(prevCTable, count, max)
@@ -228,10 +232,11 @@ pub unsafe fn ZSTD_selectEncodingType(
         let compressedCost = (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
-            assert_eq!(ZSTD_isError(basicCost), 0);
+            assert!(basicCost.is_ok());
             assert!(!(*repeatMode == FSE_repeat::Valid && repeatCost.is_err()));
         }
         let repeatCost = repeatCost.unwrap_or(usize::MAX);
+        let basicCost = basicCost.unwrap_or(usize::MAX);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat::None;
             return SymbolEncodingType::Basic;
