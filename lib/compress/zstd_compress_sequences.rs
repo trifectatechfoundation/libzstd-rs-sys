@@ -6,8 +6,7 @@ use crate::lib::common::bitstream::{
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
-    FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_initCState, FSE_initCState2,
-    FSE_repeat,
+    FSE_CState_t, FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_repeat,
 };
 use crate::lib::common::mem::MEM_32bits;
 use crate::lib::common::zstd_internal::{
@@ -126,7 +125,7 @@ pub unsafe fn ZSTD_fseBitCost(
     let count = &count[..usize::from(max) + 1];
     let kAccuracyLog = 8;
     let mut cost = 0usize;
-    let cstate = FSE_initCState(ctable);
+    let cstate = FSE_CState_t::new(ctable);
     if ZSTD_getFSEMaxSymbolValue(ctable) < u16::from(max) {
         return Err(Error::GENERIC);
     }
@@ -349,15 +348,15 @@ unsafe fn ZSTD_encodeSequences_body(
     };
 
     // first symbols
-    let mut stateMatchLength = FSE_initCState2(
+    let mut stateMatchLength = FSE_CState_t::new2(
         CTable_MatchLength,
         *mlCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
-    let mut stateOffsetBits = FSE_initCState2(
+    let mut stateOffsetBits = FSE_CState_t::new2(
         CTable_OffsetBits,
         *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
-    let mut stateLitLength = FSE_initCState2(
+    let mut stateLitLength = FSE_CState_t::new2(
         CTable_LitLength,
         *llCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );

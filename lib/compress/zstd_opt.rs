@@ -28,7 +28,7 @@ pub enum BaseDirective {
 use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
-use crate::lib::common::fse::{FSE_getMaxNbBits, FSE_initCState};
+use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits};
 use crate::lib::common::huf::HUF_repeat;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{
@@ -180,7 +180,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 opt_state.litSum = litSum;
             }
 
-            let llstate = FSE_initCState(&(*opt_state.symbolCosts).fse.litlengthCTable);
+            let llstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.litlengthCTable);
             let mut litLengthSum = 0u32;
             for (ll, freq) in opt_state.litLengthFreq_mut().iter_mut().enumerate() {
                 let scaleLog_0 = 10u32; // scale to 1K
@@ -194,7 +194,7 @@ unsafe fn ZSTD_rescaleFreqs(
             }
             opt_state.litLengthSum = litLengthSum;
 
-            let mlstate = FSE_initCState(&(*opt_state.symbolCosts).fse.matchlengthCTable);
+            let mlstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.matchlengthCTable);
             let mut matchLengthSum = 0u32;
             for (ml, freq) in opt_state.matchLengthFreq_mut().iter_mut().enumerate() {
                 let scaleLog_1 = 10u32;
@@ -208,7 +208,7 @@ unsafe fn ZSTD_rescaleFreqs(
             }
             opt_state.matchLengthSum = matchLengthSum;
 
-            let ofstate = FSE_initCState(&(*opt_state.symbolCosts).fse.offcodeCTable);
+            let ofstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.offcodeCTable);
             let mut offCodeSum = 0u32;
             for (of, freq) in opt_state.offCodeFreq_mut().iter_mut().enumerate() {
                 let scaleLog_2 = 10u32;
