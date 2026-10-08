@@ -117,7 +117,7 @@ fn ZSTD_entropyCost(count: &[core::ffi::c_uint], max: u8, total: size_t) -> size
 
 /// Returns the cost in bits of encoding the distribution in count using ctable.
 /// Returns an error if ctable cannot represent all the symbols in count.
-pub unsafe fn ZSTD_fseBitCost(
+pub fn ZSTD_fseBitCost(
     ctable: &[FSE_CTable],
     count: &[core::ffi::c_uint],
     max: u8,

@@ -71,10 +71,10 @@ impl FSE_repeat {
 }
 
 #[repr(C)]
-pub struct FSE_CState_t {
+pub struct FSE_CState_t<'a> {
     pub value: ptrdiff_t,
-    pub stateTable: *const core::ffi::c_void,
-    pub symbolTT: *const core::ffi::c_void,
+    pub stateTable: &'a [u16],
+    pub symbolTT: &'a [FSE_symbolCompressionTransform],
     pub stateLog: core::ffi::c_uint,
 }
 
@@ -105,9 +105,9 @@ fn FSE_readU16(ct: &[FSE_CTable], index: usize) -> u16 {
     }
 }
 
-impl FSE_CState_t {
+impl<'a> FSE_CState_t<'a> {
     #[inline]
-    pub fn new(ct: &[FSE_CTable]) -> Self {
+    pub fn new(ct: &'a [FSE_CTable]) -> Self {
         // the table header occupies the first two bytes of `ct`
         let tableLog = FSE_readU16(ct, 0) as u32;
 
@@ -115,10 +115,25 @@ impl FSE_CState_t {
         let stateTable = &ct[1..];
         let symbolTT = &ct[FSE_symbolTTIndex(tableLog)..];
 
+        // SAFETY: `u16` has a smaller alignment than `u32`, and any bit pattern is valid.
+        let stateTable: &[u16] = unsafe {
+            core::slice::from_raw_parts(stateTable.as_ptr().cast(), stateTable.len() * 2)
+        };
+
+        const _: () = assert!(size_of::<FSE_symbolCompressionTransform>() == size_of::<[u32; 2]>());
+        const _: () =
+            assert!(align_of::<FSE_symbolCompressionTransform>() <= align_of::<[u32; 2]>());
+
+        // SAFETY: `FSE_symbolCompressionTransform` is a `#[repr(C)]` pair of 32-bit integers, so
+        // it has the same size as `[u32; 2]`, no padding, and any bit pattern is valid.
+        let (pairs, _) = symbolTT.as_chunks::<2>();
+        let symbolTT: &[FSE_symbolCompressionTransform] =
+            unsafe { core::slice::from_raw_parts(pairs.as_ptr().cast(), pairs.len()) };
+
         FSE_CState_t {
             value: 1 << tableLog,
-            stateTable: stateTable.as_ptr().cast::<core::ffi::c_void>(),
-            symbolTT: symbolTT.as_ptr().cast::<core::ffi::c_void>(),
+            stateTable,
+            symbolTT,
             stateLog: tableLog,
         }
     }
@@ -126,7 +141,7 @@ impl FSE_CState_t {
     /// Same as [`Self::new`], but the first symbol to include (which will be the last to be read)
     /// uses the smallest state value possible, saving the cost of this symbol
     #[inline]
-    pub fn new2(ct: &[FSE_CTable], symbol: u32) -> Self {
+    pub fn new2(ct: &'a [FSE_CTable], symbol: u32) -> Self {
         let mut state = FSE_CState_t::new(ct);
         let symbolTT = FSE_readSymbolTT(ct, state.stateLog, symbol);
         let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
@@ -165,19 +180,16 @@ fn FSE_readSymbolTT(
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_encodeSymbol(
+pub(crate) fn FSE_encodeSymbol(
     bitC: &mut BIT_CStream_t,
-    statePtr: &mut FSE_CState_t,
+    state: &mut FSE_CState_t,
     symbol: core::ffi::c_uint,
 ) {
-    let symbolTT =
-        *(statePtr.symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = statePtr.stateTable as *const u16;
-    let nbBitsOut = ((statePtr.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, statePtr.value as BitContainerType, nbBitsOut);
-    statePtr.value = *stateTable
-        .offset((statePtr.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
-        as ptrdiff_t;
+    let symbolTT = state.symbolTT[symbol as usize];
+    let nbBitsOut = ((state.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
+    BIT_addBits(bitC, state.value as BitContainerType, nbBitsOut);
+    let index = (state.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
+    state.value = state.stateTable[index as usize] as isize;
 }
 
 #[inline]
@@ -187,29 +199,25 @@ pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CS
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_getMaxNbBits(
-    symbolTTPtr: *const core::ffi::c_void,
+pub(crate) fn FSE_getMaxNbBits(
+    symbolTT: &[FSE_symbolCompressionTransform],
     symbolValue: u32,
 ) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(((1 << 16) - 1) as u32)
-        >> 16
+    (symbolTT[symbolValue as usize].deltaNbBits).wrapping_add(((1 << 16) - 1) as u32) >> 16
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_bitCost(
-    symbolTTPtr: *const core::ffi::c_void,
+pub(crate) fn FSE_bitCost(
+    symbolTT: &[FSE_symbolCompressionTransform],
     tableLog: u32,
     symbolValue: u32,
     accuracyLog: u32,
 ) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    let minNbBits = (*symbolTT.offset(symbolValue as isize)).deltaNbBits >> 16;
+    let minNbBits = symbolTT[symbolValue as usize].deltaNbBits >> 16;
     let threshold = minNbBits.wrapping_add(1) << 16;
     let tableSize = (1 << tableLog) as u32;
-    let deltaFromThreshold = threshold.wrapping_sub(
-        ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(tableSize),
-    );
+    let deltaFromThreshold = threshold
+        .wrapping_sub((symbolTT[symbolValue as usize].deltaNbBits).wrapping_add(tableSize));
     let normalizedDeltaFromThreshold = deltaFromThreshold << accuracyLog >> tableLog;
     let bitMultiplier = (1 << accuracyLog) as u32;
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
