@@ -105,20 +105,37 @@ fn FSE_readU16(ct: &[FSE_CTable], index: usize) -> u16 {
     }
 }
 
-#[inline]
-pub(crate) fn FSE_initCState(ct: &[FSE_CTable]) -> FSE_CState_t {
-    // the table header occupies the first two bytes of `ct`
-    let tableLog = FSE_readU16(ct, 0) as u32;
+impl FSE_CState_t {
+    #[inline]
+    pub fn new(ct: &[FSE_CTable]) -> Self {
+        // the table header occupies the first two bytes of `ct`
+        let tableLog = FSE_readU16(ct, 0) as u32;
 
-    // the state table follows the header
-    let stateTable = &ct[1..];
-    let symbolTT = &ct[FSE_symbolTTIndex(tableLog)..];
+        // the state table follows the header
+        let stateTable = &ct[1..];
+        let symbolTT = &ct[FSE_symbolTTIndex(tableLog)..];
 
-    FSE_CState_t {
-        value: 1 << tableLog,
-        stateTable: stateTable.as_ptr().cast::<core::ffi::c_void>(),
-        symbolTT: symbolTT.as_ptr().cast::<core::ffi::c_void>(),
-        stateLog: tableLog,
+        FSE_CState_t {
+            value: 1 << tableLog,
+            stateTable: stateTable.as_ptr().cast::<core::ffi::c_void>(),
+            symbolTT: symbolTT.as_ptr().cast::<core::ffi::c_void>(),
+            stateLog: tableLog,
+        }
+    }
+
+    /// Same as [`Self::new`], but the first symbol to include (which will be the last to be read)
+    /// uses the smallest state value possible, saving the cost of this symbol
+    #[inline]
+    pub fn new2(ct: &[FSE_CTable], symbol: u32) -> Self {
+        let mut state = FSE_CState_t::new(ct);
+        let symbolTT = FSE_readSymbolTT(ct, state.stateLog, symbol);
+        let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
+        let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
+
+        // the state table starts at the third `u16` of `ct`
+        let index = 2 + (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
+        state.value = FSE_readU16(ct, index as usize) as ptrdiff_t;
+        state
     }
 }
 
@@ -145,19 +162,6 @@ fn FSE_readSymbolTT(
         deltaFindState: ct[index] as core::ffi::c_int,
         deltaNbBits: ct[index + 1],
     }
-}
-
-#[inline]
-pub(crate) fn FSE_initCState2(ct: &[FSE_CTable], symbol: u32) -> FSE_CState_t {
-    let mut statePtr = FSE_initCState(ct);
-    let symbolTT = FSE_readSymbolTT(ct, statePtr.stateLog, symbol);
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
-    let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
-
-    // the state table starts at the third `u16` of `ct`
-    let index = 2 + (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
-    statePtr.value = FSE_readU16(ct, index as usize) as ptrdiff_t;
-    statePtr
 }
 
 #[inline]

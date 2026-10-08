@@ -7,7 +7,7 @@ use crate::lib::common::bitstream::{
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
-    FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_initCState2, FSE_symbolCompressionTransform,
+    FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_symbolCompressionTransform,
     FSE_symbolTTIndex, FSE_writeU16Pair, FSE_BUILD_CTABLE_WORKSPACE_SIZE, FSE_DEFAULT_TABLELOG,
     FSE_MAX_TABLELOG, FSE_MIN_TABLELOG, FSE_NCOUNTBOUND, FSE_TABLESTEP,
 };
@@ -585,18 +585,18 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 
     let (mut CState1, mut CState2) = if srcSize & 1 != 0 {
         ip = ip.sub(1);
-        let mut CState1 = FSE_initCState2(ct, *ip as u32);
+        let mut CState1 = FSE_CState_t::new2(ct, *ip as u32);
         ip = ip.sub(1);
-        let CState2 = FSE_initCState2(ct, *ip as u32);
+        let CState2 = FSE_CState_t::new2(ct, *ip as u32);
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         FSE_flushBits::<FAST>(&mut bitC);
         (CState1, CState2)
     } else {
         ip = ip.sub(1);
-        let CState2 = FSE_initCState2(ct, *ip as u32);
+        let CState2 = FSE_CState_t::new2(ct, *ip as u32);
         ip = ip.sub(1);
-        let CState1 = FSE_initCState2(ct, *ip as u32);
+        let CState1 = FSE_CState_t::new2(ct, *ip as u32);
         (CState1, CState2)
     };
 
