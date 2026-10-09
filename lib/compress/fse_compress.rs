@@ -2,7 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BitContainerType,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBitsFast, BitContainerType,
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -556,7 +556,7 @@ unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
     if FAST {
         BIT_flushBitsFast(bitC);
     } else {
-        BIT_flushBits(bitC);
+        bitC.flush_bits();
     }
 }
 
