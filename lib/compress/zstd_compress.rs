@@ -1,3 +1,4 @@
+use core::mem::MaybeUninit;
 use core::ptr;
 
 use crate::lib::polyfill::PointerExt;
@@ -9337,15 +9338,20 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
 /// - 0 on success, with no long length detected.
 /// - > 0 if there is one long length (> 65535), indicating the position and type.
 pub unsafe fn convertSequences_noRepcodes(
-    dstSeqs: *mut SeqDef,
+    dstSeqs: &mut [MaybeUninit<SeqDef>],
     inSeqs: &[ZSTD_Sequence],
 ) -> size_t {
     let mut longLen = 0;
 
     for (n, seq) in inSeqs.iter().enumerate() {
-        (*dstSeqs.add(n)).offBase = seq.offset.wrapping_add(ZSTD_REP_NUM);
-        (*dstSeqs.add(n)).litLength = seq.litLength as u16;
-        (*dstSeqs.add(n)).mlBase = seq.matchLength.wrapping_sub(u32::from(MINMATCH)) as u16;
+        let seq_def = SeqDef {
+            offBase: seq.offset.wrapping_add(ZSTD_REP_NUM),
+            litLength: seq.litLength as u16,
+            mlBase: seq.matchLength.wrapping_sub(u32::from(MINMATCH)) as u16,
+        };
+
+        dstSeqs[n] = MaybeUninit::new(seq_def);
+
         // Check for long length > 65535
         if seq.matchLength > 65535 + 3 {
             longLen = n.wrapping_add(1);
@@ -9377,7 +9383,10 @@ pub unsafe fn ZSTD_convertBlockSequences(
     // Convert Sequences from public format to internal format
     if !repcodeResolution {
         let longl = convertSequences_noRepcodes(
-            (*cctx).seqStore.sequencesStart,
+            core::slice::from_raw_parts_mut(
+                (*cctx).seqStore.sequencesStart.cast(),
+                inSeqs.len() - 1,
+            ),
             &inSeqs[..inSeqs.len() - 1],
         );
         (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(inSeqs.len() - 1);
