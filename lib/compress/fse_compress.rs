@@ -2,8 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BIT_initCStream,
-    BitContainerType,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast, BitContainerType,
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -578,9 +577,8 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         return 0;
     }
 
-    let mut bitC = match BIT_initCStream(dst, dstSize) {
-        Ok(bitC) => bitC,
-        Err(_) => return 0, // not enough space available to write a bitstream
+    let Ok(mut bitC) = BIT_CStream_t::new(dst, dstSize) else {
+        return 0; // not enough space available to write a bitstream
     };
 
     let (mut CState1, mut CState2) = if srcSize & 1 != 0 {
