@@ -1,6 +1,6 @@
 use libc::ptrdiff_t;
 
-use crate::lib::common::bitstream::{BIT_CStream_t, BIT_addBits, BIT_flushBits, BitContainerType};
+use crate::lib::common::bitstream::{BIT_CStream_t, BIT_flushBits, BitContainerType};
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
 
@@ -187,14 +187,14 @@ pub(crate) fn FSE_encodeSymbol(
 ) {
     let symbolTT = state.symbolTT[symbol as usize];
     let nbBitsOut = ((state.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, state.value as BitContainerType, nbBitsOut);
+    bitC.add_bits(state.value as BitContainerType, nbBitsOut);
     let index = (state.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
     state.value = state.stateTable[index as usize] as isize;
 }
 
 #[inline]
 pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t) {
-    BIT_addBits(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
+    bitC.add_bits(statePtr.value as BitContainerType, statePtr.stateLog);
     BIT_flushBits(bitC);
 }
 
