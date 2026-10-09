@@ -1,8 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BitContainerType,
-    STREAM_ACCUMULATOR_MIN,
+    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BitContainerType, STREAM_ACCUMULATOR_MIN,
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -358,16 +357,14 @@ unsafe fn ZSTD_encodeSequences_body(
         CTable_LitLength,
         *llCodeTable.add(nbSeq.wrapping_sub(1)) as u32,
     );
-    BIT_addBits(
-        &mut blockStream,
+    blockStream.add_bits(
         (*sequences.add(nbSeq.wrapping_sub(1))).litLength as BitContainerType,
         LL_bits_u8[usize::from(*llCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
     }
-    BIT_addBits(
-        &mut blockStream,
+    blockStream.add_bits(
         (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
         ML_bits_u8[usize::from(*mlCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
@@ -378,21 +375,18 @@ unsafe fn ZSTD_encodeSequences_body(
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
         let extraBits = ofBits.wrapping_sub(ofBits.min(STREAM_ACCUMULATOR_MIN - 1));
         if extraBits != 0 {
-            BIT_addBits(
-                &mut blockStream,
+            blockStream.add_bits(
                 (*sequences.add(nbSeq.wrapping_sub(1))).offBase as BitContainerType,
                 extraBits,
             );
             BIT_flushBits(&mut blockStream);
         }
-        BIT_addBits(
-            &mut blockStream,
+        blockStream.add_bits(
             ((*sequences.add(nbSeq.wrapping_sub(1))).offBase >> extraBits) as BitContainerType,
             ofBits.wrapping_sub(extraBits),
         );
     } else {
-        BIT_addBits(
-            &mut blockStream,
+        blockStream.add_bits(
             (*sequences.add(nbSeq.wrapping_sub(1))).offBase as BitContainerType,
             *ofCodeTable.add(nbSeq.wrapping_sub(1)) as core::ffi::c_uint,
         );
@@ -430,43 +424,26 @@ unsafe fn ZSTD_encodeSequences_body(
         {
             BIT_flushBits(&mut blockStream);
         }
-        BIT_addBits(
-            &mut blockStream,
-            (*sequences.add(n)).litLength as BitContainerType,
-            llBits,
-        );
+        blockStream.add_bits((*sequences.add(n)).litLength as BitContainerType, llBits);
         if MEM_32bits() && llBits.wrapping_add(mlBits) > 24 {
             BIT_flushBits(&mut blockStream);
         }
-        BIT_addBits(
-            &mut blockStream,
-            (*sequences.add(n)).mlBase as BitContainerType,
-            mlBits,
-        );
+        blockStream.add_bits((*sequences.add(n)).mlBase as BitContainerType, mlBits);
         if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
             BIT_flushBits(&mut blockStream);
         }
         if longOffsets {
             let extraBits_0 = ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
-                BIT_addBits(
-                    &mut blockStream,
-                    (*sequences.add(n)).offBase as BitContainerType,
-                    extraBits_0,
-                );
+                blockStream.add_bits((*sequences.add(n)).offBase as BitContainerType, extraBits_0);
                 BIT_flushBits(&mut blockStream);
             }
-            BIT_addBits(
-                &mut blockStream,
+            blockStream.add_bits(
                 ((*sequences.add(n)).offBase >> extraBits_0) as BitContainerType,
                 ofBits_0.wrapping_sub(extraBits_0),
             );
         } else {
-            BIT_addBits(
-                &mut blockStream,
-                (*sequences.add(n)).offBase as BitContainerType,
-                ofBits_0,
-            );
+            blockStream.add_bits((*sequences.add(n)).offBase as BitContainerType, ofBits_0);
         }
         BIT_flushBits(&mut blockStream);
     }

@@ -48,6 +48,15 @@ impl BIT_CStream_t {
                 .wrapping_sub(size_of::<BitContainerType>()),
         })
     }
+
+    /// Add up to 31 bits into the bit stream.
+    ///
+    /// Note: does not check for register overflow!
+    #[inline]
+    pub(crate) fn add_bits(&mut self, value: BitContainerType, nbBits: core::ffi::c_uint) {
+        self.bitContainer |= BIT_getLowerBits(value, nbBits) << self.bitPos;
+        self.bitPos = self.bitPos.wrapping_add(nbBits);
+    }
 }
 
 // Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
@@ -74,16 +83,6 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
             bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
         }
     }
-}
-
-#[inline]
-pub(crate) fn BIT_addBits(
-    bitC: &mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
-    bitC.bitContainer |= BIT_getLowerBits(value, nbBits) << bitC.bitPos;
-    bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
 
 #[inline]
