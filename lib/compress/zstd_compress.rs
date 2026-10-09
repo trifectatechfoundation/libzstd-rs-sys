@@ -6375,7 +6375,11 @@ unsafe fn ZSTD_loadDictionaryContent(
         } else {
             iend.wrapping_offset_from(ls.window.base) as u32
         };
-        ZSTD_ldm_fillHashTable(ls, ip, iend, &params.ldmParams);
+        ZSTD_ldm_fillHashTable(
+            ls,
+            core::slice::from_raw_parts(ip, srcSize),
+            &params.ldmParams,
+        );
     }
 
     // If the dict is larger than we can reasonably index in our tables, only load the suffix.
