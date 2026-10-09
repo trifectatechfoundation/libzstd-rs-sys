@@ -54,6 +54,8 @@ impl BIT_CStream_t {
     /// Note: does not check for register overflow!
     #[inline]
     pub(crate) fn add_bits(&mut self, value: BitContainerType, nbBits: core::ffi::c_uint) {
+        debug_assert!(nbBits < BIT_MASK_SIZE as u32);
+        debug_assert!(nbBits + self.bitPos < BitContainerType::BITS);
         self.bitContainer |= BIT_getLowerBits(value, nbBits) << self.bitPos;
         self.bitPos = self.bitPos.wrapping_add(nbBits);
     }
@@ -61,6 +63,8 @@ impl BIT_CStream_t {
     /// Works only if `value` is clean, meaning all high bits above `nbBits` are 0.
     #[inline]
     fn add_bits_fast(&mut self, value: BitContainerType, nbBits: core::ffi::c_uint) {
+        debug_assert_eq!(value >> nbBits, 0);
+        debug_assert!(nbBits + self.bitPos < BitContainerType::BITS);
         self.bitContainer |= value << self.bitPos;
         self.bitPos = self.bitPos.wrapping_add(nbBits);
     }
@@ -72,6 +76,8 @@ impl BIT_CStream_t {
     #[inline]
     pub(crate) unsafe fn flush_bits(&mut self) {
         let nbBytes = (self.bitPos >> 3) as size_t;
+        debug_assert!(self.bitPos < BitContainerType::BITS);
+        debug_assert!(self.ptr <= self.endPtr);
         MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
         self.ptr = Ord::min(self.ptr.add(nbBytes), self.endPtr);
         self.bitPos &= 7;
@@ -84,6 +90,8 @@ impl BIT_CStream_t {
     #[inline]
     pub(crate) unsafe fn flush_bits_fast(&mut self) {
         let nbBytes = (self.bitPos >> 3) as size_t;
+        debug_assert!(self.bitPos < BitContainerType::BITS);
+        debug_assert!(self.ptr <= self.endPtr);
         MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
         self.ptr = self.ptr.add(nbBytes);
         self.bitPos &= 7;
