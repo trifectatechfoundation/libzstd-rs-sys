@@ -1,9 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
-use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_closeCStream, BIT_flushBitsFast, BitContainerType,
-};
+use crate::lib::common::bitstream::{BIT_CStream_t, BIT_closeCStream, BitContainerType};
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_flushCState, FSE_symbolCompressionTransform,
@@ -554,7 +552,7 @@ pub(crate) fn FSE_buildCTable_rle(ct: &mut [FSE_CTable], symbolValue: u8) {
 #[inline(always)]
 unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
     if FAST {
-        BIT_flushBitsFast(bitC);
+        bitC.flush_bits_fast();
     } else {
         bitC.flush_bits();
     }
