@@ -89,6 +89,24 @@ impl BIT_CStream_t {
         self.bitPos &= 7;
         self.bitContainer >>= nbBytes * 8;
     }
+
+    /// Close the bit stream.
+    ///
+    /// # Returns
+    ///
+    /// - The size of the stream in bytes
+    /// - 0 if it could not fit into `dstBuffer`
+    #[inline]
+    pub(crate) unsafe fn close(mut self) -> size_t {
+        self.add_bits_fast(1, 1);
+        self.flush_bits();
+        if self.ptr >= self.endPtr {
+            return 0; // overflow detected
+        }
+        self.ptr
+            .offset_from_unsigned(self.startPtr)
+            .wrapping_add((self.bitPos > 0) as usize)
+    }
 }
 
 // Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
@@ -115,18 +133,6 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
             bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
         }
     }
-}
-
-#[inline]
-pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
-    bitC.add_bits_fast(1, 1);
-    bitC.flush_bits();
-    if bitC.ptr >= bitC.endPtr {
-        return 0; // overflow detected
-    }
-    bitC.ptr
-        .offset_from_unsigned(bitC.startPtr)
-        .wrapping_add((bitC.bitPos > 0) as usize)
 }
 
 /// Bitstream decoder
