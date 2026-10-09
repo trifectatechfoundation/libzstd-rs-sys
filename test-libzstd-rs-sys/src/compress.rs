@@ -861,6 +861,78 @@ mod sequences_and_literals {
                 });
             }
         }
+
+        /// The sequences of `self` with every delimiter folded into the literals of the next
+        /// sequence. The literals of the final delimiter are implied by the source size.
+        fn without_delimiters(&self) -> Vec<ZSTD_Sequence> {
+            let mut seqs = Vec::new();
+            let mut lit_length = 0;
+            for seq in &self.seqs {
+                if seq.offset == 0 && seq.matchLength == 0 {
+                    lit_length += seq.litLength;
+                } else {
+                    seqs.push(ZSTD_Sequence {
+                        litLength: seq.litLength + lit_length,
+                        ..*seq
+                    });
+                    lit_length = 0;
+                }
+            }
+            seqs
+        }
+
+        /// Test `ZSTD_compressSequences`
+        fn check_sequences(&self, explicit_delimiters: bool, max_block_size: i32) {
+            let seqs = if explicit_delimiters {
+                self.seqs.clone()
+            } else {
+                self.without_delimiters()
+            };
+
+            for repcode_resolution in REPCODE_RESOLUTIONS {
+                assert_eq_rs_c!({
+                    let cctx = ZSTD_createCCtx();
+                    assert!(!cctx.is_null());
+
+                    for (parameter, value) in [
+                        (
+                            ZSTD_cParameter::ZSTD_c_experimentalParam11, // ZSTD_c_blockDelimiters
+                            i32::from(explicit_delimiters),
+                        ),
+                        (ZSTD_cParameter::ZSTD_c_experimentalParam12, 1), // ZSTD_c_validateSequences
+                        (
+                            ZSTD_cParameter::ZSTD_c_experimentalParam18, // ZSTD_c_maxBlockSize
+                            max_block_size,
+                        ),
+                        (
+                            ZSTD_cParameter::ZSTD_c_experimentalParam19, // ZSTD_c_repcodeResolution
+                            repcode_resolution,
+                        ),
+                        (ZSTD_cParameter::ZSTD_c_checksumFlag, 1),
+                    ] {
+                        let err = ZSTD_CCtx_setParameter(cctx, parameter, value);
+                        assert_eq!(ZSTD_isError(err), 0);
+                    }
+
+                    let mut dst = vec![0u8; ZSTD_compressBound(self.input.len())];
+                    let written = ZSTD_compressSequences(
+                        cctx,
+                        dst.as_mut_ptr() as *mut c_void,
+                        dst.len(),
+                        seqs.as_ptr().cast(),
+                        seqs.len(),
+                        self.input.as_ptr() as *const c_void,
+                        self.input.len(),
+                    );
+                    assert_eq!(ZSTD_isError(written), 0);
+                    dst.truncate(written);
+
+                    ZSTD_freeCCtx(cctx);
+
+                    dst
+                });
+            }
+        }
     }
 
     #[test]
@@ -888,5 +960,19 @@ mod sequences_and_literals {
         assert!(case.seqs.iter().any(|seq| seq.litLength > 65535));
         assert!(case.seqs.iter().any(|seq| seq.matchLength > 65535 + 3));
         case.check();
+    }
+
+    #[test]
+    fn compress_sequences_explicit_delimiters() {
+        Case::new(INPUT, Some(1024)).check_sequences(true, 1024);
+    }
+
+    #[test]
+    fn compress_sequences_no_delimiters() {
+        // Blocks no longer line up with the sequences, so matches get split.
+        let case = Case::new(INPUT, Some(1024));
+        for max_block_size in [1024, 1500, 4096] {
+            case.check_sequences(false, max_block_size);
+        }
     }
 }
