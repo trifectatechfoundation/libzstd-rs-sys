@@ -9042,21 +9042,18 @@ fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier
 /// Discover the size of next block by searching for the delimiter.
 /// Note that a block delimiter **must** exist in this mode, otherwise it's an input error.
 /// The block size retrieved will be later compared to ensure it remains within bounds
-unsafe fn blockSize_explicitDelimiter(
-    inSeqs: *const ZSTD_Sequence,
-    inSeqsSize: size_t,
+fn blockSize_explicitDelimiter(
+    inSeqs: &[ZSTD_Sequence],
     seqPos: ZSTD_SequencePosition,
 ) -> Result<size_t, Error> {
     let mut end = false;
     let mut blockSize = 0usize;
 
-    for spos in (seqPos.idx as size_t)..inSeqsSize {
-        end = (*inSeqs.add(spos)).offset == 0;
-        blockSize = blockSize.wrapping_add(
-            ((*inSeqs.add(spos)).litLength).wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
-        );
+    for seq in inSeqs.get(seqPos.idx as usize..).unwrap_or_default() {
+        end = seq.offset == 0;
+        blockSize = blockSize.wrapping_add(seq.litLength.wrapping_add(seq.matchLength) as size_t);
         if end {
-            if (*inSeqs.add(spos)).matchLength != 0 {
+            if seq.matchLength != 0 {
                 return Err(Error::externalSequences_invalid);
             }
             break;
@@ -9070,7 +9067,7 @@ unsafe fn blockSize_explicitDelimiter(
     Ok(blockSize)
 }
 
-unsafe fn determine_blockSize(
+fn determine_blockSize(
     mode: ZSTD_SequenceFormat_e,
     blockSize: size_t,
     remaining: size_t,
@@ -9082,7 +9079,7 @@ unsafe fn determine_blockSize(
         return Ok(remaining.min(blockSize));
     }
 
-    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs.as_ptr(), inSeqs.len(), seqPos)?;
+    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, seqPos)?;
     if explicitBlockSize > blockSize {
         return Err(Error::externalSequences_invalid);
     }
