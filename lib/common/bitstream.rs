@@ -27,25 +27,27 @@ pub(crate) struct BIT_CStream_t {
     pub(crate) endPtr: *mut core::ffi::c_char,
 }
 
-#[inline]
-pub(crate) fn BIT_initCStream(
-    startPtr: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-) -> Result<BIT_CStream_t, Error> {
-    if dstCapacity <= size_of::<BitContainerType>() {
-        return Err(Error::dstSize_tooSmall);
-    }
+impl BIT_CStream_t {
+    #[inline]
+    pub(crate) fn new(
+        startPtr: *mut core::ffi::c_void,
+        dstCapacity: size_t,
+    ) -> Result<Self, Error> {
+        if dstCapacity <= size_of::<BitContainerType>() {
+            return Err(Error::dstSize_tooSmall);
+        }
 
-    let startPtr = startPtr as *mut core::ffi::c_char;
-    Ok(BIT_CStream_t {
-        bitContainer: 0,
-        bitPos: 0,
-        startPtr,
-        ptr: startPtr,
-        endPtr: startPtr
-            .wrapping_add(dstCapacity)
-            .wrapping_sub(size_of::<BitContainerType>()),
-    })
+        let startPtr = startPtr as *mut core::ffi::c_char;
+        Ok(BIT_CStream_t {
+            bitContainer: 0,
+            bitPos: 0,
+            startPtr,
+            ptr: startPtr,
+            endPtr: startPtr
+                .wrapping_add(dstCapacity)
+                .wrapping_sub(size_of::<BitContainerType>()),
+        })
+    }
 }
 
 // Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
