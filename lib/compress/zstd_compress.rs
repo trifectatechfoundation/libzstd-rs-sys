@@ -9103,8 +9103,7 @@ unsafe fn ZSTD_compressSequences_internal(
     cctx: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    inSeqs: *const ZSTD_Sequence,
-    inSeqsSize: size_t,
+    inSeqs: &[ZSTD_Sequence],
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> Result<size_t, Error> {
@@ -9139,8 +9138,8 @@ unsafe fn ZSTD_compressSequences_internal(
             (*cctx).appliedParams.blockDelimiters,
             (*cctx).blockSizeMax,
             remaining,
-            inSeqs,
-            inSeqsSize,
+            inSeqs.as_ptr(),
+            inSeqs.len(),
             seqPos,
         )?;
         let lastBlock = blockSize == remaining;
@@ -9149,8 +9148,8 @@ unsafe fn ZSTD_compressSequences_internal(
         blockSize = sequenceCopier(
             cctx,
             &mut seqPos,
-            inSeqs,
-            inSeqsSize,
+            inSeqs.as_ptr(),
+            inSeqs.len(),
             ip as *const core::ffi::c_void,
             blockSize,
             (*cctx).appliedParams.searchForExternalRepcodes,
@@ -9294,12 +9293,16 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     }
 
     // Now generate compressed blocks
+    let inSeqs = if inSeqs.is_null() || inSeqsSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(inSeqs, inSeqsSize)
+    };
     let cBlocksSize = match ZSTD_compressSequences_internal(
         cctx,
         op as *mut core::ffi::c_void,
         dstCapacity,
         inSeqs,
-        inSeqsSize,
         src,
         srcSize,
     ) {
