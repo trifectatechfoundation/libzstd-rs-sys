@@ -1,8 +1,6 @@
 use libc::size_t;
 
-use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_closeCStream, BitContainerType, STREAM_ACCUMULATOR_MIN,
-};
+use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType, STREAM_ACCUMULATOR_MIN};
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_repeat,
@@ -452,7 +450,7 @@ unsafe fn ZSTD_encodeSequences_body(
     FSE_flushCState(&mut blockStream, &stateOffsetBits);
     FSE_flushCState(&mut blockStream, &stateLitLength);
 
-    let streamSize = BIT_closeCStream(&mut blockStream);
+    let streamSize = blockStream.close();
     if streamSize == 0 {
         return Err(Error::dstSize_tooSmall);
     }
