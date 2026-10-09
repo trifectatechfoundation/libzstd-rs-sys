@@ -109,11 +109,13 @@ impl BIT_CStream_t {
     }
 }
 
-// Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
+const BIT_MASK_SIZE: usize = 32;
+
+/// Indexed by a `u8`, so the lookup needs no bounds check. Only the first [`BIT_MASK_SIZE`] entries are used.
 static BIT_mask: [core::ffi::c_uint; 256] = {
     let mut mask = [u32::MAX; 256];
     let mut i = 0;
-    while i < 32 {
+    while i < BIT_MASK_SIZE {
         mask[i] = (1 << i) - 1;
         i += 1;
     }
@@ -129,7 +131,7 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
         }
         _ => {
             // At least on x86_64, the lookup table is faster without bmi2.
-            debug_assert!(nbBits < 32);
+            debug_assert!(nbBits < BIT_MASK_SIZE as u32);
             bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
         }
     }
@@ -169,7 +171,7 @@ pub(crate) enum StreamStatus {
 }
 
 #[rustfmt::skip]
-static MASK: [u32; 32] = [
+static MASK: [u32; BIT_MASK_SIZE] = [
     0,          1,         3,         7,         0xF,       0x1F,
     0x3F,       0x7F,      0xFF,      0x1FF,     0x3FF,     0x7FF,
     0xFFF,      0x1FFF,    0x3FFF,    0x7FFF,    0xFFFF,    0x1FFFF,
