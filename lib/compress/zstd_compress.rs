@@ -9074,8 +9074,7 @@ unsafe fn determine_blockSize(
     mode: ZSTD_SequenceFormat_e,
     blockSize: size_t,
     remaining: size_t,
-    inSeqs: *const ZSTD_Sequence,
-    inSeqsSize: size_t,
+    inSeqs: &[ZSTD_Sequence],
     seqPos: ZSTD_SequencePosition,
 ) -> Result<size_t, Error> {
     if mode == ZSTD_sf_noBlockDelimiters {
@@ -9083,7 +9082,7 @@ unsafe fn determine_blockSize(
         return Ok(remaining.min(blockSize));
     }
 
-    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, inSeqsSize, seqPos)?;
+    let explicitBlockSize = blockSize_explicitDelimiter(inSeqs.as_ptr(), inSeqs.len(), seqPos)?;
     if explicitBlockSize > blockSize {
         return Err(Error::externalSequences_invalid);
     }
@@ -9138,8 +9137,7 @@ unsafe fn ZSTD_compressSequences_internal(
             (*cctx).appliedParams.blockDelimiters,
             (*cctx).blockSizeMax,
             remaining,
-            inSeqs.as_ptr(),
-            inSeqs.len(),
+            inSeqs,
             seqPos,
         )?;
         let lastBlock = blockSize == remaining;
