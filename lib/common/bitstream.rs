@@ -77,6 +77,18 @@ impl BIT_CStream_t {
         self.bitPos &= 7;
         self.bitContainer >>= nbBytes * 8;
     }
+
+    /// Unsafe version: does not check buffer overflow.
+    ///
+    /// Assumption: `bitContainer` has not overflowed
+    #[inline]
+    pub(crate) unsafe fn flush_bits_fast(&mut self) {
+        let nbBytes = (self.bitPos >> 3) as size_t;
+        MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
+        self.ptr = self.ptr.add(nbBytes);
+        self.bitPos &= 7;
+        self.bitContainer >>= nbBytes * 8;
+    }
 }
 
 // Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
@@ -103,15 +115,6 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
             bitContainer & BIT_mask[usize::from(nbBits as u8)] as BitContainerType
         }
     }
-}
-
-#[inline]
-pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
-    let nbBytes = (bitC.bitPos >> 3) as size_t;
-    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
-    bitC.ptr = bitC.ptr.add(nbBytes);
-    bitC.bitPos &= 7;
-    bitC.bitContainer >>= nbBytes * 8;
 }
 
 #[inline]
