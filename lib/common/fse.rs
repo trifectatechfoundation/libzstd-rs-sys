@@ -1,6 +1,6 @@
 use libc::ptrdiff_t;
 
-use crate::lib::common::bitstream::{BIT_CStream_t, BIT_flushBits, BitContainerType};
+use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
 
@@ -195,7 +195,7 @@ pub(crate) fn FSE_encodeSymbol(
 #[inline]
 pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t) {
     bitC.add_bits(statePtr.value as BitContainerType, statePtr.stateLog);
-    BIT_flushBits(bitC);
+    bitC.flush_bits();
 }
 
 #[inline]

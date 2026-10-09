@@ -64,6 +64,19 @@ impl BIT_CStream_t {
         self.bitContainer |= value << self.bitPos;
         self.bitPos = self.bitPos.wrapping_add(nbBits);
     }
+
+    /// Safe version: check for buffer overflow, and prevent it.
+    /// The buffer overflow is not signaled, instead it will be revealed later on using [`BIT_closeCStream`].
+    ///
+    /// Assumption: `bitContainer` has not overflowed
+    #[inline]
+    pub(crate) unsafe fn flush_bits(&mut self) {
+        let nbBytes = (self.bitPos >> 3) as size_t;
+        MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
+        self.ptr = Ord::min(self.ptr.add(nbBytes), self.endPtr);
+        self.bitPos &= 7;
+        self.bitContainer >>= nbBytes * 8;
+    }
 }
 
 // Indexed by a `u8`, so the lookup needs no bounds check. Only the first 32 entries are used.
@@ -93,15 +106,6 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
-    let nbBytes = (bitC.bitPos >> 3) as size_t;
-    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
-    bitC.ptr = Ord::min(bitC.ptr.add(nbBytes), bitC.endPtr);
-    bitC.bitPos &= 7;
-    bitC.bitContainer >>= nbBytes * 8;
-}
-
-#[inline]
 pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
     let nbBytes = (bitC.bitPos >> 3) as size_t;
     MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
@@ -113,9 +117,9 @@ pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
 #[inline]
 pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
     bitC.add_bits_fast(1, 1);
-    BIT_flushBits(bitC);
+    bitC.flush_bits();
     if bitC.ptr >= bitC.endPtr {
-        return 0;
+        return 0; // overflow detected
     }
     bitC.ptr
         .offset_from_unsigned(bitC.startPtr)

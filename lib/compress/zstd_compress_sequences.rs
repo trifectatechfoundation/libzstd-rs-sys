@@ -1,7 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::bitstream::{
-    BIT_CStream_t, BIT_closeCStream, BIT_flushBits, BitContainerType, STREAM_ACCUMULATOR_MIN,
+    BIT_CStream_t, BIT_closeCStream, BitContainerType, STREAM_ACCUMULATOR_MIN,
 };
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -362,14 +362,14 @@ unsafe fn ZSTD_encodeSequences_body(
         LL_bits_u8[usize::from(*llCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
     if MEM_32bits() {
-        BIT_flushBits(&mut blockStream);
+        blockStream.flush_bits();
     }
     blockStream.add_bits(
         (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
         ML_bits_u8[usize::from(*mlCodeTable.add(nbSeq.wrapping_sub(1)))] as core::ffi::c_uint,
     );
     if MEM_32bits() {
-        BIT_flushBits(&mut blockStream);
+        blockStream.flush_bits();
     }
     if longOffsets {
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
@@ -379,7 +379,7 @@ unsafe fn ZSTD_encodeSequences_body(
                 (*sequences.add(nbSeq.wrapping_sub(1))).offBase as BitContainerType,
                 extraBits,
             );
-            BIT_flushBits(&mut blockStream);
+            blockStream.flush_bits();
         }
         blockStream.add_bits(
             ((*sequences.add(nbSeq.wrapping_sub(1))).offBase >> extraBits) as BitContainerType,
@@ -391,7 +391,7 @@ unsafe fn ZSTD_encodeSequences_body(
             *ofCodeTable.add(nbSeq.wrapping_sub(1)) as core::ffi::c_uint,
         );
     }
-    BIT_flushBits(&mut blockStream);
+    blockStream.flush_bits();
 
     for n in (0..nbSeq.wrapping_sub(1)).rev() {
         let llCode = *llCodeTable.add(n);
@@ -411,7 +411,7 @@ unsafe fn ZSTD_encodeSequences_body(
             mlCode as core::ffi::c_uint,
         );
         if MEM_32bits() {
-            BIT_flushBits(&mut blockStream);
+            blockStream.flush_bits();
         }
         FSE_encodeSymbol(
             &mut blockStream,
@@ -422,21 +422,21 @@ unsafe fn ZSTD_encodeSequences_body(
             || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits)
                 >= 64 - 7 - (LLFSELog + MLFSELog + OffFSELog)
         {
-            BIT_flushBits(&mut blockStream);
+            blockStream.flush_bits();
         }
         blockStream.add_bits((*sequences.add(n)).litLength as BitContainerType, llBits);
         if MEM_32bits() && llBits.wrapping_add(mlBits) > 24 {
-            BIT_flushBits(&mut blockStream);
+            blockStream.flush_bits();
         }
         blockStream.add_bits((*sequences.add(n)).mlBase as BitContainerType, mlBits);
         if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
-            BIT_flushBits(&mut blockStream);
+            blockStream.flush_bits();
         }
         if longOffsets {
             let extraBits_0 = ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
                 blockStream.add_bits((*sequences.add(n)).offBase as BitContainerType, extraBits_0);
-                BIT_flushBits(&mut blockStream);
+                blockStream.flush_bits();
             }
             blockStream.add_bits(
                 ((*sequences.add(n)).offBase >> extraBits_0) as BitContainerType,
@@ -445,7 +445,7 @@ unsafe fn ZSTD_encodeSequences_body(
         } else {
             blockStream.add_bits((*sequences.add(n)).offBase as BitContainerType, ofBits_0);
         }
-        BIT_flushBits(&mut blockStream);
+        blockStream.flush_bits();
     }
 
     FSE_flushCState(&mut blockStream, &stateMatchLength);
