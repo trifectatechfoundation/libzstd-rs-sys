@@ -1010,6 +1010,29 @@ fn ZSTD_decodeSeqHeaders(
     Ok(ip)
 }
 
+/// Copies a match of `length` bytes from `ip` to `op`.
+///
+/// Like [`ZSTD_wildcopy`], this can write up to [`WILDCOPY_OVERLENGTH`] bytes past `op + length`:
+/// the first 32 bytes are always copied, a mispredicted branch costs more than the extra copy.
+///
+/// Because `ip` is at least 16 bytes before `op`, each 16-byte copy reads only bytes that are
+/// already final: either from before `op`, or written by an earlier copy of this function.
+///
+/// # Safety
+///
+/// - `op..op + length + WILDCOPY_OVERLENGTH` must be valid for writes.
+/// - `ip..op` must be valid for reads, and `op - ip >= WILDCOPY_VECLEN`.
+#[inline(always)]
+unsafe fn ZSTD_wildcopyMatch(op: *mut u8, ip: *const u8, length: size_t) {
+    debug_assert!(ip.wrapping_add(WILDCOPY_VECLEN) <= op);
+
+    ZSTD_copy16(op, ip);
+    ZSTD_copy16(op.add(16), ip.add(16));
+    if unlikely(length > 32) {
+        ZSTD_wildcopy(op.add(32), ip.add(32), length - 32, Overlap::NoOverlap);
+    }
+}
+
 ///  Copies 8 bytes from ip to op and updates op and ip where ip <= op.
 ///  If the offset is < 8 then the offset is spread to at least 8 bytes.
 ///
@@ -1118,7 +1141,7 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         }
         return;
     }
-    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -WILDCOPY_VECLEN as ptrdiff_t {
+    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -(WILDCOPY_VECLEN as ptrdiff_t) {
         ZSTD_wildcopy(
             op,
             ip,
@@ -1374,14 +1397,16 @@ unsafe fn ZSTD_execSequence(
 
     // Nearly all offsets are >= WILDCOPY_VECLEN bytes, which means we can use wildcopy
     // without overlap checking.
-    if likely(sequence.offset >= 16) {
-        // We bet on a full wildcopy for matches, since we expect matches to be
-        // longer than literals (in general). In silesia, ~10% of matches are longer
-        // than 16 bytes.
-        ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
+    if likely(sequence.offset >= WILDCOPY_VECLEN /* 16 */) {
+        // SAFETY: the fast path checked `oMatchEnd <= oend_w`, so there are
+        // `WILDCOPY_OVERLENGTH` writable bytes after the match. After an extDict split
+        // `match_0 == prefixStart`, which is still `offset` bytes before `op`.
+        debug_assert_eq!(op.wrapping_add(sequence.matchLength), oMatchEnd);
+        debug_assert_eq!(op.addr().wrapping_sub(match_0.addr()), sequence.offset);
+        ZSTD_wildcopyMatch(op, match_0, sequence.matchLength);
         return Ok(sequenceLength);
     }
-    debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
+    debug_assert!(sequence.offset < WILDCOPY_VECLEN);
 
     // Copy 8 bytes and spread the offset to be >= 8.
     ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
@@ -1491,7 +1516,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     debug_assert!(match_0 >= prefixStart);
     debug_assert!(sequence.matchLength >= 1);
 
-    if likely(sequence.offset >= WILDCOPY_VECLEN as usize) {
+    if likely(sequence.offset >= WILDCOPY_VECLEN) {
         // We bet on a full wildcopy for matches, since we expect matches to be
         // longer than literals (in general). In silesia, ~10% of matches are longer
         // than 16 bytes.
@@ -1503,7 +1528,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         );
         return Ok(sequenceLength);
     }
-    debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
+    debug_assert!(sequence.offset < WILDCOPY_VECLEN);
 
     // Copy 8 bytes and spread the offset to be >= 8.
     ZSTD_overlapCopy8(&mut op.as_mut_ptr(), &mut match_0, sequence.offset);
