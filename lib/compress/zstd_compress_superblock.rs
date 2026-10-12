@@ -172,17 +172,17 @@ unsafe fn ZSTD_compressSubBlock_literal(
     Ok(op.offset_from_unsigned(ostart))
 }
 
-unsafe fn ZSTD_seqDecompressedSize(
+fn ZSTD_seqDecompressedSize(
     seqStore: &SeqStore_t,
-    sequences: *const SeqDef,
+    sequences: &[SeqDef],
     nbSeqs: size_t,
     litSize: size_t,
     lastSubBlock: bool,
 ) -> size_t {
     let mut matchLengthSum = 0usize;
     let mut litLengthSum = 0usize;
-    for n in 0..nbSeqs {
-        let seqLen = ZSTD_getSequenceLength(seqStore, &*sequences.add(n));
+    for seq in &sequences[..nbSeqs] {
+        let seqLen = ZSTD_getSequenceLength(seqStore, seq);
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
     }
@@ -745,7 +745,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             let mut seqEntropyWritten = false;
             let litSize = countLiterals(seqStorePtr, sp.as_ptr(), seqCount);
             let decompressedSize =
-                ZSTD_seqDecompressedSize(seqStorePtr, sp.as_ptr(), seqCount, litSize, false);
+                ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, false);
             let cSize = ZSTD_compressSubBlock(
                 &(*nextCBlock).entropy,
                 entropyMetadata,
@@ -793,8 +793,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut seqEntropyWritten = false;
     let litSize_0 = literals.len();
     let seqCount_0 = sp.len();
-    let decompressedSize_0 =
-        ZSTD_seqDecompressedSize(seqStorePtr, sp.as_ptr(), seqCount_0, litSize_0, true);
+    let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, true);
     let cSize_0 = ZSTD_compressSubBlock(
         &(*nextCBlock).entropy,
         entropyMetadata,
