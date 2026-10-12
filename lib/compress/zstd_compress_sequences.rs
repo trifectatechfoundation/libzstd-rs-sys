@@ -340,61 +340,57 @@ unsafe fn ZSTD_encodeSequences_body(
     longOffsets: bool,
 ) -> Result<size_t, Error> {
     let nbSeq = sequences.len();
-    let mlCodeTable = &mlCodeTable[..nbSeq];
-    let ofCodeTable = &ofCodeTable[..nbSeq];
-    let llCodeTable = &llCodeTable[..nbSeq];
+    let (lastSeq, sequences) = sequences.split_last().unwrap();
+    let (&lastMl, mlCodeTable) = mlCodeTable[..nbSeq].split_last().unwrap();
+    let (&lastOf, ofCodeTable) = ofCodeTable[..nbSeq].split_last().unwrap();
+    let (&lastLl, llCodeTable) = llCodeTable[..nbSeq].split_last().unwrap();
 
     let mut blockStream = BIT_CStream_t::new(dst, dstCapacity)?;
 
     // first symbols
-    let mut stateMatchLength = FSE_CState_t::new2(
-        CTable_MatchLength,
-        mlCodeTable[nbSeq.wrapping_sub(1)] as u32,
-    );
-    let mut stateOffsetBits =
-        FSE_CState_t::new2(CTable_OffsetBits, ofCodeTable[nbSeq.wrapping_sub(1)] as u32);
-    let mut stateLitLength =
-        FSE_CState_t::new2(CTable_LitLength, llCodeTable[nbSeq.wrapping_sub(1)] as u32);
+    let mut stateMatchLength = FSE_CState_t::new2(CTable_MatchLength, lastMl as u32);
+    let mut stateOffsetBits = FSE_CState_t::new2(CTable_OffsetBits, lastOf as u32);
+    let mut stateLitLength = FSE_CState_t::new2(CTable_LitLength, lastLl as u32);
     blockStream.add_bits(
-        sequences[nbSeq.wrapping_sub(1)].litLength as BitContainerType,
-        LL_bits_u8[usize::from(llCodeTable[nbSeq.wrapping_sub(1)])] as core::ffi::c_uint,
+        lastSeq.litLength as BitContainerType,
+        LL_bits_u8[usize::from(lastLl)] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         blockStream.flush_bits();
     }
     blockStream.add_bits(
-        sequences[nbSeq.wrapping_sub(1)].mlBase as BitContainerType,
-        ML_bits_u8[usize::from(mlCodeTable[nbSeq.wrapping_sub(1)])] as core::ffi::c_uint,
+        lastSeq.mlBase as BitContainerType,
+        ML_bits_u8[usize::from(lastMl)] as core::ffi::c_uint,
     );
     if MEM_32bits() {
         blockStream.flush_bits();
     }
     if longOffsets {
-        let ofBits = ofCodeTable[nbSeq.wrapping_sub(1)] as u32;
+        let ofBits = lastOf as u32;
         let extraBits = ofBits.wrapping_sub(ofBits.min(STREAM_ACCUMULATOR_MIN - 1));
         if extraBits != 0 {
-            blockStream.add_bits(
-                sequences[nbSeq.wrapping_sub(1)].offBase as BitContainerType,
-                extraBits,
-            );
+            blockStream.add_bits(lastSeq.offBase as BitContainerType, extraBits);
             blockStream.flush_bits();
         }
         blockStream.add_bits(
-            (sequences[nbSeq.wrapping_sub(1)].offBase >> extraBits) as BitContainerType,
+            (lastSeq.offBase >> extraBits) as BitContainerType,
             ofBits.wrapping_sub(extraBits),
         );
     } else {
         blockStream.add_bits(
-            sequences[nbSeq.wrapping_sub(1)].offBase as BitContainerType,
-            ofCodeTable[nbSeq.wrapping_sub(1)] as core::ffi::c_uint,
+            lastSeq.offBase as BitContainerType,
+            lastOf as core::ffi::c_uint,
         );
     }
     blockStream.flush_bits();
 
-    for n in (0..nbSeq.wrapping_sub(1)).rev() {
-        let llCode = llCodeTable[n];
-        let ofCode = ofCodeTable[n];
-        let mlCode = mlCodeTable[n];
+    for (((seq, &llCode), &ofCode), &mlCode) in sequences
+        .iter()
+        .zip(llCodeTable)
+        .zip(ofCodeTable)
+        .zip(mlCodeTable)
+        .rev()
+    {
         let llBits = LL_bits_u8[usize::from(llCode)] as u32;
         let ofBits_0 = ofCode as u32;
         let mlBits = ML_bits_u8[usize::from(mlCode)] as u32;
@@ -422,26 +418,26 @@ unsafe fn ZSTD_encodeSequences_body(
         {
             blockStream.flush_bits();
         }
-        blockStream.add_bits(sequences[n].litLength as BitContainerType, llBits);
+        blockStream.add_bits(seq.litLength as BitContainerType, llBits);
         if MEM_32bits() && llBits.wrapping_add(mlBits) > 24 {
             blockStream.flush_bits();
         }
-        blockStream.add_bits(sequences[n].mlBase as BitContainerType, mlBits);
+        blockStream.add_bits(seq.mlBase as BitContainerType, mlBits);
         if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
             blockStream.flush_bits();
         }
         if longOffsets {
             let extraBits_0 = ofBits_0.wrapping_sub(ofBits_0.min(STREAM_ACCUMULATOR_MIN - 1));
             if extraBits_0 != 0 {
-                blockStream.add_bits(sequences[n].offBase as BitContainerType, extraBits_0);
+                blockStream.add_bits(seq.offBase as BitContainerType, extraBits_0);
                 blockStream.flush_bits();
             }
             blockStream.add_bits(
-                (sequences[n].offBase >> extraBits_0) as BitContainerType,
+                (seq.offBase >> extraBits_0) as BitContainerType,
                 ofBits_0.wrapping_sub(extraBits_0),
             );
         } else {
-            blockStream.add_bits(sequences[n].offBase as BitContainerType, ofBits_0);
+            blockStream.add_bits(seq.offBase as BitContainerType, ofBits_0);
         }
         blockStream.flush_bits();
     }
