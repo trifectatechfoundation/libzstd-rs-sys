@@ -254,7 +254,6 @@ pub unsafe fn ZSTD_buildCTable(
     count: &mut [core::ffi::c_uint],
     max: u8,
     codeTable: &[u8],
-    nbSeq: size_t,
     defaultNorm: &[i16],
     defaultNormLog: u32,
     defaultMax: u8,
@@ -262,6 +261,7 @@ pub unsafe fn ZSTD_buildCTable(
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWorkspaceSize: size_t,
 ) -> Result<size_t, Error> {
+    let nbSeq = codeTable.len();
     let op = dst as *mut u8;
     let oend: *const u8 = op.add(dstCapacity);
 
