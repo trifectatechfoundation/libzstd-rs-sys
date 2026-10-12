@@ -164,8 +164,8 @@ pub use crate::lib::compress::zstd_compress::{
     ZSTD_endStream, ZSTD_flushStream, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_generateSequences,
     ZSTD_getBlockSize, ZSTD_getDictID_fromCDict, ZSTD_getFrameProgression, ZSTD_initCStream,
     ZSTD_initCStream_srcSize, ZSTD_initCStream_usingCDict, ZSTD_initCStream_usingDict,
-    ZSTD_maxCLevel, ZSTD_minCLevel, ZSTD_sequenceBound, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict,
-    ZSTD_BLOCKSPLITTER_LEVEL_MAX,
+    ZSTD_maxCLevel, ZSTD_mergeBlockDelimiters, ZSTD_minCLevel, ZSTD_sequenceBound,
+    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_BLOCKSPLITTER_LEVEL_MAX,
 };
 
 pub mod internal {
