@@ -988,23 +988,26 @@ pub(crate) fn ZSTD_window_enforceMaxDist(
 /// used for tests and fuzzers.
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: bool = false;
 
-#[inline]
-pub(crate) fn ZSTD_window_needOverflowCorrection(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-    srcEnd: *const core::ffi::c_void,
-) -> bool {
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY
-        && ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src)
-    {
-        return true;
-    }
+impl ZSTD_window_t {
+    /// Returns true if the indices are getting too large and overflow protection is needed.
+    #[inline]
+    pub(crate) fn needs_overflow_correction(
+        &self,
+        cycleLog: u32,
+        maxDist: u32,
+        loadedDictEnd: u32,
+        src: *const core::ffi::c_void,
+        srcEnd: *const core::ffi::c_void,
+    ) -> bool {
+        if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY
+            && ZSTD_window_canOverflowCorrect(*self, cycleLog, maxDist, loadedDictEnd, src)
+        {
+            return true;
+        }
 
-    let curr = srcEnd.addr() - window.base.addr();
-    curr > ZSTD_CURRENT_MAX
+        let curr = srcEnd.addr() - self.base.addr();
+        curr > ZSTD_CURRENT_MAX
+    }
 }
 
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;

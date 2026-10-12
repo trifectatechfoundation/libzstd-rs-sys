@@ -709,9 +709,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
     ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict,
     ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist,
-    ZSTD_window_needOverflowCorrection, ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
-    REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
-    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, REPCODE3_TO_OFFBASE,
+    ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -5817,7 +5817,9 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
 ) {
     let cycleLog = ZSTD_cycleLog(params.cParams.chainLog, params.cParams.strategy);
     let maxDist = 1 << params.cParams.windowLog;
-    if ZSTD_window_needOverflowCorrection(ms.window, cycleLog, maxDist, ms.loadedDictEnd, ip, iend)
+    if ms
+        .window
+        .needs_overflow_correction(cycleLog, maxDist, ms.loadedDictEnd, ip, iend)
     {
         let correction = ms.window.correct_overflow(cycleLog, maxDist, ip);
         ZSTD_cwksp_mark_tables_dirty(ws);
