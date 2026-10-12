@@ -8767,18 +8767,19 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     };
 
     let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
-    while (idx as usize) < inSeqs.len()
-        && (inSeqs[idx as usize].matchLength != 0 || inSeqs[idx as usize].offset != 0)
-    {
-        let litLength = inSeqs[idx as usize].litLength;
-        let matchLength = inSeqs[idx as usize].matchLength;
+    for seq in &inSeqs[startIdx as usize..] {
+        if seq.matchLength == 0 && seq.offset == 0 {
+            break;
+        }
+        let litLength = seq.litLength;
+        let matchLength = seq.matchLength;
 
         let offBase: u32;
         if externalRepSearch == ParamSwitch::Disable {
-            offBase = (inSeqs[idx as usize].offset).wrapping_add(ZSTD_REP_NUM);
+            offBase = seq.offset.wrapping_add(ZSTD_REP_NUM);
         } else {
             let ll0 = litLength == 0;
-            offBase = ZSTD_finalizeOffBase(inSeqs[idx as usize].offset, &updatedRepcodes, ll0);
+            offBase = ZSTD_finalizeOffBase(seq.offset, &updatedRepcodes, ll0);
             ZSTD_updateRep(&mut updatedRepcodes, offBase, ll0);
         }
 
