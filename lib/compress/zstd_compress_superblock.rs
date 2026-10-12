@@ -591,9 +591,9 @@ fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bo
     false
 }
 
-fn countLiterals(seqStore: &SeqStore_t, sp: &[SeqDef], seqCount: size_t) -> size_t {
+fn countLiterals(seqStore: &SeqStore_t, sp: &[SeqDef]) -> size_t {
     let mut total = 0usize;
-    for seq in &sp[..seqCount] {
+    for seq in sp {
         total = total.wrapping_add((ZSTD_getSequenceLength(seqStore, seq)).litLength as size_t);
     }
     total
@@ -741,7 +741,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             // compress sub-block
             let mut litEntropyWritten = false;
             let mut seqEntropyWritten = false;
-            let litSize = countLiterals(seqStorePtr, sp, seqCount);
+            let litSize = countLiterals(seqStorePtr, &sp[..seqCount]);
             let decompressedSize =
                 ZSTD_seqDecompressedSize(seqStorePtr, &sp[..seqCount], litSize, false);
             let cSize = ZSTD_compressSubBlock(
