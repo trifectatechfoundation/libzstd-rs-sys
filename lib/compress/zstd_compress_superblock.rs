@@ -211,7 +211,6 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     fseTables: &ZSTD_fseCTables_t,
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
     sequences: &[SeqDef],
-    nbSeq: size_t,
     llCode: &[u8],
     mlCode: &[u8],
     ofCode: &[u8],
@@ -222,6 +221,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     writeEntropy: bool,
     entropyWritten: &mut bool,
 ) -> Result<size_t, Error> {
+    let nbSeq = sequences.len();
     let longOffsets = cctxParams.cParams.windowLog > STREAM_ACCUMULATOR_MIN;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
@@ -365,7 +365,6 @@ unsafe fn ZSTD_compressSubBlock(
         &entropy.fse,
         &entropyMetadata.fseMetadata,
         sequences,
-        sequences.len(),
         llCode,
         mlCode,
         ofCode,
