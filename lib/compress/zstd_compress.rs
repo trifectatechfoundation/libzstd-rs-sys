@@ -5270,9 +5270,7 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: &SeqStore_t) -> size_t {
 /// Returns match bytes represented in a seqStore
 unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: &SeqStore_t) -> size_t {
     let mut matchBytes = 0usize;
-    let nbSeqs = (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart);
-    for i in 0..nbSeqs {
-        let seq = *(seqStore.sequencesStart).add(i);
+    for (i, seq) in seqStore.seqs().iter().enumerate() {
         matchBytes = matchBytes.wrapping_add(usize::from(seq.mlBase) + usize::from(MINMATCH));
         if i == seqStore.longLengthPos as size_t && seqStore.longLengthType == LongLengthType::Match
         {
