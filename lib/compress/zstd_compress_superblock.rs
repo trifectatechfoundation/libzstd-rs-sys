@@ -210,7 +210,7 @@ fn ZSTD_seqDecompressedSize(
 unsafe fn ZSTD_compressSubBlock_sequences(
     fseTables: &ZSTD_fseCTables_t,
     fseMetadata: &ZSTD_fseCTablesMetadata_t,
-    sequences: *const SeqDef,
+    sequences: &[SeqDef],
     nbSeq: size_t,
     llCode: &[u8],
     mlCode: &[u8],
@@ -284,7 +284,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         ofCode.as_ptr(),
         &fseTables.litlengthCTable,
         llCode.as_ptr(),
-        sequences,
+        sequences.as_ptr(),
         nbSeq,
         longOffsets,
         bmi2,
@@ -364,7 +364,7 @@ unsafe fn ZSTD_compressSubBlock(
     let cSeqSize = ZSTD_compressSubBlock_sequences(
         &entropy.fse,
         &entropyMetadata.fseMetadata,
-        sequences.as_ptr(),
+        sequences,
         sequences.len(),
         llCode,
         mlCode,
