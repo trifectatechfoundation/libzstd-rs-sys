@@ -8063,7 +8063,6 @@ unsafe fn ZSTD_compressStream_generic(
     } else {
         ostart
     };
-    let mut someMoreWork = true;
 
     if (*zcs).appliedParams.inBufferMode == ZSTD_bm_stable {
         (*input).pos = ((*input).pos).wrapping_sub((*zcs).stableIn_notConsumed);
@@ -8083,8 +8082,7 @@ unsafe fn ZSTD_compressStream_generic(
     ((*input).src).is_null();
     ((*output).dst).is_null();
 
-    while someMoreWork {
-        let mut current_block_156: u64;
+    loop {
         match (*zcs).streamStage {
             StreamStage::Init => return Err(Error::init_missing),
             StreamStage::Load => {
@@ -8106,176 +8104,148 @@ unsafe fn ZSTD_compressStream_generic(
                     op = op.add(cSize);
                     (*zcs).frameEnded = 1;
                     ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
-                    someMoreWork = false;
-                    current_block_156 = 16754622181974910496;
-                } else {
-                    if (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered {
-                        let toLoad = ((*zcs).inBuffTarget).wrapping_sub((*zcs).inBuffPos);
-                        let loaded = ZSTD_limitCopy(
-                            ((*zcs).inBuff).add((*zcs).inBuffPos),
-                            toLoad,
-                            ip,
-                            iend.offset_from_unsigned(ip),
-                        );
-                        (*zcs).inBuffPos = ((*zcs).inBuffPos).wrapping_add(loaded);
-                        if !ip.is_null() {
-                            ip = ip.add(loaded);
-                        }
-                        if flushMode == ZSTD_e_continue && (*zcs).inBuffPos < (*zcs).inBuffTarget
-                            || flushMode == ZSTD_e_flush && (*zcs).inBuffPos == (*zcs).inToCompress
-                        {
-                            someMoreWork = false;
-                            current_block_156 = 16754622181974910496;
-                        } else {
-                            current_block_156 = 13910774313357589740;
-                        }
-                    } else if flushMode == ZSTD_e_continue
-                        && (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax
+                    break;
+                }
+                if (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered {
+                    let toLoad = ((*zcs).inBuffTarget).wrapping_sub((*zcs).inBuffPos);
+                    let loaded = ZSTD_limitCopy(
+                        ((*zcs).inBuff).add((*zcs).inBuffPos),
+                        toLoad,
+                        ip,
+                        iend.offset_from_unsigned(ip),
+                    );
+                    (*zcs).inBuffPos = ((*zcs).inBuffPos).wrapping_add(loaded);
+                    if !ip.is_null() {
+                        ip = ip.add(loaded);
+                    }
+                    if flushMode == ZSTD_e_continue && (*zcs).inBuffPos < (*zcs).inBuffTarget
+                        || flushMode == ZSTD_e_flush && (*zcs).inBuffPos == (*zcs).inToCompress
                     {
-                        (*zcs).stableIn_notConsumed = iend.offset_from_unsigned(ip);
-                        ip = iend;
-                        someMoreWork = false;
-                        current_block_156 = 16754622181974910496;
-                    } else if flushMode == ZSTD_e_flush && ip == iend {
-                        someMoreWork = false;
-                        current_block_156 = 16754622181974910496;
+                        break;
+                    }
+                } else if flushMode == ZSTD_e_continue
+                    && (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax
+                {
+                    (*zcs).stableIn_notConsumed = iend.offset_from_unsigned(ip);
+                    ip = iend;
+                    break;
+                } else if flushMode == ZSTD_e_flush && ip == iend {
+                    break;
+                }
+                let inputBuffered = (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered;
+                let cDst;
+                let cSize_0: size_t;
+                let mut oSize = oend.offset_from_unsigned(op);
+                let iSize = if inputBuffered {
+                    ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
+                } else if (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax {
+                    iend.offset_from_unsigned(ip)
+                } else {
+                    (*zcs).blockSizeMax
+                };
+                if oSize >= ZSTD_compressBound(iSize)
+                    || (*zcs).appliedParams.outBufferMode == ZSTD_bm_stable
+                {
+                    cDst = op as *mut core::ffi::c_void; // compress into output buffer, to skip flush stage
+                } else {
+                    cDst = (*zcs).outBuff as *mut core::ffi::c_void;
+                    oSize = (*zcs).outBuffSize;
+                }
+                if inputBuffered {
+                    let lastBlock = flushMode == ZSTD_e_end && ip == iend;
+                    cSize_0 = if lastBlock {
+                        ZSTD_compressEnd_internal(
+                            zcs,
+                            cDst,
+                            oSize,
+                            ((*zcs).inBuff).add((*zcs).inToCompress) as *const core::ffi::c_void,
+                            iSize,
+                        )?
                     } else {
-                        current_block_156 = 13910774313357589740;
+                        ZSTD_compressContinue_internal(
+                            zcs,
+                            cDst,
+                            oSize,
+                            ((*zcs).inBuff).add((*zcs).inToCompress) as *const core::ffi::c_void,
+                            iSize,
+                            true,
+                            false,
+                        )?
+                    };
+                    (*zcs).frameEnded = u32::from(lastBlock);
+                    (*zcs).inBuffTarget = ((*zcs).inBuffPos).wrapping_add((*zcs).blockSizeMax);
+                    if (*zcs).inBuffTarget > (*zcs).inBuffSize {
+                        (*zcs).inBuffPos = 0;
+                        (*zcs).inBuffTarget = (*zcs).blockSizeMax;
                     }
-                    match current_block_156 {
-                        16754622181974910496 => {}
-                        _ => {
-                            let inputBuffered =
-                                (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered;
-                            let cDst;
-                            let cSize_0: size_t;
-                            let mut oSize = oend.offset_from_unsigned(op);
-                            let iSize = if inputBuffered {
-                                ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
-                            } else if (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax {
-                                iend.offset_from_unsigned(ip)
-                            } else {
-                                (*zcs).blockSizeMax
-                            };
-                            if oSize >= ZSTD_compressBound(iSize)
-                                || (*zcs).appliedParams.outBufferMode == ZSTD_bm_stable
-                            {
-                                cDst = op as *mut core::ffi::c_void; // compress into output buffer, to skip flush stage
-                            } else {
-                                cDst = (*zcs).outBuff as *mut core::ffi::c_void;
-                                oSize = (*zcs).outBuffSize;
-                            }
-                            if inputBuffered {
-                                let lastBlock = flushMode == ZSTD_e_end && ip == iend;
-                                cSize_0 = if lastBlock {
-                                    ZSTD_compressEnd_internal(
-                                        zcs,
-                                        cDst,
-                                        oSize,
-                                        ((*zcs).inBuff).add((*zcs).inToCompress)
-                                            as *const core::ffi::c_void,
-                                        iSize,
-                                    )?
-                                } else {
-                                    ZSTD_compressContinue_internal(
-                                        zcs,
-                                        cDst,
-                                        oSize,
-                                        ((*zcs).inBuff).add((*zcs).inToCompress)
-                                            as *const core::ffi::c_void,
-                                        iSize,
-                                        true,
-                                        false,
-                                    )?
-                                };
-                                (*zcs).frameEnded = u32::from(lastBlock);
-                                (*zcs).inBuffTarget =
-                                    ((*zcs).inBuffPos).wrapping_add((*zcs).blockSizeMax);
-                                if (*zcs).inBuffTarget > (*zcs).inBuffSize {
-                                    (*zcs).inBuffPos = 0;
-                                    (*zcs).inBuffTarget = (*zcs).blockSizeMax;
-                                }
-                                if !lastBlock {
-                                    assert!((*zcs).inBuffTarget <= (*zcs).inBuffSize);
-                                }
-                                (*zcs).inToCompress = (*zcs).inBuffPos;
-                            } else {
-                                let lastBlock_0 = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
-                                cSize_0 = if lastBlock_0 {
-                                    ZSTD_compressEnd_internal(
-                                        zcs,
-                                        cDst,
-                                        oSize,
-                                        ip as *const core::ffi::c_void,
-                                        iSize,
-                                    )?
-                                } else {
-                                    ZSTD_compressContinue_internal(
-                                        zcs,
-                                        cDst,
-                                        oSize,
-                                        ip as *const core::ffi::c_void,
-                                        iSize,
-                                        true,
-                                        false,
-                                    )?
-                                };
-                                if !ip.is_null() {
-                                    ip = ip.add(iSize);
-                                }
-                                (*zcs).frameEnded = u32::from(lastBlock_0);
-                                if lastBlock_0 {
-                                    assert_eq!(ip, iend);
-                                }
-                            }
-                            if cDst == op as *mut core::ffi::c_void {
-                                op = op.add(cSize_0);
-                                if (*zcs).frameEnded != 0 {
-                                    someMoreWork = false;
-                                    ZSTD_CCtx_reset(
-                                        zcs,
-                                        ZSTD_ResetDirective::ZSTD_reset_session_only,
-                                    );
-                                }
-                                current_block_156 = 16754622181974910496;
-                            } else {
-                                (*zcs).outBuffContentSize = cSize_0;
-                                (*zcs).outBuffFlushedSize = 0;
-                                (*zcs).streamStage = StreamStage::Flush; // pass-through to flush stage
-                                current_block_156 = 5431927413890720344;
-                            }
-                        }
+                    if !lastBlock {
+                        assert!((*zcs).inBuffTarget <= (*zcs).inBuffSize);
                     }
+                    (*zcs).inToCompress = (*zcs).inBuffPos;
+                } else {
+                    let lastBlock_0 = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
+                    cSize_0 = if lastBlock_0 {
+                        ZSTD_compressEnd_internal(
+                            zcs,
+                            cDst,
+                            oSize,
+                            ip as *const core::ffi::c_void,
+                            iSize,
+                        )?
+                    } else {
+                        ZSTD_compressContinue_internal(
+                            zcs,
+                            cDst,
+                            oSize,
+                            ip as *const core::ffi::c_void,
+                            iSize,
+                            true,
+                            false,
+                        )?
+                    };
+                    if !ip.is_null() {
+                        ip = ip.add(iSize);
+                    }
+                    (*zcs).frameEnded = u32::from(lastBlock_0);
+                    if lastBlock_0 {
+                        assert_eq!(ip, iend);
+                    }
+                }
+                if cDst == op as *mut core::ffi::c_void {
+                    op = op.add(cSize_0);
+                    if (*zcs).frameEnded != 0 {
+                        ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
+                        break;
+                    }
+                } else {
+                    (*zcs).outBuffContentSize = cSize_0;
+                    (*zcs).outBuffFlushedSize = 0;
+                    (*zcs).streamStage = StreamStage::Flush;
                 }
             }
             StreamStage::Flush => {
-                current_block_156 = 5431927413890720344;
-            }
-        }
-        if current_block_156 == 5431927413890720344 {
-            let toFlush = ((*zcs).outBuffContentSize).wrapping_sub((*zcs).outBuffFlushedSize);
-            let flushed = ZSTD_limitCopy(
-                op,
-                oend.offset_from_unsigned(op),
-                ((*zcs).outBuff).add((*zcs).outBuffFlushedSize),
-                toFlush,
-            );
-            if flushed != 0 {
-                op = op.add(flushed);
-            }
-            (*zcs).outBuffFlushedSize = ((*zcs).outBuffFlushedSize).wrapping_add(flushed);
-            if toFlush != flushed {
-                // flush not fully completed, presumably because dst is too small
-                someMoreWork = false;
-            } else {
-                (*zcs).outBuffFlushedSize = 0;
-                (*zcs).outBuffContentSize = (*zcs).outBuffFlushedSize;
-                if (*zcs).frameEnded != 0 {
-                    someMoreWork = false;
-                    ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
-                } else {
-                    (*zcs).streamStage = StreamStage::Load;
+                let toFlush = ((*zcs).outBuffContentSize).wrapping_sub((*zcs).outBuffFlushedSize);
+                let flushed = ZSTD_limitCopy(
+                    op,
+                    oend.offset_from_unsigned(op),
+                    ((*zcs).outBuff).add((*zcs).outBuffFlushedSize),
+                    toFlush,
+                );
+                if flushed != 0 {
+                    op = op.add(flushed);
                 }
+                (*zcs).outBuffFlushedSize = ((*zcs).outBuffFlushedSize).wrapping_add(flushed);
+                if toFlush != flushed {
+                    // flush not fully completed, presumably because dst is too small
+                    break;
+                }
+                (*zcs).outBuffFlushedSize = 0;
+                (*zcs).outBuffContentSize = 0;
+                if (*zcs).frameEnded != 0 {
+                    ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
+                    break;
+                }
+                (*zcs).streamStage = StreamStage::Load;
             }
         }
     }
