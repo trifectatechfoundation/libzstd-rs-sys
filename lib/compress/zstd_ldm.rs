@@ -67,8 +67,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
-    HASH_READ_SIZE,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -662,7 +661,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     srcSize: size_t,
 ) -> Result<size_t, Error> {
     // LDM parameters
-    let extDict = ZSTD_window_hasExtDict(ldmState.window);
+    let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
     let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
