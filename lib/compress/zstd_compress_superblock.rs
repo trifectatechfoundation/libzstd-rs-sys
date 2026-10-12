@@ -281,7 +281,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         &fseTables.matchlengthCTable,
         mlCode,
         &fseTables.offcodeCTable,
-        ofCode.as_ptr(),
+        ofCode,
         &fseTables.litlengthCTable,
         llCode.as_ptr(),
         sequences,
