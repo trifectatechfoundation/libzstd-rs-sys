@@ -14,7 +14,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCDict, ZSTD_freeCCtxContent,
     ZSTD_freeCDict, ZSTD_initCCtx,
 };
-use crate::lib::dictBuilder::zdict::{finalize_dictionary, ZDICT_finalizeDictionary};
+use crate::lib::dictBuilder::zdict::finalize_dictionary;
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::lib::zstd::ZSTD_customMem;
 use crate::ZDICT_params_t;
@@ -879,17 +879,17 @@ fn train_from_buffer_cover(
     let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
     let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
     let dictionarySize = unsafe {
-        ZDICT_finalizeDictionary(
+        finalize_dictionary(
             dictBuffer,
             dictBufferCapacity,
             customDictContent,
             customDictContentSize,
-            samples.as_ptr() as *const core::ffi::c_void,
-            samplesSizes.as_ptr(),
-            samplesSizes.len() as core::ffi::c_uint,
+            &samples[..samplesSizes.iter().sum()],
+            samplesSizes,
             parameters.zParams,
         )
-    };
+    }
+    .unwrap_or_else(|err| err.to_error_code());
     if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize,);
     }
