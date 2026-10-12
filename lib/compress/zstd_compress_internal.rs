@@ -91,15 +91,15 @@ impl ZSTD_window_t {
         self.nextSrc = (self.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
         self.nbOverflowCorrections = 0;
     }
-}
 
-/// Clears the window containing the history by simply setting it to empty.
-#[inline]
-pub(crate) fn ZSTD_window_clear(window: &mut ZSTD_window_t) {
-    let end = window.nextSrc.wrapping_offset_from(window.base) as u32;
+    /// Clears the window containing the history by simply setting it to empty.
+    #[inline]
+    pub(crate) fn clear(&mut self) {
+        let end = self.nextSrc.wrapping_offset_from(self.base) as u32;
 
-    window.lowLimit = end;
-    window.dictLimit = end;
+        self.lowLimit = end;
+        self.dictLimit = end;
+    }
 }
 
 /// Reduces the indices to protect from index overflow.
