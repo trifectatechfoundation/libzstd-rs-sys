@@ -707,11 +707,10 @@ use crate::lib::compress::zstd_compress_internal::{
     optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_entropyCTables_t,
-    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
-    ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
-    REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
-    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
+    ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_match_t,
+    ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict, ZSTD_storeSeq, ZSTD_storeSeqOnly,
+    ZSTD_updateRep, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX,
+    ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -4429,7 +4428,7 @@ unsafe fn ZSTD_buildSeqStore(
     }
 
     // select and store sequences
-    let dictMode = ZSTD_matchState_dictMode(ms);
+    let dictMode = ms.dict_mode();
     for i in 0..ZSTD_REP_NUM {
         (*(*zc).blockState.nextCBlock).rep[i as usize] =
             (*(*zc).blockState.prevCBlock).rep[i as usize];
