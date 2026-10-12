@@ -6596,13 +6596,16 @@ pub unsafe fn ZSTD_loadCEntropy(
         ZSTD_dictNCountRepeat(&litlengthNCount, litlengthMaxValue, MaxLL);
     pos += litlengthHeaderSize;
 
-    if dict[pos..].len() < 12 {
+    let ([rep0, rep1, rep2, ..], _) = dict[pos..].as_chunks::<4>() else {
         return Err(Error::dictionary_corrupted);
-    }
-    let reps = dict[pos..pos + 12].as_chunks::<4>().0;
-    for (rep, bytes) in (*bs).rep.iter_mut().zip(reps) {
-        *rep = u32::from_le_bytes(*bytes);
-    }
+    };
+
+    (*bs).rep = [
+        u32::from_le_bytes(*rep0),
+        u32::from_le_bytes(*rep1),
+        u32::from_le_bytes(*rep2),
+    ];
+
     pos += 12;
 
     let dictContentSize = dict[pos..].len();
