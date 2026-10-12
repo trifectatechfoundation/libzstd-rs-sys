@@ -279,7 +279,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &fseTables.matchlengthCTable,
-        mlCode.as_ptr(),
+        mlCode,
         &fseTables.offcodeCTable,
         ofCode.as_ptr(),
         &fseTables.litlengthCTable,
