@@ -23,7 +23,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_update,
+    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -1051,9 +1051,11 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                     if (*job).firstJob == 0 {
                                                         // Double check that we don't have an ext-dict, because then our
                                                         // repcode invalidation doesn't work.
-                                                        assert!(!ZSTD_window_hasExtDict(
-                                                            (*cctx).blockState.matchState.window
-                                                        ));
+                                                        assert!(!(*cctx)
+                                                            .blockState
+                                                            .matchState
+                                                            .window
+                                                            .has_ext_dict());
                                                     }
                                                     ZSTD_CCtx_trace(cctx, 0);
                                                 }

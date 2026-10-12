@@ -856,16 +856,19 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
     prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3
 }
 
-#[inline]
-pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
-    window.lowLimit < window.dictLimit
+impl ZSTD_window_t {
+    /// Returns true if the window has a non-empty extDict.
+    #[inline]
+    pub(crate) fn has_ext_dict(&self) -> bool {
+        self.lowLimit < self.dictLimit
+    }
 }
 
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
 pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMode {
-    if ZSTD_window_hasExtDict(ms.window) {
+    if ms.window.has_ext_dict() {
         DictMode::ExtDict
     } else if !ms.dictMatchState.is_null() {
         if (*ms.dictMatchState).dedicatedDictSearch != 0 {
