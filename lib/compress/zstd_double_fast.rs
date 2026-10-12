@@ -8,9 +8,8 @@ use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
-    ZSTD_count_2segments, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
-    ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_count_2segments, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -131,7 +130,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     let mut anchor = istart;
     let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     // presumes that, if there is a dictionary, it must be using Attach mode
-    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
+    let prefixLowestIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(HASH_READ_SIZE as usize);
@@ -172,7 +171,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     // init
     ip = ip.add(usize::from(ip == prefixLowest));
     let current = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestPrefixIndex(ms, current, cParams.windowLog);
+    let windowLow = ms.get_lowest_prefix_index(current, cParams.windowLog);
     let maxRep = current.wrapping_sub(windowLow);
     if offset_2 > maxRep {
         offsetSaved2 = offset_2;
@@ -484,7 +483,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let mut anchor = istart;
     let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     // presumes that, if there is a dictionary, it must be using Attach mode
-    let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
+    let prefixLowestIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(HASH_READ_SIZE as usize);
