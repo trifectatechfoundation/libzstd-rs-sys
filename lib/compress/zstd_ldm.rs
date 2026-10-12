@@ -1000,36 +1000,37 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     Ok(())
 }
 
-pub unsafe fn ZSTD_ldm_skipSequences(
-    rawSeqStore: &mut RawSeqStore_t,
+pub fn ZSTD_ldm_skipSequences(
+    seqs: &mut [rawSeq],
+    pos: &mut usize,
     mut srcSize: size_t,
     minMatch: u32,
 ) {
-    while srcSize > 0 && rawSeqStore.pos < rawSeqStore.size {
-        let seq = (rawSeqStore.seq).add(rawSeqStore.pos);
-        if srcSize <= (*seq).litLength as size_t {
+    while srcSize > 0 && *pos < seqs.len() {
+        let seq = &mut seqs[*pos];
+        if srcSize <= seq.litLength as size_t {
             // Skip past srcSize literals
-            (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
+            seq.litLength = (seq.litLength).wrapping_sub(srcSize as u32);
             return;
         }
-        srcSize = srcSize.wrapping_sub((*seq).litLength as size_t);
-        (*seq).litLength = 0;
-        if srcSize < (*seq).matchLength as size_t {
+        srcSize = srcSize.wrapping_sub(seq.litLength as size_t);
+        seq.litLength = 0;
+        if srcSize < seq.matchLength as size_t {
             // Skip past the first srcSize of the match
-            (*seq).matchLength = ((*seq).matchLength).wrapping_sub(srcSize as u32);
-            if (*seq).matchLength < minMatch {
+            seq.matchLength = (seq.matchLength).wrapping_sub(srcSize as u32);
+            if seq.matchLength < minMatch {
                 // The match is too short, omit it
-                if (rawSeqStore.pos).wrapping_add(1) < rawSeqStore.size {
-                    let fresh6 = &mut (*seq.add(1)).litLength;
-                    *fresh6 = (*fresh6).wrapping_add((*seq).matchLength);
+                let matchLength = seq.matchLength;
+                if let Some(next) = seqs.get_mut(*pos + 1) {
+                    next.litLength = (next.litLength).wrapping_add(matchLength);
                 }
-                rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
+                *pos += 1;
             }
             return;
         }
-        srcSize = srcSize.wrapping_sub((*seq).matchLength as size_t);
-        (*seq).matchLength = 0;
-        rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
+        srcSize = srcSize.wrapping_sub(seq.matchLength as size_t);
+        seq.matchLength = 0;
+        *pos += 1;
     }
 }
 
@@ -1062,7 +1063,8 @@ unsafe fn maybeSplitSequence(
     }
 
     // Skip past `remaining` bytes for the future sequences.
-    ZSTD_ldm_skipSequences(rawSeqStore, remaining as size_t, minMatch);
+    let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
+    ZSTD_ldm_skipSequences(seqs, &mut rawSeqStore.pos, remaining as size_t, minMatch);
     sequence
 }
 
