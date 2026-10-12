@@ -39,9 +39,8 @@ use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DedicatedDictSearch, DictMatchState, DictMode, DictModeMarker, ExtDict,
-    NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
-    ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE,
-    ZSTD_DUBT_UNSORTED_MARK,
+    NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_hashPtr, ZSTD_hashPtrSalted,
+    ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE, ZSTD_DUBT_UNSORTED_MARK,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
@@ -1693,7 +1692,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
     ip = ip.add(usize::from(dictAndPrefixLength == 0));
     if dictMode == DictMode::NoDict {
         let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
-        let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, ms.cParams.windowLog);
+        let windowLow = ms.get_lowest_prefix_index(curr, ms.cParams.windowLog);
         let maxRep = curr.wrapping_sub(windowLow);
         if offset_2 > maxRep {
             offsetSaved2 = offset_2;

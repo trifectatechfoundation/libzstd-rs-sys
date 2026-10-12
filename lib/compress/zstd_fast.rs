@@ -8,9 +8,8 @@ use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
-    ZSTD_count_2segments, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
-    ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
-    ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_count_2segments, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::polyfill::{branch_barrier, PointerExt};
 use crate::lib::zstd::ZSTD_compressionParameters;
@@ -214,7 +213,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     let base = ms.window.base;
     let istart = src as *const u8;
     let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
-    let prefixStartIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, cParams.windowLog);
+    let prefixStartIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
@@ -254,7 +253,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
 
     ip0 = ip0.add(usize::from(ip0 == prefixStart));
     let curr = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestPrefixIndex(ms, curr, cParams.windowLog);
+    let windowLow = ms.get_lowest_prefix_index(curr, cParams.windowLog);
     let maxRep = curr.wrapping_sub(windowLow);
     if rep_offset2 > maxRep {
         offsetSaved2 = rep_offset2;
