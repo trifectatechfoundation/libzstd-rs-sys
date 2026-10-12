@@ -7710,16 +7710,14 @@ unsafe fn ZSTD_compress_usingCDict_internal(
     srcSize: size_t,
     cdict: *const ZSTD_CDict,
     fParams: ZSTD_frameParameters,
-) -> size_t {
-    if let Err(err) = ZSTD_compressBegin_usingCDict_internal(
+) -> Result<size_t, Error> {
+    ZSTD_compressBegin_usingCDict_internal(
         cctx,
         cdict,
         fParams,
         srcSize as core::ffi::c_ulonglong,
-    ) {
-        return err.to_error_code();
-    }
-    ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
+    )?;
+    ZSTD_compressEnd_internal(cctx, dst, dstCapacity, src, srcSize)
 }
 
 /// This function is DEPRECATED.
@@ -7734,6 +7732,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict_advanced(
     fParams: ZSTD_frameParameters,
 ) -> size_t {
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 /// Compression using a digested Dictionary.
@@ -7757,6 +7756,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict(
         }
     };
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCStream))]
