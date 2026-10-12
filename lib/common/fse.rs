@@ -143,7 +143,7 @@ impl<'a> FSE_CState_t<'a> {
     #[inline]
     pub fn new2(ct: &'a [FSE_CTable], symbol: u32) -> Self {
         let mut state = FSE_CState_t::new(ct);
-        let symbolTT = FSE_readSymbolTT(ct, state.stateLog, symbol);
+        let symbolTT = state.symbolTT[symbol as usize];
         let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
         let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
 
@@ -161,21 +161,6 @@ pub(crate) const fn FSE_symbolTTIndex(tableLog: u32) -> usize {
     match tableLog {
         0 => skip_header + 1,
         _ => skip_header + (1 << (tableLog - 1)),
-    }
-}
-
-/// Read the transform of `symbol` out of the symbol transformation table of `ct`.
-#[inline]
-fn FSE_readSymbolTT(
-    ct: &[FSE_CTable],
-    tableLog: u32,
-    symbol: u32,
-) -> FSE_symbolCompressionTransform {
-    let index = FSE_symbolTTIndex(tableLog) + 2 * symbol as usize;
-
-    FSE_symbolCompressionTransform {
-        deltaFindState: ct[index] as core::ffi::c_int,
-        deltaNbBits: ct[index + 1],
     }
 }
 
