@@ -9,7 +9,7 @@ use crate::lib::common::bitstream::{
     BIT_DStream_t, STREAM_ACCUMULATOR_MIN, STREAM_ACCUMULATOR_MIN_32, STREAM_ACCUMULATOR_MIN_64,
 };
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, prefetch_val, Locality};
-use crate::lib::common::entropy_common::FSE_readNCount_slice;
+use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::FSE_TABLESTEP;
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
@@ -876,8 +876,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
         SymbolEncodingType::Compressed => {
             let mut tableLog: core::ffi::c_uint = 0;
             let mut norm: [i16; 53] = [0; 53];
-            let Ok(headerSize) = FSE_readNCount_slice(&mut norm, &mut max, &mut tableLog, src)
-            else {
+            let Ok(headerSize) = FSE_readNCount(&mut norm, &mut max, &mut tableLog, src) else {
                 return Err(Error::corruption_detected);
             };
             if tableLog > maxLog {
