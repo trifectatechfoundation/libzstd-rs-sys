@@ -157,8 +157,7 @@ unsafe fn HUF_compressWeights(
         let cSize = FSE_compress_usingCTable(
             op as *mut c_void,
             oend.offset_from_unsigned(op),
-            weightTable.as_ptr().cast::<c_void>(),
-            wtSize,
+            &weightTable[..wtSize],
             &(*wksp).CTable,
         );
         if let Some(err) = Error::from_error_code(cSize) {
