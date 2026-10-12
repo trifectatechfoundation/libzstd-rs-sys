@@ -510,23 +510,21 @@ fn ZSTD_ldm_insertEntry(
     bucketOffsets[hash] = (offset.wrapping_add(1) & (1u32 << bucketSizeLog).wrapping_sub(1)) as u8;
 }
 
-/// Returns the number of bytes that match backwards before pIn and pMatch.
+/// Returns the number of bytes that match backwards before the end of `input` and pMatch.
 ///
-/// We count only bytes where pMatch >= pBase and pIn >= pAnchor.
+/// We count only bytes where pMatch >= pBase.
 unsafe fn ZSTD_ldm_countBackwardsMatch(
-    mut pIn: *const u8,
-    pAnchor: *const u8,
+    input: &[u8],
     mut pMatch: *const u8,
     pMatchBase: *const u8,
 ) -> size_t {
     let mut matchLength = 0usize;
-    while pIn > pAnchor
-        && pMatch > pMatchBase
-        && *pIn.sub(1) as core::ffi::c_int == *pMatch.sub(1) as core::ffi::c_int
-    {
-        pIn = pIn.sub(1);
+    for &byte in input.iter().rev() {
+        if pMatch <= pMatchBase || byte != *pMatch.sub(1) {
+            break;
+        }
         pMatch = pMatch.sub(1);
-        matchLength = matchLength.wrapping_add(1);
+        matchLength += 1;
     }
     matchLength
 }
@@ -536,22 +534,20 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
 ///
 /// On reaching `pMatchBase`, start counting from mEnd
 unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
-    pIn: *const u8,
-    pAnchor: *const u8,
+    input: &[u8],
     pMatch: *const u8,
     pMatchBase: *const u8,
     pExtDictStart: *const u8,
     pExtDictEnd: *const u8,
 ) -> size_t {
-    let mut matchLength = ZSTD_ldm_countBackwardsMatch(pIn, pAnchor, pMatch, pMatchBase);
+    let mut matchLength = ZSTD_ldm_countBackwardsMatch(input, pMatch, pMatchBase);
     if pMatch.sub(matchLength as usize) != pMatchBase || pMatchBase == pExtDictStart {
         // If backwards match is entirely in the extDict or prefix, immediately return
         return matchLength;
     }
 
     matchLength = matchLength.wrapping_add(ZSTD_ldm_countBackwardsMatch(
-        pIn.sub(matchLength as usize),
-        pAnchor,
+        &input[..input.len() - matchLength],
         pExtDictEnd,
         pExtDictStart,
     ));
@@ -770,6 +766,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     params.bucketSizeLog,
                 );
             } else {
+                let beforeSplit =
+                    core::slice::from_raw_parts(anchor, split.offset_from_unsigned(anchor));
                 for cur in bucket {
                     if cur.checksum != checksum || cur.offset <= lowestIndex {
                         continue;
@@ -800,8 +798,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         }
 
                         let backward = ZSTD_ldm_countBackwardsMatch_2segments(
-                            split,
-                            anchor,
+                            beforeSplit,
                             pMatch,
                             lowMatchPtr,
                             dictStart,
@@ -818,7 +815,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         }
 
                         let backward =
-                            ZSTD_ldm_countBackwardsMatch(split, anchor, pMatch, lowPrefixPtr);
+                            ZSTD_ldm_countBackwardsMatch(beforeSplit, pMatch, lowPrefixPtr);
 
                         (forward, backward)
                     };
