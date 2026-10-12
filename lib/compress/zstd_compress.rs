@@ -126,6 +126,15 @@ pub struct SeqStore_t {
     pub longLengthPos: u32,
 }
 
+impl SeqStore_t {
+    pub(crate) unsafe fn seqs(&self) -> &[SeqDef] {
+        core::slice::from_raw_parts(
+            self.sequencesStart,
+            self.sequences.offset_from_unsigned(self.sequencesStart),
+        )
+    }
+}
+
 pub type SeqDef = SeqDef_s;
 
 #[derive(Copy, Clone)]
@@ -4003,10 +4012,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
 ) -> Result<size_t, Error> {
     let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
-    let sequences: *const SeqDef = seqStorePtr.sequencesStart;
-    let nbSeq = seqStorePtr
-        .sequences
-        .offset_from_unsigned(seqStorePtr.sequencesStart);
+    let sequences = seqStorePtr.seqs();
+    let nbSeq = sequences.len();
     let ofCodeTable: *const u8 = seqStorePtr.ofCode;
     let llCodeTable: *const u8 = seqStorePtr.llCode;
     let mlCodeTable: *const u8 = seqStorePtr.mlCode;
@@ -4097,7 +4104,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         core::slice::from_raw_parts(ofCodeTable, nbSeq),
         &nextEntropy.fse.litlengthCTable,
         core::slice::from_raw_parts(llCodeTable, nbSeq),
-        core::slice::from_raw_parts(sequences, nbSeq),
+        sequences,
         longOffsets,
         bmi2,
     )?;
