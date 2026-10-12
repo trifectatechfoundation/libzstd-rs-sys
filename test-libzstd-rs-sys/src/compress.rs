@@ -963,6 +963,26 @@ mod sequences_and_literals {
     }
 
     #[test]
+    fn merge_block_delimiters() {
+        let case = Case::new(INPUT, Some(1024));
+        let merged = assert_eq_rs_c!({
+            let mut seqs = case.seqs.clone();
+            let n = ZSTD_mergeBlockDelimiters(seqs.as_mut_ptr().cast(), seqs.len());
+            seqs[..n]
+                .iter()
+                .map(|seq| (seq.offset, seq.litLength, seq.matchLength, seq.rep))
+                .collect::<Vec<_>>()
+        });
+
+        let expected: Vec<_> = case
+            .without_delimiters()
+            .iter()
+            .map(|seq| (seq.offset, seq.litLength, seq.matchLength, seq.rep))
+            .collect();
+        assert_eq!(merged, expected);
+    }
+
+    #[test]
     fn compress_sequences_explicit_delimiters() {
         Case::new(INPUT, Some(1024)).check_sequences(true, 1024);
     }
