@@ -641,11 +641,12 @@ unsafe fn ZSTD_rleCompressBlock(
     Ok(4)
 }
 
-/// Similar to ZSTD_window_enforceMaxDist(), but only invalidates dictionary when input
-/// progresses beyond window size.
-/// assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
-/// loadedDictEnd uses same referential as window->base,
-/// maxDist is the window size
+/// Similar to [`ZSTD_window_t::enforce_max_dist`], but only invalidates dictionary when
+/// the input progresses beyond window size.
+///
+/// Assumption: loadedDictEndPtr and dictMatchStatePtr are valid (non NULL),
+/// loadedDictEnd uses same referential as window->base, and
+/// maxDist is the window size.
 #[inline]
 fn ZSTD_checkDictValidity(
     window: &ZSTD_window_t,
@@ -708,9 +709,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_entropyCTables_t,
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
     ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_enforceMaxDist, HASH_READ_SIZE,
-    REPCODE1_TO_OFFBASE, REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX,
-    ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
+    REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK,
+    ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -5940,8 +5941,7 @@ unsafe fn ZSTD_compress_frameChunk(
             &mut ms.loadedDictEnd,
             &mut ms.dictMatchState,
         );
-        ZSTD_window_enforceMaxDist(
-            &mut ms.window,
+        ms.window.enforce_max_dist(
             ip as *const core::ffi::c_void,
             maxDist,
             &mut ms.loadedDictEnd,
