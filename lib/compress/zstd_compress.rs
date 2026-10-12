@@ -8901,8 +8901,10 @@ unsafe fn ZSTD_transferSequences_noDelim(
         0
     };
     let mut updatedRepcodes = (*(*cctx).blockState.prevCBlock).rep;
-    while endPosInSequence != 0 && (idx as usize) < inSeqs.len() && !finalMatchSplit {
-        let currSeq = inSeqs[idx as usize];
+    for currSeq in inSeqs.get(idx as usize..).unwrap_or_default() {
+        if endPosInSequence == 0 || finalMatchSplit {
+            break;
+        }
         let mut litLength = currSeq.litLength;
         let mut matchLength = currSeq.matchLength;
         let rawOffset = currSeq.offset;
