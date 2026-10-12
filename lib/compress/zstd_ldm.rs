@@ -1034,16 +1034,17 @@ pub fn ZSTD_ldm_skipSequences(
 ///
 /// Returns the current sequence to handle, or if the rest of the block should
 /// be literals, it returns a sequence with offset == 0.
-unsafe fn maybeSplitSequence(
-    rawSeqStore: &mut RawSeqStore_t,
+fn maybeSplitSequence(
+    seqs: &mut [rawSeq],
+    pos: &mut usize,
     remaining: u32,
     minMatch: u32,
 ) -> rawSeq {
-    let mut sequence = *(rawSeqStore.seq).add(rawSeqStore.pos);
+    let mut sequence = seqs[*pos];
 
     // Likely: No partial sequence
     if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
-        rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
+        *pos += 1;
         return sequence;
     }
 
@@ -1058,8 +1059,7 @@ unsafe fn maybeSplitSequence(
     }
 
     // Skip past `remaining` bytes for the future sequences.
-    let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
-    ZSTD_ldm_skipSequences(seqs, &mut rawSeqStore.pos, remaining as size_t, minMatch);
+    ZSTD_ldm_skipSequences(seqs, pos, remaining as size_t, minMatch);
     sequence
 }
 
@@ -1114,9 +1114,14 @@ pub unsafe fn ZSTD_ldm_blockCompress(
 
     // Loop through each sequence and apply the block compressor to the literals
     while rawSeqStore.pos < rawSeqStore.size && ip < iend {
-        // maybeSplitSequence updates rawSeqStore->pos
-        let sequence =
-            maybeSplitSequence(rawSeqStore, iend.offset_from_unsigned(ip) as u32, minMatch);
+        // maybeSplitSequence updates rawSeqStore.pos
+        let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
+        let sequence = maybeSplitSequence(
+            seqs,
+            &mut rawSeqStore.pos,
+            iend.offset_from_unsigned(ip) as u32,
+            minMatch,
+        );
 
         // End signal
         if sequence.offset == 0 {
