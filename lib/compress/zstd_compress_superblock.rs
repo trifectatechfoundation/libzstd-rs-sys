@@ -327,7 +327,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
 unsafe fn ZSTD_compressSubBlock(
     entropy: &ZSTD_entropyCTables_t,
     entropyMetadata: &ZSTD_entropyCTablesMetadata_t,
-    sequences: *const SeqDef,
+    sequences: &[SeqDef],
     nbSeq: size_t,
     literals: &[u8],
     llCode: &[u8],
@@ -365,7 +365,7 @@ unsafe fn ZSTD_compressSubBlock(
     let cSeqSize = ZSTD_compressSubBlock_sequences(
         &entropy.fse,
         &entropyMetadata.fseMetadata,
-        sequences,
+        sequences.as_ptr(),
         nbSeq,
         llCode,
         mlCode,
@@ -747,7 +747,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             let cSize = ZSTD_compressSubBlock(
                 &(*nextCBlock).entropy,
                 entropyMetadata,
-                sp.as_ptr(),
+                sp,
                 seqCount,
                 &literals[..litSize],
                 &llCodes[..seqCount],
@@ -795,7 +795,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let cSize_0 = ZSTD_compressSubBlock(
         &(*nextCBlock).entropy,
         entropyMetadata,
-        sp.as_ptr(),
+        sp,
         seqCount_0,
         literals,
         llCodes,
