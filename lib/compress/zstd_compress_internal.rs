@@ -807,25 +807,24 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
     }
 }
 
-#[inline]
-pub(crate) fn ZSTD_getLowestMatchIndex(
-    ms: &ZSTD_MatchState_t,
-    curr: u32,
-    windowLog: core::ffi::c_uint,
-) -> u32 {
-    let maxDistance = 1 << windowLog;
-    let lowestValid = ms.window.lowLimit;
-    let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
-        curr.wrapping_sub(maxDistance)
-    } else {
-        lowestValid
-    };
-    let isDictionary = ms.loadedDictEnd != 0;
+impl ZSTD_MatchState_t {
+    /// Returns the lowest allowed match index. It may either be in the ext-dict or the prefix.
+    #[inline]
+    pub(crate) fn get_lowest_match_index(&self, curr: u32, windowLog: core::ffi::c_uint) -> u32 {
+        let maxDistance = 1 << windowLog;
+        let lowestValid = self.window.lowLimit;
+        let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
+            curr.wrapping_sub(maxDistance)
+        } else {
+            lowestValid
+        };
+        let isDictionary = self.loadedDictEnd != 0;
 
-    if isDictionary {
-        lowestValid
-    } else {
-        withinWindow
+        if isDictionary {
+            lowestValid
+        } else {
+            withinWindow
+        }
     }
 }
 
