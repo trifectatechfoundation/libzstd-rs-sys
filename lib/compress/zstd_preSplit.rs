@@ -51,7 +51,8 @@ fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: size_t, has
     let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
 
     debug_assert!(src.len() >= HASHLENGTH);
-    for n in (0..limit).step_by(samplingRate) {
+    for i in 0..limit.div_ceil(samplingRate) {
+        let n = i * samplingRate;
         fp.events[hash2(*src[n..].first_chunk().unwrap(), hashLog) as usize] += 1;
     }
 
