@@ -3797,6 +3797,7 @@ unsafe fn ZSTD_reduceIndex(
 }
 
 /// See doc/zstd_compression_format.md for detailed format description
+#[inline(never)]
 pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
     let sequences: *const SeqDef = seqStorePtr.sequencesStart;
     let llCodeTable = seqStorePtr.llCode;
