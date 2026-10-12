@@ -512,9 +512,14 @@ fn ZSTD_ldm_insertEntry(
 
 /// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
 fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> size_t {
-    core::iter::zip(input.iter().rev(), beforeMatch.iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count()
+    let n = Ord::min(input.len(), beforeMatch.len());
+    let input = &input[input.len() - n..];
+    let beforeMatch = &beforeMatch[beforeMatch.len() - n..];
+    let mut matchLength = 0;
+    while matchLength < n && input[n - 1 - matchLength] == beforeMatch[n - 1 - matchLength] {
+        matchLength += 1;
+    }
+    matchLength
 }
 
 /// Returns the number of bytes that match backwards from the end of `beforeMatch`,
