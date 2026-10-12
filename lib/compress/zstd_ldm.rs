@@ -549,10 +549,7 @@ fn ZSTD_ldm_countBackwardsMatch_2segments(
 ///
 /// The tables for the other strategies are filled within their
 /// block compressors.
-unsafe fn ZSTD_ldm_fillFastTables(
-    ms: &mut ZSTD_MatchState_t,
-    end: *const core::ffi::c_void,
-) -> size_t {
+unsafe fn ZSTD_ldm_fillFastTables(ms: &mut ZSTD_MatchState_t, end: *const core::ffi::c_void) {
     let iend = end as *const u8;
 
     match ms.cParams.strategy as core::ffi::c_uint {
@@ -574,8 +571,6 @@ unsafe fn ZSTD_ldm_fillFastTables(
         }
         _ => {}
     }
-
-    0
 }
 
 pub unsafe fn ZSTD_ldm_fillHashTable(ldmState: &mut ldmState_t, src: &[u8], params: &ldmParams_t) {
