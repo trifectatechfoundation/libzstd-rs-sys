@@ -50,15 +50,14 @@ unsafe fn initStats(fpstats: *mut FPStats) {
 #[inline(always)]
 unsafe fn addEvents_generic(
     fp: &mut Fingerprint,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
     samplingRate: size_t,
     hashLog: c_uint,
 ) {
-    let p = src as *const c_char;
-    let limit = srcSize.wrapping_sub(HASHLENGTH).wrapping_add(1);
+    let p = src.as_ptr();
+    let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
 
-    debug_assert!(srcSize >= HASHLENGTH);
+    debug_assert!(src.len() >= HASHLENGTH);
     for n in (0..limit).step_by(samplingRate) {
         fp.events[hash2(p.add(n) as *const c_void, hashLog) as usize] += 1;
     }
@@ -69,12 +68,11 @@ unsafe fn addEvents_generic(
 #[inline(always)]
 unsafe fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
     fp: &mut Fingerprint,
-    src: *const c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) {
     fp.events[..1usize << HASH_LOG].fill(0);
     fp.nbEvents = 0;
-    addEvents_generic(fp, src, srcSize, SAMPLING_RATE, HASH_LOG);
+    addEvents_generic(fp, src, SAMPLING_RATE, HASH_LOG);
 }
 
 fn abs64(s64: i64) -> u64 {
@@ -131,7 +129,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
 ) -> size_t {
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
-    static records_fs: [unsafe fn(&mut Fingerprint, *const c_void, size_t) -> (); 4] = [
+    static records_fs: [unsafe fn(&mut Fingerprint, &[u8]) -> (); 4] = [
         recordFingerprint_generic::<43, 8>,
         recordFingerprint_generic::<11, 9>,
         recordFingerprint_generic::<5, 10>,
@@ -142,7 +140,6 @@ unsafe fn ZSTD_splitBlock_byChunks(
     debug_assert!((0..=3).contains(&level));
     let record_f = records_fs[level as usize];
     let fpstats = workspace as *mut FPStats;
-    let p = blockStart as *const c_char;
     let mut penalty = THRESHOLD_PENALTY;
 
     debug_assert_eq!(blockSize, (128 << 10));
@@ -151,19 +148,14 @@ unsafe fn ZSTD_splitBlock_byChunks(
     const { debug_assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
     debug_assert!(wkspSize >= size_of::<FPStats>());
 
+    let block = core::slice::from_raw_parts(blockStart.cast::<u8>(), blockSize);
+    let chunk = CHUNKSIZE as usize;
+
     initStats(fpstats);
-    record_f(
-        &mut (*fpstats).pastEvents,
-        p as *const c_void,
-        CHUNKSIZE as size_t,
-    );
+    record_f(&mut (*fpstats).pastEvents, &block[..chunk]);
     let mut pos = CHUNKSIZE as size_t;
     while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
-        record_f(
-            &mut (*fpstats).newEvents,
-            p.add(pos) as *const c_void,
-            CHUNKSIZE as size_t,
-        );
+        record_f(&mut (*fpstats).newEvents, &block[pos..][..chunk]);
         if compareFingerprints(
             &(*fpstats).pastEvents,
             &(*fpstats).newEvents,
