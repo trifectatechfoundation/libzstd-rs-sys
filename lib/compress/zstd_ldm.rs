@@ -520,25 +520,21 @@ fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> size_t {
 /// Returns the number of bytes that match backwards from the end of `beforeMatch`,
 /// even with the backwards match spanning 2 different segments.
 ///
-/// On reaching the start of `beforeMatch`, start counting from `pExtDictEnd`
-unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
+/// On reaching the start of `beforeMatch`, start counting from the end of `extDict`
+fn ZSTD_ldm_countBackwardsMatch_2segments(
     input: &[u8],
     beforeMatch: &[u8],
-    pExtDictStart: *const u8,
-    pExtDictEnd: *const u8,
+    extDict: &[u8],
 ) -> size_t {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(input, beforeMatch);
-    if matchLength != beforeMatch.len() || beforeMatch.as_ptr() == pExtDictStart {
+    if matchLength != beforeMatch.len() || beforeMatch.as_ptr() == extDict.as_ptr() {
         // If backwards match is entirely in the extDict or prefix, immediately return
         return matchLength;
     }
 
     matchLength = matchLength.wrapping_add(ZSTD_ldm_countBackwardsMatch(
         &input[..input.len() - matchLength],
-        core::slice::from_raw_parts(
-            pExtDictStart,
-            pExtDictEnd.offset_from_unsigned(pExtDictStart),
-        ),
+        extDict,
     ));
     matchLength
 }
@@ -676,6 +672,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         core::ptr::null()
     };
     let lowPrefixPtr = base.wrapping_offset(dictLimit as isize);
+    let extDictSlice: &[u8] = if extDict {
+        core::slice::from_raw_parts(dictStart, dictEnd.addr() - dictStart.addr())
+    } else {
+        &[]
+    };
 
     // Input bounds
     let istart = src as *const u8;
@@ -793,8 +794,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         let backward = ZSTD_ldm_countBackwardsMatch_2segments(
                             beforeSplit,
                             beforeMatch,
-                            dictStart,
-                            dictEnd,
+                            extDictSlice,
                         );
 
                         (forward, backward)
