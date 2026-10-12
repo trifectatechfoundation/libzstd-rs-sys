@@ -41,8 +41,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
-    ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_hash32Ptr,
-    ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
+    ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_hash32Ptr, ZSTD_hashPtr,
+    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
 use crate::lib::polyfill::PointerExt;
@@ -494,7 +494,7 @@ unsafe fn ZSTD_insertBt1(
     let mut dummy32: u32 = 0;
     // windowLow is based on target because
     // we only need positions that will be in the window at the end of the tree update.
-    let windowLow = ZSTD_getLowestMatchIndex(ms, target, (*cParams).windowLog);
+    let windowLow = ms.get_lowest_match_index(target, (*cParams).windowLog);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
     let mut bestLength = 8;
     let mut nbCompares = 1u32 << (*cParams).searchLog;
@@ -647,7 +647,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     } else {
         curr.wrapping_sub(btMask)
     };
-    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, cParams.windowLog);
+    let windowLow = ms.get_lowest_match_index(curr, cParams.windowLog);
     let matchLow = if windowLow != 0 { windowLow } else { 1 };
     let mut smallerPtr = bt.offset((2 * (curr & btMask)) as isize);
     let mut largerPtr = bt.offset((2 * (curr & btMask)) as isize).add(1);

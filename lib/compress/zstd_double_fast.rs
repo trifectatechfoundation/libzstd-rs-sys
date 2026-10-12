@@ -8,9 +8,9 @@ use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DictTableLoadMethod, TableFillPurpose, ZSTD_comparePackedTags, ZSTD_count,
-    ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
-    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE,
-    REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
+    ZSTD_count_2segments, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check,
+    ZSTD_storeSeq, ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE,
+    ZSTD_SHORT_CACHE_TAG_BITS,
 };
 use crate::lib::zstd::ZSTD_compressionParameters;
 
@@ -936,7 +936,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
     let ilimit = iend.sub(8);
     let base = ms.window.base;
     let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
-    let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, cParams.windowLog);
+    let lowLimit = ms.get_lowest_match_index(endIndex, cParams.windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
     let prefixStartIndex = dictLimit.max(lowLimit);

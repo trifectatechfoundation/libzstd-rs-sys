@@ -39,8 +39,8 @@ use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::compress::zstd_compress_internal::{
     kSearchStrength, DedicatedDictSearch, DictMatchState, DictMode, DictModeMarker, ExtDict,
-    NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex,
-    ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE,
+    NoDict, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestPrefixIndex, ZSTD_hashPtr,
+    ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE,
     ZSTD_DUBT_UNSORTED_MARK,
 };
 use crate::lib::polyfill::PointerExt;
@@ -337,7 +337,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     let base = ms.window.base;
     let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
-    let windowLow = ZSTD_getLowestMatchIndex(ms, curr, cParams.windowLog);
+    let windowLow = ms.get_lowest_match_index(curr, cParams.windowLog);
 
     let bt = ms.chainTable;
     let btLog = (cParams.chainLog).wrapping_sub(1);
@@ -2434,7 +2434,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         let mut curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
 
         // check repCode
-        let windowLow = ZSTD_getLowestMatchIndex(ms, curr.wrapping_add(1), windowLog);
+        let windowLow = ms.get_lowest_match_index(curr.wrapping_add(1), windowLog);
         let repIndex = curr.wrapping_add(1).wrapping_sub(offset_1);
         let repBase = if repIndex < dictLimit { dictBase } else { base };
         let repMatch = repBase.wrapping_offset(repIndex as isize);
@@ -2502,7 +2502,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                         curr = curr.wrapping_add(1);
                         // check repCode
                         if offBase != 0 {
-                            let windowLow_0 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
+                            let windowLow_0 = ms.get_lowest_match_index(curr, windowLog);
                             let repIndex_0 = curr.wrapping_sub(offset_1);
                             let repBase_0 = if repIndex_0 < dictLimit {
                                 dictBase
@@ -2573,7 +2573,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                             curr = curr.wrapping_add(1);
                             // check repCode
                             if offBase != 0 {
-                                let windowLow_1 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
+                                let windowLow_1 = ms.get_lowest_match_index(curr, windowLog);
                                 let repIndex_1 = curr.wrapping_sub(offset_1);
                                 let repBase_1 = if repIndex_1 < dictLimit {
                                     dictBase
@@ -2686,7 +2686,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         // check immediate repcode
         while ip <= ilimit {
             let repCurrent = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
-            let windowLow_2 = ZSTD_getLowestMatchIndex(ms, repCurrent, windowLog);
+            let windowLow_2 = ms.get_lowest_match_index(repCurrent, windowLog);
             let repIndex_2 = repCurrent.wrapping_sub(offset_2);
             let repBase_2 = if repIndex_2 < dictLimit {
                 dictBase
