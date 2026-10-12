@@ -155,13 +155,13 @@ pub struct HUF_DecompressFastArgs<'a> {
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 
-unsafe fn HUF_initFastDStream(ip: *const u8) -> size_t {
-    let lastByte = *ip.add(7);
+fn HUF_initFastDStream(ip: [u8; 8]) -> u64 {
+    let lastByte = ip[7];
     let bitsConsumed = match lastByte.checked_ilog2() {
         Some(v) => 8 - v,
         None => 0,
     };
-    let value = MEM_readLEST(ip as *const core::ffi::c_void) | 1;
+    let value = u64::from_le_bytes(ip) | 1;
     value << bitsConsumed
 }
 
@@ -242,7 +242,13 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         // shifted in. After the lowest valid bit a 1 is
         // set, so that CountTrailingZeros(bits[]) can be used
         // to count how many bits we've consumed.
-        let bits = ip.map(|v| unsafe { HUF_initFastDStream(v) } as u64);
+        let ends = [
+            6 + length1,
+            6 + length1 + length2,
+            6 + length1 + length2 + length3,
+            src.len(),
+        ];
+        let bits = ends.map(|end| HUF_initFastDStream(*src[..end].last_chunk().unwrap()));
 
         // The decoders must be sure to never read beyond ilowest.
         // This is lower than iend[0], but allowing decoders to read
