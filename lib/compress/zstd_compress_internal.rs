@@ -81,14 +81,16 @@ pub(crate) fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
     (srcSize >> minlog).wrapping_add(2)
 }
 
-#[inline]
-pub(crate) fn ZSTD_window_init(window: &mut ZSTD_window_t) {
-    window.base = c" ".as_ptr() as *const u8;
-    window.dictBase = c" ".as_ptr() as *const u8;
-    window.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
-    window.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
-    window.nextSrc = (window.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
-    window.nbOverflowCorrections = 0;
+impl ZSTD_window_t {
+    #[inline]
+    pub(crate) fn init(&mut self) {
+        self.base = c" ".as_ptr() as *const u8;
+        self.dictBase = c" ".as_ptr() as *const u8;
+        self.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
+        self.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
+        self.nextSrc = (self.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
+        self.nbOverflowCorrections = 0;
+    }
 }
 
 /// Clears the window containing the history by simply setting it to empty.
