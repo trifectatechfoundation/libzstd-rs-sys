@@ -510,46 +510,35 @@ fn ZSTD_ldm_insertEntry(
     bucketOffsets[hash] = (offset.wrapping_add(1) & (1u32 << bucketSizeLog).wrapping_sub(1)) as u8;
 }
 
-/// Returns the number of bytes that match backwards before the end of `input` and pMatch.
-///
-/// We count only bytes where pMatch >= pBase.
-unsafe fn ZSTD_ldm_countBackwardsMatch(
-    input: &[u8],
-    mut pMatch: *const u8,
-    pMatchBase: *const u8,
-) -> size_t {
-    let mut matchLength = 0usize;
-    for &byte in input.iter().rev() {
-        if pMatch <= pMatchBase || byte != *pMatch.sub(1) {
-            break;
-        }
-        pMatch = pMatch.sub(1);
-        matchLength += 1;
-    }
-    matchLength
+/// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
+fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> size_t {
+    core::iter::zip(input.iter().rev(), beforeMatch.iter().rev())
+        .take_while(|(a, b)| a == b)
+        .count()
 }
 
-/// Returns the number of bytes that match backwards from pMatch,
+/// Returns the number of bytes that match backwards from the end of `beforeMatch`,
 /// even with the backwards match spanning 2 different segments.
 ///
-/// On reaching `pMatchBase`, start counting from mEnd
+/// On reaching the start of `beforeMatch`, start counting from `pExtDictEnd`
 unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     input: &[u8],
-    pMatch: *const u8,
-    pMatchBase: *const u8,
+    beforeMatch: &[u8],
     pExtDictStart: *const u8,
     pExtDictEnd: *const u8,
 ) -> size_t {
-    let mut matchLength = ZSTD_ldm_countBackwardsMatch(input, pMatch, pMatchBase);
-    if pMatch.sub(matchLength as usize) != pMatchBase || pMatchBase == pExtDictStart {
+    let mut matchLength = ZSTD_ldm_countBackwardsMatch(input, beforeMatch);
+    if matchLength != beforeMatch.len() || beforeMatch.as_ptr() == pExtDictStart {
         // If backwards match is entirely in the extDict or prefix, immediately return
         return matchLength;
     }
 
     matchLength = matchLength.wrapping_add(ZSTD_ldm_countBackwardsMatch(
         &input[..input.len() - matchLength],
-        pExtDictEnd,
-        pExtDictStart,
+        core::slice::from_raw_parts(
+            pExtDictStart,
+            pExtDictEnd.offset_from_unsigned(pExtDictStart),
+        ),
     ));
     matchLength
 }
@@ -797,10 +786,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                             continue;
                         }
 
+                        let beforeMatch = core::slice::from_raw_parts(
+                            lowMatchPtr,
+                            pMatch.addr() - lowMatchPtr.addr(),
+                        );
                         let backward = ZSTD_ldm_countBackwardsMatch_2segments(
                             beforeSplit,
-                            pMatch,
-                            lowMatchPtr,
+                            beforeMatch,
                             dictStart,
                             dictEnd,
                         );
@@ -814,8 +806,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                             continue;
                         }
 
-                        let backward =
-                            ZSTD_ldm_countBackwardsMatch(beforeSplit, pMatch, lowPrefixPtr);
+                        let beforeMatch = core::slice::from_raw_parts(
+                            lowPrefixPtr,
+                            pMatch.addr() - lowPrefixPtr.addr(),
+                        );
+                        let backward = ZSTD_ldm_countBackwardsMatch(beforeSplit, beforeMatch);
 
                         (forward, backward)
                     };
