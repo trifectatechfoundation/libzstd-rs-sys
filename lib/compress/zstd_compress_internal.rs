@@ -845,28 +845,27 @@ impl ZSTD_MatchState_t {
             withinWindow
         }
     }
+
+    /// Inspects the `matchState` and figures out what `dictMode` should be passed to the compressor.
+    #[inline]
+    pub(crate) unsafe fn dict_mode(&self) -> DictMode {
+        if self.window.has_ext_dict() {
+            DictMode::ExtDict
+        } else if !self.dictMatchState.is_null() {
+            if (*self.dictMatchState).dedicatedDictSearch != 0 {
+                DictMode::DedicatedDictSearch
+            } else {
+                DictMode::DictMatchState
+            }
+        } else {
+            DictMode::NoDict
+        }
+    }
 }
 
 #[inline]
 pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> bool {
     prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3
-}
-
-/// Inspects the provided matchState and figures out what dictMode
-/// should be passed to the compressor.
-#[inline]
-pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMode {
-    if ms.window.has_ext_dict() {
-        DictMode::ExtDict
-    } else if !ms.dictMatchState.is_null() {
-        if (*ms.dictMatchState).dedicatedDictSearch != 0 {
-            DictMode::DedicatedDictSearch
-        } else {
-            DictMode::DictMatchState
-        }
-    } else {
-        DictMode::NoDict
-    }
 }
 
 /// Setting this to true tells zstd to run the overflow correction code

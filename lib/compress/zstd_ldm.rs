@@ -66,8 +66,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, HASH_READ_SIZE,
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments, ZSTD_storeSeq,
+    HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -1100,11 +1100,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
 ) -> size_t {
     let cParams = &ms.cParams;
     let minMatch = cParams.minMatch;
-    let blockCompressor = ZSTD_selectBlockCompressor(
-        cParams.strategy,
-        useRowMatchFinder,
-        ZSTD_matchState_dictMode(ms),
-    );
+    let blockCompressor =
+        ZSTD_selectBlockCompressor(cParams.strategy, useRowMatchFinder, ms.dict_mode());
 
     // Input bounds
     let istart = src as *const u8;
