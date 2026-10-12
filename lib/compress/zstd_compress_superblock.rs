@@ -182,7 +182,7 @@ unsafe fn ZSTD_seqDecompressedSize(
     let mut matchLengthSum = 0usize;
     let mut litLengthSum = 0usize;
     for n in 0..nbSeqs {
-        let seqLen = ZSTD_getSequenceLength(seqStore, sequences.add(n));
+        let seqLen = ZSTD_getSequenceLength(seqStore, &*sequences.add(n));
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
     }
@@ -596,7 +596,7 @@ unsafe fn countLiterals(seqStore: &SeqStore_t, sp: *const SeqDef, seqCount: size
     let mut total = 0usize;
     for n in 0..seqCount {
         total =
-            total.wrapping_add((ZSTD_getSequenceLength(seqStore, sp.add(n))).litLength as size_t);
+            total.wrapping_add((ZSTD_getSequenceLength(seqStore, &*sp.add(n))).litLength as size_t);
     }
     total
 }
@@ -861,7 +861,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 ZSTD_updateRep(
                     &mut rep,
                     (*seq).offBase,
-                    (ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0,
+                    (ZSTD_getSequenceLength(seqStorePtr, &*seq)).litLength == 0,
                 );
                 seq = seq.add(1);
             }
