@@ -864,7 +864,7 @@ fn is_frame(src: &[u8]) -> bool {
         return true;
     }
 
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
+    if (magic & ZSTD_MAGIC_SKIPPABLE_MASK) == ZSTD_MAGIC_SKIPPABLE_START {
         return true;
     }
 
@@ -898,11 +898,7 @@ fn is_skippable_frame(src: &[u8]) -> bool {
     };
 
     let magic = u32::from_le_bytes([a, b, c, d]);
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
-        return true;
-    }
-
-    false
+    (magic & ZSTD_MAGIC_SKIPPABLE_MASK) == ZSTD_MAGIC_SKIPPABLE_START
 }
 
 fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error> {
