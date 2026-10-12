@@ -1000,7 +1000,7 @@ impl ZSTD_window_t {
         srcEnd: *const core::ffi::c_void,
     ) -> bool {
         if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY
-            && ZSTD_window_canOverflowCorrect(*self, cycleLog, maxDist, loadedDictEnd, src)
+            && self.can_overflow_correct(cycleLog, maxDist, loadedDictEnd, src)
         {
             return true;
         }
@@ -1008,28 +1008,30 @@ impl ZSTD_window_t {
         let curr = srcEnd.addr() - self.base.addr();
         curr > ZSTD_CURRENT_MAX
     }
+
+    /// Returns true if the indices are large enough for overflow correction
+    /// to work correctly without impacting compression ratio.
+    #[inline]
+    fn can_overflow_correct(
+        &self,
+        cycleLog: u32,
+        maxDist: u32,
+        loadedDictEnd: u32,
+        src: *const core::ffi::c_void,
+    ) -> bool {
+        let cycleSize = 1u32 << cycleLog;
+        let curr = src.addr().wrapping_sub(self.base.addr()) as u32;
+        let minIndexToOverflowCorrect = cycleSize
+            .wrapping_add(maxDist.max(cycleSize))
+            .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
+        let adjustment = (self.nbOverflowCorrections).wrapping_add(1);
+        let adjustedIndex = minIndexToOverflowCorrect
+            .wrapping_mul(adjustment)
+            .max(minIndexToOverflowCorrect);
+        let indexLargeEnough = curr > adjustedIndex;
+        let dictionaryInvalidated = curr > maxDist.wrapping_add(loadedDictEnd);
+        indexLargeEnough && dictionaryInvalidated
+    }
 }
 
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
-
-#[inline]
-fn ZSTD_window_canOverflowCorrect(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-) -> bool {
-    let cycleSize = 1u32 << cycleLog;
-    let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
-    let minIndexToOverflowCorrect = cycleSize
-        .wrapping_add(maxDist.max(cycleSize))
-        .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-    let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
-    let adjustedIndex = minIndexToOverflowCorrect
-        .wrapping_mul(adjustment)
-        .max(minIndexToOverflowCorrect);
-    let indexLargeEnough = curr > adjustedIndex;
-    let dictionaryInvalidated = curr > maxDist.wrapping_add(loadedDictEnd);
-    indexLargeEnough && dictionaryInvalidated
-}
