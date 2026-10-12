@@ -6344,7 +6344,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     }
                 }
                 (*info).numActualFrames += 1;
-            } else if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
+            } else if (magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK) == ZSTD_MAGIC_SKIPPABLE_START {
                 let frameSize =
                     MEM_readLE32(headerBuffer.as_mut_ptr().offset(4) as *const core::ffi::c_void);
                 let seek = (8u32.wrapping_add(frameSize) as size_t).wrapping_sub(numBytesRead)
