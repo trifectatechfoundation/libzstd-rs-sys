@@ -133,6 +133,28 @@ impl SeqStore_t {
             self.sequences.offset_from_unsigned(self.sequencesStart),
         )
     }
+
+    /// The code tables are only filled in by `ZSTD_seqToCodes`.
+    pub(crate) unsafe fn llCodes(&self) -> &[u8] {
+        core::slice::from_raw_parts(
+            self.llCode,
+            self.sequences.offset_from_unsigned(self.sequencesStart),
+        )
+    }
+
+    pub(crate) unsafe fn mlCodes(&self) -> &[u8] {
+        core::slice::from_raw_parts(
+            self.mlCode,
+            self.sequences.offset_from_unsigned(self.sequencesStart),
+        )
+    }
+
+    pub(crate) unsafe fn ofCodes(&self) -> &[u8] {
+        core::slice::from_raw_parts(
+            self.ofCode,
+            self.sequences.offset_from_unsigned(self.sequencesStart),
+        )
+    }
 }
 
 pub type SeqDef = SeqDef_s;
@@ -3824,10 +3846,6 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
-    let ofCodeTable: *const u8 = seqStorePtr.ofCode;
-    let llCodeTable: *const u8 = seqStorePtr.llCode;
-    let mlCodeTable: *const u8 = seqStorePtr.mlCode;
-
     // convert length/distances into codes
     let mut stats = ZSTD_symbolEncodingTypeStats_t {
         longOffsets: ZSTD_seqToCodes(seqStorePtr),
@@ -3839,7 +3857,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
-        core::slice::from_raw_parts(llCodeTable, nbSeq),
+        seqStorePtr.llCodes(),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -3868,7 +3886,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.LLtype,
         count,
         max,
-        llCodeTable,
+        seqStorePtr.llCodes().as_ptr(),
         nbSeq,
         &LL_defaultNorm,
         LL_defaultNormLog,
@@ -3887,7 +3905,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
-        core::slice::from_raw_parts(ofCodeTable, nbSeq),
+        seqStorePtr.ofCodes(),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -3922,7 +3940,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.Offtype,
         count,
         max_0,
-        ofCodeTable,
+        seqStorePtr.ofCodes().as_ptr(),
         nbSeq,
         &OF_defaultNorm,
         OF_defaultNormLog,
@@ -3941,7 +3959,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_1,
-        core::slice::from_raw_parts(mlCodeTable, nbSeq),
+        seqStorePtr.mlCodes(),
         entropyWorkspace,
         entropyWkspSize,
     )
@@ -3970,7 +3988,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.MLtype,
         count,
         max_1,
-        mlCodeTable,
+        seqStorePtr.mlCodes().as_ptr(),
         nbSeq,
         &ML_defaultNorm,
         ML_defaultNormLog,
@@ -4014,9 +4032,6 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let count = entropyWorkspace as *mut core::ffi::c_uint;
     let sequences = seqStorePtr.seqs();
     let nbSeq = sequences.len();
-    let ofCodeTable: *const u8 = seqStorePtr.ofCode;
-    let llCodeTable: *const u8 = seqStorePtr.llCode;
-    let mlCodeTable: *const u8 = seqStorePtr.mlCode;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
@@ -4099,11 +4114,11 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &nextEntropy.fse.matchlengthCTable,
-        core::slice::from_raw_parts(mlCodeTable, nbSeq),
+        seqStorePtr.mlCodes(),
         &nextEntropy.fse.offcodeCTable,
-        core::slice::from_raw_parts(ofCodeTable, nbSeq),
+        seqStorePtr.ofCodes(),
         &nextEntropy.fse.litlengthCTable,
-        core::slice::from_raw_parts(llCodeTable, nbSeq),
+        seqStorePtr.llCodes(),
         sequences,
         longOffsets,
         bmi2,
@@ -5235,15 +5250,14 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         (*zc).tmpWkspSize,
     )?;
 
-    let nbSeq = (seqStore.sequences).offset_from_unsigned(seqStore.sequencesStart);
     Ok(ZSTD_estimateBlockSize(
         core::slice::from_raw_parts(
             seqStore.litStart,
             (seqStore.lit).offset_from_unsigned(seqStore.litStart),
         ),
-        core::slice::from_raw_parts(seqStore.ofCode, nbSeq),
-        core::slice::from_raw_parts(seqStore.llCode, nbSeq),
-        core::slice::from_raw_parts(seqStore.mlCode, nbSeq),
+        seqStore.ofCodes(),
+        seqStore.llCodes(),
+        seqStore.mlCodes(),
         &(*(*zc).blockState.nextCBlock).entropy,
         entropyMetadata,
         (*zc).tmpWorkspace,
