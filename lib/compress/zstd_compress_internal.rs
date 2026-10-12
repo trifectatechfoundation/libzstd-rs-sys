@@ -856,14 +856,6 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
     prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3
 }
 
-impl ZSTD_window_t {
-    /// Returns true if the window has a non-empty extDict.
-    #[inline]
-    pub(crate) fn has_ext_dict(&self) -> bool {
-        self.lowLimit < self.dictLimit
-    }
-}
-
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
@@ -881,7 +873,19 @@ pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMod
     }
 }
 
+/// Setting this to true tells zstd to run the overflow correction code
+/// much more frequently. This is very inefficient, and should only be
+/// used for tests and fuzzers.
+pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: bool = false;
+pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
+
 impl ZSTD_window_t {
+    /// Returns true if the window has a non-empty extDict.
+    #[inline]
+    pub(crate) fn has_ext_dict(&self) -> bool {
+        self.lowLimit < self.dictLimit
+    }
+
     /// Updates the window by appending [src, src + srcSize) to the window.
     ///
     /// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
@@ -986,14 +990,7 @@ impl ZSTD_window_t {
             }
         }
     }
-}
 
-/// Setting this to true tells zstd to run the overflow correction code
-/// much more frequently. This is very inefficient, and should only be
-/// used for tests and fuzzers.
-pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: bool = false;
-
-impl ZSTD_window_t {
     /// Returns true if the indices are getting too large and overflow protection is needed.
     #[inline]
     pub(crate) fn needs_overflow_correction(
@@ -1038,5 +1035,3 @@ impl ZSTD_window_t {
         indexLargeEnough && dictionaryInvalidated
     }
 }
-
-pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
