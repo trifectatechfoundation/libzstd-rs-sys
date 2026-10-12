@@ -200,21 +200,6 @@ pub(super) fn FSE_readNCount_bmi2(
     }
 }
 
-pub(crate) unsafe fn FSE_readNCount(
-    normalizedCounter: &mut [i16],
-    maxSVPtr: &mut u8,
-    tableLogPtr: &mut core::ffi::c_uint,
-    headerBuffer: *const core::ffi::c_void,
-    hbSize: size_t,
-) -> Result<size_t, Error> {
-    FSE_readNCount_slice(
-        normalizedCounter,
-        maxSVPtr,
-        tableLogPtr,
-        core::slice::from_raw_parts(headerBuffer.cast(), hbSize),
-    )
-}
-
 pub(crate) fn FSE_readNCount_slice(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut u8,
