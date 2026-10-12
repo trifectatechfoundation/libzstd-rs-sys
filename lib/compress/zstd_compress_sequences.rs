@@ -253,7 +253,7 @@ pub unsafe fn ZSTD_buildCTable(
     type_0: SymbolEncodingType,
     count: &mut [core::ffi::c_uint],
     max: u8,
-    codeTable: *const u8,
+    codeTable: &[u8],
     nbSeq: size_t,
     defaultNorm: &[i16],
     defaultNormLog: u32,
@@ -271,7 +271,7 @@ pub unsafe fn ZSTD_buildCTable(
             if dstCapacity == 0 {
                 return Err(Error::dstSize_tooSmall);
             }
-            *op = *codeTable;
+            *op = codeTable[0];
             Ok(1)
         }
         SymbolEncodingType::Repeat => {
@@ -293,7 +293,7 @@ pub unsafe fn ZSTD_buildCTable(
             let wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
             let mut nbSeq_1 = nbSeq;
             let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
-            let lastCode = usize::from(*codeTable.add(nbSeq.wrapping_sub(1)));
+            let lastCode = usize::from(codeTable[nbSeq - 1]);
             if count[lastCode] > 1 {
                 count[lastCode] = count[lastCode].wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
