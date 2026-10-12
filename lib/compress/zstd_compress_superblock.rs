@@ -669,10 +669,11 @@ unsafe fn ZSTD_compressSubBlock_multi(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> Result<size_t, Error> {
-    let sstart: *const SeqDef = seqStorePtr.sequencesStart;
-    let send: *const SeqDef = seqStorePtr.sequences;
-    let mut sp = sstart; // tracks progresses within seqStorePtr->sequences
-    let nbSeqs = send.offset_from_unsigned(sstart);
+    let nbSeqs = seqStorePtr
+        .sequences
+        .offset_from_unsigned(seqStorePtr.sequencesStart);
+    let sequences = core::slice::from_raw_parts(seqStorePtr.sequencesStart, nbSeqs);
+    let mut sp = sequences; // tracks progresses within seqStorePtr->sequences
     let lstart: *const u8 = seqStorePtr.litStart;
     let lend: *const u8 = seqStorePtr.lit;
     let nbLiterals = lend.offset_from_unsigned(lstart);
@@ -728,27 +729,27 @@ unsafe fn ZSTD_compressSubBlock_multi(
         for n in 0..nbSubBlocks.wrapping_sub(1) {
             // determine nb of sequences for current sub-block + nbLiterals from next sequence
             let seqCount = sizeBlockSequences(
-                core::slice::from_raw_parts(sp, send.offset_from_unsigned(sp)),
+                sp,
                 avgBlockBudget.wrapping_add(blockBudgetSupp),
                 avgLitCost,
                 avgSeqCost,
                 n == 0,
             );
             // if reached last sequence : break to last sub-block (simplification)
-            if sp.add(seqCount) == send {
+            if seqCount == sp.len() {
                 break;
             }
 
             // compress sub-block
             let mut litEntropyWritten = false;
             let mut seqEntropyWritten = false;
-            let litSize = countLiterals(seqStorePtr, sp, seqCount);
+            let litSize = countLiterals(seqStorePtr, sp.as_ptr(), seqCount);
             let decompressedSize =
-                ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, false);
+                ZSTD_seqDecompressedSize(seqStorePtr, sp.as_ptr(), seqCount, litSize, false);
             let cSize = ZSTD_compressSubBlock(
                 &(*nextCBlock).entropy,
                 entropyMetadata,
-                sp,
+                sp.as_ptr(),
                 seqCount,
                 &literals[..litSize],
                 &llCodes[..seqCount],
@@ -780,7 +781,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 if seqEntropyWritten {
                     writeSeqEntropy = false;
                 }
-                sp = sp.add(seqCount);
+                sp = &sp[seqCount..];
                 blockBudgetSupp = 0;
             }
             // otherwise : do not compress yet, coalesce current sub-block with following one
@@ -791,12 +792,13 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut litEntropyWritten = false;
     let mut seqEntropyWritten = false;
     let litSize_0 = literals.len();
-    let seqCount_0 = send.offset_from_unsigned(sp);
-    let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, true);
+    let seqCount_0 = sp.len();
+    let decompressedSize_0 =
+        ZSTD_seqDecompressedSize(seqStorePtr, sp.as_ptr(), seqCount_0, litSize_0, true);
     let cSize_0 = ZSTD_compressSubBlock(
         &(*nextCBlock).entropy,
         entropyMetadata,
-        sp,
+        sp.as_ptr(),
         seqCount_0,
         literals,
         llCodes,
@@ -825,7 +827,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         if seqEntropyWritten {
             writeSeqEntropy = false;
         }
-        sp = sp.add(seqCount_0);
+        sp = &sp[seqCount_0..];
     }
 
     if writeLitEntropy {
@@ -854,16 +856,14 @@ unsafe fn ZSTD_compressSubBlock_multi(
         op = op.add(cSize_1);
 
         // We have to regenerate the repcodes because we've skipped some sequences
-        if sp < send {
+        if !sp.is_empty() {
             let mut rep = (*prevCBlock).rep;
-            let mut seq = sstart;
-            while seq < sp {
+            for seq in &sequences[..nbSeqs - sp.len()] {
                 ZSTD_updateRep(
                     &mut rep,
-                    (*seq).offBase,
-                    (ZSTD_getSequenceLength(seqStorePtr, &*seq)).litLength == 0,
+                    seq.offBase,
+                    (ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0,
                 );
-                seq = seq.add(1);
             }
             (*nextCBlock).rep = rep;
         }
