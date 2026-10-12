@@ -67,7 +67,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, HASH_READ_SIZE,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -969,10 +969,9 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         // NOTE: Because of dictionaries + sequence splitting we MUST make sure
         // that any offset used is valid at the END of the sequence, since it may
         // be split into two sequences. This condition holds when using
-        // ZSTD_window_enforceMaxDist(), but if we move to checking offsets
+        // ZSTD_window_t::enforce_max_dist, but if we move to checking offsets
         // against maxDist directly, we'll have to carefully handle that case.
-        ZSTD_window_enforceMaxDist(
-            &mut ldmState.window,
+        ldmState.window.enforce_max_dist(
             chunkEnd as *const core::ffi::c_void,
             maxDist,
             &mut ldmState.loadedDictEnd,

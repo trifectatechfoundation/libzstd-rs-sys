@@ -930,60 +930,60 @@ impl ZSTD_window_t {
 
         contiguous
     }
-}
 
-/// Updates lowLimit so that:
-///    (srcEnd - base) - lowLimit == maxDist + loadedDictEnd
-///
-/// It ensures index is valid as long as index >= lowLimit.
-/// This must be called before a block compression call.
-///
-/// loadedDictEnd is only defined if a dictionary is in use for current compression.
-/// As the name implies, loadedDictEnd represents the index at end of dictionary.
-/// The value lies within context's referential, it can be directly compared to blockEndIdx.
-///
-/// If loadedDictEndPtr is NULL, no dictionary is in use, and we use loadedDictEnd == 0.
-/// If loadedDictEndPtr is not NULL, we set it to zero after updating lowLimit.
-/// This is because dictionaries are allowed to be referenced fully
-/// as long as the last byte of the dictionary is in the window.
-/// Once input has progressed beyond window size, dictionary cannot be referenced anymore.
-///
-/// In normal dict mode, the dictionary lies between lowLimit and dictLimit.
-/// In dictMatchState mode, lowLimit and dictLimit are the same,
-/// and the dictionary is below them.
-/// forceWindow and dictMatchState are therefore incompatible.
-#[inline]
-pub(crate) fn ZSTD_window_enforceMaxDist(
-    window: &mut ZSTD_window_t,
-    blockEnd: *const core::ffi::c_void,
-    maxDist: u32,
-    loadedDictEndPtr: &mut u32,
-    dictMatchStatePtr: Option<&mut *const ZSTD_MatchState_t>,
-) {
-    let blockEndIdx =
-        (blockEnd as *const u8).wrapping_offset_from(window.base) as core::ffi::c_long as u32;
-    let loadedDictEnd = *loadedDictEndPtr;
+    /// Updates lowLimit so that:
+    ///    (srcEnd - base) - lowLimit == maxDist + loadedDictEnd
+    ///
+    /// It ensures index is valid as long as index >= lowLimit.
+    /// This must be called before a block compression call.
+    ///
+    /// loadedDictEnd is only defined if a dictionary is in use for current compression.
+    /// As the name implies, loadedDictEnd represents the index at end of dictionary.
+    /// The value lies within context's referential, it can be directly compared to blockEndIdx.
+    ///
+    /// If loadedDictEndPtr is NULL, no dictionary is in use, and we use loadedDictEnd == 0.
+    /// If loadedDictEndPtr is not NULL, we set it to zero after updating lowLimit.
+    /// This is because dictionaries are allowed to be referenced fully
+    /// as long as the last byte of the dictionary is in the window.
+    /// Once input has progressed beyond window size, dictionary cannot be referenced anymore.
+    ///
+    /// In normal dict mode, the dictionary lies between lowLimit and dictLimit.
+    /// In dictMatchState mode, lowLimit and dictLimit are the same,
+    /// and the dictionary is below them.
+    /// forceWindow and dictMatchState are therefore incompatible.
+    #[inline]
+    pub(crate) fn enforce_max_dist(
+        &mut self,
+        blockEnd: *const core::ffi::c_void,
+        maxDist: u32,
+        loadedDictEndPtr: &mut u32,
+        dictMatchStatePtr: Option<&mut *const ZSTD_MatchState_t>,
+    ) {
+        let blockEndIdx =
+            (blockEnd as *const u8).wrapping_offset_from(self.base) as core::ffi::c_long as u32;
+        let loadedDictEnd = *loadedDictEndPtr;
 
-    // - When there is no dictionary: loadedDictEnd == 0.
-    //   In which case, the test (blockEndIdx > maxDist) is merely to avoid
-    //   overflowing next operation `newLowLimit = blockEndIdx - maxDist`.
-    // - When there is a standard dictionary:
-    //   Index referential is copied from the dictionary,
-    //   which means it starts from 0.
-    //   In which case, loadedDictEnd == dictSize,
-    //   and it makes sense to compare `blockEndIdx > maxDist + dictSize`
-    //   since `blockEndIdx` also starts from zero.
-    // - When there is an attached dictionary:
-    //   loadedDictEnd is expressed within the referential of the context,
-    //   so it can be directly compared against blockEndIdx.
-    if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
-        let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
-        window.lowLimit = Ord::max(window.lowLimit, newLowLimit);
-        window.dictLimit = Ord::max(window.dictLimit, window.lowLimit);
-        // On reaching window size, dictionaries are invalidated
-        *loadedDictEndPtr = 0;
-        if let Some(dictMatchStatePtr) = dictMatchStatePtr {
-            *dictMatchStatePtr = core::ptr::null();
+        // - When there is no dictionary: loadedDictEnd == 0.
+        //   In which case, the test (blockEndIdx > maxDist) is merely to avoid
+        //   overflowing next operation `newLowLimit = blockEndIdx - maxDist`.
+        // - When there is a standard dictionary:
+        //   Index referential is copied from the dictionary,
+        //   which means it starts from 0.
+        //   In which case, loadedDictEnd == dictSize,
+        //   and it makes sense to compare `blockEndIdx > maxDist + dictSize`
+        //   since `blockEndIdx` also starts from zero.
+        // - When there is an attached dictionary:
+        //   loadedDictEnd is expressed within the referential of the context,
+        //   so it can be directly compared against blockEndIdx.
+        if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
+            let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
+            self.lowLimit = Ord::max(self.lowLimit, newLowLimit);
+            self.dictLimit = Ord::max(self.dictLimit, self.lowLimit);
+            // On reaching window size, dictionaries are invalidated
+            *loadedDictEndPtr = 0;
+            if let Some(dictMatchStatePtr) = dictMatchStatePtr {
+                *dictMatchStatePtr = core::ptr::null();
+            }
         }
     }
 }
