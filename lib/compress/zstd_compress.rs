@@ -671,7 +671,7 @@ use libc::{ptrdiff_t, size_t};
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
-use crate::lib::common::entropy_common::FSE_readNCount_slice;
+use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{
@@ -6494,7 +6494,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     pos += hufHeaderSize;
 
     let mut offcodeLog: core::ffi::c_uint = 0;
-    let offcodeHeaderSize = FSE_readNCount_slice(
+    let offcodeHeaderSize = FSE_readNCount(
         &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
@@ -6520,7 +6520,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    let matchlengthHeaderSize = FSE_readNCount_slice(
+    let matchlengthHeaderSize = FSE_readNCount(
         &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
@@ -6546,7 +6546,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    let litlengthHeaderSize = FSE_readNCount_slice(
+    let litlengthHeaderSize = FSE_readNCount(
         &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
