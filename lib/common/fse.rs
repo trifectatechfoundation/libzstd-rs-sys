@@ -147,9 +147,8 @@ impl<'a> FSE_CState_t<'a> {
         let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
         let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
 
-        // the state table starts at the third `u16` of `ct`
-        let index = 2 + (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
-        state.value = FSE_readU16(ct, index as usize) as ptrdiff_t;
+        let index = (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
+        state.value = state.stateTable[index as usize] as ptrdiff_t;
         state
     }
 }
