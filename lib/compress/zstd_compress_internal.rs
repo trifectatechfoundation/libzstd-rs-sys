@@ -131,7 +131,7 @@ impl ZSTD_window_t {
             .wrapping_add(maxDist.max(cycleSize));
         let correction = curr.wrapping_sub(newCurrent);
 
-        if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
+        if !ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY {
             // Loose bound, should be around 1<<29 (see above)
             assert!(correction > 1 << 28);
         }
@@ -983,7 +983,10 @@ pub(crate) fn ZSTD_window_enforceMaxDist(
     }
 }
 
-pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
+/// Setting this to true tells zstd to run the overflow correction code
+/// much more frequently. This is very inefficient, and should only be
+/// used for tests and fuzzers.
+pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: bool = false;
 
 #[inline]
 pub(crate) fn ZSTD_window_needOverflowCorrection(
@@ -994,7 +997,7 @@ pub(crate) fn ZSTD_window_needOverflowCorrection(
     src: *const core::ffi::c_void,
     srcEnd: *const core::ffi::c_void,
 ) -> bool {
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0
+    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY
         && ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src)
     {
         return true;
