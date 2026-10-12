@@ -11,10 +11,10 @@ use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
     COVER_dictSelectionError, COVER_segment_t, COVER_selectDict, COVER_warnOnSmallCorpus,
 };
+use crate::lib::dictBuilder::zdict::finalize_dictionary;
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
 };
-use crate::lib::zdict::ZDICT_finalizeDictionary;
 use crate::ZDICT_params_t;
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -574,21 +574,23 @@ fn train_from_buffer_fastcover(
 
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
+    let samplesSizes = &samplesSizes[..nbFinalizeSamples as usize];
+    let samples = &samples[..samplesSizes.iter().sum()];
     let customDictContentSize = dict_tail.len();
     let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
     let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
     let dictionarySize = unsafe {
-        ZDICT_finalizeDictionary(
+        finalize_dictionary(
             dictBuffer,
             dictBufferCapacity,
             customDictContent,
             customDictContentSize,
-            samples.as_ptr() as *const core::ffi::c_void,
-            samplesSizes.as_ptr(),
-            nbFinalizeSamples,
+            samples,
+            samplesSizes,
             coverParams.zParams,
         )
-    };
+    }
+    .unwrap_or_else(|err| err.to_error_code());
     if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize);
     }
