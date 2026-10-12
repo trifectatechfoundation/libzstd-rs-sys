@@ -122,11 +122,11 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
 
     let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE / 4);
 
+    let dict = core::slice::from_raw_parts(dictBuffer as *const u8, dictSize);
     match ZSTD_loadCEntropy(
         bs.as_mut_ptr(),
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        dictBuffer,
-        dictSize,
+        dict,
     ) {
         Ok(size) => size,
         Err(err) => err.to_error_code(),
