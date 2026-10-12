@@ -8129,8 +8129,6 @@ unsafe fn ZSTD_compressStream_generic(
                     break;
                 }
                 let inputBuffered = (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered;
-                let cDst;
-                let cSize_0: size_t;
                 let mut oSize = oend.offset_from_unsigned(op);
                 let iSize = if inputBuffered {
                     ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
@@ -8139,17 +8137,17 @@ unsafe fn ZSTD_compressStream_generic(
                 } else {
                     (*zcs).blockSizeMax
                 };
-                if oSize >= ZSTD_compressBound(iSize)
+                let cDst = if oSize >= ZSTD_compressBound(iSize)
                     || (*zcs).appliedParams.outBufferMode == ZSTD_bm_stable
                 {
-                    cDst = op as *mut core::ffi::c_void; // compress into output buffer, to skip flush stage
+                    op as *mut core::ffi::c_void // compress into output buffer, to skip flush stage
                 } else {
-                    cDst = (*zcs).outBuff as *mut core::ffi::c_void;
                     oSize = (*zcs).outBuffSize;
-                }
-                if inputBuffered {
+                    (*zcs).outBuff as *mut core::ffi::c_void
+                };
+                let cSize = if inputBuffered {
                     let lastBlock = flushMode == ZSTD_e_end && ip == iend;
-                    cSize_0 = if lastBlock {
+                    let cSize = if lastBlock {
                         ZSTD_compressEnd_internal(
                             zcs,
                             cDst,
@@ -8178,9 +8176,10 @@ unsafe fn ZSTD_compressStream_generic(
                         assert!((*zcs).inBuffTarget <= (*zcs).inBuffSize);
                     }
                     (*zcs).inToCompress = (*zcs).inBuffPos;
+                    cSize
                 } else {
-                    let lastBlock_0 = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
-                    cSize_0 = if lastBlock_0 {
+                    let lastBlock = flushMode == ZSTD_e_end && ip.add(iSize) == iend;
+                    let cSize = if lastBlock {
                         ZSTD_compressEnd_internal(
                             zcs,
                             cDst,
@@ -8202,19 +8201,20 @@ unsafe fn ZSTD_compressStream_generic(
                     if !ip.is_null() {
                         ip = ip.add(iSize);
                     }
-                    (*zcs).frameEnded = u32::from(lastBlock_0);
-                    if lastBlock_0 {
+                    (*zcs).frameEnded = u32::from(lastBlock);
+                    if lastBlock {
                         assert_eq!(ip, iend);
                     }
-                }
+                    cSize
+                };
                 if cDst == op as *mut core::ffi::c_void {
-                    op = op.add(cSize_0);
+                    op = op.add(cSize);
                     if (*zcs).frameEnded != 0 {
                         ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
                         break;
                     }
                 } else {
-                    (*zcs).outBuffContentSize = cSize_0;
+                    (*zcs).outBuffContentSize = cSize;
                     (*zcs).outBuffFlushedSize = 0;
                     (*zcs).streamStage = StreamStage::Flush;
                 }
