@@ -284,7 +284,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         ofCode.as_ptr(),
         &fseTables.litlengthCTable,
         llCode.as_ptr(),
-        sequences.as_ptr(),
+        sequences,
         nbSeq,
         longOffsets,
         bmi2,
