@@ -562,16 +562,11 @@ unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
 unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    src: &[u8],
     ct: &[FSE_CTable],
 ) -> size_t {
-    let istart = src as *const u8;
-    let iend = istart.add(srcSize);
-    let mut ip = iend;
-
     // init
-    if srcSize <= 2 {
+    if src.len() <= 2 {
         return 0;
     }
 
@@ -579,55 +574,59 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
         return 0; // not enough space available to write a bitstream
     };
 
-    let (mut CState1, mut CState2) = if srcSize & 1 != 0 {
-        ip = ip.sub(1);
-        let mut CState1 = FSE_CState_t::new2(ct, *ip as u32);
-        ip = ip.sub(1);
-        let CState2 = FSE_CState_t::new2(ct, *ip as u32);
-        ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        FSE_flushBits::<FAST>(&mut bitC);
-        (CState1, CState2)
-    } else {
-        ip = ip.sub(1);
-        let CState2 = FSE_CState_t::new2(ct, *ip as u32);
-        ip = ip.sub(1);
-        let CState1 = FSE_CState_t::new2(ct, *ip as u32);
-        (CState1, CState2)
+    let (mut rest, mut CState1, mut CState2) = match src {
+        [rest @ .., c, b, a] if src.len() & 1 != 0 => {
+            let mut CState1 = FSE_CState_t::new2(ct, u32::from(*a));
+            let CState2 = FSE_CState_t::new2(ct, u32::from(*b));
+            FSE_encodeSymbol(&mut bitC, &mut CState1, u32::from(*c));
+            FSE_flushBits::<FAST>(&mut bitC);
+            (rest, CState1, CState2)
+        }
+        [rest @ .., a, b] => {
+            let CState2 = FSE_CState_t::new2(ct, u32::from(*b));
+            let CState1 = FSE_CState_t::new2(ct, u32::from(*a));
+            (rest, CState1, CState2)
+        }
+        _ => unreachable!(),
     };
 
     // join to mod 4
-    srcSize = srcSize.wrapping_sub(2);
-    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && srcSize & 2 != 0 {
-        ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-        ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && rest.len() & 2 != 0 {
+        let [prefix @ .., b, a] = rest else {
+            unreachable!()
+        };
+        FSE_encodeSymbol(&mut bitC, &mut CState2, u32::from(*a));
+        FSE_encodeSymbol(&mut bitC, &mut CState1, u32::from(*b));
         FSE_flushBits::<FAST>(&mut bitC);
+        rest = prefix;
     }
 
     // 2 or 4 encoding per loop
-    while ip > istart {
-        ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-
-        // this test must be static
-        if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 } {
+    // this test must be static
+    if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 } {
+        let (remainder, chunks) = rest.as_rchunks::<4>();
+        debug_assert!(remainder.is_empty());
+        for &[d, c, b, a] in chunks.iter().rev() {
+            FSE_encodeSymbol(&mut bitC, &mut CState2, u32::from(a));
+            FSE_encodeSymbol(&mut bitC, &mut CState1, u32::from(b));
+            FSE_encodeSymbol(&mut bitC, &mut CState2, u32::from(c));
+            FSE_encodeSymbol(&mut bitC, &mut CState1, u32::from(d));
             FSE_flushBits::<FAST>(&mut bitC);
         }
+    } else {
+        let (remainder, chunks) = rest.as_rchunks::<2>();
+        debug_assert!(remainder.is_empty());
+        for &[b, a] in chunks.iter().rev() {
+            FSE_encodeSymbol(&mut bitC, &mut CState2, u32::from(a));
 
-        ip = ip.sub(1);
-        FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+            // this test must be static
+            if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 } {
+                FSE_flushBits::<FAST>(&mut bitC);
+            }
 
-        // this test must be static
-        if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 } {
-            ip = ip.sub(1);
-            FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-            ip = ip.sub(1);
-            FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
+            FSE_encodeSymbol(&mut bitC, &mut CState1, u32::from(b));
+            FSE_flushBits::<FAST>(&mut bitC);
         }
-
-        FSE_flushBits::<FAST>(&mut bitC);
     }
 
     FSE_flushCState(&mut bitC, &CState2);
@@ -638,19 +637,14 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 pub(crate) unsafe fn FSE_compress_usingCTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     ct: &[FSE_CTable],
 ) -> size_t {
-    let fast = dstSize
-        >= srcSize
-            .wrapping_add(srcSize >> 7)
-            .wrapping_add(4)
-            .wrapping_add(size_of::<size_t>());
+    let fast = dstSize >= src.len() + (src.len() >> 7) + 4 + size_of::<size_t>();
 
     if fast {
-        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, srcSize, ct)
+        FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, ct)
     } else {
-        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src, srcSize, ct)
+        FSE_compress_usingCTable_generic::<false>(dst, dstSize, src, ct)
     }
 }
