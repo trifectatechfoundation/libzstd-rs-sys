@@ -9328,7 +9328,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
 ///
 /// - 0 on success, with no long length detected.
 /// - > 0 if there is one long length (> 65535), indicating the position and type.
-pub unsafe fn convertSequences_noRepcodes(
+pub fn convertSequences_noRepcodes(
     dstSeqs: &mut [MaybeUninit<SeqDef>],
     inSeqs: &[ZSTD_Sequence],
 ) -> size_t {
