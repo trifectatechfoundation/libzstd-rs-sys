@@ -22,9 +22,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_referenceExternalSequences, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t,
     ZSTD_writeLastEmptyBlock,
 };
-use crate::lib::compress::zstd_compress_internal::{
-    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_update,
-};
+use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
@@ -650,7 +648,7 @@ unsafe fn ZSTDMT_serialState_reset(
         serialState.ldmState.loadedDictEnd = 0;
         if dictSize > 0 && dictContentType == ZSTD_dct_rawContent {
             let dictEnd = (dict as *const u8).add(dictSize);
-            ZSTD_window_update(&mut serialState.ldmState.window, dict, dictSize, false);
+            serialState.ldmState.window.update(dict, dictSize, false);
             ZSTD_ldm_fillHashTable(
                 &mut serialState.ldmState,
                 core::slice::from_raw_parts(dict.cast::<u8>(), dictSize),
@@ -713,12 +711,10 @@ unsafe fn ZSTDMT_serialState_genSequences(
     if (*serialState).nextJobID == jobID {
         // It is now our turn, do any processing necessary
         if (*serialState).params.ldmParams.enableLdm == ParamSwitch::Enable {
-            ZSTD_window_update(
-                &mut (*serialState).ldmState.window,
-                src.start,
-                src.size,
-                false,
-            );
+            (*serialState)
+                .ldmState
+                .window
+                .update(src.start, src.size, false);
             ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
                 seqStore,

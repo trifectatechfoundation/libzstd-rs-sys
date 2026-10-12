@@ -881,53 +881,55 @@ pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: &ZSTD_MatchState_t) -> DictMod
     }
 }
 
-/// Updates the window by appending [src, src + srcSize) to the window.
-///
-/// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
-/// extDict. Handles overlap of the prefix and extDict.
-///
-/// Returns `true` if the segment is contiguous.
-#[inline]
-pub(crate) fn ZSTD_window_update(
-    window: &mut ZSTD_window_t,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
-    forceNonContiguous: bool,
-) -> bool {
-    let ip = src as *const u8;
-    let mut contiguous = true;
-    if srcSize == 0 {
-        return contiguous;
-    }
-
-    // Check if blocks follow each other
-    if src != window.nextSrc as *const core::ffi::c_void || forceNonContiguous {
-        // not contiguous
-        let distanceFromBase = (window.nextSrc).wrapping_offset_from(window.base) as usize;
-        window.lowLimit = window.dictLimit;
-        window.dictLimit = distanceFromBase as u32;
-        window.dictBase = window.base;
-        window.base = ip.wrapping_sub(distanceFromBase);
-        if (window.dictLimit).wrapping_sub(window.lowLimit) < HASH_READ_SIZE as u32 {
-            window.lowLimit = window.dictLimit;
+impl ZSTD_window_t {
+    /// Updates the window by appending [src, src + srcSize) to the window.
+    ///
+    /// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
+    /// extDict. Handles overlap of the prefix and extDict.
+    ///
+    /// Returns `true` if the segment is contiguous.
+    #[inline]
+    pub(crate) fn update(
+        &mut self,
+        src: *const core::ffi::c_void,
+        srcSize: usize,
+        forceNonContiguous: bool,
+    ) -> bool {
+        let ip = src as *const u8;
+        let mut contiguous = true;
+        if srcSize == 0 {
+            return contiguous;
         }
-        contiguous = false;
-    }
-    window.nextSrc = ip.wrapping_add(srcSize);
 
-    // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
-    if (ip.wrapping_add(srcSize) > (window.dictBase).wrapping_offset(window.lowLimit as isize))
-        && (ip < (window.dictBase).wrapping_offset(window.dictLimit as isize))
-    {
-        let highInputIdx = ip
-            .wrapping_add(srcSize)
-            .addr()
-            .wrapping_sub(window.dictBase.addr());
-        let lowLimitMax = (highInputIdx as u32).min(window.dictLimit);
-        window.lowLimit = lowLimitMax;
-    }
+        // Check if blocks follow each other
+        if src != self.nextSrc as *const core::ffi::c_void || forceNonContiguous {
+            // not contiguous
+            let distanceFromBase = (self.nextSrc).wrapping_offset_from(self.base) as usize;
+            self.lowLimit = self.dictLimit;
+            self.dictLimit = distanceFromBase as u32;
+            self.dictBase = self.base;
+            self.base = ip.wrapping_sub(distanceFromBase);
+            if (self.dictLimit).wrapping_sub(self.lowLimit) < HASH_READ_SIZE as u32 {
+                self.lowLimit = self.dictLimit;
+            }
+            contiguous = false;
+        }
+        self.nextSrc = ip.wrapping_add(srcSize);
 
-    contiguous
+        // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
+        if (ip.wrapping_add(srcSize) > (self.dictBase).wrapping_offset(self.lowLimit as isize))
+            && (ip < (self.dictBase).wrapping_offset(self.dictLimit as isize))
+        {
+            let highInputIdx = ip
+                .wrapping_add(srcSize)
+                .addr()
+                .wrapping_sub(self.dictBase.addr());
+            let lowLimitMax = (highInputIdx as u32).min(self.dictLimit);
+            self.lowLimit = lowLimitMax;
+        }
+
+        contiguous
+    }
 }
 
 /// Updates lowLimit so that:
