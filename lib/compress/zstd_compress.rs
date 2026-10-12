@@ -4734,16 +4734,25 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     sequences: *mut ZSTD_Sequence,
     seqsSize: size_t,
 ) -> size_t {
+    let sequences: &mut [ZSTD_Sequence] = if sequences.is_null() {
+        &mut []
+    } else {
+        core::slice::from_raw_parts_mut(sequences, seqsSize)
+    };
+    ZSTD_mergeBlockDelimiters_slice(sequences)
+}
+
+fn ZSTD_mergeBlockDelimiters_slice(sequences: &mut [ZSTD_Sequence]) -> size_t {
     let mut out = 0usize;
-    for in_0 in 0..seqsSize {
-        if (*sequences.add(in_0)).offset == 0 && (*sequences.add(in_0)).matchLength == 0 {
-            if in_0 != seqsSize.wrapping_sub(1) {
-                let fresh6 = &mut (*sequences.add(in_0.wrapping_add(1))).litLength;
-                *fresh6 = (*fresh6).wrapping_add((*sequences.add(in_0)).litLength);
+    for in_0 in 0..sequences.len() {
+        let seq = sequences[in_0];
+        if seq.offset == 0 && seq.matchLength == 0 {
+            if let Some(next) = sequences.get_mut(in_0 + 1) {
+                next.litLength = (next.litLength).wrapping_add(seq.litLength);
             }
         } else {
-            *sequences.add(out) = *sequences.add(in_0);
-            out = out.wrapping_add(1);
+            sequences[out] = seq;
+            out += 1;
         }
     }
     out
