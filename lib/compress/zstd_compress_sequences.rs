@@ -337,9 +337,13 @@ unsafe fn ZSTD_encodeSequences_body(
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
     sequences: &[SeqDef],
-    nbSeq: size_t,
     longOffsets: bool,
 ) -> Result<size_t, Error> {
+    let nbSeq = sequences.len();
+    let mlCodeTable = &mlCodeTable[..nbSeq];
+    let ofCodeTable = &ofCodeTable[..nbSeq];
+    let llCodeTable = &llCodeTable[..nbSeq];
+
     let mut blockStream = BIT_CStream_t::new(dst, dstCapacity)?;
 
     // first symbols
@@ -463,7 +467,6 @@ unsafe fn ZSTD_encodeSequences_default(
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
     sequences: &[SeqDef],
-    nbSeq: size_t,
     longOffsets: bool,
 ) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
@@ -476,7 +479,6 @@ unsafe fn ZSTD_encodeSequences_default(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }
@@ -492,7 +494,6 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
     sequences: &[SeqDef],
-    nbSeq: size_t,
     longOffsets: bool,
 ) -> Result<size_t, Error> {
     ZSTD_encodeSequences_body(
@@ -505,7 +506,6 @@ unsafe fn ZSTD_encodeSequences_bmi2(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }
@@ -520,7 +520,6 @@ pub unsafe fn ZSTD_encodeSequences(
     CTable_LitLength: &[FSE_CTable; 329],
     llCodeTable: &[u8],
     sequences: &[SeqDef],
-    nbSeq: size_t,
     longOffsets: bool,
     bmi2: bool,
 ) -> Result<size_t, Error> {
@@ -535,7 +534,6 @@ pub unsafe fn ZSTD_encodeSequences(
             CTable_LitLength,
             llCodeTable,
             sequences,
-            nbSeq,
             longOffsets,
         );
     }
@@ -549,7 +547,6 @@ pub unsafe fn ZSTD_encodeSequences(
         CTable_LitLength,
         llCodeTable,
         sequences,
-        nbSeq,
         longOffsets,
     )
 }

@@ -285,7 +285,6 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         &fseTables.litlengthCTable,
         llCode,
         sequences,
-        nbSeq,
         longOffsets,
         bmi2,
     )?;
