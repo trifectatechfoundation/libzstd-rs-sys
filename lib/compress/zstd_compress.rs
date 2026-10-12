@@ -4094,7 +4094,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         &nextEntropy.fse.matchlengthCTable,
         core::slice::from_raw_parts(mlCodeTable, nbSeq),
         &nextEntropy.fse.offcodeCTable,
-        ofCodeTable,
+        core::slice::from_raw_parts(ofCodeTable, nbSeq),
         &nextEntropy.fse.litlengthCTable,
         llCodeTable,
         core::slice::from_raw_parts(sequences, nbSeq),
