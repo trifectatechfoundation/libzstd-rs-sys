@@ -23,8 +23,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_clear, ZSTD_window_hasExtDict,
-    ZSTD_window_update,
+    prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_hasExtDict, ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -769,7 +768,7 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
         (*serialState).nextJobID = jobID.wrapping_add(1);
         (*serialState).cond.notify_all();
         let _guard = (*serialState).ldmWindowMutex.lock().unwrap();
-        ZSTD_window_clear(&mut (*serialState).ldmWindow);
+        (*serialState).ldmWindow.clear();
         (*serialState).ldmWindowCond.notify_one();
     }
 }

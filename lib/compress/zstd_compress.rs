@@ -739,11 +739,10 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_entropyCTables_t,
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict,
     ZSTD_matchState_dictMode, ZSTD_match_t, ZSTD_minGain, ZSTD_noCompressBlock, ZSTD_prefixDict,
-    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_clear,
-    ZSTD_window_correctOverflow, ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection,
-    ZSTD_window_update, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, REPCODE3_TO_OFFBASE,
-    ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX, ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_correctOverflow,
+    ZSTD_window_enforceMaxDist, ZSTD_window_needOverflowCorrection, ZSTD_window_update,
+    HASH_READ_SIZE, REPCODE1_TO_OFFBASE, REPCODE3_TO_OFFBASE, ZSTD_CHUNKSIZE_MAX, ZSTD_CURRENT_MAX,
+    ZSTD_DUBT_UNSORTED_MARK, ZSTD_SHORT_CACHE_TAG_BITS, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -3023,7 +3022,7 @@ pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState
 /// Invalidate all the matches in the match finder tables.
 /// Requires nextSrc and base to be set (can be NULL).
 fn ZSTD_invalidateMatchState(ms: &mut ZSTD_MatchState_t) {
-    ZSTD_window_clear(&mut ms.window);
+    ms.window.clear();
     ms.nextToUpdate = ms.window.dictLimit;
     ms.loadedDictEnd = 0;
     ms.opt.litLengthSum = 0; // force reset of btopt stats
@@ -3471,7 +3470,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         if (*cctx).blockState.matchState.window.dictLimit < cdictEnd {
             (*cctx).blockState.matchState.window.nextSrc =
                 ((*cctx).blockState.matchState.window.base).wrapping_offset(cdictEnd as isize);
-            ZSTD_window_clear(&mut (*cctx).blockState.matchState.window);
+            (*cctx).blockState.matchState.window.clear();
         }
         // loadedDictEnd is expressed within the referential of the active context
         (*cctx).blockState.matchState.loadedDictEnd =
