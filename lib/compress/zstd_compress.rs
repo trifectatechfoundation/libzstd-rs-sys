@@ -4092,7 +4092,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         &nextEntropy.fse.matchlengthCTable,
-        mlCodeTable,
+        core::slice::from_raw_parts(mlCodeTable, nbSeq),
         &nextEntropy.fse.offcodeCTable,
         ofCodeTable,
         &nextEntropy.fse.litlengthCTable,
