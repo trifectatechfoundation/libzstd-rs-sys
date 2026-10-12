@@ -3,7 +3,6 @@ use core::ptr;
 use core::ffi::{c_char, c_int, c_uint, c_void};
 use libc::size_t;
 
-use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
 pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
@@ -22,13 +21,13 @@ pub const KNUTH: c_uint = 0x9e3779b9;
 /// for `hashLog` == 8, just take the byte, no hashing.
 /// The speed of this method relies on compile-time constant propagation
 #[inline(always)]
-unsafe fn hash2(p: *const c_void, hashLog: c_uint) -> c_uint {
+fn hash2(p: [u8; HASHLENGTH], hashLog: c_uint) -> c_uint {
     debug_assert!(hashLog >= 8);
     if hashLog == 8 {
-        return *(p as *const u8) as u32;
+        return u32::from(p[0]);
     }
     debug_assert!(hashLog <= HASHLOG_MAX);
-    (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> 32u32.wrapping_sub(hashLog)
+    u32::from(u16::from_ne_bytes(p)).wrapping_mul(KNUTH) >> 32u32.wrapping_sub(hashLog)
 }
 
 #[repr(C)]
@@ -48,25 +47,19 @@ unsafe fn initStats(fpstats: *mut FPStats) {
 }
 
 #[inline(always)]
-unsafe fn addEvents_generic(
-    fp: &mut Fingerprint,
-    src: &[u8],
-    samplingRate: size_t,
-    hashLog: c_uint,
-) {
-    let p = src.as_ptr();
+fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: size_t, hashLog: c_uint) {
     let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
 
     debug_assert!(src.len() >= HASHLENGTH);
     for n in (0..limit).step_by(samplingRate) {
-        fp.events[hash2(p.add(n) as *const c_void, hashLog) as usize] += 1;
+        fp.events[hash2(*src[n..].first_chunk().unwrap(), hashLog) as usize] += 1;
     }
 
     fp.nbEvents += limit / samplingRate;
 }
 
 #[inline(always)]
-unsafe fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
+fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
     fp: &mut Fingerprint,
     src: &[u8],
 ) {
@@ -129,7 +122,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
 ) -> size_t {
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
-    static records_fs: [unsafe fn(&mut Fingerprint, &[u8]) -> (); 4] = [
+    static records_fs: [fn(&mut Fingerprint, &[u8]) -> (); 4] = [
         recordFingerprint_generic::<43, 8>,
         recordFingerprint_generic::<11, 9>,
         recordFingerprint_generic::<5, 10>,
