@@ -24,7 +24,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     prime8bytes, CParamMode, DictTableLoadMethod, ZSTD_window_clear, ZSTD_window_hasExtDict,
-    ZSTD_window_init, ZSTD_window_update,
+    ZSTD_window_update,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -618,7 +618,7 @@ unsafe fn ZSTDMT_serialState_reset(
         // Size the seq pool tables
         ZSTDMT_setNbSeq(seqPool, ZSTD_ldm_getMaxNbSeq(params.ldmParams, jobSize));
         // Reset the window
-        ZSTD_window_init(&mut serialState.ldmState.window);
+        serialState.ldmState.window.init();
         // Resize tables and output space if necessary.
         if (serialState.ldmState.hashTable).is_null()
             || serialState.params.ldmParams.hashLog < hashLog
