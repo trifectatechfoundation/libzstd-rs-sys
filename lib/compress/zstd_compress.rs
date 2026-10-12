@@ -6584,9 +6584,10 @@ pub unsafe fn ZSTD_loadCEntropy(
     if dict[pos..].len() < 12 {
         return Err(Error::dictionary_corrupted);
     }
-    (*bs).rep[0] = MEM_readLE32(dict[pos..].as_ptr() as *const core::ffi::c_void);
-    (*bs).rep[1] = MEM_readLE32(dict[pos + 4..].as_ptr() as *const core::ffi::c_void);
-    (*bs).rep[2] = MEM_readLE32(dict[pos + 8..].as_ptr() as *const core::ffi::c_void);
+    let reps = dict[pos..pos + 12].as_chunks::<4>().0;
+    for (rep, bytes) in (*bs).rep.iter_mut().zip(reps) {
+        *rep = u32::from_le_bytes(*bytes);
+    }
     pos += 12;
 
     let dictContentSize = dict[pos..].len();
