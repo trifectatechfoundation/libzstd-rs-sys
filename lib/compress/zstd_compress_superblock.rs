@@ -664,10 +664,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> Result<size_t, Error> {
-    let nbSeqs = seqStorePtr
-        .sequences
-        .offset_from_unsigned(seqStorePtr.sequencesStart);
-    let sequences = core::slice::from_raw_parts(seqStorePtr.sequencesStart, nbSeqs);
+    let sequences = seqStorePtr.seqs();
+    let nbSeqs = sequences.len();
     let mut sp = sequences; // tracks progresses within seqStorePtr->sequences
     let lstart: *const u8 = seqStorePtr.litStart;
     let lend: *const u8 = seqStorePtr.lit;
