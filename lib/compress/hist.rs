@@ -25,8 +25,6 @@ pub unsafe fn HIST_count_simple(
     maxSymbolValuePtr: &mut u8,
     src: &[u8],
 ) -> core::ffi::c_uint {
-    let mut ip = src.as_ptr();
-    let end = ip.add(src.len());
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
 
@@ -40,9 +38,8 @@ pub unsafe fn HIST_count_simple(
         return 0;
     }
 
-    while ip < end {
-        *count.add(usize::from(*ip)) += 1;
-        ip = ip.add(1);
+    for &byte in src {
+        *count.add(usize::from(byte)) += 1;
     }
 
     // `src` is non-empty, so (assuming no symbol exceeds `maxSymbolValue`, which this
