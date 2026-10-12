@@ -100,59 +100,59 @@ impl ZSTD_window_t {
         self.lowLimit = end;
         self.dictLimit = end;
     }
-}
 
-/// Reduces the indices to protect from index overflow.
-///
-/// The least significant cycleLog bits of the indices must remain the same,
-/// which may be 0. Every index up to maxDist in the past must be valid.
-///
-/// # Returns
-///
-/// The correction made to the indices, which must be applied to every stored index.
-#[inline]
-pub(crate) fn ZSTD_window_correctOverflow(
-    window: &mut ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    src: *const core::ffi::c_void,
-) -> u32 {
-    let cycleSize = 1u32 << cycleLog;
-    let cycleMask = cycleSize.wrapping_sub(1);
-    let curr = src.addr().wrapping_sub(window.base.addr()) as u32;
-    let currentCycle = curr & cycleMask;
-    // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
-    let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        cycleSize.max(2)
-    } else {
-        0
-    };
-    let newCurrent = currentCycle
-        .wrapping_add(currentCycleCorrection)
-        .wrapping_add(maxDist.max(cycleSize));
-    let correction = curr.wrapping_sub(newCurrent);
+    /// Reduces the indices to protect from index overflow.
+    ///
+    /// The least significant cycleLog bits of the indices must remain the same,
+    /// which may be 0. Every index up to maxDist in the past must be valid.
+    ///
+    /// # Returns
+    ///
+    /// The correction made to the indices, which must be applied to every stored index.
+    #[inline]
+    pub(crate) fn correct_overflow(
+        &mut self,
+        cycleLog: u32,
+        maxDist: u32,
+        src: *const core::ffi::c_void,
+    ) -> u32 {
+        let cycleSize = 1u32 << cycleLog;
+        let cycleMask = cycleSize.wrapping_sub(1);
+        let curr = src.addr().wrapping_sub(self.base.addr()) as u32;
+        let currentCycle = curr & cycleMask;
+        // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
+        let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
+            cycleSize.max(2)
+        } else {
+            0
+        };
+        let newCurrent = currentCycle
+            .wrapping_add(currentCycleCorrection)
+            .wrapping_add(maxDist.max(cycleSize));
+        let correction = curr.wrapping_sub(newCurrent);
 
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
-        // Loose bound, should be around 1<<29 (see above)
-        assert!(correction > 1 << 28);
+        if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
+            // Loose bound, should be around 1<<29 (see above)
+            assert!(correction > 1 << 28);
+        }
+
+        self.base = self.base.wrapping_add(correction as usize);
+        self.dictBase = self.dictBase.wrapping_add(correction as usize);
+        if self.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
+            self.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
+        } else {
+            self.lowLimit = self.lowLimit.wrapping_sub(correction);
+        }
+        if self.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
+            self.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
+        } else {
+            self.dictLimit = self.dictLimit.wrapping_sub(correction);
+        }
+
+        self.nbOverflowCorrections = self.nbOverflowCorrections.wrapping_add(1);
+
+        correction
     }
-
-    window.base = window.base.wrapping_add(correction as usize);
-    window.dictBase = window.dictBase.wrapping_add(correction as usize);
-    if window.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.lowLimit = window.lowLimit.wrapping_sub(correction);
-    }
-    if window.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-        window.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
-    } else {
-        window.dictLimit = window.dictLimit.wrapping_sub(correction);
-    }
-
-    window.nbOverflowCorrections = window.nbOverflowCorrections.wrapping_add(1);
-
-    correction
 }
 
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;

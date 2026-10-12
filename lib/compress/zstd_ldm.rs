@@ -67,9 +67,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictTableLoadMethod, TableFillPurpose, ZSTD_count, ZSTD_count_2segments,
-    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_correctOverflow,
-    ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
-    HASH_READ_SIZE,
+    ZSTD_matchState_dictMode, ZSTD_storeSeq, ZSTD_window_enforceMaxDist, ZSTD_window_hasExtDict,
+    ZSTD_window_needOverflowCorrection, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -950,8 +949,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkEnd as *const core::ffi::c_void,
         ) {
             let ldmHSize = 1usize << params.hashLog;
-            let correction = ZSTD_window_correctOverflow(
-                &mut ldmState.window,
+            let correction = ldmState.window.correct_overflow(
                 0,
                 maxDist,
                 chunkStart as *const core::ffi::c_void,
