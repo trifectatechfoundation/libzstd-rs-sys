@@ -1022,40 +1022,39 @@ impl HUF_CStream_t {
         self.bitPos[0] += self.bitPos[1];
         debug_assert!((self.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     }
-}
 
-/// Flushes the bits in the bit container @ index 0.
-///
-/// # Parameters
-///
-/// * `kFast` - If kFast is set then we must know a-priori that
-///   the bit container will not overflow.
-///
-/// # Postconditions
-///
-/// bitPos will be < 8.
-#[inline(always)]
-unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: bool) {
-    /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
-    let nbBits = bitC.bitPos[0] & 0xff;
-    let nbBytes = nbBits >> 3;
-    /* The top nbBits bits of bitContainer are the ones we need. */
-    let bitContainer = bitC.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
-    /* Mask bitPos to account for the bytes we consumed. */
-    bitC.bitPos[0] &= 7;
-    debug_assert!(nbBits > 0);
-    debug_assert!(nbBits <= size_t::BITS as usize);
-    debug_assert!(bitC.ptr <= bitC.endPtr);
-    MEM_writeLEST(bitC.ptr as *mut c_void, bitContainer);
-    bitC.ptr = (bitC.ptr).add(nbBytes);
-    debug_assert!(!kFast || bitC.ptr <= bitC.endPtr);
-    if !kFast && bitC.ptr > bitC.endPtr {
-        bitC.ptr = bitC.endPtr;
+    /// Flushes the bits in the bit container @ index 0.
+    ///
+    /// # Parameters
+    ///
+    /// * `kFast` - If kFast is set then we must know a-priori that
+    ///   the bit container will not overflow.
+    ///
+    /// # Postconditions
+    ///
+    /// bitPos will be < 8.
+    #[inline(always)]
+    unsafe fn flush_bits(&mut self, kFast: bool) {
+        // The upper bits of bitPos are noisy, so we must mask by 0xFF.
+        let nbBits = self.bitPos[0] & 0xff;
+        let nbBytes = nbBits >> 3;
+        // The top nbBits bits of bitContainer are the ones we need.
+        let bitContainer = self.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
+        // Mask bitPos to account for the bytes we consumed.
+        self.bitPos[0] &= 7;
+        debug_assert!(nbBits > 0);
+        debug_assert!(nbBits <= size_t::BITS as usize);
+        debug_assert!(self.ptr <= self.endPtr);
+        MEM_writeLEST(self.ptr as *mut c_void, bitContainer);
+        self.ptr = (self.ptr).add(nbBytes);
+        debug_assert!(!kFast || self.ptr <= self.endPtr);
+        if !kFast && self.ptr > self.endPtr {
+            self.ptr = self.endPtr;
+        }
+        // bitContainer doesn't need to be modified because the leftover
+        // bits are already the top bitPos bits. And we don't care about
+        // noise in the lower values.
     }
-    /* bitContainer doesn't need to be modified because the leftover
-     * bits are already the top bitPos bits. And we don't care about
-     * noise in the lower values.
-     */
 }
 
 /// # Returns
@@ -1073,7 +1072,7 @@ fn HUF_endMark() -> HUF_CElt {
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     bitC.add_bits(HUF_endMark(), false, false);
-    HUF_flushBits(bitC, false);
+    bitC.flush_bits(false);
     let nbBits = bitC.bitPos[0] & 0xff;
     if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
@@ -1107,7 +1106,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
         for &byte in rem.iter().rev() {
             HUF_encodeSymbol(bitC, byte as u32, ct, false, false);
         }
-        HUF_flushBits(bitC, kFastFlush);
+        bitC.flush_bits(kFastFlush);
     }
 
     let (pairs, single) = blocks.as_chunks::<2>();
@@ -1118,7 +1117,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
             HUF_encodeSymbol(bitC, block[K_UNROLL - u] as u32, ct, false, true);
         }
         HUF_encodeSymbol(bitC, block[0] as u32, ct, false, kLastFast);
-        HUF_flushBits(bitC, kFastFlush);
+        bitC.flush_bits(kFastFlush);
     }
 
     for [lo, hi] in pairs.iter().rev() {
@@ -1127,7 +1126,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
             HUF_encodeSymbol(bitC, hi[K_UNROLL - u] as u32, ct, false, true);
         }
         HUF_encodeSymbol(bitC, hi[0] as u32, ct, false, kLastFast);
-        HUF_flushBits(bitC, kFastFlush);
+        bitC.flush_bits(kFastFlush);
         /* Encode K_UNROLL symbols into the bitstream @ index 1.
          * This allows us to start filling the bit container
          * without any data dependencies.
@@ -1139,7 +1138,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
         HUF_encodeSymbol(bitC, lo[0] as u32, ct, true, kLastFast);
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
         bitC.merge_index_1();
-        HUF_flushBits(bitC, kFastFlush);
+        bitC.flush_bits(kFastFlush);
     }
 }
 
