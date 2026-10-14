@@ -1005,12 +1005,12 @@ impl HUF_CStream_t {
         // so we must not be overwriting bits that have already been
         // inserted into the bit container.
     }
-}
 
-#[inline(always)]
-fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
-    bitC.bitContainer[1] = 0;
-    bitC.bitPos[1] = 0;
+    #[inline(always)]
+    fn zero_index_1(&mut self) {
+        self.bitContainer[1] = 0;
+        self.bitPos[1] = 0;
+    }
 }
 
 /// Merges the bit container @ index 1 into the bit container @ index 0
@@ -1132,7 +1132,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
          * This allows us to start filling the bit container
          * without any data dependencies.
          */
-        HUF_zeroIndex1(bitC);
+        bitC.zero_index_1();
         for u in 1..K_UNROLL {
             HUF_encodeSymbol(bitC, lo[K_UNROLL - u] as u32, ct, true, true);
         }
