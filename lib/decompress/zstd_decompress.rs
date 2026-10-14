@@ -516,36 +516,33 @@ impl ZSTD_DDictHashSet {
         );
         Ok(())
     }
-}
 
-/// Fetches a [`ZSTD_DDict`] with the given `dictID`.
-///
-/// # Returns
-///
-/// - the [`ZSTD_DDict`] with the requested `dictID`
-/// - `NULL` if no such dictionary exists
-unsafe fn ZSTD_DDictHashSet_getDDict(
-    hashSet: &mut ZSTD_DDictHashSet,
-    dictID: u32,
-) -> *const ZSTD_DDict {
-    let mut idx = hashSet.get_index(dictID);
-    let idxRangeMask = hashSet.ddictPtrTableSize - 1;
-    loop {
-        let currDictID = match hashSet.as_slice()[idx].as_ref() {
-            Some(ddict) => ddict.dictID as size_t,
-            None => 0,
-        };
+    /// Fetches a [`ZSTD_DDict`] with the given `dictID`.
+    ///
+    /// # Returns
+    ///
+    /// - the [`ZSTD_DDict`] with the requested `dictID`
+    /// - `NULL` if no such dictionary exists
+    unsafe fn get_ddict(&mut self, dictID: u32) -> *const ZSTD_DDict {
+        let mut idx = self.get_index(dictID);
+        let idxRangeMask = self.ddictPtrTableSize - 1;
+        loop {
+            let currDictID = match self.as_slice()[idx].as_ref() {
+                Some(ddict) => ddict.dictID as size_t,
+                None => 0,
+            };
 
-        if currDictID == dictID as size_t || currDictID == 0 {
-            // currDictID == 0 implies a NULL ddict entry
-            break;
+            if currDictID == dictID as size_t || currDictID == 0 {
+                // currDictID == 0 implies a NULL ddict entry
+                break;
+            }
+
+            idx &= idxRangeMask; // loop back to the start of the table when we reach the end
+            idx += 1;
         }
 
-        idx &= idxRangeMask; // loop back to the start of the table when we reach the end
-        idx += 1;
+        self.as_slice()[idx]
     }
-
-    hashSet.as_slice()[idx]
 }
 
 /// Allocates space for and returns a ddict hash set.
@@ -821,7 +818,10 @@ fn ZSTD_DCtx_selectFrameDDict(dctx: &mut ZSTD_DCtx) {
     if !dctx.ddict.is_null() {
         // FIXME: make safe
         let frameDDict = unsafe {
-            ZSTD_DDictHashSet_getDDict(dctx.ddictSet.as_mut().unwrap(), dctx.fParams.dictID)
+            dctx.ddictSet
+                .as_mut()
+                .unwrap()
+                .get_ddict(dctx.fParams.dictID)
         };
         if !frameDDict.is_null() {
             unsafe { ZSTD_clearDict(dctx) };
