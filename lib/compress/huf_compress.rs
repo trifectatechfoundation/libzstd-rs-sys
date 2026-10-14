@@ -171,34 +171,42 @@ unsafe fn HUF_compressWeights(
     Ok(op.offset_from_unsigned(ostart))
 }
 
-fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
+const fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
     elt & 0xff
 }
 
-fn HUF_getNbBitsFast(elt: HUF_CElt) -> size_t {
+const fn HUF_getNbBitsFast(elt: HUF_CElt) -> size_t {
     elt
 }
 
-fn HUF_getValue(elt: HUF_CElt) -> size_t {
+const fn HUF_getValue(elt: HUF_CElt) -> size_t {
     elt & !0xff
 }
 
-fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
+const fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
     elt
 }
 
-fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: size_t) {
+const fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: size_t) {
     debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
     *elt = nbBits;
 }
 
-fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
+const fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
-        debug_assert_eq!(value >> nbBits, 0);
+        debug_assert!(value >> nbBits == 0);
         *elt |= value << (HUF_CElt::BITS as usize - nbBits);
     }
 }
+
+/// The Huffman stream end mark: A 1-bit value = 1.
+const HUF_END_MARK: HUF_CElt = {
+    let mut endMark: HUF_CElt = 0;
+    HUF_setNbBits(&mut endMark, 1);
+    HUF_setValue(&mut endMark, 1);
+    endMark
+};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1059,19 +1067,9 @@ impl HUF_CStream_t {
 
 /// # Returns
 ///
-/// The Huffman stream end mark: A 1-bit value = 1.
-fn HUF_endMark() -> HUF_CElt {
-    let mut endMark: HUF_CElt = 0;
-    HUF_setNbBits(&mut endMark, 1);
-    HUF_setValue(&mut endMark, 1);
-    endMark
-}
-
-/// # Returns
-///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
-    bitC.add_bits(HUF_endMark(), false, false);
+    bitC.add_bits(HUF_END_MARK, false, false);
     bitC.flush_bits(false);
     let nbBits = bitC.bitPos[0] & 0xff;
     if bitC.ptr >= bitC.endPtr {
