@@ -1006,22 +1006,22 @@ impl HUF_CStream_t {
         // inserted into the bit container.
     }
 
+    /// Zeros the bit container @ index 1.
     #[inline(always)]
     fn zero_index_1(&mut self) {
         self.bitContainer[1] = 0;
         self.bitPos[1] = 0;
     }
-}
 
-/// Merges the bit container @ index 1 into the bit container @ index 0
-/// and zeros the bit container @ index 1.
-#[inline(always)]
-fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
-    debug_assert!((bitC.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
-    bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xff;
-    bitC.bitContainer[0] |= bitC.bitContainer[1];
-    bitC.bitPos[0] += bitC.bitPos[1];
-    debug_assert!((bitC.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+    /// Merges the bit container @ index 1 into the bit container @ index 0.
+    #[inline(always)]
+    fn merge_index_1(&mut self) {
+        debug_assert!((self.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
+        self.bitContainer[0] >>= self.bitPos[1] & 0xff;
+        self.bitContainer[0] |= self.bitContainer[1];
+        self.bitPos[0] += self.bitPos[1];
+        debug_assert!((self.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+    }
 }
 
 /// Flushes the bits in the bit container @ index 0.
@@ -1138,7 +1138,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
         }
         HUF_encodeSymbol(bitC, lo[0] as u32, ct, true, kLastFast);
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
-        HUF_mergeIndex1(bitC);
+        bitC.merge_index_1();
         HUF_flushBits(bitC, kFastFlush);
     }
 }
