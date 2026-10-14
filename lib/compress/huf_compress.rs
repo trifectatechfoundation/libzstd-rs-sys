@@ -1076,17 +1076,11 @@ impl HUF_CStream_t {
         }
         (self.ptr).offset_from_unsigned(self.startPtr) + size_t::from(nbBits > 0)
     }
-}
 
-#[inline(always)]
-fn HUF_encodeSymbol(
-    bitCPtr: &mut HUF_CStream_t,
-    symbol: u32,
-    CTable: &SymbolTable,
-    idx: bool,
-    fast: bool,
-) {
-    bitCPtr.add_bits(CTable[symbol as usize], idx, fast);
+    #[inline(always)]
+    fn encode_symbol(&mut self, symbol: u8, CTable: &SymbolTable, idx: bool, fast: bool) {
+        self.add_bits(CTable[usize::from(symbol)], idx, fast);
+    }
 }
 
 #[inline(always)]
@@ -1102,7 +1096,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
     /* Join to K_UNROLL */
     if !rem.is_empty() {
         for &byte in rem.iter().rev() {
-            HUF_encodeSymbol(bitC, byte as u32, ct, false, false);
+            bitC.encode_symbol(byte, ct, false, false);
         }
         bitC.flush_bits(kFastFlush);
     }
@@ -1112,18 +1106,18 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
     /* Join to 2 * K_UNROLL */
     if let [block] = single {
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(bitC, block[K_UNROLL - u] as u32, ct, false, true);
+            bitC.encode_symbol(block[K_UNROLL - u], ct, false, true);
         }
-        HUF_encodeSymbol(bitC, block[0] as u32, ct, false, kLastFast);
+        bitC.encode_symbol(block[0], ct, false, kLastFast);
         bitC.flush_bits(kFastFlush);
     }
 
     for [lo, hi] in pairs.iter().rev() {
         /* Encode K_UNROLL symbols into the bitstream @ index 0. */
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(bitC, hi[K_UNROLL - u] as u32, ct, false, true);
+            bitC.encode_symbol(hi[K_UNROLL - u], ct, false, true);
         }
-        HUF_encodeSymbol(bitC, hi[0] as u32, ct, false, kLastFast);
+        bitC.encode_symbol(hi[0], ct, false, kLastFast);
         bitC.flush_bits(kFastFlush);
         /* Encode K_UNROLL symbols into the bitstream @ index 1.
          * This allows us to start filling the bit container
@@ -1131,9 +1125,9 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop<const K_UNROLL: usize>(
          */
         bitC.zero_index_1();
         for u in 1..K_UNROLL {
-            HUF_encodeSymbol(bitC, lo[K_UNROLL - u] as u32, ct, true, true);
+            bitC.encode_symbol(lo[K_UNROLL - u], ct, true, true);
         }
-        HUF_encodeSymbol(bitC, lo[0] as u32, ct, true, kLastFast);
+        bitC.encode_symbol(lo[0], ct, true, kLastFast);
         /* Merge bitstream @ index 1 into the bitstream @ index 0 */
         bitC.merge_index_1();
         bitC.flush_bits(kFastFlush);
