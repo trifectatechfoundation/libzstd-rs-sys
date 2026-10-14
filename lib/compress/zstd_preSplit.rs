@@ -115,12 +115,12 @@ fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
 pub const CHUNKSIZE: c_int = 8 << 10;
 
 unsafe fn ZSTD_splitBlock_byChunks(
-    blockStart: *const c_void,
-    blockSize: size_t,
+    block: &[u8],
     level: c_int,
     workspace: *mut c_void,
     wkspSize: size_t,
 ) -> size_t {
+    let blockSize = block.len();
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
     static records_fs: [fn(&mut Fingerprint, &[u8]) -> (); 4] = [
@@ -142,7 +142,6 @@ unsafe fn ZSTD_splitBlock_byChunks(
     const { debug_assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
     debug_assert!(wkspSize >= size_of::<FPStats>());
 
-    let block = core::slice::from_raw_parts(blockStart.cast::<u8>(), blockSize);
     let chunk = CHUNKSIZE as usize;
 
     initStats(fpstats);
@@ -256,5 +255,7 @@ pub unsafe fn ZSTD_splitBlock(
     }
 
     // level >= 1
-    ZSTD_splitBlock_byChunks(blockStart, blockSize, level - 1, workspace, wkspSize)
+    // SAFETY: the caller provides a readable block of `blockSize` bytes.
+    let block = unsafe { core::slice::from_raw_parts(blockStart.cast::<u8>(), blockSize) };
+    ZSTD_splitBlock_byChunks(block, level - 1, workspace, wkspSize)
 }
