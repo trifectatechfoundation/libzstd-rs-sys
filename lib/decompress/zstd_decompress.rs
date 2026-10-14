@@ -464,32 +464,29 @@ impl ZSTD_DDictHashSet {
         // `ddictPtrTableSize` is a multiple of 2, use `size - 1` as a mask to get an index within `0..hashSet.ddictPtrTableSize`
         hash as size_t & (self.ddictPtrTableSize).wrapping_sub(1)
     }
-}
 
-/// Adds [`ZSTD_DDict`] to a hashset without resizing it.
-///
-/// If the [`ZSTD_DDict`]'s `dictID` already exists in the set, it replaces the one in the set.
-unsafe fn ZSTD_DDictHashSet_emplaceDDict(
-    hashSet: &mut ZSTD_DDictHashSet,
-    ddict: *const ZSTD_DDict,
-) -> Result<(), Error> {
-    let dictID = ZSTD_getDictID_fromDDict(ddict);
-    let mut idx = hashSet.get_index(dictID);
-    let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
-    if hashSet.ddictPtrCount == hashSet.ddictPtrTableSize {
-        return Err(Error::GENERIC);
-    }
-    while !(*(hashSet.ddictPtrTable).add(idx)).is_null() {
-        if ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) == dictID {
-            *(hashSet.ddictPtrTable).add(idx) = ddict;
-            return Ok(());
+    /// Adds [`ZSTD_DDict`] to a hashset without resizing it.
+    ///
+    /// If the [`ZSTD_DDict`]'s `dictID` already exists in the set, it replaces the one in the set.
+    unsafe fn emplace_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
+        let dictID = ZSTD_getDictID_fromDDict(ddict);
+        let mut idx = self.get_index(dictID);
+        let idxRangeMask = (self.ddictPtrTableSize).wrapping_sub(1);
+        if self.ddictPtrCount == self.ddictPtrTableSize {
+            return Err(Error::GENERIC);
         }
-        idx &= idxRangeMask;
-        idx = idx.wrapping_add(1);
+        while !(*(self.ddictPtrTable).add(idx)).is_null() {
+            if ZSTD_getDictID_fromDDict(*(self.ddictPtrTable).add(idx)) == dictID {
+                *(self.ddictPtrTable).add(idx) = ddict;
+                return Ok(());
+            }
+            idx &= idxRangeMask;
+            idx = idx.wrapping_add(1);
+        }
+        *(self.ddictPtrTable).add(idx) = ddict;
+        self.ddictPtrCount = (self.ddictPtrCount).wrapping_add(1);
+        Ok(())
     }
-    *(hashSet.ddictPtrTable).add(idx) = ddict;
-    hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
-    Ok(())
 }
 
 /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
@@ -513,7 +510,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
     hashSet.ddictPtrCount = 0;
     for i in 0..oldTableSize {
         if !(*oldTable.add(i)).is_null() {
-            ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i))?;
+            hashSet.emplace_ddict(*oldTable.add(i))?;
         }
     }
     ZSTD_customFree(
@@ -619,7 +616,7 @@ unsafe fn ZSTD_DDictHashSet_addDDict(
     {
         ZSTD_DDictHashSet_expand(hashSet, customMem)?;
     }
-    ZSTD_DDictHashSet_emplaceDDict(hashSet, ddict)
+    hashSet.emplace_ddict(ddict)
 }
 
 /// Get the _current_ memory usage of the [`ZSTD_DCtx`]
