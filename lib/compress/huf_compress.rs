@@ -1063,19 +1063,19 @@ impl HUF_CStream_t {
         // bits are already the top bitPos bits. And we don't care about
         // noise in the lower values.
     }
-}
 
-/// # Returns
-///
-/// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
-unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
-    bitC.add_bits(HUF_END_MARK, false, false);
-    bitC.flush_bits(false);
-    let nbBits = bitC.bitPos[0] & 0xff;
-    if bitC.ptr >= bitC.endPtr {
-        return 0; /* overflow detected */
+    /// # Returns
+    ///
+    /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
+    unsafe fn close(mut self) -> size_t {
+        self.add_bits(HUF_END_MARK, false, false);
+        self.flush_bits(false);
+        let nbBits = self.bitPos[0] & 0xff;
+        if self.ptr >= self.endPtr {
+            return 0; // overflow detected
+        }
+        (self.ptr).offset_from_unsigned(self.startPtr) + size_t::from(nbBits > 0)
     }
-    (bitC.ptr).offset_from_unsigned(bitC.startPtr) + size_t::from(nbBits > 0)
 }
 
 #[inline(always)]
@@ -1208,7 +1208,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
         }
     }
     debug_assert!(bitC.ptr <= bitC.endPtr);
-    Ok(HUF_closeCStream(&mut bitC))
+    Ok(bitC.close())
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
