@@ -487,38 +487,35 @@ impl ZSTD_DDictHashSet {
         self.ddictPtrCount = (self.ddictPtrCount).wrapping_add(1);
         Ok(())
     }
-}
 
-/// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
-/// allocates the new table, and frees the old table.
-unsafe fn ZSTD_DDictHashSet_expand(
-    hashSet: &mut ZSTD_DDictHashSet,
-    customMem: ZSTD_customMem,
-) -> Result<(), Error> {
-    let newTableSize = hashSet.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
-    let newTable = ZSTD_customCalloc(
-        size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
-        customMem,
-    ) as *mut *const ZSTD_DDict;
-    let oldTable = hashSet.ddictPtrTable;
-    let oldTableSize = hashSet.ddictPtrTableSize;
-    if newTable.is_null() {
-        return Err(Error::memory_allocation);
-    }
-    hashSet.ddictPtrTable = newTable;
-    hashSet.ddictPtrTableSize = newTableSize;
-    hashSet.ddictPtrCount = 0;
-    for i in 0..oldTableSize {
-        if !(*oldTable.add(i)).is_null() {
-            hashSet.emplace_ddict(*oldTable.add(i))?;
+    /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
+    /// allocates the new table, and frees the old table.
+    unsafe fn expand(&mut self, customMem: ZSTD_customMem) -> Result<(), Error> {
+        let newTableSize = self.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
+        let newTable = ZSTD_customCalloc(
+            size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
+            customMem,
+        ) as *mut *const ZSTD_DDict;
+        let oldTable = self.ddictPtrTable;
+        let oldTableSize = self.ddictPtrTableSize;
+        if newTable.is_null() {
+            return Err(Error::memory_allocation);
         }
+        self.ddictPtrTable = newTable;
+        self.ddictPtrTableSize = newTableSize;
+        self.ddictPtrCount = 0;
+        for i in 0..oldTableSize {
+            if !(*oldTable.add(i)).is_null() {
+                self.emplace_ddict(*oldTable.add(i))?;
+            }
+        }
+        ZSTD_customFree(
+            oldTable as *mut core::ffi::c_void,
+            oldTableSize.wrapping_mul(size_of::<*mut ZSTD_DDict>()),
+            customMem,
+        );
+        Ok(())
     }
-    ZSTD_customFree(
-        oldTable as *mut core::ffi::c_void,
-        oldTableSize.wrapping_mul(size_of::<*mut ZSTD_DDict>()),
-        customMem,
-    );
-    Ok(())
 }
 
 /// Fetches a [`ZSTD_DDict`] with the given `dictID`.
@@ -614,7 +611,7 @@ unsafe fn ZSTD_DDictHashSet_addDDict(
         * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
         != 0
     {
-        ZSTD_DDictHashSet_expand(hashSet, customMem)?;
+        hashSet.expand(customMem)?;
     }
     hashSet.emplace_ddict(ddict)
 }
