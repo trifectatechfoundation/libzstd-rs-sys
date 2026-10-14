@@ -728,7 +728,8 @@ fn HUF_sort(
         }
     }
 
-    debug_assert!(huffNode[..maxSymbolValue1 as usize].is_sorted_by(|a, b| a.count >= b.count));
+    // huffNodes should be sorted
+    debug_assert!((1..maxSymbolValue1 as usize).all(|i| huffNode[i - 1].count >= huffNode[i].count));
 }
 
 pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;

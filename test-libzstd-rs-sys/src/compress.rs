@@ -592,7 +592,13 @@ mod long_distance_matching {
     #[test]
     fn hash_rate_logs() {
         let input = mosaic();
-        for hash_rate_log in [0, 1, 4, 7, 12] {
+
+        #[cfg(miri)]
+        let hash_rate_logs = [0, 1, 12];
+        #[cfg(not(miri))]
+        let hash_rate_logs = [0, 1, 4, 7, 12];
+
+        for hash_rate_log in hash_rate_logs {
             assert_eq_rs_c!({ compress_ldm!(input, 1, 64, hash_rate_log, 3) });
         }
     }
