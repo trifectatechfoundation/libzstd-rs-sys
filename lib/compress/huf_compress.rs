@@ -932,13 +932,13 @@ pub fn HUF_compressBound(size: size_t) -> size_t {
 pub const HUF_BITS_IN_CONTAINER: size_t = size_t::BITS as usize;
 
 /// Huffman uses its own `BIT_CStream_t` implementation.
+///
 /// There are three major differences from `BIT_CStream_t`:
-///   1. `HUF_addBits` takes a `HUF_CElt` (size_t) which is
+///   1. `add_bits` takes a `HUF_CElt` (size_t) which is
 ///      the pair (nbBits, value) in the format:
-///      format:
-///        - Bits [0, 4)            = nbBits
-///        - Bits [4, 64 - nbBits)  = 0
-///        - Bits [64 - nbBits, 64) = value
+///        - Bits `[0, 4)`            = nbBits
+///        - Bits `[4, 64 - nbBits)`  = 0
+///        - Bits `[64 - nbBits, 64)` = value
 ///   2. The bitContainer is built from the upper bits and
 ///      right shifted. E.g. to add a new value of N bits
 ///      you right shift the bitContainer by N, then or in
@@ -972,42 +972,39 @@ impl HUF_CStream_t {
             endPtr,
         })
     }
-}
 
-/// Adds the symbol stored in HUF_CElt elt to the bitstream.
-///
-/// # Parameters
-///
-/// * `elt` - The element we're adding. This is a (nbBits, value) pair.
-///   See the HUF_CStream_t docs for the format.
-/// * `idx` - Insert into bit container `0` (`false`) or `1` (`true`).
-/// * `kFast` - This is a template parameter. If the bitstream is guaranteed
-///   to have at least 4 unused bits after this call it may be `true`,
-///   otherwise it must be `false`. HUF_addBits() is faster when fast is set.
-#[inline(always)]
-fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: bool, kFast: bool) {
-    debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
-    /* This is efficient on x86-64 with BMI2 because shrx
-     * only reads the low 6 bits of the register. The compiler
-     * knows this and elides the mask. When fast is set,
-     * every operation can use the same value loaded from elt.
-     */
-    bitC.bitContainer[usize::from(idx)] >>= HUF_getNbBits(elt);
-    bitC.bitContainer[usize::from(idx)] |= if kFast {
-        HUF_getValueFast(elt)
-    } else {
-        HUF_getValue(elt)
-    };
-    /* We only read the low 8 bits of bitC->bitPos[idx] so it
-     * doesn't matter that the high bits have noise from the value.
-     */
-    let fresh21 = &mut bitC.bitPos[usize::from(idx)];
-    *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
-    debug_assert!((bitC.bitPos[usize::from(idx)] & 0xFF) <= HUF_BITS_IN_CONTAINER);
-    /* The last 4-bits of elt are dirty if fast is set,
-     * so we must not be overwriting bits that have already been
-     * inserted into the bit container.
-     */
+    /// Adds the symbol stored in HUF_CElt elt to the bitstream.
+    ///
+    /// # Parameters
+    ///
+    /// * `elt` - The element we're adding. This is a (nbBits, value) pair.
+    ///   See the HUF_CStream_t docs for the format.
+    /// * `idx` - Insert into bit container `0` (`false`) or `1` (`true`).
+    /// * `kFast` - This is a template parameter. If the bitstream is guaranteed
+    ///   to have at least 4 unused bits after this call it may be `true`,
+    ///   otherwise it must be `false`.
+    #[inline(always)]
+    fn add_bits(&mut self, elt: HUF_CElt, idx: bool, kFast: bool) {
+        debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
+        // This is efficient on x86-64 with BMI2 because shrx
+        // only reads the low 6 bits of the register. The compiler
+        // knows this and elides the mask. When fast is set,
+        // every operation can use the same value loaded from elt.
+        self.bitContainer[usize::from(idx)] >>= HUF_getNbBits(elt);
+        self.bitContainer[usize::from(idx)] |= if kFast {
+            HUF_getValueFast(elt)
+        } else {
+            HUF_getValue(elt)
+        };
+        // We only read the low 8 bits of bitC->bitPos[idx] so it
+        // doesn't matter that the high bits have noise from the value.
+        let fresh21 = &mut self.bitPos[usize::from(idx)];
+        *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
+        debug_assert!((self.bitPos[usize::from(idx)] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+        // The last 4-bits of elt are dirty if fast is set,
+        // so we must not be overwriting bits that have already been
+        // inserted into the bit container.
+    }
 }
 
 #[inline(always)]
@@ -1075,7 +1072,7 @@ fn HUF_endMark() -> HUF_CElt {
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
 unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
-    HUF_addBits(bitC, HUF_endMark(), false, false);
+    bitC.add_bits(HUF_endMark(), false, false);
     HUF_flushBits(bitC, false);
     let nbBits = bitC.bitPos[0] & 0xff;
     if bitC.ptr >= bitC.endPtr {
@@ -1092,7 +1089,7 @@ fn HUF_encodeSymbol(
     idx: bool,
     fast: bool,
 ) {
-    HUF_addBits(bitCPtr, CTable[symbol as usize], idx, fast);
+    bitCPtr.add_bits(CTable[symbol as usize], idx, fast);
 }
 
 #[inline(always)]
