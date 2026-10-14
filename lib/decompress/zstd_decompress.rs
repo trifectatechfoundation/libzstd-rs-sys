@@ -453,15 +453,17 @@ pub const DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT: core::ffi::c_int = 3;
 pub const DDICT_HASHSET_TABLE_BASE_SIZE: core::ffi::c_int = 64;
 pub const DDICT_HASHSET_RESIZE_FACTOR: core::ffi::c_int = 2;
 
-/// Hash function to determine starting position of dict insertion within the table
-///
-/// # Returns
-///
-/// - an index between `0..hashSet.ddictPtrTableSize`
-fn ZSTD_DDictHashSet_getIndex(hashSet: &ZSTD_DDictHashSet, dictID: u32) -> size_t {
-    let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
-    // `ddictPtrTableSize` is a multiple of 2, use `size - 1` as a mask to get an index within `0..hashSet.ddictPtrTableSize`
-    hash as size_t & (hashSet.ddictPtrTableSize).wrapping_sub(1)
+impl ZSTD_DDictHashSet {
+    /// Hash function to determine starting position of dict insertion within the table
+    ///
+    /// # Returns
+    ///
+    /// - an index between `0..hashSet.ddictPtrTableSize`
+    fn get_index(&self, dictID: u32) -> size_t {
+        let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
+        // `ddictPtrTableSize` is a multiple of 2, use `size - 1` as a mask to get an index within `0..hashSet.ddictPtrTableSize`
+        hash as size_t & (self.ddictPtrTableSize).wrapping_sub(1)
+    }
 }
 
 /// Adds [`ZSTD_DDict`] to a hashset without resizing it.
@@ -472,7 +474,7 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     ddict: *const ZSTD_DDict,
 ) -> Result<(), Error> {
     let dictID = ZSTD_getDictID_fromDDict(ddict);
-    let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
+    let mut idx = hashSet.get_index(dictID);
     let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
     if hashSet.ddictPtrCount == hashSet.ddictPtrTableSize {
         return Err(Error::GENERIC);
@@ -532,7 +534,7 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
     hashSet: &mut ZSTD_DDictHashSet,
     dictID: u32,
 ) -> *const ZSTD_DDict {
-    let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
+    let mut idx = hashSet.get_index(dictID);
     let idxRangeMask = hashSet.ddictPtrTableSize - 1;
     loop {
         let currDictID = match hashSet.as_slice()[idx].as_ref() {
