@@ -1,5 +1,7 @@
 use std::mem::MaybeUninit;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::lib::polyfill::Instant;
 
 use crate::lib::polyfill::libc::size_t;
 use crate::lib::polyfill::ZSTD_MULTITHREAD;

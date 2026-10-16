@@ -87,6 +87,26 @@ pub(crate) const ZSTD_MULTITHREAD: bool = !cfg!(all(
     not(all(target_os = "wasi", target_feature = "atomics"))
 ));
 
+/// `std::time::Instant` panics on `wasm32-unknown-unknown`, which has no clock. The dictionary
+/// builders only use it to pace progress output, so there it never reports elapsed time.
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+pub(crate) use std::time::Instant;
+
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+#[derive(Clone, Copy)]
+pub(crate) struct Instant;
+
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+impl Instant {
+    pub(crate) fn now() -> Self {
+        Self
+    }
+
+    pub(crate) fn elapsed(&self) -> std::time::Duration {
+        std::time::Duration::ZERO
+    }
+}
+
 /// The C library items this crate uses.
 ///
 /// `libc` provides nothing on `wasm32-unknown-unknown`, so that target gets Rust implementations.
