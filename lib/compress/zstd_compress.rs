@@ -698,7 +698,7 @@ fn ZSTD_checkDictValidity(
     }
 }
 
-use libc::{ptrdiff_t, size_t};
+use crate::lib::polyfill::libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::bits::ZSTD_highbit32;

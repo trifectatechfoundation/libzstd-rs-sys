@@ -1,7 +1,7 @@
 use core::ptr;
 use std::sync::{Condvar, Mutex};
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::bits::ZSTD_highbit32;

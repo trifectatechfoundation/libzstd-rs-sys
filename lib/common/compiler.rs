@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 pub(crate) const CACHELINE_SIZE: core::ffi::c_int = 64;
 

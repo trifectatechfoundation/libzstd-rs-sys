@@ -2,7 +2,7 @@ use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
 use crate::lib::zstd::ZSTD_customMem;
@@ -181,7 +181,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     if threadPool.is_null() {
         return 1;
     }
-    libc::memcpy(
+    crate::lib::polyfill::libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
         (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),

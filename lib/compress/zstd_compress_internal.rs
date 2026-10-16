@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::internal::MEM_readLE32;
 use crate::lib::common::bits::ZSTD_highbit32;

@@ -1,4 +1,4 @@
-use libc::ptrdiff_t;
+use crate::lib::polyfill::libc::ptrdiff_t;
 
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};
 

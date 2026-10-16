@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_64bits;

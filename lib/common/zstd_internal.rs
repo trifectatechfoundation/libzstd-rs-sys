@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 const fn const_max(a: usize, b: usize) -> usize {
     if a > b {

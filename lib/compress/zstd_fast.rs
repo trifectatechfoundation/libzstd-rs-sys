@@ -1,6 +1,6 @@
 pub type ZSTD_match4Found = unsafe fn(*const u8, *const u8, u32, u32) -> bool;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::compiler::prefetch_area;
 use crate::lib::common::mem::MEM_read32;

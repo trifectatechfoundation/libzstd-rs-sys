@@ -1,6 +1,6 @@
 use core::ffi::{c_int, c_uint, c_void};
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
