@@ -2,6 +2,7 @@ use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
 use crate::lib::polyfill::libc::size_t;
+use crate::lib::polyfill::ZSTD_MULTITHREAD;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_64bits;
@@ -750,7 +751,7 @@ fn optimize_train_from_buffer_fastcover(
     }
 
     let mut pool = core::ptr::null_mut();
-    if nbThreads > 1 {
+    if ZSTD_MULTITHREAD && nbThreads > 1 {
         pool = unsafe { POOL_create(nbThreads as size_t, 1) };
         if pool.is_null() {
             return Error::memory_allocation.to_error_code();

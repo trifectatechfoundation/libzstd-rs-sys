@@ -3,6 +3,7 @@ use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
 use crate::lib::polyfill::libc::size_t;
+use crate::lib::polyfill::ZSTD_MULTITHREAD;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
 use crate::lib::zstd::ZSTD_customMem;
@@ -73,7 +74,7 @@ pub(crate) unsafe fn POOL_create_advanced(
     queueSize: size_t,
     customMem: ZSTD_customMem,
 ) -> *mut POOL_ctx {
-    if numThreads == 0 {
+    if numThreads == 0 || !ZSTD_MULTITHREAD {
         return core::ptr::null_mut();
     }
     let ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;

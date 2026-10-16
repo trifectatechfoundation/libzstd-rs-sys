@@ -1,7 +1,7 @@
 use core::mem::MaybeUninit;
 use core::ptr;
 
-use crate::lib::polyfill::PointerExt;
+use crate::lib::polyfill::{PointerExt, ZSTD_MULTITHREAD};
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 
@@ -514,6 +514,11 @@ impl ZSTD_cParameter {
             Self::ZSTD_c_contentSizeFlag => Ok((0, 1)),
             Self::ZSTD_c_checksumFlag => Ok((0, 1)),
             Self::ZSTD_c_dictIDFlag => Ok((0, 1)),
+            Self::ZSTD_c_nbWorkers | Self::ZSTD_c_jobSize | Self::ZSTD_c_overlapLog
+                if !ZSTD_MULTITHREAD =>
+            {
+                Ok((0, 0))
+            }
             Self::ZSTD_c_nbWorkers => Ok((0, ZSTDMT_NBWORKERS_MAX)),
             Self::ZSTD_c_jobSize => Ok((0, ZSTDMT_JOBSIZE_MAX)),
             Self::ZSTD_c_overlapLog => Ok((ZSTD_OVERLAPLOG_MIN, ZSTD_OVERLAPLOG_MAX)),
@@ -1864,6 +1869,17 @@ impl ZSTD_CCtx_params {
                 self.literalCompressionMode = lcm;
                 Ok(self.literalCompressionMode as size_t)
             }
+            ZSTD_cParameter::ZSTD_c_nbWorkers
+            | ZSTD_cParameter::ZSTD_c_jobSize
+            | ZSTD_cParameter::ZSTD_c_overlapLog
+            | ZSTD_cParameter::ZSTD_c_rsyncable
+                if !ZSTD_MULTITHREAD =>
+            {
+                if value != 0 {
+                    return Err(Error::parameter_unsupported);
+                }
+                Ok(0)
+            }
             ZSTD_cParameter::ZSTD_c_nbWorkers => {
                 param.clamp_bounds(&mut value)?;
                 self.nbWorkers = value;
@@ -2079,6 +2095,13 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
         }
         ZSTD_cParameter::ZSTD_c_nbWorkers => {
             *value = (*CCtxParams).nbWorkers;
+        }
+        ZSTD_cParameter::ZSTD_c_jobSize
+        | ZSTD_cParameter::ZSTD_c_overlapLog
+        | ZSTD_cParameter::ZSTD_c_rsyncable
+            if !ZSTD_MULTITHREAD =>
+        {
+            return Error::parameter_unsupported.to_error_code();
         }
         ZSTD_cParameter::ZSTD_c_jobSize => {
             *value = (*CCtxParams).jobSize as core::ffi::c_int;

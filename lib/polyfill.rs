@@ -80,6 +80,13 @@ cfg_select! {
     }
 }
 
+/// Whether `std::thread::spawn` works on this target. This plays the role of `ZSTD_MULTITHREAD`
+/// in the C library: without it, the multithreading parameters only accept 0.
+pub(crate) const ZSTD_MULTITHREAD: bool = !cfg!(all(
+    target_family = "wasm",
+    not(all(target_os = "wasi", target_feature = "atomics"))
+));
+
 /// The C library items this crate uses.
 ///
 /// `libc` provides nothing on `wasm32-unknown-unknown`, so that target gets Rust implementations.
