@@ -1,7 +1,7 @@
 use core::{mem, ptr};
 use std::marker::PhantomData;
 
-use libc::{free, malloc, ptrdiff_t, size_t};
+use crate::lib::polyfill::libc::{free, malloc, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};

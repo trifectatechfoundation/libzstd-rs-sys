@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::fse::{
     FSE_DTableHeader, FSE_decode_t, FSE_BUILD_DTABLE_WKSP_SIZE, FSE_DECOMPRESS_WKSP_SIZE,

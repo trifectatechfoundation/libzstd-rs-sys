@@ -1,6 +1,6 @@
 use core::ffi::c_void;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 #[inline]
 pub(crate) const fn MEM_32bits() -> bool {

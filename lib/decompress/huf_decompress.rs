@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 use core::ops::{Bound, Range};
 use core::ptr::NonNull;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;

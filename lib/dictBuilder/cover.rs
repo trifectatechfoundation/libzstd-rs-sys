@@ -2,9 +2,12 @@ use std::cmp::Ordering;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use libc::size_t;
+use crate::lib::polyfill::Instant;
+
+use crate::lib::polyfill::libc::size_t;
+use crate::lib::polyfill::ZSTD_MULTITHREAD;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -1274,7 +1277,7 @@ unsafe fn optimize_train_from_buffer_cover(
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if nbThreads > 1 {
+    if ZSTD_MULTITHREAD && nbThreads > 1 {
         pool = POOL_create(nbThreads as size_t, 1);
         if pool.is_null() {
             return Error::memory_allocation.to_error_code();

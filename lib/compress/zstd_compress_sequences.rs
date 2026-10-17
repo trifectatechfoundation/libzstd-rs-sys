@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType, STREAM_ACCUMULATOR_MIN};
 use crate::lib::common::error_private::Error;
