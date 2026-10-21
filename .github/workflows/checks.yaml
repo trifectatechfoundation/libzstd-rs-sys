@@ -208,6 +208,7 @@ jobs:
         run: |
           cargo fuzz run decompress zstd-files/compressed -- -max_total_time=10
           cargo fuzz run decompress-overlapping zstd-files/compressed -- -max_total_time=10
+          cargo fuzz run decompress-bound zstd-files/compressed -- -max_total_time=10
         env:
           RUSTFLAGS: "-Awarnings"
 
