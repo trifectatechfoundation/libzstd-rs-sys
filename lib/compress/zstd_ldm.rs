@@ -472,24 +472,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         dictLimit
     };
     let base = ldmState.window.base;
-    let dictBase = if extDict {
-        ldmState.window.dictBase
-    } else {
-        core::ptr::null()
-    };
-    let dictStart = if extDict {
-        dictBase.wrapping_offset(lowestIndex as isize)
-    } else {
-        core::ptr::null()
-    };
-    let dictEnd = if extDict {
-        dictBase.wrapping_offset(dictLimit as isize)
-    } else {
-        core::ptr::null()
-    };
     let lowPrefixPtr = base.wrapping_offset(dictLimit as isize);
     let extDictSlice: &[u8] = if extDict {
-        core::slice::from_raw_parts(dictStart, dictEnd.addr() - dictStart.addr())
+        let dictStart = ldmState
+            .window
+            .dictBase
+            .wrapping_offset(lowestIndex as isize);
+        core::slice::from_raw_parts(dictStart, (dictLimit - lowestIndex) as usize)
     } else {
         &[]
     };
