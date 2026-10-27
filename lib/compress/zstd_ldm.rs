@@ -727,9 +727,8 @@ impl ldmState_t {
             if sequences.size >= sequences.capacity {
                 break;
             }
-            let chunkStart = chunk.as_ptr();
-            let chunkEnd = chunkStart.add(chunk.len());
-            let chunkSize = chunk.len();
+            let chunkStart = chunk.as_ptr_range().start;
+            let chunkEnd = chunk.as_ptr_range().end;
             let prevSize = sequences.size;
 
             // 1. Perform overflow correction if necessary.
@@ -785,7 +784,7 @@ impl ldmState_t {
                 *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
                 leftoverSize = newLeftoverSize;
             } else {
-                leftoverSize = leftoverSize.wrapping_add(chunkSize);
+                leftoverSize = leftoverSize.wrapping_add(chunk.len());
             }
         }
 
