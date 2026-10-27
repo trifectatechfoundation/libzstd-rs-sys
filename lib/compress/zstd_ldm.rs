@@ -27,7 +27,7 @@ impl Default for ldmState_t {
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ldmMatchCandidate_t {
-    pub split: *const u8,
+    pub split: usize,
     pub hash: u32,
     pub checksum: u32,
 }
@@ -518,11 +518,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         let hashed = hashState.feed(&src[ip..ilimit], &mut ldmState.splitIndices, &mut numSplits);
 
         for n in 0..numSplits {
-            let split = istart.add(ip + ldmState.splitIndices[n] - minMatchLength as usize);
-            let xxhash = ZSTD_XXH64_slice(
-                core::slice::from_raw_parts(split, minMatchLength as usize),
-                0,
-            );
+            let split = ip + ldmState.splitIndices[n] - minMatchLength as usize;
+            let xxhash = ZSTD_XXH64_slice(&src[split..][..minMatchLength as usize], 0);
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
             ldmState.matchCandidates[n] = ldmMatchCandidate_t {
                 split,
@@ -537,6 +534,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             hash,
         } in &ldmState.matchCandidates[..numSplits]
         {
+            let splitPtr = istart.add(split);
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
@@ -547,14 +545,14 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
-                offset: split.wrapping_offset_from(base) as u32,
+                offset: splitPtr.wrapping_offset_from(base) as u32,
                 checksum,
             };
 
             // If a split point would generate a sequence overlapping with
             // the previous one, we merely register it in the hash table and
             // move on
-            if split < anchor {
+            if splitPtr < anchor {
                 ZSTD_ldm_insertEntry(
                     hashTable,
                     bucketOffsets,
@@ -564,7 +562,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 );
             } else {
                 let beforeSplit =
-                    core::slice::from_raw_parts(anchor, split.offset_from_unsigned(anchor));
+                    core::slice::from_raw_parts(anchor, splitPtr.offset_from_unsigned(anchor));
                 for cur in bucket {
                     if cur.checksum != checksum || cur.offset <= lowestIndex {
                         continue;
@@ -589,7 +587,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         };
 
                         let forward =
-                            ZSTD_count_2segments(split, pMatch, iend, matchEnd, lowPrefixPtr);
+                            ZSTD_count_2segments(splitPtr, pMatch, iend, matchEnd, lowPrefixPtr);
                         if forward < minMatchLength as size_t {
                             continue;
                         }
@@ -608,7 +606,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     } else {
                         let pMatch = base.wrapping_offset(cur.offset as isize);
 
-                        let forward = ZSTD_count(split, pMatch, iend);
+                        let forward = ZSTD_count(splitPtr, pMatch, iend);
                         if forward < minMatchLength as size_t {
                             continue;
                         }
@@ -635,7 +633,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 if let Some(bestEntry) = bestEntry {
                     // Match found
                     let offset =
-                        (split.wrapping_offset_from(base) as u32).wrapping_sub(bestEntry.offset);
+                        (splitPtr.wrapping_offset_from(base) as u32).wrapping_sub(bestEntry.offset);
                     let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
                     let seq = (rawSeqStore.seq).add(rawSeqStore.size);
@@ -644,8 +642,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if rawSeqStore.size == rawSeqStore.capacity {
                         return Err(Error::dstSize_tooSmall);
                     }
-                    (*seq).litLength =
-                        split.sub(backwardMatchLength).offset_from_unsigned(anchor) as u32;
+                    (*seq).litLength = splitPtr
+                        .sub(backwardMatchLength)
+                        .offset_from_unsigned(anchor) as u32;
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
                     rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
@@ -660,7 +659,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         params.bucketSizeLog,
                     );
 
-                    anchor = split.add(forwardMatchLength);
+                    anchor = splitPtr.add(forwardMatchLength);
 
                     // If we find a match that ends after the data that we've hashed
                     // then we have a repeating, overlapping, pattern. E.g. all zeros.
