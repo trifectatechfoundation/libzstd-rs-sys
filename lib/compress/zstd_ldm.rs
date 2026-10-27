@@ -495,7 +495,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
 
     // Input bounds
-    let istart = src.as_ptr_range().start;
+    let srcIndex = src.as_ptr().addr().wrapping_sub(base.addr());
     let iend = src.as_ptr_range().end;
     let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
     let prefix = core::slice::from_raw_parts(lowPrefixPtr, iend.addr() - lowPrefixPtr.addr());
@@ -533,7 +533,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             hash,
         } in &ldmState.matchCandidates[..numSplits]
         {
-            let splitPtr = istart.add(split);
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
@@ -544,7 +543,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
-                offset: splitPtr.wrapping_offset_from(base) as u32,
+                offset: (srcIndex + split) as u32,
                 checksum,
             };
 
@@ -612,8 +611,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                 if let Some(bestEntry) = bestEntry {
                     // Match found
-                    let offset =
-                        (splitPtr.wrapping_offset_from(base) as u32).wrapping_sub(bestEntry.offset);
+                    let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
                     let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
                     let seq = (rawSeqStore.seq).add(rawSeqStore.size);
