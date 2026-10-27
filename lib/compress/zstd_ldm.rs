@@ -179,23 +179,23 @@ impl ldmRollingHashState_t {
             stopMask,
         }
     }
-}
 
-/// Feeds `data` into the hash without registering any splits. This effectively
-/// resets the hash state. This is used when skipping over data, either at the
-/// beginning of a block, or skipping sections.
-fn ZSTD_ldm_gear_reset(state: &mut ldmRollingHashState_t, data: &[u8]) {
-    let mut hash = state.rolling;
-    let (chunks, rest) = data.as_chunks::<4>();
+    /// Feeds `data` into the hash without registering any splits. This effectively
+    /// resets the hash state. This is used when skipping over data, either at the
+    /// beginning of a block, or skipping sections.
+    fn reset(&mut self, data: &[u8]) {
+        let mut hash = self.rolling;
+        let (chunks, rest) = data.as_chunks::<4>();
 
-    for chunk in chunks {
-        for &byte in chunk {
+        for chunk in chunks {
+            for &byte in chunk {
+                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
+            }
+        }
+
+        for &byte in rest {
             hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
         }
-    }
-
-    for &byte in rest {
-        hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
     }
 }
 
@@ -504,10 +504,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ldmRollingHashState_t::new(params);
-    ZSTD_ldm_gear_reset(
-        &mut hashState,
-        core::slice::from_raw_parts(ip, minMatchLength as usize),
-    );
+    hashState.reset(core::slice::from_raw_parts(ip, minMatchLength as usize));
     ip = ip.offset(minMatchLength as isize);
 
     while ip < ilimit {
@@ -674,13 +671,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // This is a major speed boost (20x) for compressing a single byte
                     // repeated, when that byte ends up in the table.
                     if anchor > ip.add(hashed) {
-                        ZSTD_ldm_gear_reset(
-                            &mut hashState,
-                            core::slice::from_raw_parts(
-                                anchor.sub(minMatchLength as usize),
-                                minMatchLength as usize,
-                            ),
-                        );
+                        hashState.reset(core::slice::from_raw_parts(
+                            anchor.sub(minMatchLength as usize),
+                            minMatchLength as usize,
+                        ));
                         // Continue the outer loop at anchor (ip + hashed == anchor).
                         ip = anchor.sub(hashed as usize);
                         break;
