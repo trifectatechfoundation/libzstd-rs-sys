@@ -290,19 +290,20 @@ impl ldmParams_t {
         }
         self.bucketSizeLog = self.bucketSizeLog.min(self.hashLog);
     }
-}
 
-pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
-    let ldmHSize = 1usize << params.hashLog;
-    let ldmBucketSizeLog = (params.bucketSizeLog.min(params.hashLog)) as size_t;
-    let ldmBucketSize = 1 << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
-    let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
-        ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
-    ));
-    if params.enableLdm == ParamSwitch::Enable {
-        totalSize
-    } else {
-        0
+    /// Estimate the space needed for long distance matching tables or 0 if LDM is disabled.
+    pub fn get_table_size(self) -> size_t {
+        let ldmHSize = 1usize << self.hashLog;
+        let ldmBucketSizeLog = (self.bucketSizeLog.min(self.hashLog)) as size_t;
+        let ldmBucketSize = 1 << (self.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
+        let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
+            ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
+        ));
+        if self.enableLdm == ParamSwitch::Enable {
+            totalSize
+        } else {
+            0
+        }
     }
 }
 
