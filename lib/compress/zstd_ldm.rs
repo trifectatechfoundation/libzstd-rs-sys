@@ -507,7 +507,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         return Ok(iend.offset_from_unsigned(anchor));
     }
 
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ldmRollingHashState_t::new(params);
