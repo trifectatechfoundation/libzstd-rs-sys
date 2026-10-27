@@ -500,10 +500,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let iend = istart.add(srcSize);
 
     // Input positions
-    let mut anchor = istart;
+    let mut anchor = 0;
 
     if srcSize < minMatchLength as size_t {
-        return Ok(iend.offset_from_unsigned(anchor));
+        return Ok(srcSize);
     }
 
     let ilimit = srcSize.saturating_sub(HASH_READ_SIZE as usize);
@@ -552,7 +552,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // If a split point would generate a sequence overlapping with
             // the previous one, we merely register it in the hash table and
             // move on
-            if splitPtr < anchor {
+            if split < anchor {
                 ZSTD_ldm_insertEntry(
                     hashTable,
                     bucketOffsets,
@@ -561,8 +561,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     params.bucketSizeLog,
                 );
             } else {
-                let beforeSplit =
-                    core::slice::from_raw_parts(anchor, splitPtr.offset_from_unsigned(anchor));
+                let beforeSplit = &src[anchor..split];
                 for cur in bucket {
                     if cur.checksum != checksum || cur.offset <= lowestIndex {
                         continue;
@@ -642,9 +641,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     if rawSeqStore.size == rawSeqStore.capacity {
                         return Err(Error::dstSize_tooSmall);
                     }
-                    (*seq).litLength = splitPtr
-                        .sub(backwardMatchLength)
-                        .offset_from_unsigned(anchor) as u32;
+                    (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
                     rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
@@ -659,7 +656,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         params.bucketSizeLog,
                     );
 
-                    anchor = splitPtr.add(forwardMatchLength);
+                    anchor = split + forwardMatchLength;
 
                     // If we find a match that ends after the data that we've hashed
                     // then we have a repeating, overlapping, pattern. E.g. all zeros.
@@ -668,13 +665,10 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // only the first one. So skip over overlapping matches.
                     // This is a major speed boost (20x) for compressing a single byte
                     // repeated, when that byte ends up in the table.
-                    if anchor > istart.add(ip + hashed) {
-                        hashState.reset(core::slice::from_raw_parts(
-                            anchor.sub(minMatchLength as usize),
-                            minMatchLength as usize,
-                        ));
+                    if anchor > ip + hashed {
+                        hashState.reset(&src[anchor - minMatchLength as usize..anchor]);
                         // Continue the outer loop at anchor (ip + hashed == anchor).
-                        ip = anchor.offset_from_unsigned(istart) - hashed;
+                        ip = anchor - hashed;
                         break;
                     }
                 } else {
@@ -694,7 +688,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         ip += hashed;
     }
 
-    Ok(iend.offset_from_unsigned(anchor))
+    Ok(srcSize - anchor)
 }
 
 /// Reduce table indexes by `reducerValue`
