@@ -305,13 +305,15 @@ impl ldmParams_t {
             0
         }
     }
-}
 
-pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
-    if params.enableLdm == ParamSwitch::Enable {
-        maxChunkSize / params.minMatchLength as size_t
-    } else {
-        0
+    /// Return an upper bound on the number of sequences that can be produced by
+    /// the long distance matcher, or 0 if LDM is disabled.
+    pub fn get_max_nb_seq(self, maxChunkSize: size_t) -> size_t {
+        if self.enableLdm == ParamSwitch::Enable {
+            maxChunkSize / self.minMatchLength as size_t
+        } else {
+            0
+        }
     }
 }
 

@@ -777,8 +777,7 @@ use crate::lib::compress::zstd_lazy::{
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable,
-    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_skipRawSeqStoreBytes,
-    ZSTD_ldm_skipSequences,
+    ZSTD_ldm_generateSequences, ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -2759,7 +2758,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, false, true);
 
     let ldmSpace = ldmParams.get_table_size();
-    let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
+    let maxNbLdmSeq = ldmParams.get_max_nb_seq(blockSize);
     let ldmSeqSpace = if ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_cwksp_aligned64_alloc_size(maxNbLdmSeq.wrapping_mul(size_of::<rawSeq>()))
     } else {
@@ -3220,7 +3219,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     } else {
         0
     };
-    let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(params.ldmParams, blockSize);
+    let maxNbLdmSeq = params.ldmParams.get_max_nb_seq(blockSize);
 
     let indexTooClose = ZSTD_indexTooCloseToMax((*zc).blockState.matchState.window);
     let dictTooBig = ZSTD_dictTooBig(loadedDictSize);
