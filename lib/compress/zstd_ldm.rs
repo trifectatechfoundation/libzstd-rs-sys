@@ -711,98 +711,100 @@ fn ZSTD_ldm_reduceTable(table: &mut [ldmEntry_t], reducerValue: u32) {
     }
 }
 
-pub unsafe fn ZSTD_ldm_generateSequences(
-    ldmState: &mut ldmState_t,
-    sequences: &mut RawSeqStore_t,
-    params: &ldmParams_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> Result<(), Error> {
-    let maxDist = 1 << params.windowLog;
-    let istart = src as *const u8;
-    let iend = istart.add(srcSize);
-    let kMaxChunkSize = 1 << 20;
-    let nbChunks = (srcSize / kMaxChunkSize)
-        .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
-    let mut leftoverSize = 0;
+impl ldmState_t {
+    pub unsafe fn generate_sequences(
+        &mut self,
+        sequences: &mut RawSeqStore_t,
+        params: &ldmParams_t,
+        src: *const core::ffi::c_void,
+        srcSize: size_t,
+    ) -> Result<(), Error> {
+        let maxDist = 1 << params.windowLog;
+        let istart = src as *const u8;
+        let iend = istart.add(srcSize);
+        let kMaxChunkSize = 1 << 20;
+        let nbChunks = (srcSize / kMaxChunkSize)
+            .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
+        let mut leftoverSize = 0;
 
-    for chunk in 0..nbChunks {
-        if sequences.size >= sequences.capacity {
-            break;
-        }
-        let chunkStart = istart.add(chunk * kMaxChunkSize);
-        let remaining = iend.offset_from_unsigned(chunkStart);
-        let chunkEnd = if remaining < kMaxChunkSize {
-            iend
-        } else {
-            chunkStart.add(kMaxChunkSize)
-        };
-        let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
-        let prevSize = sequences.size;
+        for chunk in 0..nbChunks {
+            if sequences.size >= sequences.capacity {
+                break;
+            }
+            let chunkStart = istart.add(chunk * kMaxChunkSize);
+            let remaining = iend.offset_from_unsigned(chunkStart);
+            let chunkEnd = if remaining < kMaxChunkSize {
+                iend
+            } else {
+                chunkStart.add(kMaxChunkSize)
+            };
+            let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
+            let prevSize = sequences.size;
 
-        // 1. Perform overflow correction if necessary.
-        if ldmState.window.needs_overflow_correction(
-            0,
-            maxDist,
-            ldmState.loadedDictEnd,
-            chunkStart as *const core::ffi::c_void,
-            chunkEnd as *const core::ffi::c_void,
-        ) {
-            let ldmHSize = 1usize << params.hashLog;
-            let correction = ldmState.window.correct_overflow(
+            // 1. Perform overflow correction if necessary.
+            if self.window.needs_overflow_correction(
                 0,
                 maxDist,
+                self.loadedDictEnd,
                 chunkStart as *const core::ffi::c_void,
+                chunkEnd as *const core::ffi::c_void,
+            ) {
+                let ldmHSize = 1usize << params.hashLog;
+                let correction = self.window.correct_overflow(
+                    0,
+                    maxDist,
+                    chunkStart as *const core::ffi::c_void,
+                );
+                let ldmTable = unsafe { core::slice::from_raw_parts_mut(self.hashTable, ldmHSize) };
+                ZSTD_ldm_reduceTable(ldmTable, correction);
+                // invalidate dictionaries on overflow correction
+                self.loadedDictEnd = 0;
+            }
+
+            // 2. We enforce the maximum offset allowed.
+            //
+            // kMaxChunkSize should be small enough that we don't lose too much of
+            // the window through early invalidation.
+            // TODO: * Test the chunk size.
+            //       * Try invalidation after the sequence generation and test the
+            //         offset against maxDist directly.
+            //
+            // NOTE: Because of dictionaries + sequence splitting we MUST make sure
+            // that any offset used is valid at the END of the sequence, since it may
+            // be split into two sequences. This condition holds when using
+            // ZSTD_window_t::enforce_max_dist, but if we move to checking offsets
+            // against maxDist directly, we'll have to carefully handle that case.
+            self.window.enforce_max_dist(
+                chunkEnd as *const core::ffi::c_void,
+                maxDist,
+                &mut self.loadedDictEnd,
+                None,
             );
-            let ldmTable = unsafe { core::slice::from_raw_parts_mut(ldmState.hashTable, ldmHSize) };
-            ZSTD_ldm_reduceTable(ldmTable, correction);
-            // invalidate dictionaries on overflow correction
-            ldmState.loadedDictEnd = 0;
+
+            // 3. Generate the sequences for the chunk, and get newLeftoverSize.
+            let newLeftoverSize = ZSTD_ldm_generateSequences_internal(
+                self,
+                sequences,
+                params,
+                chunkStart as *const core::ffi::c_void,
+                chunkSize,
+            )?;
+
+            // 4. We add the leftover literals from previous iterations to the first
+            //    newly generated sequence, or add the `newLeftoverSize` if none are
+            //    generated.
+            // Prepend the leftover literals from the last call
+            if prevSize < sequences.size {
+                let fresh5 = &mut (*(sequences.seq).add(prevSize)).litLength;
+                *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
+                leftoverSize = newLeftoverSize;
+            } else {
+                leftoverSize = leftoverSize.wrapping_add(chunkSize);
+            }
         }
 
-        // 2. We enforce the maximum offset allowed.
-        //
-        // kMaxChunkSize should be small enough that we don't lose too much of
-        // the window through early invalidation.
-        // TODO: * Test the chunk size.
-        //       * Try invalidation after the sequence generation and test the
-        //         offset against maxDist directly.
-        //
-        // NOTE: Because of dictionaries + sequence splitting we MUST make sure
-        // that any offset used is valid at the END of the sequence, since it may
-        // be split into two sequences. This condition holds when using
-        // ZSTD_window_t::enforce_max_dist, but if we move to checking offsets
-        // against maxDist directly, we'll have to carefully handle that case.
-        ldmState.window.enforce_max_dist(
-            chunkEnd as *const core::ffi::c_void,
-            maxDist,
-            &mut ldmState.loadedDictEnd,
-            None,
-        );
-
-        // 3. Generate the sequences for the chunk, and get newLeftoverSize.
-        let newLeftoverSize = ZSTD_ldm_generateSequences_internal(
-            ldmState,
-            sequences,
-            params,
-            chunkStart as *const core::ffi::c_void,
-            chunkSize,
-        )?;
-
-        // 4. We add the leftover literals from previous iterations to the first
-        //    newly generated sequence, or add the `newLeftoverSize` if none are
-        //    generated.
-        // Prepend the leftover literals from the last call
-        if prevSize < sequences.size {
-            let fresh5 = &mut (*(sequences.seq).add(prevSize)).litLength;
-            *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
-            leftoverSize = newLeftoverSize;
-        } else {
-            leftoverSize = leftoverSize.wrapping_add(chunkSize);
-        }
+        Ok(())
     }
-
-    Ok(())
 }
 
 pub fn ZSTD_ldm_skipSequences(

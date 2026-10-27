@@ -23,9 +23,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
-use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_generateSequences,
-};
+use crate::lib::compress::zstd_ldm::{ldmEntry_t, ldmParams_t, ldmState_t};
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2,
@@ -713,14 +711,15 @@ unsafe fn ZSTDMT_serialState_genSequences(
                 .ldmState
                 .window
                 .update(src.start, src.size, false);
-            ZSTD_ldm_generateSequences(
-                &mut (*serialState).ldmState,
-                seqStore,
-                &(*serialState).params.ldmParams,
-                src.start,
-                src.size,
-            )
-            .expect("We provide a large enough buffer to never fail.");
+            (*serialState)
+                .ldmState
+                .generate_sequences(
+                    seqStore,
+                    &(*serialState).params.ldmParams,
+                    src.start,
+                    src.size,
+                )
+                .expect("We provide a large enough buffer to never fail.");
 
             // Update ldmWindow to match the ldmState.window and signal the main
             // thread if it is waiting for a buffer.
