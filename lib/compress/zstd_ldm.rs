@@ -501,31 +501,24 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Input positions
     let mut anchor = istart;
-    let mut ip = istart;
 
     if srcSize < minMatchLength as size_t {
         return Ok(iend.offset_from_unsigned(anchor));
     }
 
-    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
+    let ilimit = srcSize.saturating_sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ldmRollingHashState_t::new(params);
-    hashState.reset(core::slice::from_raw_parts(ip, minMatchLength as usize));
-    ip = ip.offset(minMatchLength as isize);
+    hashState.reset(&src[..minMatchLength as usize]);
+    let mut ip = minMatchLength as usize;
 
     while ip < ilimit {
         let mut numSplits = 0;
-        let hashed = hashState.feed(
-            core::slice::from_raw_parts(ip, ilimit.offset_from_unsigned(ip)),
-            &mut ldmState.splitIndices,
-            &mut numSplits,
-        );
+        let hashed = hashState.feed(&src[ip..ilimit], &mut ldmState.splitIndices, &mut numSplits);
 
         for n in 0..numSplits {
-            let split = ip
-                .add(ldmState.splitIndices[n])
-                .sub(minMatchLength as usize);
+            let split = istart.add(ip + ldmState.splitIndices[n] - minMatchLength as usize);
             let xxhash = ZSTD_XXH64_slice(
                 core::slice::from_raw_parts(split, minMatchLength as usize),
                 0,
@@ -676,13 +669,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // only the first one. So skip over overlapping matches.
                     // This is a major speed boost (20x) for compressing a single byte
                     // repeated, when that byte ends up in the table.
-                    if anchor > ip.add(hashed) {
+                    if anchor > istart.add(ip + hashed) {
                         hashState.reset(core::slice::from_raw_parts(
                             anchor.sub(minMatchLength as usize),
                             minMatchLength as usize,
                         ));
                         // Continue the outer loop at anchor (ip + hashed == anchor).
-                        ip = anchor.sub(hashed as usize);
+                        ip = anchor.offset_from_unsigned(istart) - hashed;
                         break;
                     }
                 } else {
@@ -699,7 +692,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             }
         }
 
-        ip = ip.add(hashed);
+        ip += hashed;
     }
 
     Ok(iend.offset_from_unsigned(anchor))
