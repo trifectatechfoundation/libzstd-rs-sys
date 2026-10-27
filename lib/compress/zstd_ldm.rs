@@ -497,20 +497,18 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     // Input bounds
     let istart = src.as_ptr_range().start;
     let iend = src.as_ptr_range().end;
-
-    // Input positions
-    let mut anchor = 0;
-
-    if src.len() < minMatchLength as size_t {
-        return Ok(src.len());
-    }
-
     let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
+    let Some(head) = src.get(..minMatchLength as usize) else {
+        return Ok(src.len());
+    };
     let mut hashState = ldmRollingHashState_t::new(params);
-    hashState.reset(&src[..minMatchLength as usize]);
-    let mut ip = minMatchLength as usize;
+    hashState.reset(head);
+
+    // Input positions
+    let mut anchor = 0;
+    let mut ip = head.len();
 
     while ip < ilimit {
         let mut numSplits = 0;
