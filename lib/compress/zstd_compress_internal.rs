@@ -733,6 +733,16 @@ pub(crate) fn ZSTD_count_safe(input: &[u8], match_: &[u8]) -> usize {
     inputChunks.len() * N + tail
 }
 
+/// Like [`ZSTD_count_safe`], but a match that runs to the end of `match_` continues in `prefix`.
+#[inline]
+pub(crate) fn ZSTD_count_2segments_safe(input: &[u8], match_: &[u8], prefix: &[u8]) -> usize {
+    let matchLength = ZSTD_count_safe(input, match_);
+    if matchLength != match_.len() {
+        return matchLength;
+    }
+    matchLength + ZSTD_count_safe(&input[matchLength..], prefix)
+}
+
 #[inline]
 pub(crate) unsafe fn ZSTD_count_2segments(
     ip: *const u8,

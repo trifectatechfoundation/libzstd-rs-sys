@@ -66,8 +66,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments, ZSTD_count_safe, ZSTD_storeSeq,
-    HASH_READ_SIZE,
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments_safe, ZSTD_count_safe,
+    ZSTD_storeSeq, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -568,33 +568,17 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     }
 
                     let (curForwardMatchLength, curBackwardMatchLength) = if extDict {
-                        let curMatchBase = if cur.offset < dictLimit {
-                            dictBase
+                        let (beforeMatch, matchSegment) = if cur.offset < dictLimit {
+                            extDictSlice.split_at((cur.offset - lowestIndex) as usize)
                         } else {
-                            base
-                        };
-                        let pMatch = curMatchBase.wrapping_offset(cur.offset as isize);
-                        let matchEnd = if cur.offset < dictLimit {
-                            dictEnd
-                        } else {
-                            iend
-                        };
-                        let lowMatchPtr = if cur.offset < dictLimit {
-                            dictStart
-                        } else {
-                            lowPrefixPtr
+                            prefix.split_at((cur.offset - dictLimit) as usize)
                         };
 
-                        let forward =
-                            ZSTD_count_2segments(splitPtr, pMatch, iend, matchEnd, lowPrefixPtr);
+                        let forward = ZSTD_count_2segments_safe(afterSplit, matchSegment, prefix);
                         if forward < minMatchLength {
                             continue;
                         }
 
-                        let beforeMatch = core::slice::from_raw_parts(
-                            lowMatchPtr,
-                            pMatch.addr() - lowMatchPtr.addr(),
-                        );
                         let backward = ZSTD_ldm_countBackwardsMatch_2segments(
                             beforeSplit,
                             beforeMatch,
