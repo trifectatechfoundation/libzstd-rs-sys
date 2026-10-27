@@ -496,9 +496,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Input bounds
     let srcIndex = src.as_ptr().addr().wrapping_sub(base.addr());
-    let iend = src.as_ptr_range().end;
     let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
-    let prefix = core::slice::from_raw_parts(lowPrefixPtr, iend.addr() - lowPrefixPtr.addr());
+    let prefix =
+        core::slice::from_raw_parts(lowPrefixPtr, srcIndex + src.len() - dictLimit as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let Some(head) = src.get(..minMatchLength) else {
