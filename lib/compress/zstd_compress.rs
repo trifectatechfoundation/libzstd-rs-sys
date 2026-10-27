@@ -777,8 +777,8 @@ use crate::lib::compress::zstd_lazy::{
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable,
-    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_getTableSize,
-    ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
+    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_skipRawSeqStoreBytes,
+    ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -2758,7 +2758,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(size_of::<ZSTD_compressedBlockState_t>());
     let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, false, true);
 
-    let ldmSpace = ZSTD_ldm_getTableSize(*ldmParams);
+    let ldmSpace = ldmParams.get_table_size();
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
     let ldmSeqSpace = if ldmParams.enableLdm == ParamSwitch::Enable {
         ZSTD_cwksp_aligned64_alloc_size(maxNbLdmSeq.wrapping_mul(size_of::<rawSeq>()))
