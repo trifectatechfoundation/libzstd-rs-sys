@@ -4484,8 +4484,7 @@ unsafe fn ZSTD_buildSeqStore(
         (*zc).ldmState.generate_sequences(
             &mut ldmSeqStore,
             &(*zc).appliedParams.ldmParams,
-            src,
-            srcSize,
+            core::slice::from_raw_parts(src.cast(), srcSize),
         )?;
 
         ZSTD_ldm_blockCompress(
