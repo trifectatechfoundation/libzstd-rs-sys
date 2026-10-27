@@ -455,8 +455,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     ldmState: &mut ldmState_t,
     rawSeqStore: &mut RawSeqStore_t,
     params: &ldmParams_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
 ) -> Result<size_t, Error> {
     // LDM parameters
     let extDict = ldmState.window.has_ext_dict();
@@ -496,9 +495,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
 
     // Input bounds
-    let istart = src as *const u8;
+    let srcSize = src.len();
+    let istart = src.as_ptr();
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
 
     // Input positions
     let mut anchor = istart;
@@ -507,6 +506,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     if srcSize < minMatchLength as size_t {
         return Ok(iend.offset_from_unsigned(anchor));
     }
+
+    let ilimit = iend.sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ldmRollingHashState_t::new(params);
@@ -786,8 +787,7 @@ impl ldmState_t {
                 self,
                 sequences,
                 params,
-                chunkStart as *const core::ffi::c_void,
-                chunkSize,
+                &src[chunk * kMaxChunkSize..][..chunkSize],
             )?;
 
             // 4. We add the leftover literals from previous iterations to the first
