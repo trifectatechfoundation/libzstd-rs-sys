@@ -776,8 +776,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable,
-    ZSTD_ldm_generateSequences, ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_generateSequences,
+    ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -6417,11 +6417,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         } else {
             iend.wrapping_offset_from(ls.window.base) as u32
         };
-        ZSTD_ldm_fillHashTable(
-            ls,
-            core::slice::from_raw_parts(ip, srcSize),
-            &params.ldmParams,
-        );
+        ls.fill_hash_table(core::slice::from_raw_parts(ip, srcSize), &params.ldmParams);
     }
 
     // If the dict is larger than we can reasonably index in our tables, only load the suffix.
