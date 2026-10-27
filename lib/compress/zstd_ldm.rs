@@ -251,37 +251,45 @@ impl ldmRollingHashState_t {
     }
 }
 
-pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compressionParameters) {
-    params.windowLog = cParams.windowLog;
+impl ldmParams_t {
+    /// If the `hashRateLog` is not set, set it to its default value based on
+    /// `windowLog` and `hashLog`.
+    ///
+    /// Ensures that `bucketSizeLog <= hashLog` (setting it to `hashLog` if it is not).
+    ///
+    /// Ensures that the `minMatchLength >= targetLength` during optimal parsing.
+    pub fn adjust_parameters(&mut self, cParams: &ZSTD_compressionParameters) {
+        self.windowLog = cParams.windowLog;
 
-    if params.hashRateLog == 0 {
-        if params.hashLog > 0 {
-            // if params->hashLog is set, derive hashRateLog from it
-            if params.windowLog > params.hashLog {
-                params.hashRateLog = (params.windowLog).wrapping_sub(params.hashLog);
+        if self.hashRateLog == 0 {
+            if self.hashLog > 0 {
+                // if params->hashLog is set, derive hashRateLog from it
+                if self.windowLog > self.hashLog {
+                    self.hashRateLog = (self.windowLog).wrapping_sub(self.hashLog);
+                }
+            } else {
+                // mapping from [fast, rate7] to [btultra2, rate4]
+                self.hashRateLog =
+                    7u32.wrapping_sub((cParams.strategy as core::ffi::c_uint).wrapping_div(3));
             }
-        } else {
-            // mapping from [fast, rate7] to [btultra2, rate4]
-            params.hashRateLog =
-                7u32.wrapping_sub((cParams.strategy as core::ffi::c_uint).wrapping_div(3));
         }
-    }
-    if params.hashLog == 0 {
-        params.hashLog = params
-            .windowLog
-            .wrapping_sub(params.hashRateLog)
-            .clamp(ZSTD_HASHLOG_MIN as u32, ZSTD_HASHLOG_MAX as u32);
-    }
-    if params.minMatchLength == 0 {
-        params.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
-        if cParams.strategy >= ZSTD_btultra {
-            params.minMatchLength /= 2;
+        if self.hashLog == 0 {
+            self.hashLog = self
+                .windowLog
+                .wrapping_sub(self.hashRateLog)
+                .clamp(ZSTD_HASHLOG_MIN as u32, ZSTD_HASHLOG_MAX as u32);
         }
+        if self.minMatchLength == 0 {
+            self.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
+            if cParams.strategy >= ZSTD_btultra {
+                self.minMatchLength /= 2;
+            }
+        }
+        if self.bucketSizeLog == 0 {
+            self.bucketSizeLog = cParams.strategy.clamp(4, 8);
+        }
+        self.bucketSizeLog = self.bucketSizeLog.min(self.hashLog);
     }
-    if params.bucketSizeLog == 0 {
-        params.bucketSizeLog = cParams.strategy.clamp(4, 8);
-    }
-    params.bucketSizeLog = params.bucketSizeLog.min(params.hashLog);
 }
 
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {

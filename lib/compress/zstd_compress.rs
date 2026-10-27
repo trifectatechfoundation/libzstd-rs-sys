@@ -776,9 +776,9 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_blockCompress,
-    ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
-    ZSTD_ldm_getTableSize, ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable,
+    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_getTableSize,
+    ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -1519,7 +1519,7 @@ impl From<ZSTD_compressionParameters> for ZSTD_CCtx_params {
         cctxParams.ldmParams.enableLdm =
             ZSTD_resolveEnableLdm(cctxParams.ldmParams.enableLdm, &cParams);
         if cctxParams.ldmParams.enableLdm == ParamSwitch::Enable {
-            ZSTD_ldm_adjustParameters(&mut cctxParams.ldmParams, &cParams);
+            cctxParams.ldmParams.adjust_parameters(&cParams);
         }
         cctxParams.postBlockSplitter =
             ZSTD_resolveBlockSplitterMode(cctxParams.postBlockSplitter, &cParams);
@@ -3193,7 +3193,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         // Adjust long distance matching parameters
         let cParams = (*zc).appliedParams.cParams;
-        ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &cParams);
+        (*zc).appliedParams.ldmParams.adjust_parameters(&cParams);
     }
 
     // Point params at the applied params, now that LDM has modified them.
