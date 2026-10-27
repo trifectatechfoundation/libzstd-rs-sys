@@ -148,34 +148,36 @@ static ZSTD_ldm_gearTab: [u64; 256] = [
 
 pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 
-/// Initializes the rolling hash state such that it will honor the
-/// settings in params.
-fn ZSTD_ldm_gear_init(params: &ldmParams_t) -> ldmRollingHashState_t {
-    let maxBitsInMask = params.minMatchLength.min(64);
-    let hashRateLog = params.hashRateLog;
+impl ldmRollingHashState_t {
+    /// Initializes the rolling hash state such that it will honor the
+    /// settings in params.
+    fn new(params: &ldmParams_t) -> Self {
+        let maxBitsInMask = params.minMatchLength.min(64);
+        let hashRateLog = params.hashRateLog;
 
-    // The choice of the splitting criterion is subject to two conditions:
-    //   1. it has to trigger on average every 2^(hashRateLog) bytes;
-    //   2. ideally, it has to depend on a window of minMatchLength bytes.
-    //
-    // In the gear hash algorithm, bit n depends on the last n bytes;
-    // so in order to obtain a good quality splitting criterion it is
-    // preferable to use bits with high weight.
-    //
-    // To match condition 1 we use a mask with hashRateLog bits set
-    // and, because of the previous remark, we make sure these bits
-    // have the highest possible weight while still respecting
-    // condition 2.
-    let stopMask = if hashRateLog > 0 && hashRateLog <= maxBitsInMask {
-        (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog)
-    } else {
-        // In this degenerate case we simply honor the hash rate.
-        (1u64 << hashRateLog).wrapping_sub(1)
-    };
+        // The choice of the splitting criterion is subject to two conditions:
+        //   1. it has to trigger on average every 2^(hashRateLog) bytes;
+        //   2. ideally, it has to depend on a window of minMatchLength bytes.
+        //
+        // In the gear hash algorithm, bit n depends on the last n bytes;
+        // so in order to obtain a good quality splitting criterion it is
+        // preferable to use bits with high weight.
+        //
+        // To match condition 1 we use a mask with hashRateLog bits set
+        // and, because of the previous remark, we make sure these bits
+        // have the highest possible weight while still respecting
+        // condition 2.
+        let stopMask = if hashRateLog > 0 && hashRateLog <= maxBitsInMask {
+            (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog)
+        } else {
+            // In this degenerate case we simply honor the hash rate.
+            (1u64 << hashRateLog).wrapping_sub(1)
+        };
 
-    ldmRollingHashState_t {
-        rolling: u64::from(u32::MAX),
-        stopMask,
+        ldmRollingHashState_t {
+            rolling: u64::from(u32::MAX),
+            stopMask,
+        }
     }
 }
 
@@ -390,7 +392,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(ldmState: &mut ldmState_t, src: &[u8], para
     let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
     let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
 
-    let mut hashState = ZSTD_ldm_gear_init(params);
+    let mut hashState = ldmRollingHashState_t::new(params);
 
     let mut pos = 0;
     while pos < src.len() {
@@ -501,7 +503,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     }
 
     // Initialize the rolling hash state with the first minMatchLength bytes
-    let mut hashState = ZSTD_ldm_gear_init(params);
+    let mut hashState = ldmRollingHashState_t::new(params);
     ZSTD_ldm_gear_reset(
         &mut hashState,
         core::slice::from_raw_parts(ip, minMatchLength as usize),
