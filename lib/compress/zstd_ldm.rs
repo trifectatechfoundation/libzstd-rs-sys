@@ -720,26 +720,16 @@ impl ldmState_t {
         src: &[u8],
     ) -> Result<(), Error> {
         let maxDist = 1 << params.windowLog;
-        let srcSize = src.len();
-        let istart = src.as_ptr();
-        let iend = istart.add(srcSize);
         let kMaxChunkSize = 1 << 20;
-        let nbChunks = (srcSize / kMaxChunkSize)
-            .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
         let mut leftoverSize = 0;
 
-        for chunk in 0..nbChunks {
+        for chunk in src.chunks(kMaxChunkSize) {
             if sequences.size >= sequences.capacity {
                 break;
             }
-            let chunkStart = istart.add(chunk * kMaxChunkSize);
-            let remaining = iend.offset_from_unsigned(chunkStart);
-            let chunkEnd = if remaining < kMaxChunkSize {
-                iend
-            } else {
-                chunkStart.add(kMaxChunkSize)
-            };
-            let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
+            let chunkStart = chunk.as_ptr();
+            let chunkEnd = chunkStart.add(chunk.len());
+            let chunkSize = chunk.len();
             let prevSize = sequences.size;
 
             // 1. Perform overflow correction if necessary.
@@ -783,12 +773,8 @@ impl ldmState_t {
             );
 
             // 3. Generate the sequences for the chunk, and get newLeftoverSize.
-            let newLeftoverSize = ZSTD_ldm_generateSequences_internal(
-                self,
-                sequences,
-                params,
-                &src[chunk * kMaxChunkSize..][..chunkSize],
-            )?;
+            let newLeftoverSize =
+                ZSTD_ldm_generateSequences_internal(self, sequences, params, chunk)?;
 
             // 4. We add the leftover literals from previous iterations to the first
             //    newly generated sequence, or add the `newLeftoverSize` if none are
