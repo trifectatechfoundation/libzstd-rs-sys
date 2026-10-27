@@ -553,97 +553,99 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // move on
             if split < anchor {
                 hashTable.insert_entry(hash as size_t, newEntry);
-            } else {
-                let (beforeSplit, afterSplit) = src.split_at(split);
-                let beforeSplit = &beforeSplit[anchor..];
-                for cur in bucket {
-                    if cur.checksum != checksum || cur.offset <= lowestIndex {
+                continue;
+            }
+
+            let (beforeSplit, afterSplit) = src.split_at(split);
+            let beforeSplit = &beforeSplit[anchor..];
+            for cur in bucket {
+                if cur.checksum != checksum || cur.offset <= lowestIndex {
+                    continue;
+                }
+
+                let (curForwardMatchLength, curBackwardMatchLength) = if extDict {
+                    let (beforeMatch, matchSegment) = if cur.offset < dictLimit {
+                        extDictSlice.split_at((cur.offset - lowestIndex) as usize)
+                    } else {
+                        prefix.split_at((cur.offset - dictLimit) as usize)
+                    };
+
+                    let forward = ZSTD_count_2segments_safe(afterSplit, matchSegment, prefix);
+                    if forward < minMatchLength {
                         continue;
                     }
 
-                    let (curForwardMatchLength, curBackwardMatchLength) = if extDict {
-                        let (beforeMatch, matchSegment) = if cur.offset < dictLimit {
-                            extDictSlice.split_at((cur.offset - lowestIndex) as usize)
-                        } else {
-                            prefix.split_at((cur.offset - dictLimit) as usize)
-                        };
+                    let backward = ZSTD_ldm_countBackwardsMatch_2segments(
+                        beforeSplit,
+                        beforeMatch,
+                        extDictSlice,
+                    );
 
-                        let forward = ZSTD_count_2segments_safe(afterSplit, matchSegment, prefix);
-                        if forward < minMatchLength {
-                            continue;
-                        }
-
-                        let backward = ZSTD_ldm_countBackwardsMatch_2segments(
-                            beforeSplit,
-                            beforeMatch,
-                            extDictSlice,
-                        );
-
-                        (forward, backward)
-                    } else {
-                        let (beforeMatch, matchSegment) =
-                            prefix.split_at((cur.offset - dictLimit) as usize);
-
-                        let forward = ZSTD_count_safe(afterSplit, matchSegment);
-                        if forward < minMatchLength {
-                            continue;
-                        }
-
-                        let backward = ZSTD_ldm_countBackwardsMatch(beforeSplit, beforeMatch);
-
-                        (forward, backward)
-                    };
-
-                    let curTotalMatchLength =
-                        curForwardMatchLength.wrapping_add(curBackwardMatchLength);
-                    if curTotalMatchLength > bestMatchLength {
-                        bestMatchLength = curTotalMatchLength;
-                        forwardMatchLength = curForwardMatchLength;
-                        backwardMatchLength = curBackwardMatchLength;
-                        bestEntry = Some(*cur);
-                    }
-                }
-
-                if let Some(bestEntry) = bestEntry {
-                    // Match found
-                    let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
-                    let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
-
-                    let seq = (rawSeqStore.seq).add(rawSeqStore.size);
-
-                    // Out of sequence storage
-                    if rawSeqStore.size == rawSeqStore.capacity {
-                        return Err(Error::dstSize_tooSmall);
-                    }
-                    (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
-                    (*seq).matchLength = mLength as u32;
-                    (*seq).offset = offset;
-                    rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
-
-                    // Insert the current entry into the hash table --- it must be
-                    // done after the previous block to avoid clobbering bestEntry
-                    hashTable.insert_entry(hash as size_t, newEntry);
-
-                    anchor = split + forwardMatchLength;
-
-                    // If we find a match that ends after the data that we've hashed
-                    // then we have a repeating, overlapping, pattern. E.g. all zeros.
-                    // If one repetition of the pattern matches our `stopMask` then all
-                    // repetitions will. We don't need to insert them all into out table,
-                    // only the first one. So skip over overlapping matches.
-                    // This is a major speed boost (20x) for compressing a single byte
-                    // repeated, when that byte ends up in the table.
-                    if anchor > ip + hashed {
-                        hashState.reset(&src[anchor - minMatchLength..anchor]);
-                        // Continue the outer loop at anchor (ip + hashed == anchor).
-                        ip = anchor - hashed;
-                        break;
-                    }
+                    (forward, backward)
                 } else {
-                    // No match found -- insert an entry into the hash table
-                    // and process the next candidate match
-                    hashTable.insert_entry(hash as size_t, newEntry);
+                    let (beforeMatch, matchSegment) =
+                        prefix.split_at((cur.offset - dictLimit) as usize);
+
+                    let forward = ZSTD_count_safe(afterSplit, matchSegment);
+                    if forward < minMatchLength {
+                        continue;
+                    }
+
+                    let backward = ZSTD_ldm_countBackwardsMatch(beforeSplit, beforeMatch);
+
+                    (forward, backward)
+                };
+
+                let curTotalMatchLength =
+                    curForwardMatchLength.wrapping_add(curBackwardMatchLength);
+                if curTotalMatchLength > bestMatchLength {
+                    bestMatchLength = curTotalMatchLength;
+                    forwardMatchLength = curForwardMatchLength;
+                    backwardMatchLength = curBackwardMatchLength;
+                    bestEntry = Some(*cur);
                 }
+            }
+
+            let Some(bestEntry) = bestEntry else {
+                // No match found -- insert an entry into the hash table
+                // and process the next candidate match
+                hashTable.insert_entry(hash as size_t, newEntry);
+                continue;
+            };
+
+            // Match found
+            let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
+            let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
+
+            let seq = (rawSeqStore.seq).add(rawSeqStore.size);
+
+            // Out of sequence storage
+            if rawSeqStore.size == rawSeqStore.capacity {
+                return Err(Error::dstSize_tooSmall);
+            }
+            (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
+            (*seq).matchLength = mLength as u32;
+            (*seq).offset = offset;
+            rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
+
+            // Insert the current entry into the hash table --- it must be
+            // done after the previous block to avoid clobbering bestEntry
+            hashTable.insert_entry(hash as size_t, newEntry);
+
+            anchor = split + forwardMatchLength;
+
+            // If we find a match that ends after the data that we've hashed
+            // then we have a repeating, overlapping, pattern. E.g. all zeros.
+            // If one repetition of the pattern matches our `stopMask` then all
+            // repetitions will. We don't need to insert them all into out table,
+            // only the first one. So skip over overlapping matches.
+            // This is a major speed boost (20x) for compressing a single byte
+            // repeated, when that byte ends up in the table.
+            if anchor > ip + hashed {
+                hashState.reset(&src[anchor - minMatchLength..anchor]);
+                // Continue the outer loop at anchor (ip + hashed == anchor).
+                ip = anchor - hashed;
+                break;
             }
         }
 
