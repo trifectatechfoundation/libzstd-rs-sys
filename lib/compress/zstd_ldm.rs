@@ -393,14 +393,30 @@ unsafe fn ZSTD_ldm_fillFastTables(ms: &mut ZSTD_MatchState_t, end: *const core::
     }
 }
 
+struct LdmHashTable<'a> {
+    hash_table: &'a mut [ldmEntry_t],
+    bucket_offsets: &'a mut [u8],
+}
+
 impl ldmState_t {
-    pub unsafe fn fill_hash_table(&mut self, src: &[u8], params: &ldmParams_t) {
+    /// # Safety
+    ///
+    /// - `self.hashTable` must be valid for `1 << params.hashLog` entries.
+    /// - `self.bucketOffsets` must be valid for `1 << (params.hashLog - params.bucketSizeLog)` entries.
+    /// - No other reference to the hash table or bucket offsets may be live for the duration of `'a`.
+    unsafe fn get_hash_table<'a>(&self, params: &ldmParams_t) -> LdmHashTable<'a> {
+        let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
+        LdmHashTable {
+            hash_table: core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog),
+            bucket_offsets: core::slice::from_raw_parts_mut(self.bucketOffsets, 1 << hBits),
+        }
+    }
+
+    pub fn fill_hash_table(&mut self, src: &[u8], params: &ldmParams_t) {
         let minMatchLength = params.minMatchLength as usize;
-        let bucketSizeLog = params.bucketSizeLog;
-        let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
+        let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
         let base = self.window.base;
-        let hashTable = core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog);
-        let bucketOffsets = core::slice::from_raw_parts_mut(self.bucketOffsets, 1 << hBits);
+        let hashTable = unsafe { self.get_hash_table(params) };
 
         let mut hashState = ldmRollingHashState_t::new(params);
 
@@ -421,8 +437,8 @@ impl ldmState_t {
                     };
 
                     ZSTD_ldm_insertEntry(
-                        hashTable,
-                        bucketOffsets,
+                        hashTable.hash_table,
+                        hashTable.bucket_offsets,
                         hash as size_t,
                         entry,
                         params.bucketSizeLog,
@@ -461,8 +477,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength as usize;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
-    let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
-    let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
+    let hashTable = ldmState.get_hash_table(params);
 
     // Prefix and extDict parameters
     let dictLimit = ldmState.window.dictLimit;
@@ -528,7 +543,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
             // Get the bucket associated with hash.
             let bucketSizeLog = params.bucketSizeLog;
-            let bucket = &hashTable[(hash as usize) << bucketSizeLog..][..1 << bucketSizeLog];
+            let bucket =
+                &hashTable.hash_table[(hash as usize) << bucketSizeLog..][..1 << bucketSizeLog];
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
@@ -541,8 +557,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // move on
             if split < anchor {
                 ZSTD_ldm_insertEntry(
-                    hashTable,
-                    bucketOffsets,
+                    hashTable.hash_table,
+                    hashTable.bucket_offsets,
                     hash as size_t,
                     newEntry,
                     params.bucketSizeLog,
@@ -617,8 +633,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // Insert the current entry into the hash table --- it must be
                     // done after the previous block to avoid clobbering bestEntry
                     ZSTD_ldm_insertEntry(
-                        hashTable,
-                        bucketOffsets,
+                        hashTable.hash_table,
+                        hashTable.bucket_offsets,
                         hash as size_t,
                         newEntry,
                         params.bucketSizeLog,
@@ -643,8 +659,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // No match found -- insert an entry into the hash table
                     // and process the next candidate match
                     ZSTD_ldm_insertEntry(
-                        hashTable,
-                        bucketOffsets,
+                        hashTable.hash_table,
+                        hashTable.bucket_offsets,
                         hash as size_t,
                         newEntry,
                         params.bucketSizeLog,
