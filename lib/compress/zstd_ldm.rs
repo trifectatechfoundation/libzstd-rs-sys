@@ -197,58 +197,58 @@ impl ldmRollingHashState_t {
             hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from(byte)]);
         }
     }
-}
 
-/// Registers in the splits array all the split points found in `data`.
-/// This function terminates when either all the data has been processed or
-/// LDM_BATCH_SIZE splits are present in the splits array.
-///
-/// Precondition: The splits array must not be full.
-///
-/// # Returns
-///
-/// The number of bytes processed.
-fn ZSTD_ldm_gear_feed(
-    state: &mut ldmRollingHashState_t,
-    data: &[u8],
-    splits: &mut [size_t; LDM_BATCH_SIZE],
-    numSplits: &mut usize,
-) -> size_t {
-    let mut hash = state.rolling;
-    let mask = state.stopMask;
-    let mut n = 0usize;
+    /// Registers in the splits array all the split points found in `data`.
+    /// This function terminates when either all the data has been processed or
+    /// [`LDM_BATCH_SIZE`] splits are present in the splits array.
+    ///
+    /// Precondition: The splits array must not be full.
+    ///
+    /// # Returns
+    ///
+    /// The number of bytes processed.
+    fn feed(
+        &mut self,
+        data: &[u8],
+        splits: &mut [size_t; LDM_BATCH_SIZE],
+        numSplits: &mut usize,
+    ) -> size_t {
+        let mut hash = self.rolling;
+        let mask = self.stopMask;
+        let mut n = 0usize;
 
-    let (chunks, rest) = data.as_chunks::<4>();
+        let (chunks, rest) = data.as_chunks::<4>();
 
-    'done: {
-        macro_rules! gear_iter_once {
-            ($byte:expr) => {
-                hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from($byte)]);
-                n += 1;
-                if unlikely(hash & mask == 0) {
-                    splits[*numSplits] = n;
-                    *numSplits += 1;
-                    if *numSplits == LDM_BATCH_SIZE {
-                        break 'done;
+        'done: {
+            macro_rules! gear_iter_once {
+                ($byte:expr) => {
+                    hash = (hash << 1).wrapping_add(ZSTD_ldm_gearTab[usize::from($byte)]);
+                    n += 1;
+                    if unlikely(hash & mask == 0) {
+                        splits[*numSplits] = n;
+                        *numSplits += 1;
+                        if *numSplits == LDM_BATCH_SIZE {
+                            break 'done;
+                        }
                     }
-                }
-            };
+                };
+            }
+
+            for &[b0, b1, b2, b3] in chunks {
+                gear_iter_once!(b0);
+                gear_iter_once!(b1);
+                gear_iter_once!(b2);
+                gear_iter_once!(b3);
+            }
+            for &byte in rest {
+                gear_iter_once!(byte);
+            }
         }
 
-        for &[b0, b1, b2, b3] in chunks {
-            gear_iter_once!(b0);
-            gear_iter_once!(b1);
-            gear_iter_once!(b2);
-            gear_iter_once!(b3);
-        }
-        for &byte in rest {
-            gear_iter_once!(byte);
-        }
+        self.rolling = hash;
+
+        n
     }
-
-    state.rolling = hash;
-
-    n
 }
 
 pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compressionParameters) {
@@ -397,12 +397,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(ldmState: &mut ldmState_t, src: &[u8], para
     let mut pos = 0;
     while pos < src.len() {
         let mut numSplits = 0;
-        let hashed = ZSTD_ldm_gear_feed(
-            &mut hashState,
-            &src[pos..],
-            &mut ldmState.splitIndices,
-            &mut numSplits,
-        );
+        let hashed = hashState.feed(&src[pos..], &mut ldmState.splitIndices, &mut numSplits);
 
         for &splitIndex in &ldmState.splitIndices[..numSplits] {
             let splitEnd = pos + splitIndex;
@@ -509,8 +504,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     while ip < ilimit {
         let mut numSplits = 0;
-        let hashed = ZSTD_ldm_gear_feed(
-            &mut hashState,
+        let hashed = hashState.feed(
             core::slice::from_raw_parts(ip, ilimit.offset_from_unsigned(ip)),
             &mut ldmState.splitIndices,
             &mut numSplits,
