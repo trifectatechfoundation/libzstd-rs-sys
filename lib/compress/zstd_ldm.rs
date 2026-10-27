@@ -716,11 +716,11 @@ impl ldmState_t {
         &mut self,
         sequences: &mut RawSeqStore_t,
         params: &ldmParams_t,
-        src: *const core::ffi::c_void,
-        srcSize: size_t,
+        src: &[u8],
     ) -> Result<(), Error> {
         let maxDist = 1 << params.windowLog;
-        let istart = src as *const u8;
+        let srcSize = src.len();
+        let istart = src.as_ptr();
         let iend = istart.add(srcSize);
         let kMaxChunkSize = 1 << 20;
         let nbChunks = (srcSize / kMaxChunkSize)

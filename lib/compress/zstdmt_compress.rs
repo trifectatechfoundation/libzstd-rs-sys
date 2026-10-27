@@ -716,8 +716,11 @@ unsafe fn ZSTDMT_serialState_genSequences(
                 .generate_sequences(
                     seqStore,
                     &(*serialState).params.ldmParams,
-                    src.start,
-                    src.size,
+                    if src.size == 0 {
+                        &[]
+                    } else {
+                        core::slice::from_raw_parts(src.start.cast(), src.size)
+                    },
                 )
                 .expect("We provide a large enough buffer to never fail.");
 
