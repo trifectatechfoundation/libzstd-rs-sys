@@ -705,6 +705,34 @@ pub(crate) unsafe fn ZSTD_count(
     pIn.offset_from_unsigned(pStart)
 }
 
+/// The length of the common prefix of `input` and `match_`.
+///
+/// This version seems best for long matches, while [`ZSTD_count`] appears more optimal for short
+/// matches that exit early.
+#[inline]
+pub(crate) fn ZSTD_count_safe(input: &[u8], match_: &[u8]) -> usize {
+    const N: usize = size_of::<usize>();
+
+    let len = Ord::min(input.len(), match_.len());
+    let (inputChunks, inputRest) = input[..len].as_chunks::<N>();
+    let (matchChunks, matchRest) = match_[..len].as_chunks::<N>();
+
+    for (i, (a, b)) in inputChunks.iter().zip(matchChunks).enumerate() {
+        let diff = usize::from_ne_bytes(*a) ^ usize::from_ne_bytes(*b);
+        if diff != 0 {
+            return i * N + ZSTD_NbCommonBytes(diff) as usize;
+        }
+    }
+
+    let tail = inputRest
+        .iter()
+        .zip(matchRest)
+        .take_while(|(a, b)| a == b)
+        .count();
+
+    inputChunks.len() * N + tail
+}
+
 #[inline]
 pub(crate) unsafe fn ZSTD_count_2segments(
     ip: *const u8,
