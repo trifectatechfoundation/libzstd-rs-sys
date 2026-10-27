@@ -147,7 +147,7 @@ pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
 }
 
 pub(crate) const WILDCOPY_OVERLENGTH: usize = 32;
-pub(crate) const WILDCOPY_VECLEN: core::ffi::c_int = 16;
+pub(crate) const WILDCOPY_VECLEN: usize = 16;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Overlap {
