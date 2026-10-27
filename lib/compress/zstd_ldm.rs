@@ -396,6 +396,14 @@ unsafe fn ZSTD_ldm_fillFastTables(ms: &mut ZSTD_MatchState_t, end: *const core::
 struct LdmHashTable<'a> {
     hash_table: &'a mut [ldmEntry_t],
     bucket_offsets: &'a mut [u8],
+    bucket_size_log: u32,
+}
+
+impl LdmHashTable<'_> {
+    /// Get the bucket associated with hash
+    fn get_bucket(&mut self, hash: usize) -> &mut [ldmEntry_t] {
+        &mut self.hash_table[hash << self.bucket_size_log..][..1 << self.bucket_size_log]
+    }
 }
 
 impl ldmState_t {
@@ -409,6 +417,7 @@ impl ldmState_t {
         LdmHashTable {
             hash_table: core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog),
             bucket_offsets: core::slice::from_raw_parts_mut(self.bucketOffsets, 1 << hBits),
+            bucket_size_log: params.bucketSizeLog,
         }
     }
 
@@ -477,7 +486,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength as usize;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
-    let hashTable = ldmState.get_hash_table(params);
+    let mut hashTable = ldmState.get_hash_table(params);
 
     // Prefix and extDict parameters
     let dictLimit = ldmState.window.dictLimit;
@@ -541,10 +550,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
 
-            // Get the bucket associated with hash.
-            let bucketSizeLog = params.bucketSizeLog;
-            let bucket =
-                &hashTable.hash_table[(hash as usize) << bucketSizeLog..][..1 << bucketSizeLog];
+            let bucket = hashTable.get_bucket(hash as usize);
 
             let mut bestEntry = None;
             let newEntry = ldmEntry_t {
