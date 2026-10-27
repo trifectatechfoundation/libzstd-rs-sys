@@ -459,7 +459,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 ) -> Result<size_t, Error> {
     // LDM parameters
     let extDict = ldmState.window.has_ext_dict();
-    let minMatchLength = params.minMatchLength;
+    let minMatchLength = params.minMatchLength as usize;
     let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
     let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
     let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
@@ -500,7 +500,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
-    let Some(head) = src.get(..minMatchLength as usize) else {
+    let Some(head) = src.get(..minMatchLength) else {
         return Ok(src.len());
     };
     let mut hashState = ldmRollingHashState_t::new(params);
@@ -515,8 +515,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         let hashed = hashState.feed(&src[ip..ilimit], &mut ldmState.splitIndices, &mut numSplits);
 
         for n in 0..numSplits {
-            let split = ip + ldmState.splitIndices[n] - minMatchLength as usize;
-            let xxhash = ZSTD_XXH64_slice(&src[split..][..minMatchLength as usize], 0);
+            let split = ip + ldmState.splitIndices[n] - minMatchLength;
+            let xxhash = ZSTD_XXH64_slice(&src[split..][..minMatchLength], 0);
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
             ldmState.matchCandidates[n] = ldmMatchCandidate_t {
                 split,
@@ -584,7 +584,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                         let forward =
                             ZSTD_count_2segments(splitPtr, pMatch, iend, matchEnd, lowPrefixPtr);
-                        if forward < minMatchLength as size_t {
+                        if forward < minMatchLength {
                             continue;
                         }
 
@@ -603,7 +603,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         let pMatch = base.wrapping_offset(cur.offset as isize);
 
                         let forward = ZSTD_count(splitPtr, pMatch, iend);
-                        if forward < minMatchLength as size_t {
+                        if forward < minMatchLength {
                             continue;
                         }
 
@@ -663,7 +663,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     // This is a major speed boost (20x) for compressing a single byte
                     // repeated, when that byte ends up in the table.
                     if anchor > ip + hashed {
-                        hashState.reset(&src[anchor - minMatchLength as usize..anchor]);
+                        hashState.reset(&src[anchor - minMatchLength..anchor]);
                         // Continue the outer loop at anchor (ip + hashed == anchor).
                         ip = anchor - hashed;
                         break;
