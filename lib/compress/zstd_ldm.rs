@@ -515,8 +515,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         let hashed = hashState.feed(&src[ip..ilimit], &mut ldmState.splitIndices, &mut numSplits);
 
         for n in 0..numSplits {
-            let split = ip + ldmState.splitIndices[n] - minMatchLength;
-            let xxhash = ZSTD_XXH64_slice(&src[split..][..minMatchLength], 0);
+            let splitEnd = ip + ldmState.splitIndices[n];
+            let split = splitEnd - minMatchLength;
+            let xxhash = ZSTD_XXH64_slice(&src[split..splitEnd], 0);
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
             ldmState.matchCandidates[n] = ldmMatchCandidate_t {
                 split,
