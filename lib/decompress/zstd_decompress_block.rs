@@ -3,7 +3,7 @@ use core::ffi::c_void;
 use core::ops::Range;
 use core::ptr::{self, NonNull};
 
-use libc::{ptrdiff_t, size_t};
+use crate::lib::polyfill::libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::bitstream::{
     BIT_DStream_t, STREAM_ACCUMULATOR_MIN, STREAM_ACCUMULATOR_MIN_32, STREAM_ACCUMULATOR_MIN_64,

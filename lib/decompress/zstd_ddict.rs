@@ -1,6 +1,6 @@
+use crate::lib::polyfill::libc::size_t;
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
-use libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::error_private::Error;

@@ -1,5 +1,5 @@
+use crate::lib::polyfill::libc::size_t;
 use core::ptr::NonNull;
-use libc::size_t;
 
 use crate::lib::common::xxhash::XXH64_state_t;
 

@@ -25,7 +25,7 @@ pub enum BaseDirective {
     Guaranteed = 1,
 }
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits};
@@ -843,7 +843,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             match_2 = base.wrapping_offset(matchIndex as isize);
             if matchIndex >= dictLimit {
                 // ensure early section of match is equal as expected
-                debug_assert_eq!(libc::memcmp(match_2.cast(), ip.cast(), matchLength), 0);
+                debug_assert_eq!(
+                    crate::lib::polyfill::libc::memcmp(match_2.cast(), ip.cast(), matchLength),
+                    0
+                );
             }
             matchLength = matchLength.wrapping_add(ZSTD_count(
                 ip.add(matchLength),

@@ -1,6 +1,6 @@
 use core::ffi::c_char;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
 
