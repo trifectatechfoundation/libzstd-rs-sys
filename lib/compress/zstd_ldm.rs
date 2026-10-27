@@ -393,43 +393,45 @@ unsafe fn ZSTD_ldm_fillFastTables(ms: &mut ZSTD_MatchState_t, end: *const core::
     }
 }
 
-pub unsafe fn ZSTD_ldm_fillHashTable(ldmState: &mut ldmState_t, src: &[u8], params: &ldmParams_t) {
-    let minMatchLength = params.minMatchLength as usize;
-    let bucketSizeLog = params.bucketSizeLog;
-    let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
-    let base = ldmState.window.base;
-    let hashTable = core::slice::from_raw_parts_mut(ldmState.hashTable, 1 << params.hashLog);
-    let bucketOffsets = core::slice::from_raw_parts_mut(ldmState.bucketOffsets, 1 << hBits);
+impl ldmState_t {
+    pub unsafe fn fill_hash_table(&mut self, src: &[u8], params: &ldmParams_t) {
+        let minMatchLength = params.minMatchLength as usize;
+        let bucketSizeLog = params.bucketSizeLog;
+        let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
+        let base = self.window.base;
+        let hashTable = core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog);
+        let bucketOffsets = core::slice::from_raw_parts_mut(self.bucketOffsets, 1 << hBits);
 
-    let mut hashState = ldmRollingHashState_t::new(params);
+        let mut hashState = ldmRollingHashState_t::new(params);
 
-    let mut pos = 0;
-    while pos < src.len() {
-        let mut numSplits = 0;
-        let hashed = hashState.feed(&src[pos..], &mut ldmState.splitIndices, &mut numSplits);
+        let mut pos = 0;
+        while pos < src.len() {
+            let mut numSplits = 0;
+            let hashed = hashState.feed(&src[pos..], &mut self.splitIndices, &mut numSplits);
 
-        for &splitIndex in &ldmState.splitIndices[..numSplits] {
-            let splitEnd = pos + splitIndex;
-            if splitEnd >= minMatchLength {
-                let split = &src[splitEnd - minMatchLength..splitEnd];
-                let xxhash = ZSTD_XXH64_slice(split, 0);
-                let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
-                let entry = ldmEntry_t {
-                    offset: split.as_ptr().wrapping_offset_from(base) as u32,
-                    checksum: (xxhash >> 32) as u32,
-                };
+            for &splitIndex in &self.splitIndices[..numSplits] {
+                let splitEnd = pos + splitIndex;
+                if splitEnd >= minMatchLength {
+                    let split = &src[splitEnd - minMatchLength..splitEnd];
+                    let xxhash = ZSTD_XXH64_slice(split, 0);
+                    let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
+                    let entry = ldmEntry_t {
+                        offset: split.as_ptr().wrapping_offset_from(base) as u32,
+                        checksum: (xxhash >> 32) as u32,
+                    };
 
-                ZSTD_ldm_insertEntry(
-                    hashTable,
-                    bucketOffsets,
-                    hash as size_t,
-                    entry,
-                    params.bucketSizeLog,
-                );
+                    ZSTD_ldm_insertEntry(
+                        hashTable,
+                        bucketOffsets,
+                        hash as size_t,
+                        entry,
+                        params.bucketSizeLog,
+                    );
+                }
             }
-        }
 
-        pos += hashed;
+            pos += hashed;
+        }
     }
 }
 

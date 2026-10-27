@@ -24,7 +24,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_generateSequences,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
@@ -648,8 +648,7 @@ unsafe fn ZSTDMT_serialState_reset(
         if dictSize > 0 && dictContentType == ZSTD_dct_rawContent {
             let dictEnd = (dict as *const u8).add(dictSize);
             serialState.ldmState.window.update(dict, dictSize, false);
-            ZSTD_ldm_fillHashTable(
-                &mut serialState.ldmState,
+            serialState.ldmState.fill_hash_table(
                 core::slice::from_raw_parts(dict.cast::<u8>(), dictSize),
                 &params.ldmParams,
             );
