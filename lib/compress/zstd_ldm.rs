@@ -325,11 +325,11 @@ fn ZSTD_ldm_insertEntry(
     entry: ldmEntry_t,
     bucketSizeLog: u32,
 ) {
-    let offset = core::ffi::c_uint::from(bucketOffsets[hash]);
+    let offset = bucketOffsets[hash];
 
     let bucket = &mut hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog];
-    bucket[offset as usize] = entry;
-    bucketOffsets[hash] = (offset.wrapping_add(1) & (1u32 << bucketSizeLog).wrapping_sub(1)) as u8;
+    bucket[usize::from(offset)] = entry;
+    bucketOffsets[hash] = offset.wrapping_add(1) & ((1u32 << bucketSizeLog) - 1) as u8;
 }
 
 /// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
