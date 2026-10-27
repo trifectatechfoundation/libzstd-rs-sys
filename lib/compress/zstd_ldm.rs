@@ -495,18 +495,17 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
 
     // Input bounds
-    let srcSize = src.len();
-    let istart = src.as_ptr();
-    let iend = istart.add(srcSize);
+    let istart = src.as_ptr_range().start;
+    let iend = src.as_ptr_range().end;
 
     // Input positions
     let mut anchor = 0;
 
-    if srcSize < minMatchLength as size_t {
-        return Ok(srcSize);
+    if src.len() < minMatchLength as size_t {
+        return Ok(src.len());
     }
 
-    let ilimit = srcSize.saturating_sub(HASH_READ_SIZE as usize);
+    let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
 
     // Initialize the rolling hash state with the first minMatchLength bytes
     let mut hashState = ldmRollingHashState_t::new(params);
@@ -688,7 +687,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         ip += hashed;
     }
 
-    Ok(srcSize - anchor)
+    Ok(src.len() - anchor)
 }
 
 /// Reduce table indexes by `reducerValue`
