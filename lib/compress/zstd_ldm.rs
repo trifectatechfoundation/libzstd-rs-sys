@@ -653,10 +653,12 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     Ok(src.len() - anchor)
 }
 
-/// Reduce table indexes by `reducerValue`
-fn ZSTD_ldm_reduceTable(table: &mut [ldmEntry_t], reducerValue: u32) {
-    for entry in table {
-        entry.offset = entry.offset.saturating_sub(reducerValue);
+impl LdmHashTable<'_> {
+    /// Reduce table indexes by `reducerValue`
+    fn reduce_table(&mut self, reducerValue: u32) {
+        for entry in &mut *self.hash_table {
+            entry.offset = entry.offset.saturating_sub(reducerValue);
+        }
     }
 }
 
@@ -687,14 +689,12 @@ impl ldmState_t {
                 chunkStart as *const core::ffi::c_void,
                 chunkEnd as *const core::ffi::c_void,
             ) {
-                let ldmHSize = 1usize << params.hashLog;
                 let correction = self.window.correct_overflow(
                     0,
                     maxDist,
                     chunkStart as *const core::ffi::c_void,
                 );
-                let ldmTable = unsafe { core::slice::from_raw_parts_mut(self.hashTable, ldmHSize) };
-                ZSTD_ldm_reduceTable(ldmTable, correction);
+                self.get_hash_table(params).reduce_table(correction);
                 // invalidate dictionaries on overflow correction
                 self.loadedDictEnd = 0;
             }
