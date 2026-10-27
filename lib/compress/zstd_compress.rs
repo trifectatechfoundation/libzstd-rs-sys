@@ -776,8 +776,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_generateSequences,
-    ZSTD_ldm_skipRawSeqStoreBytes, ZSTD_ldm_skipSequences,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_skipRawSeqStoreBytes,
+    ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -4481,8 +4481,7 @@ unsafe fn ZSTD_buildSeqStore(
         ldmSeqStore.seq = (*zc).ldmSequences;
         ldmSeqStore.capacity = (*zc).maxNbLdmSequences;
 
-        ZSTD_ldm_generateSequences(
-            &mut (*zc).ldmState,
+        (*zc).ldmState.generate_sequences(
             &mut ldmSeqStore,
             &(*zc).appliedParams.ldmParams,
             src,
