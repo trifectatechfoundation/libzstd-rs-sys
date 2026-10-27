@@ -317,19 +317,15 @@ impl ldmParams_t {
     }
 }
 
-/// Insert the entry with corresponding hash into the hash table
-fn ZSTD_ldm_insertEntry(
-    hashTable: &mut [ldmEntry_t],
-    bucketOffsets: &mut [u8],
-    hash: size_t,
-    entry: ldmEntry_t,
-    bucketSizeLog: u32,
-) {
-    let offset = bucketOffsets[hash];
+impl<'a> LdmHashTable<'a> {
+    /// Insert the entry with corresponding hash into the hash table
+    fn insert_entry(&mut self, hash: size_t, entry: ldmEntry_t) {
+        let offset = self.bucket_offsets[hash];
 
-    let bucket = &mut hashTable[hash << bucketSizeLog..][..1 << bucketSizeLog];
-    bucket[usize::from(offset)] = entry;
-    bucketOffsets[hash] = offset.wrapping_add(1) & ((1u32 << bucketSizeLog) - 1) as u8;
+        self.get_bucket(hash)[usize::from(offset)] = entry;
+        self.bucket_offsets[hash] =
+            offset.wrapping_add(1) & ((1u32 << self.bucket_size_log) - 1) as u8;
+    }
 }
 
 /// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
@@ -425,7 +421,7 @@ impl ldmState_t {
         let minMatchLength = params.minMatchLength as usize;
         let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
         let base = self.window.base;
-        let hashTable = unsafe { self.get_hash_table(params) };
+        let mut hashTable = unsafe { self.get_hash_table(params) };
 
         let mut hashState = ldmRollingHashState_t::new(params);
 
@@ -445,13 +441,7 @@ impl ldmState_t {
                         checksum: (xxhash >> 32) as u32,
                     };
 
-                    ZSTD_ldm_insertEntry(
-                        hashTable.hash_table,
-                        hashTable.bucket_offsets,
-                        hash as size_t,
-                        entry,
-                        params.bucketSizeLog,
-                    );
+                    hashTable.insert_entry(hash as size_t, entry);
                 }
             }
 
@@ -562,13 +552,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // the previous one, we merely register it in the hash table and
             // move on
             if split < anchor {
-                ZSTD_ldm_insertEntry(
-                    hashTable.hash_table,
-                    hashTable.bucket_offsets,
-                    hash as size_t,
-                    newEntry,
-                    params.bucketSizeLog,
-                );
+                hashTable.insert_entry(hash as size_t, newEntry);
             } else {
                 let (beforeSplit, afterSplit) = src.split_at(split);
                 let beforeSplit = &beforeSplit[anchor..];
@@ -638,13 +622,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
                     // Insert the current entry into the hash table --- it must be
                     // done after the previous block to avoid clobbering bestEntry
-                    ZSTD_ldm_insertEntry(
-                        hashTable.hash_table,
-                        hashTable.bucket_offsets,
-                        hash as size_t,
-                        newEntry,
-                        params.bucketSizeLog,
-                    );
+                    hashTable.insert_entry(hash as size_t, newEntry);
 
                     anchor = split + forwardMatchLength;
 
@@ -664,13 +642,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 } else {
                     // No match found -- insert an entry into the hash table
                     // and process the next candidate match
-                    ZSTD_ldm_insertEntry(
-                        hashTable.hash_table,
-                        hashTable.bucket_offsets,
-                        hash as size_t,
-                        newEntry,
-                        params.bucketSizeLog,
-                    );
+                    hashTable.insert_entry(hash as size_t, newEntry);
                 }
             }
         }
