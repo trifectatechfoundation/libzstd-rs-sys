@@ -25,7 +25,6 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences,
-    ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
@@ -613,7 +612,7 @@ unsafe fn ZSTDMT_serialState_reset(
             .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
         let numBuckets = 1 << bucketLog;
         // Size the seq pool tables
-        ZSTDMT_setNbSeq(seqPool, ZSTD_ldm_getMaxNbSeq(params.ldmParams, jobSize));
+        ZSTDMT_setNbSeq(seqPool, params.ldmParams.get_max_nb_seq(jobSize));
         // Reset the window
         serialState.ldmState.window.init();
         // Resize tables and output space if necessary.
