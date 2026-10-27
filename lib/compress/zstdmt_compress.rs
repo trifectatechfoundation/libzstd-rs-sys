@@ -24,8 +24,8 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
-    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences,
+    ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
@@ -594,7 +594,7 @@ unsafe fn ZSTDMT_serialState_reset(
 ) -> Result<(), Error> {
     // Adjust parameters
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
-        ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
+        params.ldmParams.adjust_parameters(&params.cParams);
     } else {
         params.ldmParams = ldmParams_t::default();
     }
