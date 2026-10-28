@@ -471,19 +471,20 @@ impl ZSTD_DDictHashSet {
     unsafe fn emplace_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
         let dictID = ZSTD_getDictID_fromDDict(ddict);
         let mut idx = self.get_index(dictID);
-        let idxRangeMask = (self.ddictPtrTableSize).wrapping_sub(1);
+        let idxRangeMask = self.ddictPtrTableSize - 1;
         if self.ddictPtrCount == self.ddictPtrTableSize {
             return Err(Error::GENERIC);
         }
-        while !(*self.ddictPtrTable.as_ptr().add(idx)).is_null() {
-            if ZSTD_getDictID_fromDDict(*self.ddictPtrTable.as_ptr().add(idx)) == dictID {
-                *self.ddictPtrTable.as_ptr().add(idx) = ddict;
+        let table = self.as_mut_slice();
+        while !table[idx].is_null() {
+            if ZSTD_getDictID_fromDDict(table[idx]) == dictID {
+                table[idx] = ddict;
                 return Ok(());
             }
             idx = (idx + 1) & idxRangeMask;
         }
-        *self.ddictPtrTable.as_ptr().add(idx) = ddict;
-        self.ddictPtrCount = (self.ddictPtrCount).wrapping_add(1);
+        table[idx] = ddict;
+        self.ddictPtrCount += 1;
         Ok(())
     }
 

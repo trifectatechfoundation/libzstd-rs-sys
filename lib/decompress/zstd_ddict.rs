@@ -42,6 +42,12 @@ impl ZSTD_DDictHashSet {
     pub fn as_slice(&self) -> &[*const ZSTD_DDict] {
         unsafe { core::slice::from_raw_parts(self.ddictPtrTable.as_ptr(), self.ddictPtrTableSize) }
     }
+
+    pub fn as_mut_slice(&mut self) -> &mut [*const ZSTD_DDict] {
+        unsafe {
+            core::slice::from_raw_parts_mut(self.ddictPtrTable.as_ptr(), self.ddictPtrTableSize)
+        }
+    }
 }
 
 #[repr(C)]
