@@ -33,14 +33,14 @@ impl TryFrom<u32> for MultipleDDicts {
 
 #[repr(C)]
 pub struct ZSTD_DDictHashSet {
-    pub ddictPtrTable: *mut *const ZSTD_DDict,
+    pub ddictPtrTable: NonNull<*const ZSTD_DDict>,
     pub ddictPtrTableSize: size_t,
     pub ddictPtrCount: size_t,
 }
 
 impl ZSTD_DDictHashSet {
     pub fn as_slice(&mut self) -> &[*const ZSTD_DDict] {
-        unsafe { core::slice::from_raw_parts(self.ddictPtrTable, self.ddictPtrTableSize) }
+        unsafe { core::slice::from_raw_parts(self.ddictPtrTable.as_ptr(), self.ddictPtrTableSize) }
     }
 }
 
