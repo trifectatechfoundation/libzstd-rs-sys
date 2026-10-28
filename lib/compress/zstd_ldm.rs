@@ -450,19 +450,16 @@ impl ldmState_t {
     }
 }
 
-/// Sets cctx->nextToUpdate to a position corresponding closer to anchor
+/// Sets `ms.nextToUpdate` to a position corresponding closer to anchor
 /// if it is far way
 /// (after a long match, only update tables a limited amount).
 unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u8) {
     let curr = anchor.wrapping_offset_from(ms.window.base) as u32;
     if curr > (ms.nextToUpdate).wrapping_add(1024) {
-        ms.nextToUpdate = curr.wrapping_sub(
-            if (512) < curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024) {
-                512
-            } else {
-                curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024)
-            },
-        );
+        ms.nextToUpdate = curr.wrapping_sub(Ord::min(
+            512,
+            curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024),
+        ));
     }
 }
 
