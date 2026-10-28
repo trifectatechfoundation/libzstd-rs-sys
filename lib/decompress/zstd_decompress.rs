@@ -475,15 +475,15 @@ impl ZSTD_DDictHashSet {
         if self.ddictPtrCount == self.ddictPtrTableSize {
             return Err(Error::GENERIC);
         }
-        while !(*(self.ddictPtrTable).add(idx)).is_null() {
-            if ZSTD_getDictID_fromDDict(*(self.ddictPtrTable).add(idx)) == dictID {
-                *(self.ddictPtrTable).add(idx) = ddict;
+        while !(*self.ddictPtrTable.as_ptr().add(idx)).is_null() {
+            if ZSTD_getDictID_fromDDict(*self.ddictPtrTable.as_ptr().add(idx)) == dictID {
+                *self.ddictPtrTable.as_ptr().add(idx) = ddict;
                 return Ok(());
             }
             idx &= idxRangeMask;
             idx = idx.wrapping_add(1);
         }
-        *(self.ddictPtrTable).add(idx) = ddict;
+        *self.ddictPtrTable.as_ptr().add(idx) = ddict;
         self.ddictPtrCount = (self.ddictPtrCount).wrapping_add(1);
         Ok(())
     }
@@ -496,11 +496,9 @@ impl ZSTD_DDictHashSet {
             size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
             customMem,
         ) as *mut *const ZSTD_DDict;
-        let oldTable = self.ddictPtrTable;
+        let newTable = NonNull::new(newTable).ok_or(Error::memory_allocation)?;
+        let oldTable = self.ddictPtrTable.as_ptr();
         let oldTableSize = self.ddictPtrTableSize;
-        if newTable.is_null() {
-            return Err(Error::memory_allocation);
-        }
         self.ddictPtrTable = newTable;
         self.ddictPtrTableSize = newTableSize;
         self.ddictPtrCount = 0;
@@ -557,11 +555,8 @@ unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> Result<ZSTD_DDic
         DDICT_HASHSET_TABLE_BASE_SIZE as size_t * size_of::<*const ZSTD_DDict>(),
         customMem,
     ) as *mut *const ZSTD_DDict;
-    if table.is_null() {
-        return Err(Error::memory_allocation);
-    }
     Ok(ZSTD_DDictHashSet {
-        ddictPtrTable: table,
+        ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
         ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE as size_t,
         ddictPtrCount: 0,
     })
@@ -572,7 +567,7 @@ unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> Result<ZSTD_DDic
 /// Note: The `ZSTD_DDict*` within the table are NOT freed.
 unsafe fn ZSTD_freeDDictHashSet(hashSet: ZSTD_DDictHashSet, customMem: ZSTD_customMem) {
     ZSTD_customFree(
-        hashSet.ddictPtrTable as *mut core::ffi::c_void,
+        hashSet.ddictPtrTable.as_ptr() as *mut core::ffi::c_void,
         hashSet.ddictPtrTableSize * size_of::<*const ZSTD_DDict>(),
         customMem,
     );
