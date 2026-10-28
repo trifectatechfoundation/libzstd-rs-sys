@@ -560,17 +560,17 @@ impl ZSTD_DDictHashSet {
             ddictPtrCount: 0,
         })
     }
-}
 
-/// Frees the table of `ZSTD_DDict*` within a hashset.
-///
-/// Note: The `ZSTD_DDict*` within the table are NOT freed.
-unsafe fn ZSTD_freeDDictHashSet(hashSet: ZSTD_DDictHashSet, customMem: ZSTD_customMem) {
-    ZSTD_customFree(
-        hashSet.ddictPtrTable.as_ptr() as *mut core::ffi::c_void,
-        hashSet.ddictPtrTableSize * size_of::<*const ZSTD_DDict>(),
-        customMem,
-    );
+    /// Frees the table of `ZSTD_DDict*` within a hashset.
+    ///
+    /// Note: The `ZSTD_DDict*` within the table are NOT freed.
+    unsafe fn free(self, customMem: ZSTD_customMem) {
+        ZSTD_customFree(
+            self.ddictPtrTable.as_ptr() as *mut core::ffi::c_void,
+            self.ddictPtrTableSize * size_of::<*const ZSTD_DDict>(),
+            customMem,
+        );
+    }
 }
 
 /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
@@ -760,7 +760,7 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
         ZSTD_freeLegacyStreamContext((*dctx).legacyContext, (*dctx).previousLegacyVersion);
     }
     if let Some(ddictSet) = (*dctx).ddictSet.take() {
-        ZSTD_freeDDictHashSet(ddictSet, cMem);
+        ddictSet.free(cMem);
     }
     ZSTD_customFree(dctx as *mut core::ffi::c_void, size_of::<ZSTD_DCtx>(), cMem);
     0
