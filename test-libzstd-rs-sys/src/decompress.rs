@@ -1329,4 +1329,105 @@ mod ddict {
             0
         );
     }
+
+    /// Based on the "ZSTD_decompressDCtx() with multiple ddicts" test in `tests/fuzzer.c`
+    #[test]
+    fn decompress_with_multiple_ddicts() {
+        const DICT: &[u8] = include_bytes!("../test-data/test-dict.dat");
+        const INPUT: &[u8] = include_bytes!("../test-data/The fastest WASM zlib.md");
+
+        // Enough dicts to make the ddict hash set expand
+        const NUM_DICTS: usize = if cfg!(miri) { 20 } else { 128 };
+
+        // Index of the dict used to compress each frame
+        const FRAME_DICTS: [usize; 4] = [3, NUM_DICTS - 1, NUM_DICTS / 2, 17];
+
+        assert_eq_rs_c!({
+            let mut dict = DICT.to_vec();
+            let mut ddicts = Vec::new();
+            let mut cdicts = Vec::new();
+
+            // Create a bunch of DDicts with random dict IDs
+            for i in 0..=NUM_DICTS {
+                let dict_id = (i as u32 + 1).wrapping_mul(0x9E37_79B1);
+                dict[4..8].copy_from_slice(&dict_id.to_le_bytes());
+
+                let ddict = ZSTD_createDDict(dict.as_ptr().cast(), dict.len());
+                let cdict = ZSTD_createCDict(dict.as_ptr().cast(), dict.len(), 3);
+                assert!(!ddict.is_null() && !cdict.is_null());
+                assert_eq!(ZSTD_getDictID_fromDDict(ddict), dict_id);
+                ddicts.push(ddict);
+                cdicts.push(cdict);
+            }
+
+            let compress = |src: &[u8], dict_idx: usize| {
+                let cctx = ZSTD_createCCtx();
+                let mut frame = vec![0u8; ZSTD_compressBound(src.len())];
+                let cdict = cdicts[dict_idx];
+                let size = ZSTD_compress_usingCDict(
+                    cctx,
+                    frame.as_mut_ptr().cast(),
+                    frame.len(),
+                    src.as_ptr().cast(),
+                    src.len(),
+                    cdict,
+                );
+                assert_eq!(ZSTD_isError(size), 0);
+                ZSTD_freeCCtx(cctx);
+                frame.truncate(size);
+                frame
+            };
+
+            // Compress each segment of the input using a different dict
+            let segment_size = INPUT.len().div_ceil(FRAME_DICTS.len());
+            let mut compressed = Vec::new();
+            for (segment, &dict_idx) in INPUT.chunks(segment_size).zip(&FRAME_DICTS) {
+                compressed.extend(compress(segment, dict_idx));
+            }
+
+            // We should succeed to decompression even though different dicts were used on different frames
+            let dctx = ZSTD_createDCtx();
+            assert!(!dctx.is_null());
+            let param = ZSTD_dParameter::ZSTD_d_experimentalParam4; // ZSTD_d_refMultipleDDicts
+            assert_eq!(ZSTD_isError(ZSTD_DCtx_setParameter(dctx, param, 1)), 0);
+            for &ddict in &ddicts[..NUM_DICTS] {
+                assert_eq!(ZSTD_isError(ZSTD_DCtx_refDDict(dctx, ddict)), 0);
+            }
+
+            let mut one_shot = vec![0u8; INPUT.len()];
+            let size = ZSTD_decompressDCtx(
+                dctx,
+                one_shot.as_mut_ptr().cast(),
+                one_shot.len(),
+                compressed.as_ptr().cast(),
+                compressed.len(),
+            );
+            assert_eq!(ZSTD_isError(size), 0);
+            assert_eq!(&one_shot[..size], INPUT);
+
+            // Streaming decompression should also work
+            let mut streaming = vec![0u8; INPUT.len()];
+            let mut in_buf = ZSTD_inBuffer {
+                src: compressed.as_ptr().cast(),
+                size: compressed.len(),
+                pos: 0,
+            };
+            let mut out_buf = ZSTD_outBuffer {
+                dst: streaming.as_mut_ptr().cast(),
+                size: streaming.len(),
+                pos: 0,
+            };
+            while in_buf.pos < in_buf.size {
+                let ret = ZSTD_decompressStream(dctx, &mut out_buf, &mut in_buf);
+                assert_eq!(ZSTD_isError(ret), 0);
+            }
+            assert_eq!(&streaming[..out_buf.pos], INPUT);
+
+            ZSTD_freeDCtx(dctx);
+            for (ddict, cdict) in ddicts.into_iter().zip(cdicts) {
+                ZSTD_freeDDict(ddict);
+                ZSTD_freeCDict(cdict);
+            }
+        });
+    }
 }
