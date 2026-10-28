@@ -53,8 +53,8 @@ impl ZSTD_DDictHashSet {
 #[repr(C)]
 pub struct ZSTD_DDict {
     dictBuffer: *mut core::ffi::c_void,
-    dictContent: *const core::ffi::c_void,
-    dictSize: size_t,
+    pub(crate) dictContent: *const core::ffi::c_void,
+    pub(crate) dictSize: size_t,
     entropy: ZSTD_entropyDTables_t,
     pub(crate) dictID: u32,
     entropyPresent: u32,
@@ -77,14 +77,6 @@ impl ZSTD_DDict {
 enum DictLoadMethod {
     ByCopy = ZSTD_dlm_byCopy as _,
     ByRef = ZSTD_dlm_byRef as _,
-}
-
-pub fn ZSTD_DDict_dictContent(ddict: &ZSTD_DDict) -> *const core::ffi::c_void {
-    ddict.dictContent
-}
-
-pub fn ZSTD_DDict_dictSize(ddict: &ZSTD_DDict) -> size_t {
-    ddict.dictSize
 }
 
 pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_DDict) {
