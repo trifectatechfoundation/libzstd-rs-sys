@@ -541,25 +541,25 @@ impl ZSTD_DDictHashSet {
 
         self.as_slice()[idx]
     }
-}
 
-/// Allocates space for and returns a ddict hash set.
-///
-/// # Returns
-///
-/// - the [`ZSTD_DDictHashSet`] if allocation succeeds. The hash set's `ZSTD_DDict*` table has all
-///   values automatically set to `NULL` to begin with.
-/// - [`Error::memory_allocation`] if allocation failed
-unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> Result<ZSTD_DDictHashSet, Error> {
-    let table = ZSTD_customCalloc(
-        DDICT_HASHSET_TABLE_BASE_SIZE as size_t * size_of::<*const ZSTD_DDict>(),
-        customMem,
-    ) as *mut *const ZSTD_DDict;
-    Ok(ZSTD_DDictHashSet {
-        ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
-        ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE as size_t,
-        ddictPtrCount: 0,
-    })
+    /// Allocates space for and returns a ddict hash set.
+    ///
+    /// # Returns
+    ///
+    /// - the [`ZSTD_DDictHashSet`] if allocation succeeds. The hash set's `ZSTD_DDict*` table has all
+    ///   values automatically set to `NULL` to begin with.
+    /// - [`Error::memory_allocation`] if allocation failed
+    unsafe fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
+        let table = ZSTD_customCalloc(
+            DDICT_HASHSET_TABLE_BASE_SIZE as size_t * size_of::<*const ZSTD_DDict>(),
+            customMem,
+        ) as *mut *const ZSTD_DDict;
+        Ok(Self {
+            ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
+            ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE as size_t,
+            ddictPtrCount: 0,
+        })
+    }
 }
 
 /// Frees the table of `ZSTD_DDict*` within a hashset.
@@ -2854,7 +2854,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
         if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
             let ddictSet = match (*dctx).ddictSet {
                 Some(ref mut ddictSet) => ddictSet,
-                None => match ZSTD_createDDictHashSet((*dctx).customMem) {
+                None => match ZSTD_DDictHashSet::new((*dctx).customMem) {
                     Ok(ddictSet) => (*dctx).ddictSet.insert(ddictSet),
                     Err(err) => return err.to_error_code(),
                 },
