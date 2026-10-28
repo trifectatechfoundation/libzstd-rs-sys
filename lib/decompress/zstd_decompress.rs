@@ -480,8 +480,7 @@ impl ZSTD_DDictHashSet {
                 *self.ddictPtrTable.as_ptr().add(idx) = ddict;
                 return Ok(());
             }
-            idx &= idxRangeMask;
-            idx = idx.wrapping_add(1);
+            idx = (idx + 1) & idxRangeMask;
         }
         *self.ddictPtrTable.as_ptr().add(idx) = ddict;
         self.ddictPtrCount = (self.ddictPtrCount).wrapping_add(1);
@@ -535,8 +534,7 @@ impl ZSTD_DDictHashSet {
                 break;
             }
 
-            idx &= idxRangeMask; // loop back to the start of the table when we reach the end
-            idx += 1;
+            idx = (idx + 1) & idxRangeMask; // loop back to the start of the table when we reach the end
         }
 
         self.as_slice()[idx]
