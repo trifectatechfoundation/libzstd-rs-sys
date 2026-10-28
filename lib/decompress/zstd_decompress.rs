@@ -64,8 +64,8 @@ use crate::lib::legacy::zstd_v07::{
 };
 
 use crate::lib::decompress::zstd_ddict::{
-    ZSTD_DDict_dictContent, ZSTD_DDict_dictSize, ZSTD_copyDDictParameters,
-    ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
+    ZSTD_copyDDictParameters, ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict,
+    ZSTD_sizeof_DDict,
 };
 
 #[cfg(doc)]
@@ -1666,7 +1666,7 @@ fn ZSTD_DCtx_trace_end(
         trace.streaming = streaming;
         if let Some(ddict) = unsafe { dctx.ddict.as_ref() } {
             trace.dictionaryID = ddict.dictID;
-            trace.dictionarySize = ZSTD_DDict_dictSize(ddict);
+            trace.dictionarySize = ddict.dictSize;
             trace.dictionaryIsCold = dctx.ddictIsCold;
         }
         trace.uncompressedSize = uncompressedSize as size_t;
@@ -2452,9 +2452,8 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
 
     if let Some(ddict) = ddict.as_ref() {
-        let dictStart = ZSTD_DDict_dictContent(ddict) as *const core::ffi::c_char;
-        let dictSize = ZSTD_DDict_dictSize(ddict);
-        let dictEnd = dictStart.add(dictSize) as *const core::ffi::c_void;
+        let dictStart = ddict.dictContent as *const core::ffi::c_char;
+        let dictEnd = dictStart.add(ddict.dictSize) as *const core::ffi::c_void;
         (*dctx.as_mut_ptr()).ddictIsCold = (*dctx.as_ptr()).dictEnd != dictEnd;
     }
 
@@ -3516,9 +3515,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     });
                     if legacyVersion != 0 {
                         let (dict, dictSize) = match ZSTD_getDDict(zds).as_ref() {
-                            Some(ddict) => {
-                                (ZSTD_DDict_dictContent(ddict), ZSTD_DDict_dictSize(ddict))
-                            }
+                            Some(ddict) => (ddict.dictContent, ddict.dictSize),
                             None => (core::ptr::null(), 0),
                         };
                         if zds.staticSize != 0 {
