@@ -447,11 +447,11 @@ unsafe fn ZSTD_decompressLegacyStream(
 // These two constants represent SIZE_MULT/COUNT_MULT load factor without using a float.
 // Currently, that means a 0.75 load factor.
 // So, if count * COUNT_MULT / size * SIZE_MULT != 0, then we've exceeded the load factor of the ddict hash set.
-pub const DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT: core::ffi::c_int = 4;
-pub const DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT: core::ffi::c_int = 3;
+pub const DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT: usize = 4;
+pub const DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT: usize = 3;
 
-pub const DDICT_HASHSET_TABLE_BASE_SIZE: core::ffi::c_int = 64;
-pub const DDICT_HASHSET_RESIZE_FACTOR: core::ffi::c_int = 2;
+pub const DDICT_HASHSET_TABLE_BASE_SIZE: usize = 64;
+pub const DDICT_HASHSET_RESIZE_FACTOR: usize = 2;
 
 impl ZSTD_DDictHashSet {
     /// Hash function to determine starting position of dict insertion within the table
@@ -491,7 +491,7 @@ impl ZSTD_DDictHashSet {
     /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
     /// allocates the new table, and frees the old table.
     unsafe fn expand(&mut self, customMem: ZSTD_customMem) -> Result<(), Error> {
-        let newTableSize = self.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
+        let newTableSize = self.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR;
         let newTable = ZSTD_customCalloc(
             size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
             customMem,
@@ -551,12 +551,12 @@ impl ZSTD_DDictHashSet {
     /// - [`Error::memory_allocation`] if allocation failed
     unsafe fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
         let table = ZSTD_customCalloc(
-            DDICT_HASHSET_TABLE_BASE_SIZE as size_t * size_of::<*const ZSTD_DDict>(),
+            DDICT_HASHSET_TABLE_BASE_SIZE * size_of::<*const ZSTD_DDict>(),
             customMem,
         ) as *mut *const ZSTD_DDict;
         Ok(Self {
             ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
-            ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE as size_t,
+            ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE,
             ddictPtrCount: 0,
         })
     }
@@ -578,9 +578,8 @@ impl ZSTD_DDictHashSet {
         ddict: *const ZSTD_DDict,
         customMem: ZSTD_customMem,
     ) -> Result<(), Error> {
-        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
-            / self.ddictPtrTableSize
-            * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
+        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ddictPtrTableSize
+            * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT
             != 0
         {
             self.expand(customMem)?;
