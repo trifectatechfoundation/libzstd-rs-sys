@@ -521,7 +521,7 @@ impl ZSTD_DDictHashSet {
     ///
     /// - the [`ZSTD_DDict`] with the requested `dictID`
     /// - `NULL` if no such dictionary exists
-    unsafe fn get_ddict(&mut self, dictID: u32) -> *const ZSTD_DDict {
+    unsafe fn get_ddict(&self, dictID: u32) -> *const ZSTD_DDict {
         let mut idx = self.get_index(dictID);
         let idxRangeMask = self.ddictPtrTableSize - 1;
         loop {

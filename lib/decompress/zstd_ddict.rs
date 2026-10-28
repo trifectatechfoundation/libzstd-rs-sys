@@ -39,7 +39,7 @@ pub struct ZSTD_DDictHashSet {
 }
 
 impl ZSTD_DDictHashSet {
-    pub fn as_slice(&mut self) -> &[*const ZSTD_DDict] {
+    pub fn as_slice(&self) -> &[*const ZSTD_DDict] {
         unsafe { core::slice::from_raw_parts(self.ddictPtrTable.as_ptr(), self.ddictPtrTableSize) }
     }
 }
