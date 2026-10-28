@@ -460,11 +460,8 @@ impl LdmState {
 /// (after a long match, only update tables a limited amount).
 unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u8) {
     let curr = anchor.wrapping_offset_from(ms.window.base) as u32;
-    if curr > (ms.nextToUpdate).wrapping_add(1024) {
-        ms.nextToUpdate = curr.wrapping_sub(Ord::min(
-            512,
-            curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024),
-        ));
+    if curr > ms.nextToUpdate + 1024 {
+        ms.nextToUpdate = curr - Ord::min(512, curr - ms.nextToUpdate - 1024);
     }
 }
 
