@@ -317,17 +317,6 @@ impl ldmParams_t {
     }
 }
 
-impl<'a> LdmHashTable<'a> {
-    /// Insert the entry with corresponding hash into the hash table
-    fn insert_entry(&mut self, hash: size_t, entry: ldmEntry_t) {
-        let offset = self.bucket_offsets[hash];
-
-        self.get_bucket(hash)[usize::from(offset)] = entry;
-        self.bucket_offsets[hash] =
-            offset.wrapping_add(1) & ((1u32 << self.bucket_size_log) - 1) as u8;
-    }
-}
-
 /// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
 fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> size_t {
     let n = Ord::min(input.len(), beforeMatch.len());
@@ -399,6 +388,22 @@ impl LdmHashTable<'_> {
     /// Get the bucket associated with hash
     fn get_bucket(&mut self, hash: usize) -> &mut [ldmEntry_t] {
         &mut self.hash_table[hash << self.bucket_size_log..][..1 << self.bucket_size_log]
+    }
+
+    /// Insert the entry with corresponding hash into the hash table
+    fn insert_entry(&mut self, hash: size_t, entry: ldmEntry_t) {
+        let offset = self.bucket_offsets[hash];
+
+        self.get_bucket(hash)[usize::from(offset)] = entry;
+        self.bucket_offsets[hash] =
+            offset.wrapping_add(1) & ((1u32 << self.bucket_size_log) - 1) as u8;
+    }
+
+    /// Reduce table indexes by `reducerValue`
+    fn reduce_table(&mut self, reducerValue: u32) {
+        for entry in &mut *self.hash_table {
+            entry.offset = entry.offset.saturating_sub(reducerValue);
+        }
     }
 }
 
@@ -650,15 +655,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     }
 
     Ok(src.len() - anchor)
-}
-
-impl LdmHashTable<'_> {
-    /// Reduce table indexes by `reducerValue`
-    fn reduce_table(&mut self, reducerValue: u32) {
-        for entry in &mut *self.hash_table {
-            entry.offset = entry.offset.saturating_sub(reducerValue);
-        }
-    }
 }
 
 impl ldmState_t {
