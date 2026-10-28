@@ -256,7 +256,7 @@ pub struct ZSTD_DCtx_s {
     ddictIsCold: bool,
     _padding3: [u8; 3],
     dictUses: DictUses,
-    ddictSet: *mut ZSTD_DDictHashSet,
+    ddictSet: Option<ZSTD_DDictHashSet>,
     refMultipleDDicts: MultipleDDicts,
     disableHufAsm: bool,
     _padding6: [u8; 3],

@@ -551,50 +551,31 @@ impl ZSTD_DDictHashSet {
 ///
 /// - the [`ZSTD_DDictHashSet`] if allocation succeeds. The hash set's `ZSTD_DDict*` table has all
 ///   values automatically set to `NULL` to begin with.
-/// - `NULL` if allocation failed
-unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
-    let ret =
-        ZSTD_customMalloc(size_of::<ZSTD_DDictHashSet>(), customMem) as *mut ZSTD_DDictHashSet;
-    if ret.is_null() {
-        return core::ptr::null_mut();
-    }
-    (*ret).ddictPtrTable = ZSTD_customCalloc(
-        (DDICT_HASHSET_TABLE_BASE_SIZE as size_t).wrapping_mul(size_of::<*mut ZSTD_DDict>()),
+/// - [`Error::memory_allocation`] if allocation failed
+unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> Result<ZSTD_DDictHashSet, Error> {
+    let table = ZSTD_customCalloc(
+        DDICT_HASHSET_TABLE_BASE_SIZE as size_t * size_of::<*const ZSTD_DDict>(),
         customMem,
     ) as *mut *const ZSTD_DDict;
-    if ((*ret).ddictPtrTable).is_null() {
-        ZSTD_customFree(
-            ret as *mut core::ffi::c_void,
-            size_of::<ZSTD_DDictHashSet>(),
-            customMem,
-        );
-        return core::ptr::null_mut();
+    if table.is_null() {
+        return Err(Error::memory_allocation);
     }
-    (*ret).ddictPtrTableSize = DDICT_HASHSET_TABLE_BASE_SIZE as size_t;
-    (*ret).ddictPtrCount = 0;
-    ret
+    Ok(ZSTD_DDictHashSet {
+        ddictPtrTable: table,
+        ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE as size_t,
+        ddictPtrCount: 0,
+    })
 }
 
-/// Frees the table of `ZSTD_DDict*` within a hashset, then frees the hashset itself.
+/// Frees the table of `ZSTD_DDict*` within a hashset.
 ///
 /// Note: The `ZSTD_DDict*` within the table are NOT freed.
-unsafe fn ZSTD_freeDDictHashSet(hashSet: *mut ZSTD_DDictHashSet, customMem: ZSTD_customMem) {
-    if !hashSet.is_null() && !((*hashSet).ddictPtrTable).is_null() {
-        ZSTD_customFree(
-            (*hashSet).ddictPtrTable as *mut core::ffi::c_void,
-            (*hashSet)
-                .ddictPtrTableSize
-                .wrapping_mul(size_of::<*mut ZSTD_DDict>()),
-            customMem,
-        );
-    }
-    if !hashSet.is_null() {
-        ZSTD_customFree(
-            hashSet as *mut core::ffi::c_void,
-            size_of::<ZSTD_DDictHashSet>(),
-            customMem,
-        );
-    }
+unsafe fn ZSTD_freeDDictHashSet(hashSet: ZSTD_DDictHashSet, customMem: ZSTD_customMem) {
+    ZSTD_customFree(
+        hashSet.ddictPtrTable as *mut core::ffi::c_void,
+        hashSet.ddictPtrTableSize * size_of::<*const ZSTD_DDict>(),
+        customMem,
+    );
 }
 
 /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
@@ -672,7 +653,7 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).oversizedDuration = 0;
         (*dctx).isFrameDecompression = true;
         (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
-        (*dctx).ddictSet = core::ptr::null_mut();
+        (*dctx).ddictSet = None;
 
         // Prevent issues with uninitialized memory.
         (*dctx).headerBuffer = [0u8; 18];
@@ -783,9 +764,8 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
     if !((*dctx).legacyContext).is_null() {
         ZSTD_freeLegacyStreamContext((*dctx).legacyContext, (*dctx).previousLegacyVersion);
     }
-    if !((*dctx).ddictSet).is_null() {
-        ZSTD_freeDDictHashSet((*dctx).ddictSet, cMem);
-        (*dctx).ddictSet = core::ptr::null_mut();
+    if let Some(ddictSet) = (*dctx).ddictSet.take() {
+        ZSTD_freeDDictHashSet(ddictSet, cMem);
     }
     ZSTD_customFree(dctx as *mut core::ffi::c_void, size_of::<ZSTD_DCtx>(), cMem);
     0
@@ -814,7 +794,7 @@ pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const 
 /// [`ZSTD_d_refMultipleDDicts`] must be enabled for this function to be called.
 fn ZSTD_DCtx_selectFrameDDict(dctx: &mut ZSTD_DCtx) {
     debug_assert_eq!(dctx.refMultipleDDicts, MultipleDDicts::Multiple);
-    debug_assert!(!dctx.ddictSet.is_null());
+    debug_assert!(dctx.ddictSet.is_some());
     if !dctx.ddict.is_null() {
         // FIXME: make safe
         let frameDDict = unsafe {
@@ -1376,7 +1356,7 @@ fn ZSTD_decodeFrameHeader(dctx: &mut ZSTD_DCtx, src: &[u8]) -> Result<size_t, Er
     }
 
     // reference `DDict` requested by frame if dctx references multiple `DDict`s
-    if dctx.refMultipleDDicts == MultipleDDicts::Multiple && !(dctx.ddictSet).is_null() {
+    if dctx.refMultipleDDicts == MultipleDDicts::Multiple && dctx.ddictSet.is_some() {
         ZSTD_DCtx_selectFrameDDict(dctx);
     }
 
@@ -2877,12 +2857,12 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
         (*dctx).ddict = ddict;
         (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
         if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
-            if ((*dctx).ddictSet).is_null() {
-                (*dctx).ddictSet = ZSTD_createDDictHashSet((*dctx).customMem);
-            }
-
-            let Some(ddictSet) = (*dctx).ddictSet.as_mut() else {
-                return Error::memory_allocation.to_error_code();
+            let ddictSet = match (*dctx).ddictSet {
+                Some(ref mut ddictSet) => ddictSet,
+                None => match ZSTD_createDDictHashSet((*dctx).customMem) {
+                    Ok(ddictSet) => (*dctx).ddictSet.insert(ddictSet),
+                    Err(err) => return err.to_error_code(),
+                },
             };
 
             debug_assert_eq!((*dctx).staticSize, 0); // ddictSet cannot have been allocated if static dctx
@@ -3539,7 +3519,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 &zds.headerBuffer[..zds.lhSize],
                 zds.format,
             );
-            if zds.refMultipleDDicts != MultipleDDicts::Single && !zds.ddictSet.is_null() {
+            if zds.refMultipleDDicts != MultipleDDicts::Single && zds.ddictSet.is_some() {
                 ZSTD_DCtx_selectFrameDDict(zds);
             }
             let hSize = match hSize {
