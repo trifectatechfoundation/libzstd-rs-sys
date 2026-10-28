@@ -29,7 +29,7 @@ pub struct ZSTD_CCtx_s {
     pub(super) isFirstBlock: core::ffi::c_int,
     pub(super) initialized: core::ffi::c_int,
     pub(crate) seqStore: SeqStore_t,
-    pub(super) ldmState: ldmState_t,
+    pub(super) ldmState: LdmState,
     pub(super) ldmSequences: *mut rawSeq,
     pub(super) maxNbLdmSequences: size_t,
     pub(super) externSeqStore: RawSeqStore_t,
@@ -313,7 +313,7 @@ pub struct ZSTD_CCtx_params_s {
     pub jobSize: size_t,
     pub overlapLog: core::ffi::c_int,
     pub rsyncable: core::ffi::c_int,
-    pub ldmParams: ldmParams_t,
+    pub ldmParams: LdmParams,
     pub enableDedicatedDictSearch: core::ffi::c_int,
     pub inBufferMode: ZSTD_bufferMode_e,
     pub outBufferMode: ZSTD_bufferMode_e,
@@ -358,7 +358,7 @@ impl ZSTD_CCtx_params {
             compressionLevel,
             useRowMatchFinder: ZSTD_resolveRowMatchFinderMode(ParamSwitch::Auto, &params.cParams),
             postBlockSplitter: ZSTD_resolveBlockSplitterMode(ParamSwitch::Auto, &params.cParams),
-            ldmParams: ldmParams_t {
+            ldmParams: LdmParams {
                 enableLdm: ZSTD_resolveEnableLdm(ParamSwitch::Auto, &params.cParams),
                 ..Default::default()
             },
@@ -776,7 +776,7 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_blockCompress, ZSTD_ldm_skipRawSeqStoreBytes,
+    LdmEntry, LdmParams, LdmState, ZSTD_ldm_blockCompress, ZSTD_ldm_skipRawSeqStoreBytes,
     ZSTD_ldm_skipSequences,
 };
 use crate::lib::compress::zstd_opt::{
@@ -2730,7 +2730,7 @@ fn ZSTD_maxNbSeq(
 
 fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     cParams: &ZSTD_compressionParameters,
-    ldmParams: &ldmParams_t,
+    ldmParams: &LdmParams,
     isStatic: bool,
     useRowMatchFinder: ParamSwitch,
     buffInSize: size_t,
@@ -3330,12 +3330,12 @@ unsafe fn ZSTD_resetCCtx_internal(
         // TODO: avoid memset?
         let ldmHSize = 1usize << params.ldmParams.hashLog;
         (*zc).ldmState.hashTable =
-            ZSTD_cwksp_reserve_aligned64(ws, ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()))
-                as *mut ldmEntry_t;
+            ZSTD_cwksp_reserve_aligned64(ws, ldmHSize.wrapping_mul(size_of::<LdmEntry>()))
+                as *mut LdmEntry;
         ptr::write_bytes(
             (*zc).ldmState.hashTable as *mut u8,
             0,
-            ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
+            ldmHSize.wrapping_mul(size_of::<LdmEntry>()),
         );
         (*zc).ldmSequences =
             ZSTD_cwksp_reserve_aligned64(ws, maxNbLdmSeq.wrapping_mul(size_of::<rawSeq>()))
@@ -6368,7 +6368,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock(
 
 unsafe fn ZSTD_loadDictionaryContent(
     ms: &mut ZSTD_MatchState_t,
-    ls: Option<&mut ldmState_t>,
+    ls: Option<&mut LdmState>,
     ws: &mut ZSTD_cwksp,
     params: &ZSTD_CCtx_params,
     mut src: *const core::ffi::c_void,
@@ -6691,7 +6691,7 @@ unsafe fn ZSTD_loadZstdDictionary(
 unsafe fn ZSTD_compress_insertDictionary(
     bs: *mut ZSTD_compressedBlockState_t,
     ms: &mut ZSTD_MatchState_t,
-    ls: Option<&mut ldmState_t>,
+    ls: Option<&mut LdmState>,
     ws: &mut ZSTD_cwksp,
     params: &ZSTD_CCtx_params,
     dict: *const core::ffi::c_void,

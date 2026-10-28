@@ -23,7 +23,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_compress_internal::{prime8bytes, CParamMode, DictTableLoadMethod};
-use crate::lib::compress::zstd_ldm::{ldmEntry_t, ldmParams_t, ldmState_t};
+use crate::lib::compress::zstd_ldm::{LdmEntry, LdmParams, LdmState};
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2,
@@ -74,7 +74,7 @@ struct SerialState {
     mutex: Mutex<()>,
     cond: Condvar,
     params: ZSTD_CCtx_params,
-    ldmState: ldmState_t,
+    ldmState: LdmState,
     xxhState: XXH64_state_t,
     nextJobID: core::ffi::c_uint,
     // Protects ldmWindow.
@@ -92,7 +92,7 @@ impl Default for SerialState {
             ldmWindowMutex: Mutex::new(()),
             ldmWindowCond: Condvar::new(),
             params: ZSTD_CCtx_params::default(),
-            ldmState: ldmState_t::default(),
+            ldmState: LdmState::default(),
             xxhState: XXH64_state_t::default(),
             nextJobID: 0,
             ldmWindow: ZSTD_window_t::default(),
@@ -593,7 +593,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         params.ldmParams.adjust_parameters(&params.cParams);
     } else {
-        params.ldmParams = ldmParams_t::default();
+        params.ldmParams = LdmParams::default();
     }
 
     serialState.nextJobID = 0;
@@ -604,7 +604,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.ldmParams.enableLdm == ParamSwitch::Enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
-        let hashSize = (1usize << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
+        let hashSize = (1usize << hashLog).wrapping_mul(size_of::<LdmEntry>());
         let bucketLog = (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
         let prevBucketLog = (serialState.params.ldmParams.hashLog)
             .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
@@ -622,7 +622,7 @@ unsafe fn ZSTDMT_serialState_reset(
                 hashSize,
                 cMem,
             );
-            serialState.ldmState.hashTable = ZSTD_customMalloc(hashSize, cMem) as *mut ldmEntry_t;
+            serialState.ldmState.hashTable = ZSTD_customMalloc(hashSize, cMem) as *mut LdmEntry;
         }
         if (serialState.ldmState.bucketOffsets).is_null() || prevBucketLog < bucketLog {
             ZSTD_customFree(
@@ -674,7 +674,7 @@ unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
     core::ptr::drop_in_place(&raw mut serialState.ldmWindowMutex);
     core::ptr::drop_in_place(&raw mut serialState.ldmWindowCond);
     let hashLog = serialState.params.ldmParams.hashLog;
-    let hashSize = (1usize << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
+    let hashSize = (1usize << hashLog).wrapping_mul(size_of::<LdmEntry>());
     let bucketLog = (serialState.params.ldmParams.hashLog)
         .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
     let numBuckets = 1usize << bucketLog;

@@ -2,16 +2,16 @@ use crate::lib::polyfill::{unlikely, PointerExt};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ldmState_t {
+pub struct LdmState {
     pub window: ZSTD_window_t,
-    pub hashTable: *mut ldmEntry_t,
+    pub hashTable: *mut LdmEntry,
     pub loadedDictEnd: u32,
     pub bucketOffsets: *mut u8,
     pub splitIndices: [size_t; LDM_BATCH_SIZE],
-    pub matchCandidates: [ldmMatchCandidate_t; LDM_BATCH_SIZE],
+    pub matchCandidates: [LdmMatchCandidate; LDM_BATCH_SIZE],
 }
 
-impl Default for ldmState_t {
+impl Default for LdmState {
     fn default() -> Self {
         Self {
             window: ZSTD_window_t::default(),
@@ -19,14 +19,14 @@ impl Default for ldmState_t {
             loadedDictEnd: 0,
             bucketOffsets: core::ptr::null_mut(),
             splitIndices: [0; LDM_BATCH_SIZE],
-            matchCandidates: [ldmMatchCandidate_t::default(); LDM_BATCH_SIZE],
+            matchCandidates: [LdmMatchCandidate::default(); LDM_BATCH_SIZE],
         }
     }
 }
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ldmMatchCandidate_t {
+pub struct LdmMatchCandidate {
     pub split: usize,
     pub hash: u32,
     pub checksum: u32,
@@ -34,14 +34,14 @@ pub struct ldmMatchCandidate_t {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ldmEntry_t {
+pub struct LdmEntry {
     pub offset: u32,
     pub checksum: u32,
 }
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ldmParams_t {
+pub struct LdmParams {
     pub enableLdm: ParamSwitch,
     pub hashLog: u32,
     pub bucketSizeLog: u32,
@@ -51,7 +51,7 @@ pub struct ldmParams_t {
 }
 
 #[repr(C)]
-pub struct ldmRollingHashState_t {
+pub struct LdmRollingHashState {
     pub rolling: u64,
     pub stopMask: u64,
 }
@@ -148,10 +148,10 @@ static ZSTD_ldm_gearTab: [u64; 256] = [
 
 pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 
-impl ldmRollingHashState_t {
+impl LdmRollingHashState {
     /// Initializes the rolling hash state such that it will honor the
     /// settings in params.
-    fn new(params: &ldmParams_t) -> Self {
+    fn new(params: &LdmParams) -> Self {
         let maxBitsInMask = params.minMatchLength.min(64);
         let hashRateLog = params.hashRateLog;
 
@@ -174,7 +174,7 @@ impl ldmRollingHashState_t {
             (1u64 << hashRateLog).wrapping_sub(1)
         };
 
-        ldmRollingHashState_t {
+        LdmRollingHashState {
             rolling: u64::from(u32::MAX),
             stopMask,
         }
@@ -251,7 +251,7 @@ impl ldmRollingHashState_t {
     }
 }
 
-impl ldmParams_t {
+impl LdmParams {
     /// If the `hashRateLog` is not set, set it to its default value based on
     /// `windowLog` and `hashLog`.
     ///
@@ -297,7 +297,7 @@ impl ldmParams_t {
         let ldmBucketSizeLog = (self.bucketSizeLog.min(self.hashLog)) as size_t;
         let ldmBucketSize = 1 << (self.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
         let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
-            ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
+            ldmHSize.wrapping_mul(size_of::<LdmEntry>()),
         ));
         if self.enableLdm == ParamSwitch::Enable {
             totalSize
@@ -379,19 +379,19 @@ unsafe fn ZSTD_ldm_fillFastTables(ms: &mut ZSTD_MatchState_t, end: *const core::
 }
 
 struct LdmHashTable<'a> {
-    hash_table: &'a mut [ldmEntry_t],
+    hash_table: &'a mut [LdmEntry],
     bucket_offsets: &'a mut [u8],
     bucket_size_log: u32,
 }
 
 impl LdmHashTable<'_> {
     /// Get the bucket associated with hash
-    fn get_bucket(&mut self, hash: usize) -> &mut [ldmEntry_t] {
+    fn get_bucket(&mut self, hash: usize) -> &mut [LdmEntry] {
         &mut self.hash_table[hash << self.bucket_size_log..][..1 << self.bucket_size_log]
     }
 
     /// Insert the entry with corresponding hash into the hash table
-    fn insert_entry(&mut self, hash: size_t, entry: ldmEntry_t) {
+    fn insert_entry(&mut self, hash: size_t, entry: LdmEntry) {
         let offset = self.bucket_offsets[hash];
 
         self.get_bucket(hash)[usize::from(offset)] = entry;
@@ -407,13 +407,13 @@ impl LdmHashTable<'_> {
     }
 }
 
-impl ldmState_t {
+impl LdmState {
     /// # Safety
     ///
     /// - `self.hashTable` must be valid for `1 << params.hashLog` entries.
     /// - `self.bucketOffsets` must be valid for `1 << (params.hashLog - params.bucketSizeLog)` entries.
     /// - No other reference to the hash table or bucket offsets may be live for the duration of `'a`.
-    unsafe fn get_hash_table<'a>(&self, params: &ldmParams_t) -> LdmHashTable<'a> {
+    unsafe fn get_hash_table<'a>(&self, params: &LdmParams) -> LdmHashTable<'a> {
         let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
         LdmHashTable {
             hash_table: core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog),
@@ -422,13 +422,13 @@ impl ldmState_t {
         }
     }
 
-    pub fn fill_hash_table(&mut self, src: &[u8], params: &ldmParams_t) {
+    pub fn fill_hash_table(&mut self, src: &[u8], params: &LdmParams) {
         let minMatchLength = params.minMatchLength as usize;
         let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
         let base = self.window.base;
         let mut hashTable = unsafe { self.get_hash_table(params) };
 
-        let mut hashState = ldmRollingHashState_t::new(params);
+        let mut hashState = LdmRollingHashState::new(params);
 
         let mut pos = 0;
         while pos < src.len() {
@@ -441,7 +441,7 @@ impl ldmState_t {
                     let split = &src[splitEnd - minMatchLength..splitEnd];
                     let xxhash = ZSTD_XXH64_slice(split, 0);
                     let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
-                    let entry = ldmEntry_t {
+                    let entry = LdmEntry {
                         offset: split.as_ptr().wrapping_offset_from(base) as u32,
                         checksum: (xxhash >> 32) as u32,
                     };
@@ -469,9 +469,9 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
 }
 
 unsafe fn ZSTD_ldm_generateSequences_internal(
-    ldmState: &mut ldmState_t,
+    ldmState: &mut LdmState,
     rawSeqStore: &mut RawSeqStore_t,
-    params: &ldmParams_t,
+    params: &LdmParams,
     src: &[u8],
 ) -> Result<size_t, Error> {
     // LDM parameters
@@ -509,7 +509,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let Some(head) = src.get(..minMatchLength) else {
         return Ok(src.len());
     };
-    let mut hashState = ldmRollingHashState_t::new(params);
+    let mut hashState = LdmRollingHashState::new(params);
     hashState.reset(head);
 
     // Input positions
@@ -525,14 +525,14 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let split = splitEnd - minMatchLength;
             let xxhash = ZSTD_XXH64_slice(&src[split..splitEnd], 0);
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
-            ldmState.matchCandidates[n] = ldmMatchCandidate_t {
+            ldmState.matchCandidates[n] = LdmMatchCandidate {
                 split,
                 hash,
                 checksum: (xxhash >> 32) as u32,
             };
         }
 
-        for &ldmMatchCandidate_t {
+        for &LdmMatchCandidate {
             split,
             checksum,
             hash,
@@ -545,7 +545,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let bucket = hashTable.get_bucket(hash as usize);
 
             let mut bestEntry = None;
-            let newEntry = ldmEntry_t {
+            let newEntry = LdmEntry {
                 offset: (srcIndex + split) as u32,
                 checksum,
             };
@@ -657,11 +657,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     Ok(src.len() - anchor)
 }
 
-impl ldmState_t {
+impl LdmState {
     pub unsafe fn generate_sequences(
         &mut self,
         sequences: &mut RawSeqStore_t,
-        params: &ldmParams_t,
+        params: &LdmParams,
         src: &[u8],
     ) -> Result<(), Error> {
         let maxDist = 1 << params.windowLog;
