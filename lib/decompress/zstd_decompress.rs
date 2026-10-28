@@ -492,26 +492,14 @@ impl ZSTD_DDictHashSet {
     /// allocates the new table, and frees the old table.
     unsafe fn expand(&mut self, customMem: ZSTD_customMem) -> Result<(), Error> {
         let newTableSize = self.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR;
-        let newTable = ZSTD_customCalloc(
-            size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
-            customMem,
-        ) as *mut *const ZSTD_DDict;
-        let newTable = NonNull::new(newTable).ok_or(Error::memory_allocation)?;
-        let oldTable = self.ddictPtrTable.as_ptr();
-        let oldTableSize = self.ddictPtrTableSize;
-        self.ddictPtrTable = newTable;
-        self.ddictPtrTableSize = newTableSize;
-        self.ddictPtrCount = 0;
-        for i in 0..oldTableSize {
-            if !(*oldTable.add(i)).is_null() {
-                self.emplace_ddict(*oldTable.add(i))?;
+        let newSet = Self::new_with_size(newTableSize, customMem)?;
+        let oldSet = core::mem::replace(self, newSet);
+        for &ddict in oldSet.as_slice() {
+            if !ddict.is_null() {
+                self.emplace_ddict(ddict)?;
             }
         }
-        ZSTD_customFree(
-            oldTable as *mut core::ffi::c_void,
-            oldTableSize.wrapping_mul(size_of::<*mut ZSTD_DDict>()),
-            customMem,
-        );
+        oldSet.free(customMem);
         Ok(())
     }
 
@@ -549,13 +537,15 @@ impl ZSTD_DDictHashSet {
     ///   values automatically set to `NULL` to begin with.
     /// - [`Error::memory_allocation`] if allocation failed
     unsafe fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
-        let table = ZSTD_customCalloc(
-            DDICT_HASHSET_TABLE_BASE_SIZE * size_of::<*const ZSTD_DDict>(),
-            customMem,
-        ) as *mut *const ZSTD_DDict;
+        Self::new_with_size(DDICT_HASHSET_TABLE_BASE_SIZE, customMem)
+    }
+
+    unsafe fn new_with_size(tableSize: usize, customMem: ZSTD_customMem) -> Result<Self, Error> {
+        let table = ZSTD_customCalloc(tableSize * size_of::<*const ZSTD_DDict>(), customMem)
+            as *mut *const ZSTD_DDict;
         Ok(Self {
             ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
-            ddictPtrTableSize: DDICT_HASHSET_TABLE_BASE_SIZE,
+            ddictPtrTableSize: tableSize,
             ddictPtrCount: 0,
         })
     }
