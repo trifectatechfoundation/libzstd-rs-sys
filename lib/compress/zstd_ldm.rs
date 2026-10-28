@@ -414,7 +414,7 @@ impl LdmState {
     /// - `self.bucketOffsets` must be valid for `1 << (params.hashLog - params.bucketSizeLog)` entries.
     /// - No other reference to the hash table or bucket offsets may be live for the duration of `'a`.
     unsafe fn get_hash_table<'a>(&self, params: &LdmParams) -> LdmHashTable<'a> {
-        let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
+        let hBits = params.hashLog - params.bucketSizeLog;
         LdmHashTable {
             hash_table: core::slice::from_raw_parts_mut(self.hashTable, 1 << params.hashLog),
             bucket_offsets: core::slice::from_raw_parts_mut(self.bucketOffsets, 1 << hBits),
@@ -424,7 +424,7 @@ impl LdmState {
 
     pub fn fill_hash_table(&mut self, src: &[u8], params: &LdmParams) {
         let minMatchLength = params.minMatchLength as usize;
-        let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
+        let hBits = params.hashLog - params.bucketSizeLog;
         let base = self.window.base;
         let mut hashTable = unsafe { self.get_hash_table(params) };
 
@@ -477,7 +477,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     // LDM parameters
     let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength as usize;
-    let hBits = (params.hashLog).wrapping_sub(params.bucketSizeLog);
+    let hBits = params.hashLog - params.bucketSizeLog;
     let mut hashTable = ldmState.get_hash_table(params);
 
     // Prefix and extDict parameters
