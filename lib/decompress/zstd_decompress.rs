@@ -571,22 +571,22 @@ impl ZSTD_DDictHashSet {
             customMem,
         );
     }
-}
 
-/// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
-unsafe fn ZSTD_DDictHashSet_addDDict(
-    hashSet: &mut ZSTD_DDictHashSet,
-    ddict: *const ZSTD_DDict,
-    customMem: ZSTD_customMem,
-) -> Result<(), Error> {
-    if hashSet.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
-        / hashSet.ddictPtrTableSize
-        * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
-        != 0
-    {
-        hashSet.expand(customMem)?;
+    /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
+    unsafe fn add_ddict(
+        &mut self,
+        ddict: *const ZSTD_DDict,
+        customMem: ZSTD_customMem,
+    ) -> Result<(), Error> {
+        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
+            / self.ddictPtrTableSize
+            * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
+            != 0
+        {
+            self.expand(customMem)?;
+        }
+        self.emplace_ddict(ddict)
     }
-    hashSet.emplace_ddict(ddict)
 }
 
 /// Get the _current_ memory usage of the [`ZSTD_DCtx`]
@@ -2861,7 +2861,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
             };
 
             debug_assert_eq!((*dctx).staticSize, 0); // ddictSet cannot have been allocated if static dctx
-            if let Err(err) = ZSTD_DDictHashSet_addDDict(ddictSet, ddict, (*dctx).customMem) {
+            if let Err(err) = ddictSet.add_ddict(ddict, (*dctx).customMem) {
                 return err.to_error_code();
             }
         }
