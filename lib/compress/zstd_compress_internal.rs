@@ -15,6 +15,7 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressedBlockState_t,
     ZSTD_entropyCTablesMetadata_t, ZSTD_optimal_t, ZSTD_window_t, ZSTD_MAX_NB_BLOCK_SPLITS,
+    ZSTD_OPT_SIZE,
 };
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{
@@ -310,7 +311,7 @@ pub struct optState_t {
     pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
     pub offCodeFreq: *mut [core::ffi::c_uint; MaxOff as usize + 1],
-    pub matchTable: *mut ZSTD_match_t,
+    pub matchTable: *mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     pub priceTable: *mut ZSTD_optimal_t,
     pub litSum: u32,
     pub litLengthSum: u32,

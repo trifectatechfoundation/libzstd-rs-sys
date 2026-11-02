@@ -1170,7 +1170,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     let mut nextToUpdate3 = ms.nextToUpdate;
 
     let opt = core::slice::from_raw_parts_mut(ms.opt.priceTable, ZSTD_OPT_SIZE);
-    let matches = core::slice::from_raw_parts_mut(ms.opt.matchTable, ZSTD_OPT_SIZE);
+    let matches = &mut *ms.opt.matchTable;
     let mut lastStretch = ZSTD_optimal_t {
         price: 0,
         off: 0,
