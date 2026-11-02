@@ -547,7 +547,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let mut offset_2 = rep[1];
 
     let dms = ms.dictMatchState;
-    let dictCParams: *const ZSTD_compressionParameters = &(*dms).cParams;
+    let dictCParams = &(*dms).cParams;
     let dictHashTable: *const u32 = (*dms).hashTable;
     let dictStartIndex = (*dms).window.dictLimit;
     let dictBase = (*dms).window.base;
@@ -557,8 +557,9 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
         prefixStartIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
     let dictAndPrefixLength =
         istart.offset_from_unsigned(prefixStart) + dictEnd.offset_from_unsigned(dictStart);
-    let dictHBits =
-        ((*dictCParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let dictHBits = dictCParams
+        .hashLog
+        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
 
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
@@ -573,7 +574,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     assert!(prefixStartIndex as usize >= dictEnd as usize - dictBase as usize);
 
     if ms.prefetchCDictTables != 0 {
-        let hashTableBytes = (1usize << (*dictCParams).hashLog).wrapping_mul(size_of::<u32>());
+        let hashTableBytes = (1usize << dictCParams.hashLog).wrapping_mul(size_of::<u32>());
         prefetch_area(dictHashTable as *const core::ffi::c_char, hashTableBytes);
     }
 
