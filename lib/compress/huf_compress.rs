@@ -177,10 +177,10 @@ impl HUF_CElt {
     const fn get_nb_bits_fast(self) -> usize {
         self.0
     }
-}
 
-const fn HUF_getValue(elt: HUF_CElt) -> usize {
-    elt.0 & !0xff
+    const fn get_value(self) -> usize {
+        self.0 & !0xff
+    }
 }
 
 const fn HUF_getValueFast(elt: HUF_CElt) -> usize {
@@ -1005,7 +1005,7 @@ impl HUF_CStream_t {
         self.bitContainer[usize::from(idx)] |= if kFast {
             HUF_getValueFast(elt)
         } else {
-            HUF_getValue(elt)
+            elt.get_value()
         };
         // We only read the low 8 bits of bitC->bitPos[idx] so it
         // doesn't matter that the high bits have noise from the value.
