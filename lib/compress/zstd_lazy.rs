@@ -1025,11 +1025,10 @@ unsafe fn ZSTD_row_fillHashCache(
         (iLimit.wrapping_offset_from(base.wrapping_offset(idx as isize)) as core::ffi::c_long + 1)
             as u32
     };
-    let lim = idx.wrapping_add(if 8 < maxElemsToPrefetch {
-        8
-    } else {
-        maxElemsToPrefetch
-    });
+    let lim = idx.wrapping_add(Ord::min(
+        ZSTD_ROW_HASH_CACHE_SIZE as u32,
+        maxElemsToPrefetch,
+    ));
 
     for idx in idx..lim {
         let hash = ZSTD_hashPtrSalted(
