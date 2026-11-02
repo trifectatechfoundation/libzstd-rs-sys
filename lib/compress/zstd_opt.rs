@@ -196,7 +196,7 @@ unsafe fn ZSTD_rescaleFreqs(
 
             let mlstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.matchlengthCTable);
             let mut matchLengthSum = 0u32;
-            for (ml, freq) in opt_state.matchLengthFreq_mut().iter_mut().enumerate() {
+            for (ml, freq) in opt_state.matchLengthFreq.iter_mut().enumerate() {
                 let scaleLog_1 = 10u32;
                 let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml as u32);
                 *freq = if bitCost_1 != 0 {
@@ -242,7 +242,7 @@ unsafe fn ZSTD_rescaleFreqs(
             opt_state.litLengthFreq.copy_from_slice(&baseLLfreqs);
             opt_state.litLengthSum = baseLLfreqs.iter().sum();
 
-            opt_state.matchLengthFreq_mut().fill(1);
+            opt_state.matchLengthFreq.fill(1);
             opt_state.matchLengthSum = u32::from(MaxML) + 1;
 
             let baseOFCfreqs: [u32; MaxOff as usize + 1] = [
@@ -258,7 +258,7 @@ unsafe fn ZSTD_rescaleFreqs(
             opt_state.litSum = ZSTD_scaleStats(&mut opt_state.litFreq, 12);
         }
         opt_state.litLengthSum = ZSTD_scaleStats(&mut opt_state.litLengthFreq, 11);
-        opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq_mut(), 11);
+        opt_state.matchLengthSum = ZSTD_scaleStats(&mut opt_state.matchLengthFreq, 11);
         opt_state.offCodeSum = ZSTD_scaleStats(&mut opt_state.offCodeFreq, 11);
     }
 
@@ -362,7 +362,7 @@ unsafe fn ZSTD_getMatchPrice(
 
     // match Length
     let mlCode = ZSTD_MLcode(mlBase);
-    let matchLengthFreq = opt_state.matchLengthFreq()[mlCode as usize];
+    let matchLengthFreq = opt_state.matchLengthFreq[mlCode as usize];
     price = price.wrapping_add(
         (ML_bits[mlCode as usize] as u32 * BITCOST_MULTIPLIER).wrapping_add(
             (opt_state.matchLengthSumBasePrice).wrapping_sub(WEIGHT(matchLengthFreq, optLevel)),
@@ -407,7 +407,7 @@ unsafe fn ZSTD_updateStats(
     // match Length
     let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
     let mlCode = ZSTD_MLcode(mlBase);
-    let freq = &mut opt_state.matchLengthFreq_mut()[mlCode as usize];
+    let freq = &mut opt_state.matchLengthFreq[mlCode as usize];
     *freq = freq.wrapping_add(1);
     opt_state.matchLengthSum = opt_state.matchLengthSum.wrapping_add(1);
 }

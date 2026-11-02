@@ -2677,14 +2677,12 @@ fn ZSTD_sizeof_matchState(
         .wrapping_mul(size_of::<u32>())
         .wrapping_add(hSize.wrapping_mul(size_of::<u32>()))
         .wrapping_add(h3Size.wrapping_mul(size_of::<u32>()));
-    let optPotentialSpace =
-        (ZSTD_cwksp_aligned64_alloc_size((usize::from(MaxML) + 1).wrapping_mul(size_of::<u32>())))
-            .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
-            ))
-            .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
-            ));
+    let optPotentialSpace = ZSTD_cwksp_aligned64_alloc_size(
+        (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
+    )
+    .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
+        (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
+    ));
     let lazyAdditionalSpace = if ZSTD_rowMatchFinderUsed(cParams.strategy, useRowMatchFinder) {
         ZSTD_cwksp_aligned64_alloc_size(hSize)
     } else {
@@ -3107,9 +3105,6 @@ unsafe fn ZSTD_reset_matchState(
 
     // opt parser space
     if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
-        ms.opt.matchLengthFreq =
-            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxML as usize + 1]>())
-                .cast();
         ms.opt.matchTable =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[ZSTD_match_t; ZSTD_OPT_SIZE]>()).cast();
         ms.opt.priceTable =
