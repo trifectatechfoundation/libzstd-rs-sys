@@ -559,15 +559,14 @@ unsafe fn FSEv06_buildDTable(
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -1 {
             (*tableDecode.offset(highThreshold as isize)).symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            *symbolNext.as_mut_ptr().offset(s as isize) = 1;
+            symbolNext[s as usize] = 1;
         } else {
             if *normalizedCounter.offset(s as isize) as core::ffi::c_int
                 >= largeLimit as core::ffi::c_int
             {
                 DTableH.fastMode = 0;
             }
-            *symbolNext.as_mut_ptr().offset(s as isize) =
-                *normalizedCounter.offset(s as isize) as u16;
+            symbolNext[s as usize] = *normalizedCounter.offset(s as isize) as u16;
         }
     }
     memcpy(
@@ -594,7 +593,7 @@ unsafe fn FSEv06_buildDTable(
     }
     for u in 0..tableSize {
         let symbol = (*tableDecode.offset(u as isize)).symbol;
-        let fresh3 = &mut (*symbolNext.as_mut_ptr().offset(symbol as isize));
+        let fresh3 = &mut symbolNext[usize::from(symbol)];
         let nextState = *fresh3;
         *fresh3 = (*fresh3).wrapping_add(1);
         (*tableDecode.offset(u as isize)).nbBits =
@@ -915,21 +914,20 @@ unsafe fn HUFv06_readDTableX2(
     nextRankStart = 0;
     for n in 1..tableLog.wrapping_add(1) {
         let current = nextRankStart;
-        nextRankStart = nextRankStart
-            .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
-        *rankVal.as_mut_ptr().offset(n as isize) = current;
+        nextRankStart = nextRankStart.wrapping_add(rankVal[n as usize] << n.wrapping_sub(1));
+        rankVal[n as usize] = current;
     }
     for n in 0..nbSymbols {
-        let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
+        let w = huffWeight[n as usize] as u32;
         let length = (1 << w >> 1) as u32;
         let mut D = HUFv06_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
         D.nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
-        let start = *rankVal.as_mut_ptr().offset(w as isize);
+        let start = rankVal[w as usize];
         for i in start..start.wrapping_add(length) {
             *dt.offset(i as isize) = D;
         }
-        let fresh11 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
+        let fresh11 = &mut rankVal[w as usize];
         *fresh11 = (*fresh11).wrapping_add(length);
     }
     iSize
@@ -1395,12 +1393,12 @@ unsafe fn HUFv06_readDTableX4(
     *rankStart = nextRankStart;
     sizeOfSort = nextRankStart;
     for s in 0..nbSymbols {
-        let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
+        let w_0 = weightList[s as usize] as u32;
         let fresh37 = &mut (*rankStart.offset(w_0 as isize));
         let r = *fresh37;
         *fresh37 = (*fresh37).wrapping_add(1);
-        (*sortedSymbol.as_mut_ptr().offset(r as isize)).symbol = s as u8;
-        (*sortedSymbol.as_mut_ptr().offset(r as isize)).weight = w_0 as u8;
+        sortedSymbol[r as usize].symbol = s as u8;
+        sortedSymbol[r as usize].weight = w_0 as u8;
     }
     *rankStart = 0;
     let rankVal0 = (*rankVal.as_mut_ptr()).as_mut_ptr();
@@ -2149,24 +2147,14 @@ unsafe fn HUFv06_decompress(
     let Q = (cSrcSize * 16 / dstSize) as u32;
     let D256 = (dstSize >> 8) as u32;
     for n in 0..3 {
-        *Dtime.as_mut_ptr().offset(n as isize) = ((*(*algoTime.as_ptr().offset(Q as isize))
-            .as_ptr()
-            .offset(n as isize))
-        .tableTime)
-            .wrapping_add(
-                (*(*algoTime.as_ptr().offset(Q as isize))
-                    .as_ptr()
-                    .offset(n as isize))
-                .decode256Time
-                    * D256,
-            );
+        Dtime[n] = algoTime[Q as usize][n]
+            .tableTime
+            .wrapping_add(algoTime[Q as usize][n].decode256Time * D256);
     }
-    let fresh39 = &mut (*Dtime.as_mut_ptr().add(1));
-    *fresh39 = (*fresh39).wrapping_add(*Dtime.as_mut_ptr().add(1) >> 4);
-    let fresh40 = &mut (*Dtime.as_mut_ptr().add(2));
-    *fresh40 = (*fresh40).wrapping_add(*Dtime.as_mut_ptr().add(2) >> 3);
+    Dtime[1] = Dtime[1].wrapping_add(Dtime[1] >> 4);
+    Dtime[2] = Dtime[2].wrapping_add(Dtime[2] >> 3);
     let mut algoNb = 0;
-    if *Dtime.as_mut_ptr().add(1) < *Dtime.as_mut_ptr() {
+    if Dtime[1] < Dtime[0] {
         algoNb = 1;
     }
     (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
