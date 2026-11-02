@@ -986,16 +986,16 @@ unsafe fn ZSTD_row_nextIndex(tagRow: *mut u8, rowMask: u32) -> u32 {
 
 /// Performs prefetching for the hashTable and tagTable at a given row.
 #[inline(always)]
-unsafe fn ZSTD_row_prefetch(hashTable: *const u32, tagTable: *const u8, relRow: u32, rowLog: u32) {
-    prefetch_read_data(hashTable.add(relRow as usize), Locality::L1);
+fn ZSTD_row_prefetch(hashTable: *const u32, tagTable: *const u8, relRow: u32, rowLog: u32) {
+    prefetch_read_data(hashTable.wrapping_add(relRow as usize), Locality::L1);
 
     if rowLog >= 5 {
         // Note: prefetching more of the hash table does not appear to be beneficial for 128-entry rows.
-        prefetch_read_data(hashTable.add(relRow as usize + 16), Locality::L1);
+        prefetch_read_data(hashTable.wrapping_add(relRow as usize + 16), Locality::L1);
     }
-    prefetch_read_data(tagTable.add(relRow as usize), Locality::L1);
+    prefetch_read_data(tagTable.wrapping_add(relRow as usize), Locality::L1);
     if rowLog == 6 {
-        prefetch_read_data(tagTable.add(relRow as usize + 32), Locality::L1);
+        prefetch_read_data(tagTable.wrapping_add(relRow as usize + 32), Locality::L1);
     }
 
     assert!(rowLog == 4 || rowLog == 5 || rowLog == 6);
