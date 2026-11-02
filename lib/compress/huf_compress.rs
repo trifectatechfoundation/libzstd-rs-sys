@@ -181,10 +181,10 @@ impl HUF_CElt {
     const fn get_value(self) -> usize {
         self.0 & !0xff
     }
-}
 
-const fn HUF_getValueFast(elt: HUF_CElt) -> usize {
-    elt.0
+    const fn get_value_fast(self) -> usize {
+        self.0
+    }
 }
 
 const fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: usize) {
@@ -1003,7 +1003,7 @@ impl HUF_CStream_t {
         // every operation can use the same value loaded from elt.
         self.bitContainer[usize::from(idx)] >>= elt.get_nb_bits();
         self.bitContainer[usize::from(idx)] |= if kFast {
-            HUF_getValueFast(elt)
+            elt.get_value_fast()
         } else {
             elt.get_value()
         };
