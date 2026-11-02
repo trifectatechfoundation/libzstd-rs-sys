@@ -1140,12 +1140,12 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     let ilimit = iend.sub(8);
     let base = ms.window.base;
     let prefixStart = base.wrapping_offset(ms.window.dictLimit as isize);
-    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
+    let cParams = &ms.cParams;
 
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
 
-    let sufficient_len = (*cParams).targetLength.min((1 << 12) - 1);
-    let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
+    let sufficient_len = cParams.targetLength.min((1 << 12) - 1);
+    let minMatch = (if cParams.minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 
     let opt = &mut *ms.opt.priceTable;
