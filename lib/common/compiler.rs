@@ -1,5 +1,3 @@
-use libc::size_t;
-
 pub(crate) const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 #[expect(dead_code)]
@@ -11,7 +9,7 @@ pub enum Locality {
 
 #[inline(always)]
 pub(crate) fn prefetch_area<T>(ptr: *const T, bytes: usize) {
-    for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
+    for pos in (0..bytes).step_by(CACHELINE_SIZE as usize) {
         prefetch_read_data(ptr.wrapping_byte_add(pos), Locality::L2);
     }
 }

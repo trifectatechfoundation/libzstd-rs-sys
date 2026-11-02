@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::error_private::Error;
 use crate::lib::common::huf::{
     CTable, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
@@ -16,22 +14,22 @@ const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 
 pub type huf_compress_f = unsafe fn(
     *mut core::ffi::c_void,
-    size_t,
+    usize,
     &[u8],
     core::ffi::c_uint,
     core::ffi::c_uint,
     *mut core::ffi::c_void,
-    size_t,
+    usize,
     &mut CTable,
     &mut HUF_repeat,
     core::ffi::c_int,
-) -> Result<size_t, Error>;
+) -> Result<usize, Error>;
 
 pub unsafe fn ZSTD_noCompressLiterals(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let ostart = dst as *mut u8;
     let flSize = 1 + usize::from(src.len() > 31) + usize::from(src.len() > 4095);
 
@@ -42,13 +40,13 @@ pub unsafe fn ZSTD_noCompressLiterals(
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart = (SymbolEncodingType::Basic as size_t).wrapping_add(src.len() << 3) as u8;
+            *ostart = (SymbolEncodingType::Basic as usize).wrapping_add(src.len() << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                (SymbolEncodingType::Basic as size_t)
+                (SymbolEncodingType::Basic as usize)
                     .wrapping_add(1 << 2)
                     .wrapping_add(src.len() << 4) as u16,
             );
@@ -57,7 +55,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                (SymbolEncodingType::Basic as size_t)
+                (SymbolEncodingType::Basic as usize)
                     .wrapping_add(3 << 2)
                     .wrapping_add(src.len() << 4) as u32,
             );
@@ -67,7 +65,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
 
     core::ptr::copy_nonoverlapping(src.as_ptr(), ostart.add(flSize), src.len());
 
-    Ok(src.len().wrapping_add(flSize as size_t))
+    Ok(src.len().wrapping_add(flSize as usize))
 }
 
 fn allBytesIdentical(src: &[u8]) -> bool {
@@ -79,9 +77,9 @@ fn allBytesIdentical(src: &[u8]) -> bool {
 
 pub unsafe fn ZSTD_compressRleLiteralsBlock(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let ostart = dst as *mut u8;
     let flSize = 1 + usize::from(src.len() > 31) + usize::from(src.len() > 4095);
 
@@ -91,13 +89,13 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     match flSize {
         1 => {
             // 2 - 1 - 5
-            *ostart = (SymbolEncodingType::Rle as size_t).wrapping_add(src.len() << 3) as u8;
+            *ostart = (SymbolEncodingType::Rle as usize).wrapping_add(src.len() << 3) as u8;
         }
         2 => {
             // 2 - 2 - 12
             MEM_writeLE16(
                 ostart as *mut core::ffi::c_void,
-                (SymbolEncodingType::Rle as size_t)
+                (SymbolEncodingType::Rle as usize)
                     .wrapping_add(1 << 2)
                     .wrapping_add(src.len() << 4) as u16,
             );
@@ -106,7 +104,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
             // 2 - 2 - 20
             MEM_writeLE32(
                 ostart as *mut core::ffi::c_void,
-                (SymbolEncodingType::Rle as size_t)
+                (SymbolEncodingType::Rle as usize)
                     .wrapping_add(3 << 2)
                     .wrapping_add(src.len() << 4) as u32,
             );
@@ -122,7 +120,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
 /// The minimal amount of literals for literal compression to
 /// be attempted.
 /// Minimum is made tighter as compression strategy increases.
-fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -> size_t {
+fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -> usize {
     // btultra2 : min 8 bytes;
     // then 2x larger for each successive compression strategy
     // max threshold 64 bytes
@@ -137,19 +135,19 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
 
 pub unsafe fn ZSTD_compressLiterals(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: &[u8],
     entropyWorkspace: *mut core::ffi::c_void,
-    entropyWorkspaceSize: size_t,
+    entropyWorkspaceSize: usize,
     prevHuf: &ZSTD_hufCTables_t,
     nextHuf: &mut ZSTD_hufCTables_t,
     strategy: ZSTD_strategy,
     disableLiteralCompression: bool,
     suspectUncompressible: bool,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let lhSize =
-        3 + size_t::from(src.len() >= (1 << 10)) + size_t::from(src.len() >= (16 * (1 << 10)));
+        3 + usize::from(src.len() >= (1 << 10)) + usize::from(src.len() >= (16 * (1 << 10)));
     let ostart = dst as *mut u8;
     let mut singleStream = src.len() < 256;
     let mut hType = SymbolEncodingType::Compressed;

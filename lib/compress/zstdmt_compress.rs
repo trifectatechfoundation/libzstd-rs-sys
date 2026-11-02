@@ -1,8 +1,6 @@
 use core::ptr;
 use std::sync::{Condvar, Mutex};
 
-use libc::size_t;
-
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -41,8 +39,8 @@ pub struct ZSTDMT_CCtx {
     cctxPool: *mut ZSTDMT_CCtxPool,
     seqPool: *mut ZSTDMT_seqPool,
     params: ZSTD_CCtx_params,
-    targetSectionSize: size_t,
-    targetPrefixSize: size_t,
+    targetSectionSize: usize,
+    targetPrefixSize: usize,
     jobReady: core::ffi::c_int,
     inBuff: InBuff_t,
     roundBuff: RoundBuff_t,
@@ -104,29 +102,29 @@ impl Default for SerialState {
 #[repr(C)]
 struct RoundBuff_t {
     buffer: *mut u8,
-    capacity: size_t,
-    pos: size_t,
+    capacity: usize,
+    pos: usize,
 }
 
 #[repr(C)]
 struct InBuff_t {
     prefix: Range,
     buffer: Buffer,
-    filled: size_t,
+    filled: usize,
 }
 type Buffer = buffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct buffer_s {
     start: *mut core::ffi::c_void,
-    capacity: size_t,
+    capacity: usize,
 }
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct Range {
     start: *const core::ffi::c_void,
-    size: size_t,
+    size: usize,
 }
 
 type ZSTDMT_seqPool = ZSTDMT_bufferPool;
@@ -134,7 +132,7 @@ type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
 
 struct ZSTDMT_bufferPool_s {
     poolMutex: Mutex<()>,
-    bufferSize: size_t,
+    bufferSize: usize,
     totalBuffers: core::ffi::c_uint,
     nbBuffers: core::ffi::c_uint,
     cMem: ZSTD_customMem,
@@ -151,9 +149,9 @@ struct ZSTDMT_CCtxPool {
 
 struct ZSTDMT_jobDescription {
     /// SHARED - set0 by mtctx, then modified by worker AND read by mtctx
-    consumed: size_t,
+    consumed: usize,
     /// SHARED - set0 by mtctx, then modified by worker AND read by mtctx, then set0 by mtctx
-    cSize: size_t,
+    cSize: usize,
     /// Thread-safe - used by mtctx and worker
     job_mutex: Mutex<()>,
     /// Thread-safe - used by mtctx and worker
@@ -185,7 +183,7 @@ struct ZSTDMT_jobDescription {
     /// set by mtctx, then read by worker => no barrier
     fullFrameSize: core::ffi::c_ulonglong,
     /// used only by mtctx
-    dstFlushed: size_t,
+    dstFlushed: usize,
     /// used only by mtctx
     frameChecksumNeeded: core::ffi::c_uint,
 }
@@ -193,7 +191,7 @@ struct ZSTDMT_jobDescription {
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[repr(C)]
 struct SyncPoint {
-    toLoad: size_t,
+    toLoad: usize,
     flush: core::ffi::c_int,
 }
 
@@ -314,9 +312,9 @@ unsafe fn ZSTDMT_createBufferPool(
 }
 
 /// Only works at initialization, not during compression.
-unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> size_t {
+unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> usize {
     let poolSize = size_of::<ZSTDMT_bufferPool>();
-    let arraySize = ((*bufPool).totalBuffers as size_t).wrapping_mul(size_of::<Buffer>());
+    let arraySize = ((*bufPool).totalBuffers as usize).wrapping_mul(size_of::<Buffer>());
     let mut totalBufferSize = 0usize;
     let _guard = (*bufPool).poolMutex.lock().unwrap();
     for u in 0..(*bufPool).totalBuffers {
@@ -333,7 +331,7 @@ unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> size_t {
 ///
 /// Note: it's better for all buffers to have same size, as they become freely
 /// interchangeable, reducing malloc/free usages and memory fragmentation.
-unsafe fn ZSTDMT_setBufferSize(bufPool: *mut ZSTDMT_bufferPool, bSize: size_t) {
+unsafe fn ZSTDMT_setBufferSize(bufPool: *mut ZSTDMT_bufferPool, bSize: usize) {
     let _guard = (*bufPool).poolMutex.lock().unwrap();
     (*bufPool).bufferSize = bSize;
 }
@@ -415,7 +413,7 @@ unsafe fn ZSTDMT_releaseBuffer(bufPool: *mut ZSTDMT_bufferPool, buf: Buffer) {
     ZSTD_customFree(buf.start, buf.capacity, (*bufPool).cMem);
 }
 
-unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
+unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> usize {
     ZSTDMT_sizeof_bufferPool(seqPool)
 }
 
@@ -445,7 +443,7 @@ unsafe fn ZSTDMT_releaseSeq(seqPool: *mut ZSTDMT_seqPool, seq: RawSeqStore_t) {
     ZSTDMT_releaseBuffer(seqPool, seqToBuffer(seq));
 }
 
-unsafe fn ZSTDMT_setNbSeq(seqPool: *mut ZSTDMT_seqPool, nbSeq: size_t) {
+unsafe fn ZSTDMT_setNbSeq(seqPool: *mut ZSTDMT_seqPool, nbSeq: usize) {
     ZSTDMT_setBufferSize(seqPool, nbSeq.wrapping_mul(size_of::<rawSeq>()));
 }
 
@@ -542,7 +540,7 @@ unsafe fn ZSTDMT_expandCCtxPool(
 }
 
 /// Only works during initialization phase, not during compression.
-unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> size_t {
+unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> usize {
     let _guard = (*cctxPool).poolMutex.lock().unwrap();
     let nbWorkers = (*cctxPool).totalCCtx as core::ffi::c_uint;
     let poolSize = size_of::<ZSTDMT_CCtxPool>();
@@ -584,9 +582,9 @@ unsafe fn ZSTDMT_serialState_reset(
     serialState: &mut SerialState,
     seqPool: *mut ZSTDMT_seqPool,
     mut params: ZSTD_CCtx_params,
-    jobSize: size_t,
+    jobSize: usize,
     dict: *const core::ffi::c_void,
-    dictSize: size_t,
+    dictSize: usize,
     dictContentType: ZSTD_dictContentType_e,
 ) -> Result<(), Error> {
     // Adjust parameters
@@ -661,7 +659,7 @@ unsafe fn ZSTDMT_serialState_reset(
     }
 
     serialState.params = params;
-    serialState.params.jobSize = jobSize as u32 as size_t;
+    serialState.params.jobSize = jobSize as u32 as usize;
 
     Ok(())
 }
@@ -755,7 +753,7 @@ unsafe fn ZSTDMT_serialState_applySequences(
 unsafe fn ZSTDMT_serialState_ensureFinished(
     serialState: *mut SerialState,
     jobID: core::ffi::c_uint,
-    _cSize: size_t,
+    _cSize: usize,
 ) {
     let _guard = (*serialState).mutex.lock().unwrap();
     if (*serialState).nextJobID <= jobID {
@@ -938,7 +936,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                 17100290475540901977 => {}
                                 _ => {
                                     // compress the entire job by smaller chunks, for better granularity
-                                    let chunkSize = (4 * ZSTD_BLOCKSIZE_MAX) as size_t;
+                                    let chunkSize = (4 * ZSTD_BLOCKSIZE_MAX) as usize;
                                     let nbChunks = (((*job).src.size)
                                         .wrapping_add(chunkSize.wrapping_sub(1))
                                         / chunkSize)
@@ -948,7 +946,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                     let mut op = ostart;
                                     let oend = op.add(dstBuff.capacity);
 
-                                    if size_of::<size_t>() > size_of::<i32>() {
+                                    if size_of::<usize>() > size_of::<i32>() {
                                         /* check overflow */
                                         assert!(
                                             ((*job).src.size as u64)
@@ -982,7 +980,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                             // stats
                                             let guard = (*job).job_mutex.lock().unwrap();
                                             (*job).cSize = ((*job).cSize).wrapping_add(cSize);
-                                            (*job).consumed = chunkSize * chunkNb as size_t;
+                                            (*job).consumed = chunkSize * chunkNb as usize;
                                             (*job).job_cond.notify_one(); // warns some more data is ready to be flushed
                                             drop(guard);
                                             chunkNb += 1;
@@ -1179,7 +1177,7 @@ unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> Res
 unsafe fn ZSTDMT_CCtxParam_setNbWorkers(
     params: &mut ZSTD_CCtx_params,
     nbWorkers: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     ZSTD_CCtxParams_setParameter(
         params,
         ZSTD_cParameter::ZSTD_c_nbWorkers,
@@ -1210,7 +1208,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
         (*mtctx).factory = pool;
         (*mtctx).providedFactory = true;
     } else {
-        (*mtctx).factory = POOL_create_advanced(nbWorkers as size_t, 0, cMem);
+        (*mtctx).factory = POOL_create_advanced(nbWorkers as usize, 0, cMem);
         (*mtctx).providedFactory = false;
     }
     (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, cMem);
@@ -1297,7 +1295,7 @@ unsafe fn ZSTDMT_waitForAllJobsCompleted(mtctx: *mut ZSTDMT_CCtx) {
     }
 }
 
-pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> usize {
     if mtctx.is_null() {
         return 0;
     }
@@ -1330,7 +1328,7 @@ pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     0
 }
 
-pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> usize {
     if mtctx.is_null() {
         return 0;
     }
@@ -1338,7 +1336,7 @@ pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
         .wrapping_add(POOL_sizeof((*mtctx).factory))
         .wrapping_add(ZSTDMT_sizeof_bufferPool((*mtctx).bufPool))
         .wrapping_add(
-            (((*mtctx).jobIDMask).wrapping_add(1) as size_t)
+            (((*mtctx).jobIDMask).wrapping_add(1) as usize)
                 .wrapping_mul(size_of::<ZSTDMT_jobDescription>()),
         )
         .wrapping_add(ZSTDMT_sizeof_CCtxPool((*mtctx).cctxPool))
@@ -1351,7 +1349,7 @@ unsafe fn ZSTDMT_resize(
     mtctx: *mut ZSTDMT_CCtx,
     nbWorkers: core::ffi::c_uint,
 ) -> Result<(), Error> {
-    if POOL_resize((*mtctx).factory, nbWorkers as size_t) != 0 {
+    if POOL_resize((*mtctx).factory, nbWorkers as usize) != 0 {
         return Err(Error::memory_allocation);
     }
     ZSTDMT_expandJobsTable(mtctx, nbWorkers)?;
@@ -1431,7 +1429,7 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
     fps
 }
 
-pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> usize {
     let jobID = (*mtctx).doneJobID;
     if jobID == (*mtctx).nextJobID {
         return 0; // no active job => nothing to flush
@@ -1493,7 +1491,7 @@ fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi
     ovlog
 }
 
-fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
+fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> usize {
     let overlapRLog = 9 - ZSTDMT_overlapLog(params.overlapLog, params.cParams.strategy);
     let mut ovLog = (if overlapRLog >= 8 {
         0
@@ -1521,7 +1519,7 @@ fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
 pub unsafe fn ZSTDMT_initCStream_internal(
     mtctx: *mut ZSTDMT_CCtx,
     dict: *const core::ffi::c_void,
-    dictSize: size_t,
+    dictSize: usize,
     dictContentType: ZSTD_dictContentType_e,
     cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
@@ -1535,7 +1533,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     if params.jobSize != 0 {
         params.jobSize = params
             .jobSize
-            .clamp(ZSTDMT_JOBSIZE_MIN as size_t, ZSTDMT_JOBSIZE_MAX as size_t);
+            .clamp(ZSTDMT_JOBSIZE_MIN as usize, ZSTDMT_JOBSIZE_MAX as usize);
     }
 
     if (*mtctx).allJobsCompleted == 0 {
@@ -1569,7 +1567,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     (*mtctx).targetPrefixSize = ZSTDMT_computeOverlapSize(&params);
     (*mtctx).targetSectionSize = params.jobSize;
     if (*mtctx).targetSectionSize == 0 {
-        (*mtctx).targetSectionSize = (1 << ZSTDMT_computeTargetJobLog(&params)) as size_t;
+        (*mtctx).targetSectionSize = (1 << ZSTDMT_computeTargetJobLog(&params)) as usize;
     }
 
     if params.rsyncable != 0 {
@@ -1595,16 +1593,16 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         1 << (*mtctx).params.cParams.windowLog
     } else {
         0
-    }) as size_t;
+    }) as usize;
     // Two buffers of slack, plus extra space for the overlap.
     // This is the minimum slack that LDM works with. One extra because
     // flush might waste up to targetSectionSize-1 bytes. Another extra
     // for the overlap (if > 0), then one to fill which doesn't overlap
     // with the LDM window.
-    let nbSlackBuffers = 2 + size_t::from((*mtctx).targetPrefixSize > 0);
+    let nbSlackBuffers = 2 + usize::from((*mtctx).targetPrefixSize > 0);
     let slackSize = (*mtctx).targetSectionSize * nbSlackBuffers;
     // Compute the total size, and always have enough slack
-    let nbWorkers = ((*mtctx).params.nbWorkers.max(1)) as size_t;
+    let nbWorkers = ((*mtctx).params.nbWorkers.max(1)) as usize;
     let sectionsSize = (*mtctx).targetSectionSize * nbWorkers;
     let capacity = windowSize.max(sectionsSize).wrapping_add(slackSize);
     if (*mtctx).roundBuff.capacity < capacity {
@@ -1687,7 +1685,7 @@ unsafe fn ZSTDMT_writeLastEmptyBlock(job: *mut ZSTDMT_jobDescription) {
 
 unsafe fn ZSTDMT_createCompressionJob(
     mtctx: *mut ZSTDMT_CCtx,
-    srcSize: size_t,
+    srcSize: usize,
     endOp: ZSTD_EndDirective,
 ) {
     let jobID = (*mtctx).nextJobID & (*mtctx).jobIDMask;
@@ -1785,7 +1783,7 @@ unsafe fn ZSTDMT_flushProduced(
     output: *mut ZSTD_outBuffer,
     blockToFlush: bool,
     end: ZSTD_EndDirective,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let wJobID = (*mtctx).doneJobID & (*mtctx).jobIDMask;
 
     let mut guard = (*((*mtctx).jobs).offset(wJobID as isize))
@@ -1891,7 +1889,7 @@ unsafe fn ZSTDMT_flushProduced(
     }
     (*mtctx).allJobsCompleted = (*mtctx).frameEnded; // all jobs are entirely flushed => if this one is last one, frame is completed
     if end == ZSTD_e_end {
-        return Ok(size_t::from((*mtctx).frameEnded == 0)); // for ZSTD_e_end, question becomes: is frame completed ?
+        return Ok(usize::from((*mtctx).frameEnded == 0)); // for ZSTD_e_end, question becomes: is frame completed ?
     }
 
     Ok(0) // internal buffers fully flushed
@@ -1906,7 +1904,7 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
     // no need to check during first round
     let roundBuffCapacity = (*mtctx).roundBuff.capacity;
     let nbJobs1stRoundMin = roundBuffCapacity / (*mtctx).targetSectionSize;
-    if (lastJobID as size_t) < nbJobs1stRoundMin {
+    if (lastJobID as usize) < nbJobs1stRoundMin {
         return Range::default();
     }
 
@@ -1959,11 +1957,11 @@ fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> bool {
 
     extDict.start =
         window.dictBase.wrapping_offset(window.lowLimit as isize) as *const core::ffi::c_void;
-    extDict.size = window.dictLimit.wrapping_sub(window.lowLimit) as size_t;
+    extDict.size = window.dictLimit.wrapping_sub(window.lowLimit) as usize;
 
     let prefixStart = window.base.wrapping_offset(window.dictLimit as isize);
     prefix.start = prefixStart as *const core::ffi::c_void;
-    prefix.size = window.nextSrc.wrapping_offset_from(prefixStart) as size_t;
+    prefix.size = window.nextSrc.wrapping_offset_from(prefixStart) as usize;
 
     ZSTDMT_isOverlapped(buffer, extDict) || ZSTDMT_isOverlapped(buffer, prefix)
 }
@@ -2045,7 +2043,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     if ((*mtctx).inBuff.filled)
         .wrapping_add(input.size)
         .wrapping_sub(input.pos)
-        < RSYNC_MIN_BLOCK_SIZE as size_t
+        < RSYNC_MIN_BLOCK_SIZE as usize
     {
         // We don't emit synchronization points if it would produce too small blocks.
         // We don't have enough input to find a synchronization point, so don't look.
@@ -2064,12 +2062,12 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     // Initialize the loop variables.
     let mut hash: u64;
     let prev: *const u8;
-    let pos: size_t;
-    if (*mtctx).inBuff.filled < RSYNC_MIN_BLOCK_SIZE as size_t {
+    let pos: usize;
+    if (*mtctx).inBuff.filled < RSYNC_MIN_BLOCK_SIZE as usize {
         // We don't need to scan the first RSYNC_MIN_BLOCK_SIZE positions
         // because they can't possibly be a sync point. So we can start
         // part way through the input buffer.
-        pos = (RSYNC_MIN_BLOCK_SIZE as size_t).wrapping_sub((*mtctx).inBuff.filled);
+        pos = (RSYNC_MIN_BLOCK_SIZE as usize).wrapping_sub((*mtctx).inBuff.filled);
         if pos >= usize::from(RSYNC_LENGTH) {
             prev = istart.add(pos).sub(usize::from(RSYNC_LENGTH));
             hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(
@@ -2130,7 +2128,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     syncPoint
 }
 
-pub unsafe fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> usize {
     let mut hintInSize = ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled);
     if hintInSize == 0 {
         hintInSize = (*mtctx).targetSectionSize;
@@ -2149,7 +2147,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
     mut endOp: ZSTD_EndDirective,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut forwardInputProgress = false;
 
     if (*mtctx).frameEnded != 0 && endOp == ZSTD_e_continue {

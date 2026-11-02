@@ -1,7 +1,5 @@
 use crate::lib::polyfill::{branch_barrier, PointerExt};
 
-use libc::size_t;
-
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, Locality};
 use crate::lib::common::mem::{MEM_read32, MEM_read64};
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
@@ -118,8 +116,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = cParams.hashLog;
@@ -139,18 +137,18 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
 
-    let mut mLength: size_t = 0;
+    let mut mLength: usize = 0;
     let mut offset: u32 = 0;
     let mut curr: u32;
 
     // how many positions to search before increasing step size
-    let kStepIncr = (1 << kSearchStrength) as size_t;
+    let kStepIncr = (1 << kSearchStrength) as usize;
     // the position at which to increment the step size if no match is found
     let mut nextStep;
-    let mut step: size_t; // the current step size
+    let mut step: usize; // the current step size
 
-    let mut hl0: size_t; // the long hash at ip
-    let mut hl1: size_t = 0; // the long hash at ip1
+    let mut hl0: usize; // the long hash at ip
+    let mut hl1: usize = 0; // the long hash at ip1
 
     let mut idxl0: u32; // the long match index for ip
     let mut idxl1: u32 = 0; // the long match index for ip1
@@ -469,8 +467,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
@@ -481,7 +479,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
-    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     // presumes that, if there is a dictionary, it must be using Attach mode
     let prefixLowestIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
@@ -519,7 +517,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
 
     // Main Search Loop (< instead of <=, because repcode check at ip+1)
     while ip < ilimit {
-        let mut mLength: size_t = 0;
+        let mut mLength: usize = 0;
         let mut offset: u32 = 0;
         let h2 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8);
         let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, MLS);
@@ -529,9 +527,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
         let dictMatchIndexAndTagS =
             *dictHashSmall.add(dictHashAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS);
         let dictTagsMatchL =
-            ZSTD_comparePackedTags(dictMatchIndexAndTagL as size_t, dictHashAndTagL);
+            ZSTD_comparePackedTags(dictMatchIndexAndTagL as usize, dictHashAndTagL);
         let dictTagsMatchS =
-            ZSTD_comparePackedTags(dictMatchIndexAndTagS as size_t, dictHashAndTagS);
+            ZSTD_comparePackedTags(dictMatchIndexAndTagS as usize, dictHashAndTagS);
         let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let matchIndexL = *hashLong.add(h2);
         let mut matchIndexS = *hashSmall.add(h);
@@ -677,7 +675,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                 let dictMatchIndexAndTagL3 = *dictHashLong
                                     .add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
                                 let dictTagsMatchL3 = ZSTD_comparePackedTags(
-                                    dictMatchIndexAndTagL3 as size_t,
+                                    dictMatchIndexAndTagL3 as usize,
                                     dictHashAndTagL3,
                                 );
                                 let mut matchL3 = base.wrapping_offset(matchIndexL3 as isize);
@@ -881,8 +879,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_noDict_generic::<5>(ms, seqStore, rep, src, srcSize),
@@ -897,8 +895,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_dictMatchState_generic::<5>(
@@ -921,8 +919,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = cParams.hashLog;
@@ -934,7 +932,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(8);
     let base = ms.window.base;
-    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     let lowLimit = ms.get_lowest_match_index(endIndex, cParams.windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
@@ -979,7 +977,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
             base
         };
         let repMatch = repBase.wrapping_offset(repIndex as isize);
-        let mut mLength: size_t;
+        let mut mLength: usize;
         // update hash table
         let fresh4 = &mut (*hashLong.add(hLong));
         *fresh4 = curr;
@@ -1209,8 +1207,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_extDict_generic::<5>(ms, seqStore, rep, src, srcSize),

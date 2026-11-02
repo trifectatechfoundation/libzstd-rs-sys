@@ -1,7 +1,6 @@
 use core::ptr;
 
 use core::ffi::{c_char, c_int, c_uint, c_void};
-use libc::size_t;
 
 use crate::lib::compress::hist::HIST_add;
 
@@ -33,7 +32,7 @@ fn hash2(p: [u8; HASHLENGTH], hashLog: c_uint) -> c_uint {
 #[repr(C)]
 pub struct Fingerprint {
     pub events: [c_uint; HASHTABLESIZE],
-    pub nbEvents: size_t,
+    pub nbEvents: usize,
 }
 
 #[repr(C)]
@@ -43,7 +42,7 @@ pub struct FPStats {
 }
 
 #[inline(always)]
-fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: size_t, hashLog: c_uint) {
+fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: usize, hashLog: c_uint) {
     let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
 
     debug_assert!(src.len() >= HASHLENGTH);
@@ -56,7 +55,7 @@ fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: size_t, has
 }
 
 #[inline(always)]
-fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
+fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>(
     fp: &mut Fingerprint,
     src: &[u8],
 ) {
@@ -111,7 +110,7 @@ fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
 pub const CHUNKSIZE: c_int = 8 << 10;
 
 /// `fpstats` must be zeroed before each call.
-fn ZSTD_splitBlock_byChunks(block: &[u8], level: c_int, fpstats: &mut FPStats) -> size_t {
+fn ZSTD_splitBlock_byChunks(block: &[u8], level: c_int, fpstats: &mut FPStats) -> usize {
     let blockSize = block.len();
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
@@ -132,8 +131,8 @@ fn ZSTD_splitBlock_byChunks(block: &[u8], level: c_int, fpstats: &mut FPStats) -
     let chunk = CHUNKSIZE as usize;
 
     record_f(&mut fpstats.pastEvents, &block[..chunk]);
-    let mut pos = CHUNKSIZE as size_t;
-    while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
+    let mut pos = CHUNKSIZE as usize;
+    while pos <= blockSize.wrapping_sub(CHUNKSIZE as usize) {
         record_f(&mut fpstats.newEvents, &block[pos..][..chunk]);
         if compareFingerprints(
             &fpstats.pastEvents,
@@ -148,7 +147,7 @@ fn ZSTD_splitBlock_byChunks(block: &[u8], level: c_int, fpstats: &mut FPStats) -
                 penalty -= 1;
             }
         }
-        pos = pos.wrapping_add(CHUNKSIZE as size_t);
+        pos = pos.wrapping_add(CHUNKSIZE as usize);
     }
     debug_assert_eq!(pos, blockSize);
     blockSize
@@ -167,10 +166,10 @@ fn ZSTD_splitBlock_byChunks(block: &[u8], level: c_int, fpstats: &mut FPStats) -
 /// For better accuracy, use the more elaborate `*_byChunks` variant.
 unsafe fn ZSTD_splitBlock_fromBorders(
     blockStart: *const c_void,
-    blockSize: size_t,
+    blockSize: usize,
     workspace: *mut c_void,
-    wkspSize: size_t,
-) -> size_t {
+    wkspSize: usize,
+) -> usize {
     const SEGMENT_SIZE: c_int = 512;
 
     let fpstats = workspace as *mut FPStats;
@@ -192,14 +191,14 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         &mut (*fpstats).newEvents.events,
         &block[blockSize - segment..],
     );
-    (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
+    (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as usize;
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
     if !compareFingerprints(&(*fpstats).pastEvents, &(*fpstats).newEvents, 0, 8) {
         return blockSize;
     }
     let middle = blockSize / 2 - segment / 2;
     HIST_add(&mut (*middleEvents).events, &block[middle..][..segment]);
-    (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;
+    (*middleEvents).nbEvents = SEGMENT_SIZE as usize;
     let distFromBegin = fpDistance(&(*fpstats).pastEvents, &*middleEvents, 8);
     let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
@@ -210,7 +209,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         32 * (1 << 10)
     } else {
         96 * (1 << 10)
-    }) as size_t
+    }) as usize
 }
 
 /// Splits a block to find the optimal boundary for compression.
@@ -220,7 +219,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 /// * `blockStart` - Pointer to the start of the block
 /// * `blockSize` - Size of the block (must be 128 KB)
 /// * `level` - Detection level (0-4). Higher levels spend more energy to detect block boundaries.
-/// * `workspace` - Workspace buffer (must be aligned for `size_t`)
+/// * `workspace` - Workspace buffer (must be aligned for `usize`)
 /// * `wkspSize` - Workspace size (must be at least `ZSTD_SLIPBLOCK_WORKSPACESIZE`)
 ///
 /// # Note
@@ -230,11 +229,11 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 /// it is not yet clear if this would be useful. TBD.
 pub unsafe fn ZSTD_splitBlock(
     blockStart: *const c_void,
-    blockSize: size_t,
+    blockSize: usize,
     level: c_int,
     workspace: *mut c_void,
-    wkspSize: size_t,
-) -> size_t {
+    wkspSize: usize,
+) -> usize {
     debug_assert!((0..=4).contains(&level));
     if level == 0 {
         return ZSTD_splitBlock_fromBorders(blockStart, blockSize, workspace, wkspSize);

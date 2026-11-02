@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::fse::FSE_DECOMPRESS_WKSP_SIZE_U32;
 use crate::lib::zstd::ZSTD_btultra;
 
@@ -29,14 +27,14 @@ const _: () = assert!(
 
 pub(crate) const HUF_CTABLEBOUND: usize = 129;
 
-pub(crate) type HUF_CElt = size_t;
+pub(crate) type HUF_CElt = usize;
 
 pub const fn HUF_CTABLE_SIZE_ST(maxSymbolValue: usize) -> usize {
-    maxSymbolValue + 2 /* Use tables of size_t, for proper alignment */
+    maxSymbolValue + 2 /* Use tables of usize, for proper alignment */
 }
 
 pub const fn HUF_CTABLE_SIZE(maxSymbolValue: usize) -> usize {
-    HUF_CTABLE_SIZE_ST(maxSymbolValue) * size_of::<size_t>()
+    HUF_CTABLE_SIZE_ST(maxSymbolValue) * size_of::<usize>()
 }
 
 pub(crate) const HUF_flags_bmi2: core::ffi::c_uint = 1;

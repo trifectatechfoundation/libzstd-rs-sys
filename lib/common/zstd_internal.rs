@@ -1,7 +1,5 @@
 use core::mem::MaybeUninit;
 
-use libc::size_t;
-
 const fn const_max(a: usize, b: usize) -> usize {
     if a > b {
         a
@@ -165,7 +163,7 @@ pub(crate) enum Overlap {
 pub(crate) unsafe fn ZSTD_wildcopy(
     mut op: *mut u8,
     mut ip: *const u8,
-    length: size_t,
+    length: usize,
     ovtype: Overlap,
 ) {
     let diff = op as isize - ip as isize;
@@ -224,10 +222,10 @@ pub(crate) unsafe fn ZSTD_wildcopy(
 #[inline]
 pub(crate) unsafe fn ZSTD_limitCopy(
     dst: *mut u8,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: *const u8,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let length = Ord::min(dstCapacity, srcSize);
     core::ptr::copy_nonoverlapping(src, dst, length);
     length

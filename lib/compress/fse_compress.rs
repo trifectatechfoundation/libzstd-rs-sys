@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};
 use crate::lib::common::error_private::Error;
@@ -19,7 +17,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
     workSpace: *mut core::ffi::c_void,
-    wkspSize: size_t,
+    wkspSize: usize,
 ) -> Result<(), Error> {
     let tableSize = 1usize << tableLog;
     let tableMask = tableSize.wrapping_sub(1);
@@ -147,7 +145,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     Ok(())
 }
 
-fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size_t {
+fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> usize {
     let maxHeaderSize = (u32::from(maxSymbolValue) + 1)
         .wrapping_mul(tableLog)
         .wrapping_add(4) // bitCount initialized at 4
@@ -155,7 +153,7 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
         .wrapping_div(8)
         .wrapping_add(1) // round up to whole nb bytes
         .wrapping_add(2) // additional two bytes for bitstream flush
-        as size_t;
+        as usize;
     if maxSymbolValue != 0 {
         maxHeaderSize
     } else {
@@ -166,11 +164,11 @@ fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> size
 #[inline(always)]
 unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     header: *mut core::ffi::c_void,
-    headerBufferSize: size_t,
+    headerBufferSize: usize,
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let ostart = header as *mut u8;
     let mut out = ostart;
     let oend = ostart.add(headerBufferSize);
@@ -280,11 +278,11 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
 
 pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
-    bufferSize: size_t,
+    bufferSize: usize,
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {
         return Err(Error::tableLog_tooLarge); // Unsupported
     }
@@ -313,7 +311,7 @@ pub(crate) unsafe fn FSE_writeNCount(
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
-fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: u8) -> core::ffi::c_uint {
+fn FSE_minTableLog(srcSize: usize, maxSymbolValue: u8) -> core::ffi::c_uint {
     let minBitsSrc = ZSTD_highbit32(srcSize as u32).wrapping_add(1);
     let minBitsSymbols = maxSymbolValue.ilog2().wrapping_add(2);
     minBitsSrc.min(minBitsSymbols)
@@ -321,7 +319,7 @@ fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: u8) -> core::ffi::c_uint {
 
 pub(crate) fn FSE_optimalTableLog_internal(
     maxTableLog: core::ffi::c_uint,
-    srcSize: size_t,
+    srcSize: usize,
     maxSymbolValue: u8,
     minus: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
@@ -343,7 +341,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
 
 pub(crate) fn FSE_optimalTableLog(
     maxTableLog: core::ffi::c_uint,
-    srcSize: size_t,
+    srcSize: usize,
     maxSymbolValue: u8,
 ) -> core::ffi::c_uint {
     FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 2)
@@ -355,7 +353,7 @@ fn FSE_normalizeM2(
     norm: &mut [core::ffi::c_short],
     tableLog: u32,
     count: &[core::ffi::c_uint],
-    mut total: size_t,
+    mut total: usize,
     maxSymbolValue: u8,
     lowProbCount: core::ffi::c_short,
 ) -> Result<(), Error> {
@@ -373,12 +371,12 @@ fn FSE_normalizeM2(
             0
         } else if c <= lowThreshold {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(c as size_t);
+            total = total.wrapping_sub(c as usize);
 
             lowProbCount
         } else if c <= lowOne {
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(c as size_t);
+            total = total.wrapping_sub(c as usize);
 
             1
         } else {
@@ -391,14 +389,14 @@ fn FSE_normalizeM2(
         return Ok(());
     }
 
-    if total / ToDistribute as size_t > lowOne as size_t {
+    if total / ToDistribute as usize > lowOne as usize {
         // risk of rounding to zero
-        lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
+        lowOne = (total * 3 / (ToDistribute * 2) as usize) as u32;
         for (current, &c) in slice.iter_mut().zip(count) {
             if *current == NOT_YET_ASSIGNED && c <= lowOne {
                 *current = 1;
                 distributed = distributed.wrapping_add(1);
-                total = total.wrapping_sub(c as size_t);
+                total = total.wrapping_sub(c as usize);
             }
         }
         ToDistribute = (1usize << tableLog).wrapping_sub(distributed);
@@ -458,7 +456,7 @@ pub(crate) fn FSE_normalizeCount(
     normalizedCounter: &mut [core::ffi::c_short],
     mut tableLog: core::ffi::c_uint,
     count: &[core::ffi::c_uint],
-    total: size_t,
+    total: usize,
     maxSymbolValue: u8,
     useLowProbCount: bool,
 ) -> Result<core::ffi::c_uint, Error> {
@@ -490,7 +488,7 @@ pub(crate) fn FSE_normalizeCount(
     let count = &count[..slice.len()];
     for (s, current) in slice.iter_mut().enumerate() {
         let c = count[s];
-        if c as size_t == total {
+        if c as usize == total {
             return Ok(0); // rle special case
         }
 
@@ -561,10 +559,10 @@ unsafe fn FSE_flushBits<const FAST: bool>(bitC: &mut BIT_CStream_t) {
 #[inline(always)]
 unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     dst: *mut core::ffi::c_void,
-    dstSize: size_t,
+    dstSize: usize,
     src: &[u8],
     ct: &[FSE_CTable],
-) -> size_t {
+) -> usize {
     // init
     if src.len() <= 2 {
         return 0;
@@ -636,11 +634,11 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 
 pub(crate) unsafe fn FSE_compress_usingCTable(
     dst: *mut core::ffi::c_void,
-    dstSize: size_t,
+    dstSize: usize,
     src: &[u8],
     ct: &[FSE_CTable],
-) -> size_t {
-    let fast = dstSize >= src.len() + (src.len() >> 7) + 4 + size_of::<size_t>();
+) -> usize {
+    let fast = dstSize >= src.len() + (src.len() >> 7) + 4 + size_of::<usize>();
 
     if fast {
         FSE_compress_usingCTable_generic::<true>(dst, dstSize, src, ct)

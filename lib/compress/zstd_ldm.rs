@@ -7,7 +7,7 @@ pub struct LdmState {
     pub hashTable: *mut LdmEntry,
     pub loadedDictEnd: u32,
     pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; LDM_BATCH_SIZE],
+    pub splitIndices: [usize; LDM_BATCH_SIZE],
     pub matchCandidates: [LdmMatchCandidate; LDM_BATCH_SIZE],
 }
 
@@ -55,8 +55,6 @@ pub struct LdmRollingHashState {
     pub rolling: u64,
     pub stopMask: u64,
 }
-
-use libc::size_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::xxhash::ZSTD_XXH64_slice;
@@ -210,9 +208,9 @@ impl LdmRollingHashState {
     fn feed(
         &mut self,
         data: &[u8],
-        splits: &mut [size_t; LDM_BATCH_SIZE],
+        splits: &mut [usize; LDM_BATCH_SIZE],
         numSplits: &mut usize,
-    ) -> size_t {
+    ) -> usize {
         let mut hash = self.rolling;
         let mask = self.stopMask;
         let mut n = 0usize;
@@ -292,10 +290,10 @@ impl LdmParams {
     }
 
     /// Estimate the space needed for long distance matching tables or 0 if LDM is disabled.
-    pub fn get_table_size(self) -> size_t {
+    pub fn get_table_size(self) -> usize {
         let ldmHSize = 1usize << self.hashLog;
-        let ldmBucketSizeLog = self.bucketSizeLog.min(self.hashLog) as size_t;
-        let ldmBucketSize = 1 << (self.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
+        let ldmBucketSizeLog = self.bucketSizeLog.min(self.hashLog) as usize;
+        let ldmBucketSize = 1 << (self.hashLog as usize).wrapping_sub(ldmBucketSizeLog);
         let totalSize = ZSTD_cwksp_alloc_size(ldmBucketSize).wrapping_add(ZSTD_cwksp_alloc_size(
             ldmHSize.wrapping_mul(size_of::<LdmEntry>()),
         ));
@@ -308,9 +306,9 @@ impl LdmParams {
 
     /// Return an upper bound on the number of sequences that can be produced by
     /// the long distance matcher, or 0 if LDM is disabled.
-    pub fn get_max_nb_seq(self, maxChunkSize: size_t) -> size_t {
+    pub fn get_max_nb_seq(self, maxChunkSize: usize) -> usize {
         if self.enableLdm == ParamSwitch::Enable {
-            maxChunkSize / self.minMatchLength as size_t
+            maxChunkSize / self.minMatchLength as usize
         } else {
             0
         }
@@ -318,7 +316,7 @@ impl LdmParams {
 }
 
 /// Returns the number of bytes that match backwards before the end of `input` and `beforeMatch`.
-fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> size_t {
+fn ZSTD_ldm_countBackwardsMatch(input: &[u8], beforeMatch: &[u8]) -> usize {
     let n = Ord::min(input.len(), beforeMatch.len());
     let input = &input[input.len() - n..];
     let beforeMatch = &beforeMatch[beforeMatch.len() - n..];
@@ -337,7 +335,7 @@ fn ZSTD_ldm_countBackwardsMatch_2segments(
     input: &[u8],
     beforeMatch: &[u8],
     extDict: &[u8],
-) -> size_t {
+) -> usize {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(input, beforeMatch);
     if matchLength != beforeMatch.len() || beforeMatch.as_ptr() == extDict.as_ptr() {
         // If backwards match is entirely in the extDict or prefix, immediately return
@@ -391,7 +389,7 @@ impl LdmHashTable<'_> {
     }
 
     /// Insert the entry with corresponding hash into the hash table
-    fn insert_entry(&mut self, hash: size_t, entry: LdmEntry) {
+    fn insert_entry(&mut self, hash: usize, entry: LdmEntry) {
         let offset = self.bucket_offsets[hash];
 
         self.get_bucket(hash)[usize::from(offset)] = entry;
@@ -446,7 +444,7 @@ impl LdmState {
                         checksum: (xxhash >> 32) as u32,
                     };
 
-                    hashTable.insert_entry(hash as size_t, entry);
+                    hashTable.insert_entry(hash as usize, entry);
                 }
             }
 
@@ -470,7 +468,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     rawSeqStore: &mut RawSeqStore_t,
     params: &LdmParams,
     src: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     // LDM parameters
     let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength as usize;
@@ -551,7 +549,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             // the previous one, we merely register it in the hash table and
             // move on
             if split < anchor {
-                hashTable.insert_entry(hash as size_t, newEntry);
+                hashTable.insert_entry(hash as usize, newEntry);
                 continue;
             }
 
@@ -608,7 +606,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let Some(bestEntry) = bestEntry else {
                 // No match found -- insert an entry into the hash table
                 // and process the next candidate match
-                hashTable.insert_entry(hash as size_t, newEntry);
+                hashTable.insert_entry(hash as usize, newEntry);
                 continue;
             };
 
@@ -629,7 +627,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
             // Insert the current entry into the hash table --- it must be
             // done after the previous block to avoid clobbering bestEntry
-            hashTable.insert_entry(hash as size_t, newEntry);
+            hashTable.insert_entry(hash as usize, newEntry);
 
             anchor = split + forwardMatchLength;
 
@@ -735,19 +733,19 @@ impl LdmState {
 pub fn ZSTD_ldm_skipSequences(
     seqs: &mut [rawSeq],
     pos: &mut usize,
-    mut srcSize: size_t,
+    mut srcSize: usize,
     minMatch: u32,
 ) {
     while srcSize > 0 && *pos < seqs.len() {
         let seq = &mut seqs[*pos];
-        if srcSize <= seq.litLength as size_t {
+        if srcSize <= seq.litLength as usize {
             // Skip past srcSize literals
             seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
             return;
         }
-        srcSize = srcSize.wrapping_sub(seq.litLength as size_t);
+        srcSize = srcSize.wrapping_sub(seq.litLength as usize);
         seq.litLength = 0;
-        if srcSize < seq.matchLength as size_t {
+        if srcSize < seq.matchLength as usize {
             // Skip past the first srcSize of the match
             seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
             if seq.matchLength < minMatch {
@@ -760,7 +758,7 @@ pub fn ZSTD_ldm_skipSequences(
             }
             return;
         }
-        srcSize = srcSize.wrapping_sub(seq.matchLength as size_t);
+        srcSize = srcSize.wrapping_sub(seq.matchLength as usize);
         seq.matchLength = 0;
         *pos += 1;
     }
@@ -796,13 +794,13 @@ fn maybeSplitSequence(
     }
 
     // Skip past `remaining` bytes for the future sequences.
-    ZSTD_ldm_skipSequences(seqs, pos, remaining as size_t, minMatch);
+    ZSTD_ldm_skipSequences(seqs, pos, remaining as usize, minMatch);
     sequence
 }
 
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: size_t) {
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: usize) {
     let mut currPos = rawSeqStore.posInSequence.wrapping_add(nbBytes) as u32;
     while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
         let currSeq = *rawSeqStore.seq.add(rawSeqStore.pos);
@@ -810,7 +808,7 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbB
             currPos = currPos.wrapping_sub(currSeq.litLength.wrapping_add(currSeq.matchLength));
             rawSeqStore.pos = rawSeqStore.pos.wrapping_add(1);
         } else {
-            rawSeqStore.posInSequence = currPos as size_t;
+            rawSeqStore.posInSequence = currPos as usize;
             break;
         }
     }
@@ -827,8 +825,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     rep: &mut RepCodes,
     useRowMatchFinder: ParamSwitch,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let cParams = &ms.cParams;
     let minMatch = cParams.minMatch;
     let blockCompressor =
@@ -875,7 +873,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             seqStore,
             rep,
             ip as *const core::ffi::c_void,
-            sequence.litLength as size_t,
+            sequence.litLength as usize,
         );
         ip = ip.offset(sequence.litLength as isize);
         // Update the repcodes
@@ -890,7 +888,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             ip.sub(newLitLength),
             iend,
             sequence.offset.wrapping_add(ZSTD_REP_NUM),
-            sequence.matchLength as size_t,
+            sequence.matchLength as usize,
         );
         ip = ip.offset(sequence.matchLength as isize);
     }
