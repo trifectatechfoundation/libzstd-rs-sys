@@ -185,11 +185,11 @@ impl HUF_CElt {
     const fn get_value_fast(self) -> usize {
         self.0
     }
-}
 
-const fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: usize) {
-    debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
-    elt.0 = nbBits;
+    const fn set_nb_bits(&mut self, nbBits: usize) {
+        debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
+        self.0 = nbBits;
+    }
 }
 
 const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
@@ -203,7 +203,7 @@ const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
 /// The Huffman stream end mark: A 1-bit value = 1.
 const HUF_END_MARK: HUF_CElt = {
     let mut endMark = HUF_CElt(0);
-    HUF_setNbBits(&mut endMark, 1);
+    endMark.set_nb_bits(1);
     HUF_setValue(&mut endMark, 1);
     endMark
 };
@@ -346,10 +346,7 @@ pub fn HUF_readCTable(
     {
         for n in 0..nbSymbols as usize {
             let w = huffWeight[n] as u32;
-            HUF_setNbBits(
-                &mut ct[n],
-                ((tableLog + 1 - w) as u8 as c_int & -c_int::from(w != 0)) as usize,
-            );
+            ct[n].set_nb_bits(((tableLog + 1 - w) as u8 as c_int & -c_int::from(w != 0)) as usize);
         }
     }
 
@@ -842,10 +839,8 @@ fn HUF_buildCTableFromTree(
     }
 
     for n in 0..alphabetSize {
-        HUF_setNbBits(
-            &mut ct[huffNode[n as usize].byte as usize],
-            huffNode[n as usize].nbBits as usize,
-        ); /* push nbBits per symbol, symbol order */
+        /* push nbBits per symbol, symbol order */
+        ct[huffNode[n as usize].byte as usize].set_nb_bits(huffNode[n as usize].nbBits as usize);
     }
     for n in 0..alphabetSize {
         let fresh19 = &mut valPerRank[ct[n as usize].get_nb_bits()];
