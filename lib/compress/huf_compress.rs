@@ -170,37 +170,37 @@ unsafe fn HUF_compressWeights(
 }
 
 const fn HUF_getNbBits(elt: HUF_CElt) -> usize {
-    elt & 0xff
+    elt.0 & 0xff
 }
 
 const fn HUF_getNbBitsFast(elt: HUF_CElt) -> usize {
-    elt
+    elt.0
 }
 
 const fn HUF_getValue(elt: HUF_CElt) -> usize {
-    elt & !0xff
+    elt.0 & !0xff
 }
 
 const fn HUF_getValueFast(elt: HUF_CElt) -> usize {
-    elt
+    elt.0
 }
 
 const fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: usize) {
     debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
-    *elt = nbBits;
+    elt.0 = nbBits;
 }
 
 const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
         debug_assert!(value >> nbBits == 0);
-        *elt |= value << (HUF_CElt::BITS as usize - nbBits);
+        elt.0 |= value << (size_of::<HUF_CElt>() * 8 - nbBits);
     }
 }
 
 /// The Huffman stream end mark: A 1-bit value = 1.
 const HUF_END_MARK: HUF_CElt = {
-    let mut endMark: HUF_CElt = 0;
+    let mut endMark = HUF_CElt(0);
     HUF_setNbBits(&mut endMark, 1);
     HUF_setValue(&mut endMark, 1);
     endMark
