@@ -2674,15 +2674,15 @@ unsafe fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     if dict.len() < 12 {
         return Err(Error::dictionary_corrupted);
     }
-    dctx.rep[0] = MEM_readLE32(dict.as_ptr().cast());
+    dctx.rep[0] = u32::from_le_bytes(dict[..4].try_into().unwrap());
     if dctx.rep[0] == 0 || dctx.rep[0] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    dctx.rep[1] = MEM_readLE32(dict[4..].as_ptr().cast());
+    dctx.rep[1] = u32::from_le_bytes(dict[4..8].try_into().unwrap());
     if dctx.rep[1] == 0 || dctx.rep[1] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    dctx.rep[2] = MEM_readLE32(dict[8..].as_ptr().cast());
+    dctx.rep[2] = u32::from_le_bytes(dict[8..12].try_into().unwrap());
     if dctx.rep[2] == 0 || dctx.rep[2] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
