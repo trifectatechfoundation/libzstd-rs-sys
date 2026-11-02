@@ -489,7 +489,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let mut offset_2 = rep[1];
 
     let dms = ms.dictMatchState;
-    let dictCParams: *const ZSTD_compressionParameters = &(*dms).cParams;
+    let dictCParams = &(*dms).cParams;
     let dictHashLong: *const u32 = (*dms).hashTable;
     let dictHashSmall: *const u32 = (*dms).chainTable;
     let dictStartIndex = (*dms).window.dictLimit;
@@ -498,16 +498,18 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let dictEnd = (*dms).window.nextSrc;
     let dictIndexDelta =
         prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
-    let dictHBitsL =
-        ((*dictCParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
-    let dictHBitsS =
-        ((*dictCParams).chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let dictHBitsL = dictCParams
+        .hashLog
+        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let dictHBitsS = dictCParams
+        .chainLog
+        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let dictAndPrefixLength =
         ip.offset_from_unsigned(prefixLowest) + dictEnd.offset_from_unsigned(dictStart);
 
     if ms.prefetchCDictTables != 0 {
-        let hashTableBytes = (1usize << (*dictCParams).hashLog).wrapping_mul(size_of::<u32>());
-        let chainTableBytes = (1usize << (*dictCParams).chainLog).wrapping_mul(size_of::<u32>());
+        let hashTableBytes = (1usize << dictCParams.hashLog).wrapping_mul(size_of::<u32>());
+        let chainTableBytes = (1usize << dictCParams.chainLog).wrapping_mul(size_of::<u32>());
         prefetch_area(dictHashLong as *const core::ffi::c_char, hashTableBytes);
         prefetch_area(dictHashSmall as *const core::ffi::c_char, chainTableBytes);
     }
