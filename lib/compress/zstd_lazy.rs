@@ -977,7 +977,7 @@ fn ZSTD_VecMask_next(val: ZSTD_VecMask) -> u32 {
 /// Returns the next index to insert at within a tagTable row, and updates the "head"
 /// value to reflect the update. Essentially cycles backwards from [1, {entries per row})
 #[inline(always)]
-unsafe fn ZSTD_row_nextIndex(tagRow: *mut u8, rowMask: u32) -> u32 {
+fn ZSTD_row_nextIndex(tagRow: &mut u8, rowMask: u32) -> u32 {
     let mut next = (*tagRow as core::ffi::c_int - 1) as u32 & rowMask;
     next = next.wrapping_add(if next == 0 { rowMask } else { 0 }); // skip first position
     *tagRow = next as u8;
@@ -1110,7 +1110,7 @@ unsafe fn ZSTD_row_update_internalImpl(
         let relRow = hash >> ZSTD_ROW_HASH_TAG_BITS << rowLog;
         let row = hashTable.offset(relRow as isize);
         let tagRow = tagTable.offset(relRow as isize);
-        let pos = ZSTD_row_nextIndex(tagRow, rowMask);
+        let pos = ZSTD_row_nextIndex(&mut *tagRow, rowMask);
 
         *tagRow.offset(pos as isize) = (hash & ZSTD_ROW_HASH_TAG_MASK) as u8;
         *row.offset(pos as isize) = idx;
@@ -1444,7 +1444,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
 
     // Speed opt: insert current byte into hashtable too. This allows us to avoid one iteration of the loop
     // in ZSTD_row_update_internal() at the next search.
-    let pos = ZSTD_row_nextIndex(tagRow, rowMask);
+    let pos = ZSTD_row_nextIndex(&mut *tagRow, rowMask);
     *tagRow.offset(pos as isize) = tag as u8;
     *row.offset(pos as isize) = ms.nextToUpdate;
     ms.nextToUpdate = ms.nextToUpdate.wrapping_add(1);
