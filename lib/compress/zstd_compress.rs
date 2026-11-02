@@ -8116,35 +8116,35 @@ unsafe fn ZSTD_nextInputSizeHint(cctx: *const ZSTD_CCtx) -> usize {
 /// The hint size for next input to complete ongoing block
 unsafe fn ZSTD_compressStream_generic(
     zcs: *mut ZSTD_CStream,
-    output: *mut ZSTD_outBuffer,
-    input: *mut ZSTD_inBuffer,
+    output: &mut ZSTD_outBuffer,
+    input: &mut ZSTD_inBuffer,
     flushMode: ZSTD_EndDirective,
 ) -> Result<usize, Error> {
-    let istart = (*input).src as *const u8;
+    let istart = input.src as *const u8;
     let iend = if !istart.is_null() {
-        istart.add((*input).size)
+        istart.add(input.size)
     } else {
         istart
     };
     let mut ip = if !istart.is_null() {
-        istart.add((*input).pos)
+        istart.add(input.pos)
     } else {
         istart
     };
-    let ostart = (*output).dst as *mut u8;
+    let ostart = output.dst as *mut u8;
     let oend = if !ostart.is_null() {
-        ostart.add((*output).size)
+        ostart.add(output.size)
     } else {
         ostart
     };
     let mut op = if !ostart.is_null() {
-        ostart.add((*output).pos)
+        ostart.add(output.pos)
     } else {
         ostart
     };
 
     if (*zcs).appliedParams.inBufferMode == ZSTD_bm_stable {
-        (*input).pos = ((*input).pos).wrapping_sub((*zcs).stableIn_notConsumed);
+        input.pos = input.pos.wrapping_sub((*zcs).stableIn_notConsumed);
         if !ip.is_null() {
             ip = ip.sub((*zcs).stableIn_notConsumed);
         }
@@ -8158,8 +8158,8 @@ unsafe fn ZSTD_compressStream_generic(
         assert!(!(*zcs).outBuff.is_null());
         assert!((*zcs).outBuffSize > 0);
     }
-    ((*input).src).is_null();
-    ((*output).dst).is_null();
+    (input.src).is_null();
+    (output.dst).is_null();
 
     loop {
         match (*zcs).streamStage {
@@ -8328,8 +8328,8 @@ unsafe fn ZSTD_compressStream_generic(
             }
         }
     }
-    (*input).pos = ip.offset_from_unsigned(istart);
-    (*output).pos = op.offset_from_unsigned(ostart);
+    input.pos = ip.offset_from_unsigned(istart);
+    output.pos = op.offset_from_unsigned(ostart);
     if (*zcs).frameEnded != 0 {
         return Ok(0);
     }
@@ -8362,15 +8362,15 @@ pub unsafe extern "C" fn ZSTD_compressStream(
 /// This is validated at the start of the next compression call.
 unsafe fn ZSTD_setBufferExpectations(
     cctx: *mut ZSTD_CCtx,
-    output: *const ZSTD_outBuffer,
-    input: *const ZSTD_inBuffer,
+    output: &ZSTD_outBuffer,
+    input: &ZSTD_inBuffer,
 ) {
     if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
         (*cctx).expectedInBuffer = *input;
     }
 
     if (*cctx).appliedParams.outBufferMode == ZSTD_bm_stable {
-        (*cctx).expectedOutBufferSize = ((*output).size).wrapping_sub((*output).pos);
+        (*cctx).expectedOutBufferSize = output.size.wrapping_sub(output.pos);
     }
 }
 
@@ -8378,19 +8378,19 @@ unsafe fn ZSTD_setBufferExpectations(
 /// ZSTD_setBufferExpectations.
 unsafe fn ZSTD_checkBufferStability(
     cctx: *const ZSTD_CCtx,
-    output: *const ZSTD_outBuffer,
-    input: *const ZSTD_inBuffer,
+    output: &ZSTD_outBuffer,
+    input: &ZSTD_inBuffer,
     _endOp: ZSTD_EndDirective,
 ) -> Result<(), Error> {
     if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
         let expect = (*cctx).expectedInBuffer;
-        if expect.src != (*input).src || expect.pos != (*input).pos {
+        if expect.src != input.src || expect.pos != input.pos {
             return Err(Error::stabilityCondition_notRespected);
         }
     }
 
     if (*cctx).appliedParams.outBufferMode == ZSTD_bm_stable {
-        let outBufferSize = ((*output).size).wrapping_sub((*output).pos);
+        let outBufferSize = output.size.wrapping_sub(output.pos);
         if (*cctx).expectedOutBufferSize != outBufferSize {
             return Err(Error::stabilityCondition_notRespected);
         }
