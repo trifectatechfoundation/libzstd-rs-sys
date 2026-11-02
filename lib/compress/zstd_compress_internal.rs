@@ -312,7 +312,7 @@ pub struct optState_t {
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
     pub offCodeFreq: *mut [core::ffi::c_uint; MaxOff as usize + 1],
     pub matchTable: *mut [ZSTD_match_t; ZSTD_OPT_SIZE],
-    pub priceTable: *mut ZSTD_optimal_t,
+    pub priceTable: *mut [ZSTD_optimal_t; ZSTD_OPT_SIZE],
     pub litSum: u32,
     pub litLengthSum: u32,
     pub matchLengthSum: u32,

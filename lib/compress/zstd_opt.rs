@@ -37,7 +37,7 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
+    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
@@ -1169,7 +1169,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
     let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 
-    let opt = core::slice::from_raw_parts_mut(ms.opt.priceTable, ZSTD_OPT_SIZE);
+    let opt = &mut *ms.opt.priceTable;
     let matches = &mut *ms.opt.matchTable;
     let mut lastStretch = ZSTD_optimal_t {
         price: 0,
