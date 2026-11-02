@@ -1169,12 +1169,7 @@ fn ZSTD_row_matchMaskGroupWidth(_rowEntries: u32) -> u32 {
 
 #[inline(always)]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-unsafe fn ZSTD_row_getSSEMask(
-    nbChunks: core::ffi::c_int,
-    src: *const u8,
-    tag: u8,
-    head: u32,
-) -> ZSTD_VecMask {
+unsafe fn ZSTD_row_getSSEMask(nbChunks: usize, src: *const u8, tag: u8, head: u32) -> ZSTD_VecMask {
     #[cfg(target_arch = "x86")]
     use core::arch::x86::{
         __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8,
@@ -1185,25 +1180,23 @@ unsafe fn ZSTD_row_getSSEMask(
     };
 
     let comparisonMask = _mm_set1_epi8(tag as core::ffi::c_char);
-    let mut matches: [core::ffi::c_int; 4] = [0; 4];
-    for i in 0..nbChunks {
-        let chunk = _mm_loadu_si128(
-            src.offset((16 * i) as isize) as *const core::ffi::c_void as *const __m128i
-        );
+    let mut matches: [u32; 4] = [0; 4];
+    for (i, m) in matches.iter_mut().enumerate().take(nbChunks) {
+        let chunk = _mm_loadu_si128(src.add(16 * i).cast::<__m128i>());
         let equalMask = _mm_cmpeq_epi8(chunk, comparisonMask);
-        *matches.as_mut_ptr().offset(i as isize) = _mm_movemask_epi8(equalMask);
+        *m = _mm_movemask_epi8(equalMask).cast_unsigned();
     }
-    if nbChunks == 1 {
-        return (matches[0] as u16).rotate_right(head) as ZSTD_VecMask;
-    }
-    if nbChunks == 2 {
-        return ((matches[1] as u32) << 16 | matches[0] as u32).rotate_right(head) as ZSTD_VecMask;
-    }
-    ((matches[3] as u64) << 48
-        | (matches[2] as u64) << 32
-        | (matches[1] as u64) << 16
-        | matches[0] as u64)
-        .rotate_right(head)
+
+    let vec_mask = match nbChunks {
+        1 => ZSTD_VecMask::from(matches[0] as u16),
+        2 => ZSTD_VecMask::from(matches[1] << 16 | matches[0]),
+        _ => {
+            let [a, b, c, d] = matches;
+            u64::from(d) << 48 | u64::from(c) << 32 | u64::from(b) << 16 | u64::from(a)
+        }
+    };
+
+    vec_mask.rotate_right(head)
 }
 
 /// Returns a ZSTD_VecMask (U64) that has the nth group (determined by
@@ -1223,7 +1216,7 @@ unsafe fn ZSTD_row_getMatchMask(
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     if true {
-        return ZSTD_row_getSSEMask((rowEntries / 16) as core::ffi::c_int, src, tag, headGrouped);
+        return ZSTD_row_getSSEMask((rowEntries / 16) as usize, src, tag, headGrouped);
     }
 
     // FIXME: Evaluate if the custom SIMD implementation is worth it on x86, and if so also add an
