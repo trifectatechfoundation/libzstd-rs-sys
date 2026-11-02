@@ -447,12 +447,12 @@ unsafe fn ZSTD_insertBt1(
     mls: u32,
     extDict: bool,
 ) -> u32 {
-    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
+    let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hashLog = (*cParams).hashLog;
+    let hashLog = cParams.hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let bt = ms.chainTable;
-    let btLog = ((*cParams).chainLog).wrapping_sub(1);
+    let btLog = cParams.chainLog.wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let mut matchIndex = *hashTable.add(h);
     let mut commonLengthSmaller = 0;
@@ -473,10 +473,10 @@ unsafe fn ZSTD_insertBt1(
     let mut dummy32: u32 = 0;
     // windowLow is based on target because
     // we only need positions that will be in the window at the end of the tree update.
-    let windowLow = ms.get_lowest_match_index(target, (*cParams).windowLog);
+    let windowLow = ms.get_lowest_match_index(target, cParams.windowLog);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
     let mut bestLength = 8;
-    let mut nbCompares = 1u32 << (*cParams).searchLog;
+    let mut nbCompares = 1u32 << cParams.searchLog;
 
     *hashTable.add(h) = curr; // Update Hash Table
 
