@@ -10,6 +10,7 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
+use crate::lib::polyfill::PointerExt;
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[derive(Copy, Clone, Default)]
@@ -1743,16 +1744,23 @@ pub(crate) fn ZSTDv07_getFrameParams(
     fparamsPtr.checksumFlag = checksumFlag;
     Ok(0)
 }
-unsafe fn ZSTDv07_decodeFrameHeader(dctx: *mut ZSTDv07_DCtx, src: &[u8]) -> Result<usize, Error> {
-    let result = ZSTDv07_getFrameParams(&mut (*dctx).fParams, src);
-    if (*dctx).fParams.dictID != 0 && (*dctx).dictID != (*dctx).fParams.dictID {
+
+fn ZSTDv07_decodeFrameHeader(dctx: &mut ZSTDv07_DCtx, src: Option<&[u8]>) -> Result<usize, Error> {
+    let src = match src {
+        Some(src) => src,
+        None => &dctx.headerBuffer[..dctx.headerSize],
+    };
+
+    let result = ZSTDv07_getFrameParams(&mut dctx.fParams, src);
+    if dctx.fParams.dictID != 0 && dctx.dictID != dctx.fParams.dictID {
         return Err(Error::dictionary_wrong);
     }
-    if (*dctx).fParams.checksumFlag != 0 {
-        ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
+    if dctx.fParams.checksumFlag != 0 {
+        ZSTD_XXH64_reset(&mut dctx.xxhState, 0);
     }
     result
 }
+
 fn ZSTDv07_getcBlockSize(src: Reader<'_>, bpPtr: &mut blockProperties_t) -> Result<usize, Error> {
     let mut cSize: u32 = 0;
     if src.len() < ZSTDv07_blockHeaderSize {
@@ -1784,7 +1792,7 @@ fn ZSTDv07_copyRawBlock(mut dst: Writer<'_>, src: &[u8]) -> Result<usize, Error>
 /// # Safety
 ///
 /// `src` must outlive the last decompress call that covers the same compressed block.
-unsafe fn ZSTDv07_decodeLiteralsBlock(dctx: &mut ZSTDv07_DCtx, src: &[u8]) -> Result<usize, Error> {
+fn ZSTDv07_decodeLiteralsBlock(dctx: &mut ZSTDv07_DCtx, src: &[u8]) -> Result<usize, Error> {
     if src.len() < MIN_CBLOCK_SIZE as usize {
         return Err(Error::corruption_detected);
     }
@@ -2302,10 +2310,11 @@ fn ZSTDv07_decompressSequences(
     }
     Ok(dst_capacity - op.capacity())
 }
-unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
+
+fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
     if dst != dctx.previousDstEnd {
         dctx.dictEnd = dctx.previousDstEnd;
-        dctx.vBase = dst.offset(-dctx.previousDstEnd.offset_from(dctx.base));
+        dctx.vBase = dst.wrapping_offset(-dctx.previousDstEnd.wrapping_offset_from(dctx.base));
         dctx.base = dst;
         dctx.previousDstEnd = dst;
     }
@@ -2352,9 +2361,7 @@ fn ZSTDv07_decompressFrame(
     if ip.len() < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
-    if unsafe { ZSTDv07_decodeFrameHeader(dctx, ip.subslice(..frameHeaderSize).as_slice()) }
-        != Ok(0)
-    {
+    if ZSTDv07_decodeFrameHeader(dctx, Some(ip.subslice(..frameHeaderSize).as_slice())) != Ok(0) {
         return Err(Error::corruption_detected);
     }
     ip = ip.subslice(frameHeaderSize..);
@@ -2400,6 +2407,7 @@ fn ZSTDv07_decompressFrame(
     }
     Ok(dstCapacity - op.capacity())
 }
+
 pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
@@ -2411,6 +2419,7 @@ pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     ZSTDv07_checkContinuity(dctx, dst.as_ptr());
     ZSTDv07_decompressFrame(dctx, dst, src)
 }
+
 fn ZSTD_errorFrameSizeInfoLegacy(
     cSize: &mut usize,
     dBound: &mut core::ffi::c_ulonglong,
@@ -2590,7 +2599,7 @@ unsafe fn ZSTDv07_decompressContinue(
         dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..].as_mut_ptr(),
         dctx.expected,
     );
-    ZSTDv07_decodeFrameHeader(dctx, &(&dctx.headerBuffer)[..dctx.headerSize])?;
+    ZSTDv07_decodeFrameHeader(dctx, None)?;
     dctx.expected = ZSTDv07_blockHeaderSize;
     dctx.stage = ZSTDds_decodeBlockHeader;
     Ok(0)
