@@ -453,8 +453,8 @@ pub struct ZSTD_SequencePosition {
 pub type S64 = i64;
 
 #[repr(C)]
-pub struct seqStoreSplits {
-    pub splitLocations: *mut u32,
+pub struct seqStoreSplits<'a> {
+    pub splitLocations: &'a mut [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
     pub idx: usize,
 }
 
@@ -5512,7 +5512,7 @@ pub const MIN_SEQUENCES_BLOCK_SPLITTING: usize = 300;
 ///
 /// Furthermore, the number of splits is capped by [`ZSTD_MAX_NB_BLOCK_SPLITS`].
 unsafe fn ZSTD_deriveBlockSplitsHelper(
-    splits: &mut seqStoreSplits,
+    splits: &mut seqStoreSplits<'_>,
     startIdx: usize,
     endIdx: usize,
     zc: *mut ZSTD_CCtx,
@@ -5540,7 +5540,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     };
     if estimatedFirstHalfSize.wrapping_add(estimatedSecondHalfSize) < estimatedOriginalSize {
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
-        *splits.splitLocations.add(splits.idx) = midIdx as u32;
+        splits.splitLocations[splits.idx] = midIdx as u32;
         splits.idx = splits.idx.wrapping_add(1);
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
     }
@@ -5552,7 +5552,11 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
 /// # Returns
 ///
 /// The number of splits made (which equals the size of the partition table - 1).
-unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq: usize) -> usize {
+unsafe fn ZSTD_deriveBlockSplits(
+    zc: *mut ZSTD_CCtx,
+    partitions: &mut [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
+    nbSeq: usize,
+) -> usize {
     let mut splits = seqStoreSplits {
         splitLocations: partitions,
         idx: 0,
@@ -5562,7 +5566,7 @@ unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq
         return 0;
     }
     ZSTD_deriveBlockSplitsHelper(&mut splits, 0, nbSeq, zc, &(*zc).seqStore);
-    *splits.splitLocations.add(splits.idx) = nbSeq as u32;
+    splits.splitLocations[splits.idx] = nbSeq as u32;
     splits.idx
 }
 
@@ -5585,7 +5589,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let mut srcBytesTotal = 0usize;
-    let partitions = ((*zc).blockSplitCtx.partitions).as_mut_ptr();
+    let partitions = &mut (*zc).blockSplitCtx.partitions;
     let nextSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
     let currSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.currSeqStore;
     let numSplits = ZSTD_deriveBlockSplits(zc, partitions, nbSeq);
@@ -5613,7 +5617,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         );
     }
 
-    ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as usize);
+    ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, partitions[0] as usize);
     for i in 0..numSplits + 1 {
         let lastPartition = i == numSplits;
         let mut lastBlockEntireSrc = false;
@@ -5628,8 +5632,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             ZSTD_deriveSeqStoreChunk(
                 nextSeqStore,
                 &(*zc).seqStore,
-                *partitions.add(i) as usize,
-                *partitions.add(i.wrapping_add(1)) as usize,
+                partitions[i] as usize,
+                partitions[i + 1] as usize,
             );
         }
 
