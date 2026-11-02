@@ -182,7 +182,7 @@ unsafe fn ZSTD_rescaleFreqs(
 
             let llstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.litlengthCTable);
             let mut litLengthSum = 0u32;
-            for (ll, freq) in opt_state.litLengthFreq_mut().iter_mut().enumerate() {
+            for (ll, freq) in opt_state.litLengthFreq.iter_mut().enumerate() {
                 let scaleLog_0 = 10u32; // scale to 1K
                 let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll as u32);
                 *freq = if bitCost_0 != 0 {
@@ -239,7 +239,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
             ];
-            opt_state.litLengthFreq_mut().copy_from_slice(&baseLLfreqs);
+            opt_state.litLengthFreq.copy_from_slice(&baseLLfreqs);
             opt_state.litLengthSum = baseLLfreqs.iter().sum();
 
             opt_state.matchLengthFreq_mut().fill(1);
@@ -257,7 +257,7 @@ unsafe fn ZSTD_rescaleFreqs(
         if compressedLiterals {
             opt_state.litSum = ZSTD_scaleStats(&mut opt_state.litFreq, 12);
         }
-        opt_state.litLengthSum = ZSTD_scaleStats(opt_state.litLengthFreq_mut(), 11);
+        opt_state.litLengthSum = ZSTD_scaleStats(&mut opt_state.litLengthFreq, 11);
         opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq_mut(), 11);
         opt_state.offCodeSum = ZSTD_scaleStats(opt_state.offCodeFreq_mut(), 11);
     }
@@ -324,7 +324,7 @@ unsafe fn ZSTD_litLengthPrice(
 
     // dynamic statistics
     let llCode = ZSTD_LLcode(litLength);
-    let freq = opt_state.litLengthFreq()[llCode as usize];
+    let freq = opt_state.litLengthFreq[llCode as usize];
     (LL_bits[llCode as usize] as u32 * BITCOST_MULTIPLIER)
         .wrapping_add(opt_state.litLengthSumBasePrice)
         .wrapping_sub(WEIGHT(freq, optLevel))
@@ -394,7 +394,7 @@ unsafe fn ZSTD_updateStats(
 
     // literal Length
     let llCode = ZSTD_LLcode(litLength);
-    let freq = &mut opt_state.litLengthFreq_mut()[llCode as usize];
+    let freq = &mut opt_state.litLengthFreq[llCode as usize];
     *freq = freq.wrapping_add(1);
     opt_state.litLengthSum = opt_state.litLengthSum.wrapping_add(1);
 

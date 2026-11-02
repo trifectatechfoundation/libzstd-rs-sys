@@ -307,7 +307,7 @@ pub enum OptPrice {
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: [core::ffi::c_uint; MaxLit as usize + 1],
-    pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
+    pub litLengthFreq: [core::ffi::c_uint; MaxLL as usize + 1],
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
     pub offCodeFreq: *mut [core::ffi::c_uint; MaxOff as usize + 1],
     pub matchTable: *mut [ZSTD_match_t; ZSTD_OPT_SIZE],
@@ -329,7 +329,7 @@ impl Default for optState_t {
     fn default() -> Self {
         Self {
             litFreq: [0; MaxLit as usize + 1],
-            litLengthFreq: core::ptr::null_mut(),
+            litLengthFreq: [0; MaxLL as usize + 1],
             matchLengthFreq: core::ptr::null_mut(),
             offCodeFreq: core::ptr::null_mut(),
             matchTable: core::ptr::null_mut(),
@@ -352,16 +352,6 @@ impl Default for optState_t {
 /// The statistics tables are reserved in the workspace by `ZSTD_reset_matchState`, and so
 /// are only valid when the strategy is at least `ZSTD_btopt`.
 impl optState_t {
-    pub(crate) unsafe fn litLengthFreq(&self) -> &[core::ffi::c_uint; MaxLL as usize + 1] {
-        &*self.litLengthFreq
-    }
-
-    pub(crate) unsafe fn litLengthFreq_mut(
-        &mut self,
-    ) -> &mut [core::ffi::c_uint; MaxLL as usize + 1] {
-        &mut *self.litLengthFreq
-    }
-
     pub(crate) unsafe fn matchLengthFreq(&self) -> &[core::ffi::c_uint; MaxML as usize + 1] {
         &*self.matchLengthFreq
     }
