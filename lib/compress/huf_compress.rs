@@ -45,7 +45,7 @@ fn HUF_alignUpWorkspace(
 ) -> *mut c_void {
     let mask = align - 1;
     let rem = workspace as size_t & mask;
-    let add = (align - (rem)) & mask;
+    let add = (align - rem) & mask;
     let aligned = workspace.wrapping_byte_add(add);
 
     debug_assert_eq!(align & (align - 1), 0); /* pow 2 */
@@ -429,7 +429,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
     /* there are several too large elements (at least >= 2) */
     {
         let mut totalCost: c_int = 0;
-        let baseCost = (1 << (largestBits - (targetNbBits))) as u32;
+        let baseCost = (1 << (largestBits - targetNbBits)) as u32;
         let mut n = lastNonNull as c_int;
 
         /* Adjust any ranks > targetNbBits to targetNbBits.
@@ -452,7 +452,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
         /* renorm totalCost from 2^largestBits to 2^targetNbBits
          * note : totalCost is necessarily a multiple of baseCost */
         debug_assert_eq!((totalCost as u32) & (baseCost - 1), 0);
-        totalCost >>= largestBits - (targetNbBits);
+        totalCost >>= largestBits - targetNbBits;
         debug_assert!(totalCost > 0);
 
         /* repay normalized cost */
@@ -465,7 +465,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
                 for pos in (0..n + 1).rev() {
                     if (huffNode[pos as usize].nbBits as u32) < currentNbBits {
                         currentNbBits = huffNode[pos as usize].nbBits as u32; /* < targetNbBits */
-                        rankLast[(targetNbBits - (currentNbBits)) as usize] = pos as u32;
+                        rankLast[(targetNbBits - currentNbBits) as usize] = pos as u32;
                     }
                 }
             }
@@ -474,7 +474,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
                 /* Try to reduce the next power of 2 above totalCost because we
                  * gain back half the rank.
                  */
-                let mut nBitsToDecrease = (ZSTD_highbit32(totalCost as u32)) + 1;
+                let mut nBitsToDecrease = ZSTD_highbit32(totalCost as u32) + 1;
                 debug_assert!(nBitsToDecrease as usize <= (HUF_TABLELOG_MAX + 1));
                 while nBitsToDecrease > 1 {
                     let highPos = rankLast[nBitsToDecrease as usize];
@@ -533,7 +533,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
                 } else {
                     rankLast[nBitsToDecrease as usize] -= 1;
                     if huffNode[rankLast[nBitsToDecrease as usize] as usize].nbBits as u32
-                        != targetNbBits - (nBitsToDecrease)
+                        != targetNbBits - nBitsToDecrease
                     {
                         rankLast[nBitsToDecrease as usize] = noSymbol;
                         /* this rank is now empty */
@@ -609,7 +609,7 @@ fn HUF_getIndex(count: u32) -> u32 {
     if count < RANK_POSITION_DISTINCT_COUNT_CUTOFF {
         count
     } else {
-        (ZSTD_highbit32(count)) + (RANK_POSITION_LOG_BUCKETS_BEGIN as c_uint)
+        ZSTD_highbit32(count) + (RANK_POSITION_LOG_BUCKETS_BEGIN as c_uint)
     }
 }
 
@@ -709,7 +709,7 @@ fn HUF_sort(
 
     /* Insert each symbol into their appropriate bucket, setting up rankPosition table. */
     for (n, &c) in count[..maxSymbolValue1 as usize].iter().enumerate() {
-        let r = (HUF_getIndex(c)) + 1;
+        let r = HUF_getIndex(c) + 1;
         let pos = rankPosition[r as usize].curr as u32;
         rankPosition[r as usize].curr += 1;
         debug_assert!(pos < maxSymbolValue1);
@@ -1048,14 +1048,14 @@ impl HUF_CStream_t {
         let nbBits = self.bitPos[0] & 0xff;
         let nbBytes = nbBits >> 3;
         // The top nbBits bits of bitContainer are the ones we need.
-        let bitContainer = self.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
+        let bitContainer = self.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - nbBits);
         // Mask bitPos to account for the bytes we consumed.
         self.bitPos[0] &= 7;
         debug_assert!(nbBits > 0);
         debug_assert!(nbBits <= size_t::BITS as usize);
         debug_assert!(self.ptr <= self.endPtr);
         MEM_writeLEST(self.ptr as *mut c_void, bitContainer);
-        self.ptr = (self.ptr).add(nbBytes);
+        self.ptr = self.ptr.add(nbBytes);
         debug_assert!(!kFast || self.ptr <= self.endPtr);
         if !kFast && self.ptr > self.endPtr {
             self.ptr = self.endPtr;
@@ -1075,7 +1075,7 @@ impl HUF_CStream_t {
         if self.ptr >= self.endPtr {
             return 0; // overflow detected
         }
-        (self.ptr).offset_from_unsigned(self.startPtr) + size_t::from(nbBits > 0)
+        self.ptr.offset_from_unsigned(self.startPtr) + size_t::from(nbBits > 0)
     }
 
     #[inline(always)]
@@ -1427,7 +1427,7 @@ pub fn HUF_cardinality(count: &[c_uint], maxSymbolValue: u8) -> c_uint {
 }
 
 pub fn HUF_minTableLog(symbolCardinality: c_uint) -> c_uint {
-    (ZSTD_highbit32(symbolCardinality)) + 1
+    ZSTD_highbit32(symbolCardinality) + 1
 }
 
 pub unsafe fn HUF_optimalTableLog(
@@ -1668,7 +1668,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             let newSize =
                 HUF_estimateCompressedSize(&(*table).CTable, &(*table).count, maxSymbolValue);
 
-            if oldSize <= hSize + (newSize) || hSize + 12 >= src.len() {
+            if oldSize <= hSize + newSize || hSize + 12 >= src.len() {
                 return HUF_compressCTable_internal(
                     ostart,
                     op,

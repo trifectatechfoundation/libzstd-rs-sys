@@ -330,8 +330,8 @@ impl<'a> BITv07_DStream_t<'a> {
         if self.bitsConsumed > usize::BITS {
             return StreamStatus::Overflow;
         }
-        if self.ptr >= unsafe { (self.start).add(size_of::<usize>()) } {
-            self.ptr = unsafe { (self.ptr).sub(self.bitsConsumed as usize >> 3) };
+        if self.ptr >= unsafe { self.start.add(size_of::<usize>()) } {
+            self.ptr = unsafe { self.ptr.sub(self.bitsConsumed as usize >> 3) };
             self.bitsConsumed &= 7;
             self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
             return StreamStatus::Unfinished;
@@ -349,7 +349,7 @@ impl<'a> BITv07_DStream_t<'a> {
             result = StreamStatus::EndOfBuffer;
         }
         self.ptr = unsafe { self.ptr.sub(nbBytes) };
-        self.bitsConsumed = (self.bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
+        self.bitsConsumed = self.bitsConsumed.wrapping_sub((nbBytes * 8) as u32);
         self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
         result
     }
@@ -580,7 +580,7 @@ fn HUFv07_readStats(
     if weightTotal == 0 {
         return Err(Error::corruption_detected);
     }
-    let tableLog = (BITv07_highbit32(weightTotal)).wrapping_add(1);
+    let tableLog = BITv07_highbit32(weightTotal).wrapping_add(1);
     if tableLog > HUFv07_TABLELOG_ABSOLUTEMAX as u32 {
         return Err(Error::corruption_detected);
     }
@@ -588,7 +588,7 @@ fn HUFv07_readStats(
     let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
     let verif = (1 << BITv07_highbit32(rest)) as u32;
-    let lastWeight = (BITv07_highbit32(rest)).wrapping_add(1);
+    let lastWeight = BITv07_highbit32(rest).wrapping_add(1);
     if verif != rest {
         return Err(Error::corruption_detected);
     }
@@ -1175,7 +1175,7 @@ fn HUFv07_decodeLastSymbolX4(
 ) {
     let val = DStream.look_bits_fast(dtLog);
     dst.write_u8(dt[val].sequence.0[0]);
-    if (dt[val]).length == 1 {
+    if dt[val].length == 1 {
         DStream.skip_bits(dt[val].nbBits as u32);
     } else if DStream.bitsConsumed < usize::BITS {
         DStream.skip_bits(dt[val].nbBits as u32);
@@ -1667,7 +1667,7 @@ pub(crate) fn ZSTDv07_getFrameParams(
     let checksumFlag = (fhdByte >> 2 & 1) as u32;
     let directMode = (fhdByte >> 5 & 1) as u32;
     let fcsID = (fhdByte as core::ffi::c_int >> 6) as u32;
-    let windowSizeMax = (1)
+    let windowSizeMax = 1
         << (if MEM_32bits() {
             ZSTDv07_WINDOWLOG_MAX_32
         } else {
@@ -1885,7 +1885,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(dctx: &mut ZSTDv07_DCtx, src: &[u8]) -> Re
                 }
                 3 => {
                     litSize = ((usize::from(src[0]) & 15) << 16)
-                        + ((usize::from(src[1])) << 8)
+                        + (usize::from(src[1]) << 8)
                         + usize::from(src[2]);
                 }
                 0 | 1 => {
@@ -2161,7 +2161,7 @@ unsafe fn ZSTDv07_execSequence(
     dictEnd: *const u8,
 ) -> Result<usize, Error> {
     let mut op = dst;
-    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > op.capacity() {
+    if sequence.litLength.wrapping_add(WILDCOPY_OVERLENGTH) > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
     let mut oLitEnd = op.subslice(sequence.litLength..);
@@ -2185,7 +2185,7 @@ unsafe fn ZSTDv07_execSequence(
         if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(vBase) {
             return Err(Error::corruption_detected);
         }
-        match_0 = dictEnd.offset(-(base.offset_from(match_0)));
+        match_0 = dictEnd.offset(-base.offset_from(match_0));
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), sequence.matchLength);
             return Ok(sequenceLength);
@@ -2193,7 +2193,7 @@ unsafe fn ZSTDv07_execSequence(
         let length1 = dictEnd.offset_from_unsigned(match_0);
         core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), length1);
         op = oLitEnd.subslice(length1..);
-        sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
+        sequence.matchLength = sequence.matchLength.wrapping_sub(length1);
         match_0 = base;
         if op.capacity() < WILDCOPY_OVERLENGTH || sequence.matchLength < MINMATCH {
             while op.as_mut_ptr() < oMatchEnd.as_mut_ptr() {
@@ -2305,7 +2305,7 @@ fn ZSTDv07_decompressSequences(
 unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
     if dst != dctx.previousDstEnd {
         dctx.dictEnd = dctx.previousDstEnd;
-        dctx.vBase = dst.offset(-(dctx.previousDstEnd.offset_from(dctx.base)));
+        dctx.vBase = dst.offset(-dctx.previousDstEnd.offset_from(dctx.base));
         dctx.base = dst;
         dctx.previousDstEnd = dst;
     }
@@ -2515,7 +2515,7 @@ unsafe fn ZSTDv07_decompressContinue(
                 ZSTDv07_frameHeaderSize_min,
             );
             if dctx.headerSize > ZSTDv07_frameHeaderSize_min {
-                dctx.expected = (dctx.headerSize).wrapping_sub(ZSTDv07_frameHeaderSize_min);
+                dctx.expected = dctx.headerSize.wrapping_sub(ZSTDv07_frameHeaderSize_min);
                 dctx.stage = ZSTDds_decodeFrameHeader;
                 return Ok(0);
             }
@@ -2674,20 +2674,16 @@ unsafe fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     if dict.len() < 12 {
         return Err(Error::dictionary_corrupted);
     }
-    *(dctx.rep).as_mut_ptr() = MEM_readLE32(dict.as_ptr().cast());
-    if *(dctx.rep).as_mut_ptr() == 0 || *(dctx.rep).as_mut_ptr() as usize >= dict.len() {
+    *dctx.rep.as_mut_ptr() = MEM_readLE32(dict.as_ptr().cast());
+    if *dctx.rep.as_mut_ptr() == 0 || *dctx.rep.as_mut_ptr() as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    *(dctx.rep).as_mut_ptr().add(1) = MEM_readLE32(dict[4..].as_ptr().cast());
-    if *(dctx.rep).as_mut_ptr().add(1) == 0
-        || *(dctx.rep).as_mut_ptr().add(1) as usize >= dict.len()
-    {
+    *dctx.rep.as_mut_ptr().add(1) = MEM_readLE32(dict[4..].as_ptr().cast());
+    if *dctx.rep.as_mut_ptr().add(1) == 0 || *dctx.rep.as_mut_ptr().add(1) as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    *(dctx.rep).as_mut_ptr().add(2) = MEM_readLE32(dict[8..].as_ptr().cast());
-    if *(dctx.rep).as_mut_ptr().add(2) == 0
-        || *(dctx.rep).as_mut_ptr().add(2) as usize >= dict.len()
-    {
+    *dctx.rep.as_mut_ptr().add(2) = MEM_readLE32(dict[8..].as_ptr().cast());
+    if *dctx.rep.as_mut_ptr().add(2) == 0 || *dctx.rep.as_mut_ptr().add(2) as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
     dict = &dict[12..];

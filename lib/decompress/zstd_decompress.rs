@@ -386,10 +386,10 @@ unsafe fn ZSTD_decompressLegacyStream(
     input: &mut ZSTD_inBuffer,
 ) -> size_t {
     static mut x: core::ffi::c_char = 0;
-    if (output.dst).is_null() {
+    if output.dst.is_null() {
         output.dst = &raw mut x as *mut core::ffi::c_void;
     }
-    if (input.src).is_null() {
+    if input.src.is_null() {
         input.src = &raw mut x as *const core::ffi::c_void;
     }
     match version {
@@ -397,10 +397,10 @@ unsafe fn ZSTD_decompressLegacyStream(
             let dctx = legacyContext as *mut ZBUFFv05_DCtx;
             let src =
                 (input.src as *const core::ffi::c_char).add(input.pos) as *const core::ffi::c_void;
-            let mut readSize = (input.size).wrapping_sub(input.pos);
+            let mut readSize = input.size.wrapping_sub(input.pos);
             let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
-            let mut decodedSize = (output.size).wrapping_sub(output.pos);
+            let mut decodedSize = output.size.wrapping_sub(output.pos);
             let hintSize = ZBUFFv05_decompressContinue(
                 &mut *dctx,
                 dst,
@@ -408,36 +408,36 @@ unsafe fn ZSTD_decompressLegacyStream(
                 src.cast(),
                 &mut readSize,
             );
-            output.pos = (output.pos).wrapping_add(decodedSize);
-            input.pos = (input.pos).wrapping_add(readSize);
+            output.pos = output.pos.wrapping_add(decodedSize);
+            input.pos = input.pos.wrapping_add(readSize);
             hintSize.unwrap_or_else(|err| err.to_error_code())
         }
         6 => {
             let dctx = legacyContext as *mut ZBUFFv06_DCtx;
             let src =
                 (input.src as *const core::ffi::c_char).add(input.pos) as *const core::ffi::c_void;
-            let mut readSize = (input.size).wrapping_sub(input.pos);
+            let mut readSize = input.size.wrapping_sub(input.pos);
             let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
-            let mut decodedSize = (output.size).wrapping_sub(output.pos);
+            let mut decodedSize = output.size.wrapping_sub(output.pos);
             let hintSize =
                 ZBUFFv06_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
-            output.pos = (output.pos).wrapping_add(decodedSize);
-            input.pos = (input.pos).wrapping_add(readSize);
+            output.pos = output.pos.wrapping_add(decodedSize);
+            input.pos = input.pos.wrapping_add(readSize);
             hintSize
         }
         7 => {
             let dctx = legacyContext as *mut ZBUFFv07_DCtx;
             let src =
                 (input.src as *const core::ffi::c_char).add(input.pos) as *const core::ffi::c_void;
-            let mut readSize = (input.size).wrapping_sub(input.pos);
+            let mut readSize = input.size.wrapping_sub(input.pos);
             let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
-            let mut decodedSize = (output.size).wrapping_sub(output.pos);
+            let mut decodedSize = output.size.wrapping_sub(output.pos);
             let hintSize =
                 ZBUFFv07_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
-            output.pos = (output.pos).wrapping_add(decodedSize);
-            input.pos = (input.pos).wrapping_add(readSize);
+            output.pos = output.pos.wrapping_add(decodedSize);
+            input.pos = input.pos.wrapping_add(readSize);
             hintSize.unwrap_or_else(|err| err.to_error_code())
         }
         _ => Error::version_unsupported.to_error_code(),
@@ -462,7 +462,7 @@ impl ZSTD_DDictHashSet {
     fn get_index(&self, dictID: u32) -> size_t {
         let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
         // `ddictPtrTableSize` is a multiple of 2, use `size - 1` as a mask to get an index within `0..hashSet.ddictPtrTableSize`
-        hash as size_t & (self.ddictPtrTableSize).wrapping_sub(1)
+        hash as size_t & self.ddictPtrTableSize.wrapping_sub(1)
     }
 
     /// Adds [`ZSTD_DDict`] to a hashset without resizing it.
@@ -1598,7 +1598,7 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
 ) -> size_t {
     let src = Reader::from_raw_parts(blockStart.cast::<u8>(), blockSize);
     ZSTD_checkContinuity(dctx.as_mut().unwrap(), src.as_ptr_range());
-    (*dctx).previousDstEnd = (blockStart).byte_add(blockSize);
+    (*dctx).previousDstEnd = blockStart.byte_add(blockSize);
     blockSize
 }
 
@@ -2064,12 +2064,12 @@ fn decompress_continue(
             }
             dctx.headerSize = frame_header_size_internal(src, dctx.format)?;
             dctx.headerBuffer[..src.len()].copy_from_slice(src);
-            dctx.expected = (dctx.headerSize).wrapping_sub(src.len());
+            dctx.expected = dctx.headerSize.wrapping_sub(src.len());
             dctx.stage = DecompressStage::DecodeFrameHeader;
             Ok(0)
         }
         DecompressStage::DecodeFrameHeader => {
-            dctx.headerBuffer[(dctx.headerSize) - src.len()..][..src.len()].copy_from_slice(src);
+            dctx.headerBuffer[dctx.headerSize - src.len()..][..src.len()].copy_from_slice(src);
             let header_buffer = dctx.headerBuffer;
             ZSTD_decodeFrameHeader(dctx, &header_buffer[..dctx.headerSize])?;
             dctx.expected = ZSTD_BLOCKHEADERSIZE;
@@ -2126,7 +2126,7 @@ fn decompress_continue(
                     debug_assert!(src.len() <= dctx.expected);
                     let rSize = copy_raw_block_slice(dst.subslice(..), src)?;
                     debug_assert_eq!(rSize, src.len());
-                    dctx.expected = (dctx.expected).wrapping_sub(rSize);
+                    dctx.expected = dctx.expected.wrapping_sub(rSize);
                     rSize
                 }
                 BlockType::Rle => {
@@ -3229,7 +3229,7 @@ pub extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
         windowSize as core::ffi::c_ulonglong,
         ZSTD_CONTENTSIZE_UNKNOWN,
     );
-    (ZSTD_estimateDCtxSize())
+    ZSTD_estimateDCtxSize()
         .wrapping_add(inBuffSize)
         .wrapping_add(outBuffSize)
 }
@@ -3323,11 +3323,11 @@ unsafe fn ZSTD_decompressContinueStream(
         BufferMode::Buffered => {
             let dstSize = match zds.stage {
                 DecompressStage::SkipFrame => 0,
-                _ => (zds.outBuffSize).wrapping_sub(zds.outStart),
+                _ => zds.outBuffSize.wrapping_sub(zds.outStart),
             };
             let decodedSize = ZSTD_decompressContinue(
                 zds,
-                (zds.outBuff).add(zds.outStart) as *mut core::ffi::c_void,
+                zds.outBuff.add(zds.outStart) as *mut core::ffi::c_void,
                 dstSize,
                 src,
                 srcSize,
@@ -3339,7 +3339,7 @@ unsafe fn ZSTD_decompressContinueStream(
             if decodedSize == 0 && !matches!(zds.stage, DecompressStage::SkipFrame) {
                 zds.streamStage = StreamStage::Read;
             } else {
-                zds.outEnd = (zds.outStart).wrapping_add(decodedSize);
+                zds.outEnd = zds.outStart.wrapping_add(decodedSize);
                 zds.streamStage = StreamStage::Flush;
             }
         }
@@ -3447,17 +3447,17 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             StreamStage::Read => Block::Read,
             StreamStage::Load => Block::Load,
             StreamStage::Flush => {
-                let toFlushSize = (zds.outEnd).wrapping_sub(zds.outStart);
+                let toFlushSize = zds.outEnd.wrapping_sub(zds.outStart);
                 let flushedSize = ZSTD_limitCopy(
                     op.cast::<u8>(),
                     oend.offset_from_unsigned(op),
-                    (zds.outBuff).add(zds.outStart),
+                    zds.outBuff.add(zds.outStart),
                     toFlushSize,
                 );
 
                 op = op.add(flushedSize);
 
-                zds.outStart = (zds.outStart).wrapping_add(flushedSize);
+                zds.outStart = zds.outStart.wrapping_add(flushedSize);
                 if flushedSize == toFlushSize {
                     // flush completed
                     zds.streamStage = StreamStage::Read;
@@ -3561,7 +3561,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             zds.headerBuffer.as_mut_ptr().add(zds.lhSize),
                             remainingInput,
                         );
-                        zds.lhSize = (zds.lhSize).wrapping_add(remainingInput);
+                        zds.lhSize = zds.lhSize.wrapping_add(remainingInput);
                     }
                     input.pos = input.size;
                     // check first few bytes
@@ -3642,7 +3642,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if ERR_isError(err_code) {
                     return err_code;
                 }
-                if zds.format == Format::ZSTD_f_zstd1 && is_skippable_frame(&(zds.headerBuffer)) {
+                if zds.format == Format::ZSTD_f_zstd1 && is_skippable_frame(&zds.headerBuffer) {
                     // skippable frame
                     zds.expected = {
                         let [_, _, _, _, a, b, c, d, ..] = zds.headerBuffer;
@@ -3713,7 +3713,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         }
                     }
                     zds.inBuffSize = neededInBuffSize;
-                    zds.outBuff = (zds.inBuff).add(zds.inBuffSize);
+                    zds.outBuff = zds.inBuff.add(zds.inBuffSize);
                     zds.outBuffSize = neededOutBuffSize;
                 }
                 zds.streamStage = StreamStage::Read;
@@ -3842,7 +3842,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return 1;
                 }
                 // release hostage
-                input.pos = (input.pos).wrapping_add(1);
+                input.pos = input.pos.wrapping_add(1);
             }
             return 0;
         }
@@ -3850,7 +3850,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             // output not fully flushed; keep last byte as hostage; will be
             // released when all output is flushed
             // note: pos > 0, otherwise, impossible to finish reading last block
-            input.pos = (input.pos).wrapping_sub(1);
+            input.pos = input.pos.wrapping_sub(1);
             zds.hostageByte = 1;
         }
         return 1;

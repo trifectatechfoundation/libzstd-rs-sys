@@ -88,7 +88,7 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
         (*dctx).dictID = ddict.dictID;
         (*dctx).prefixStart = ddict.dictContent;
         (*dctx).virtualStart = ddict.dictContent;
-        (*dctx).dictEnd = (ddict.dictContent).wrapping_byte_add(ddict.dictSize);
+        (*dctx).dictEnd = ddict.dictContent.wrapping_byte_add(ddict.dictSize);
         (*dctx).previousDstEnd = (*dctx).dictEnd;
 
         if ddict.entropyPresent != 0 {

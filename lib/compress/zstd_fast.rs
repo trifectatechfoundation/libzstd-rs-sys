@@ -565,7 +565,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
     let maxDistance = 1 << cParams.windowLog;
-    let endIndex = (istart.offset_from_unsigned(base)).wrapping_add(srcSize) as u32;
+    let endIndex = istart.offset_from_unsigned(base).wrapping_add(srcSize) as u32;
     assert!(endIndex - prefixStartIndex <= maxDistance);
 
     let _ = hasStep; // not currently specialized on whether it's accelerated

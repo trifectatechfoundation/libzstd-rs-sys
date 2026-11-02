@@ -314,7 +314,7 @@ pub(crate) unsafe fn FSE_writeNCount(
 
 /// Provides the minimum logSize to safely represent a distribution.
 fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: u8) -> core::ffi::c_uint {
-    let minBitsSrc = (ZSTD_highbit32(srcSize as u32)).wrapping_add(1);
+    let minBitsSrc = ZSTD_highbit32(srcSize as u32).wrapping_add(1);
     let minBitsSymbols = maxSymbolValue.ilog2().wrapping_add(2);
     minBitsSrc.min(minBitsSymbols)
 }

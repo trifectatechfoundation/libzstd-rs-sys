@@ -7,18 +7,18 @@ pub(crate) type FSE_CTable = core::ffi::c_uint;
 pub(crate) const FSE_NCOUNTBOUND: usize = 512;
 
 pub(crate) const fn FSE_CTABLE_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
-    1 + (1 << ((maxTableLog) - 1)) + (((maxSymbolValue) + 1) * 2)
+    1 + (1 << (maxTableLog - 1)) + ((maxSymbolValue + 1) * 2)
 }
 
 pub(crate) const fn FSE_DTABLE_SIZE_U32(maxTableLog: usize) -> usize {
-    1 + (1 << (maxTableLog))
+    1 + (1 << maxTableLog)
 }
 
 pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
     maxSymbolValue: usize,
     tableLog: usize,
 ) -> usize {
-    ((maxSymbolValue + 2) + (1 << (tableLog))) / 2 + size_of::<u64>() / size_of::<u32>()
+    ((maxSymbolValue + 2) + (1 << tableLog)) / 2 + size_of::<u64>() / size_of::<u32>()
     /* additional 8 bytes for potential table overwrite */
 }
 
@@ -144,7 +144,7 @@ impl<'a> FSE_CState_t<'a> {
     pub fn new2(ct: &'a [FSE_CTable], symbol: u32) -> Self {
         let mut state = FSE_CState_t::new(ct);
         let symbolTT = state.symbolTT[symbol as usize];
-        let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(1 << 15) >> 16;
+        let nbBitsOut = symbolTT.deltaNbBits.wrapping_add(1 << 15) >> 16;
         let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
 
         let index = (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;

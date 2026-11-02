@@ -32,7 +32,7 @@ pub(crate) const HUF_CTABLEBOUND: usize = 129;
 pub(crate) type HUF_CElt = size_t;
 
 pub const fn HUF_CTABLE_SIZE_ST(maxSymbolValue: usize) -> usize {
-    (maxSymbolValue) + 2 /* Use tables of size_t, for proper alignment */
+    maxSymbolValue + 2 /* Use tables of size_t, for proper alignment */
 }
 
 pub const fn HUF_CTABLE_SIZE(maxSymbolValue: usize) -> usize {

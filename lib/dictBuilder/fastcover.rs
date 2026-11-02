@@ -111,11 +111,11 @@ fn FASTCOVER_selectSegment(
         let idx =
             FASTCOVER_hashPtrToIndex(ctx.samples[pos as usize..][..8].try_into().unwrap(), f, d);
         if segmentFreqs[idx] == 0 {
-            activeSegment.score = (activeSegment.score).wrapping_add(freqs[idx]);
+            activeSegment.score = activeSegment.score.wrapping_add(freqs[idx]);
         }
         activeSegment.end = pos.wrapping_add(1);
         segmentFreqs[idx] += 1;
-        if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
+        if activeSegment.end.wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delIndex = FASTCOVER_hashPtrToIndex(
                 samples[activeSegment.begin as usize..][..8]
                     .try_into()
@@ -125,9 +125,9 @@ fn FASTCOVER_selectSegment(
             );
             segmentFreqs[delIndex] -= 1;
             if segmentFreqs[delIndex] == 0 {
-                activeSegment.score = (activeSegment.score).wrapping_sub(freqs[delIndex]);
+                activeSegment.score = activeSegment.score.wrapping_sub(freqs[delIndex]);
             }
-            activeSegment.begin = (activeSegment.begin).wrapping_add(1);
+            activeSegment.begin = activeSegment.begin.wrapping_add(1);
         }
         if activeSegment.score > bestSegment.score {
             bestSegment = activeSegment;

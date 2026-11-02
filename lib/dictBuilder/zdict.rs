@@ -301,7 +301,7 @@ fn ZDICT_analyzePos(
     let mut cumulLength = [0u32; LLIMIT];
     cumulLength[LLIMIT - 1] = lengthList[LLIMIT - 1];
     for i in (0..LLIMIT - 1).rev() {
-        cumulLength[i] = (cumulLength[i + 1]).wrapping_add(lengthList[i]);
+        cumulLength[i] = cumulLength[i + 1].wrapping_add(lengthList[i]);
     }
     let mut maxLength = (MINMATCHLENGTH..LLIMIT)
         .rev()
@@ -324,8 +324,8 @@ fn ZDICT_analyzePos(
     savings[5] = 0;
 
     for u_1 in MINMATCHLENGTH..=maxLength {
-        savings[u_1] = (savings[u_1.wrapping_sub(1)])
-            .wrapping_add((lengthList[u_1]).wrapping_mul(u_1.wrapping_sub(3) as u32));
+        savings[u_1] = savings[u_1.wrapping_sub(1)]
+            .wrapping_add(lengthList[u_1].wrapping_mul(u_1.wrapping_sub(3) as u32));
     }
 
     if notificationLevel >= 4 {
@@ -373,7 +373,7 @@ fn ZDICT_tryMerge(
     buffer: &[u8],
 ) -> u32 {
     let tableSize = table[0].pos;
-    let eltEnd = (elt.pos).wrapping_add(elt.length);
+    let eltEnd = elt.pos.wrapping_add(elt.length);
     let buf = buffer;
 
     /* tail overlap */
@@ -476,7 +476,7 @@ fn ZDICT_insertDictItem(table: &mut [DictItem], elt: DictItem, buffer: &[u8]) {
         nextElt = maxSize.wrapping_sub(1);
     }
     let mut current = nextElt.wrapping_sub(1);
-    while (table[current as usize]).savings < elt.savings {
+    while table[current as usize].savings < elt.savings {
         table[current.wrapping_add(1) as usize] = table[current as usize];
         current = current.wrapping_sub(1);
     }
@@ -514,7 +514,7 @@ fn ZDICT_trainBuffer_legacy(
     if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
         eprintln!(
             "sample set too large : reduced to {} MB ...",
-            (2000) << 20 >> 20,
+            2000 << 20 >> 20,
         );
     }
     while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
@@ -705,7 +705,7 @@ fn ZDICT_insertSortCount(
 ) {
     table[ZSTD_REP_NUM as usize] = offsetCount_t { offset: val, count };
     for u in (1..ZSTD_REP_NUM as usize).rev() {
-        if (table[u - 1]).count >= (table[u]).count {
+        if table[u - 1].count >= table[u].count {
             break;
         }
         table.swap(u, u - 1);
@@ -818,7 +818,7 @@ unsafe fn analyze_entropy_internal(
     );
 
     esr.workPlace = Box::new_uninit_slice(ZSTD_BLOCKSIZE_MAX as size_t);
-    if (esr.dict).is_null() {
+    if esr.dict.is_null() {
         if notificationLevel >= 1 {
             eprintln!("Not enough memory");
         }

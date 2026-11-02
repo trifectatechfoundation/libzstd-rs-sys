@@ -327,7 +327,7 @@ impl<'a> BIT_DStream_t<'a> {
     unsafe fn reload_internal(&mut self) {
         // quickcheck hits this
         // debug_assert!(self.bitsConsumed as usize >= 8 * size_of::<usize>());
-        self.ptr = unsafe { (self.ptr).sub(self.bitsConsumed as usize / 8) };
+        self.ptr = unsafe { self.ptr.sub(self.bitsConsumed as usize / 8) };
         debug_assert!(self.ptr >= self.start);
         self.bitsConsumed &= 7;
         self.bitContainer = unsafe { core::ptr::read_unaligned(self.ptr as *const usize) }.to_le();
@@ -382,7 +382,7 @@ impl<'a> BIT_DStream_t<'a> {
         };
 
         self.ptr = unsafe { self.ptr.sub(nbBytes) };
-        self.bitsConsumed = (self.bitsConsumed).wrapping_sub((nbBytes * 8) as u32);
+        self.bitsConsumed = self.bitsConsumed.wrapping_sub((nbBytes * 8) as u32);
         self.bitContainer = unsafe { core::ptr::read_unaligned(self.ptr as *const usize) }.to_le();
 
         result

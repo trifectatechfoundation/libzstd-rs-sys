@@ -60,7 +60,7 @@ fn sort_typeBstar(
         }
     }
 
-    if (0) < m {
+    if 0 < m {
         let PAb = n - m;
         let ISAb = m;
         for i in (0..m - 1).rev() {
@@ -79,10 +79,10 @@ fn sort_typeBstar(
         SA[*fresh190 as usize] = m - 1;
         c0 = ALPHABET_SIZE - 2;
         j = m;
-        while (0) < j {
+        while 0 < j {
             for c1 in (c0 + 1..ALPHABET_SIZE).rev() {
                 i = bucket_B[(c0 << 8 | c1) as usize];
-                if (1) < j - i {
+                if 1 < j - i {
                     let Ok([i_to_j, PAb]) = ({
                         let i = i as usize;
                         let j = j as usize;
@@ -152,7 +152,7 @@ fn sort_typeBstar(
                     c1 = c0;
                 }
                 j -= 1;
-                SA[SA[(ISAb + j) as usize] as usize] = if t == 0 || (1) < t - i { t } else { !t };
+                SA[SA[(ISAb + j) as usize] as usize] = if t == 0 || 1 < t - i { t } else { !t };
             }
         }
         bucket_B[(((256 - 1) << 8) | (256 - 1)) as usize] = n;
@@ -188,21 +188,21 @@ fn construct_SA(
     let mut s: i32;
     let mut c0: i32;
     let mut c2: i32;
-    if (0) < m {
+    if 0 < m {
         for c1 in (0..ALPHABET_SIZE - 1).rev() {
             let mut k = i32::MIN;
             let i = bucket_B[((c1 << 8) | (c1 + 1)) as usize];
             c2 = -1;
             for j in (i..bucket_A[(c1 + 1) as usize]).rev() {
                 s = SA[j as usize];
-                if (0) < s {
+                if 0 < s {
                     assert_eq!(T[s as usize] as i32, c1);
                     assert!((s + 1) < n && T[s as usize] as i32 <= T[(s + 1) as usize] as i32);
                     assert!(T[(s - 1) as usize] as i32 <= T[s as usize] as i32);
                     SA[j as usize] = !s;
                     s -= 1;
                     c0 = T[s as usize] as i32;
-                    if (0) < s && T[(s - 1) as usize] as i32 > c0 {
+                    if 0 < s && T[(s - 1) as usize] as i32 > c0 {
                         s = !s;
                     }
                     if c0 != c2 {
@@ -235,7 +235,7 @@ fn construct_SA(
 
     for i in 0..n as usize {
         s = SA[i];
-        if (0) < s {
+        if 0 < s {
             assert!(T[(s - 1) as usize] as i32 >= T[s as usize] as i32);
             s -= 1;
             c0 = T[s as usize] as i32;

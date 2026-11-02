@@ -94,8 +94,8 @@ fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> u64 {
     }
 
     for byte in slice {
-        hash ^= (u64::from(*byte)).wrapping_mul(XXH_PRIME64_5);
-        hash = (hash.rotate_left(11)).wrapping_mul(XXH_PRIME64_1);
+        hash ^= u64::from(*byte).wrapping_mul(XXH_PRIME64_5);
+        hash = hash.rotate_left(11).wrapping_mul(XXH_PRIME64_1);
     }
 
     XXH64_avalanche(hash)

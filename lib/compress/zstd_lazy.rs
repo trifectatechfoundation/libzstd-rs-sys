@@ -68,7 +68,7 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
     let hashLog = cParams.hashLog;
 
     let bt = ms.chainTable;
-    let btLog = (cParams.chainLog).wrapping_sub(1);
+    let btLog = cParams.chainLog.wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
 
     let base = ms.window.base;
@@ -247,7 +247,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     let dictHighLimit =
         ((*dms).window.nextSrc).offset_from((*dms).window.base) as core::ffi::c_long as u32;
     let dictLowLimit = (*dms).window.lowLimit;
-    let dictIndexDelta = (ms.window.lowLimit).wrapping_sub(dictHighLimit);
+    let dictIndexDelta = ms.window.lowLimit.wrapping_sub(dictHighLimit);
 
     let dictBt = (*dms).chainTable;
     let btLog = ((*dmsCParams).chainLog).wrapping_sub(1);
@@ -339,7 +339,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     let windowLow = ms.get_lowest_match_index(curr, cParams.windowLog);
 
     let bt = ms.chainTable;
-    let btLog = (cParams.chainLog).wrapping_sub(1);
+    let btLog = cParams.chainLog.wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let btLow = if btMask >= curr {
         0
@@ -503,7 +503,7 @@ unsafe fn ZSTD_BtFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
     iLimit: *const u8,
     offBasePtr: &mut size_t,
 ) -> size_t {
-    if ip < (ms.window.base).wrapping_offset(ms.nextToUpdate as isize) {
+    if ip < ms.window.base.wrapping_offset(ms.nextToUpdate as isize) {
         return 0; // skipped area
     }
     ZSTD_updateDUBT(ms, ip, iLimit, MLS);
@@ -534,7 +534,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // We are going to temporarily pretend `bucketSize == 1`, keeping only a
     // single entry. We will use the rest of the space to construct a temporary
     // chaintable.
-    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
+    let hashLog = ms.cParams.hashLog.wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
     let tmpHashTable = hashTable;
     let tmpChainTable = hashTable.offset((1 << hashLog) as isize);
     let tmpChainSize = ((1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) << hashLog;
@@ -1025,7 +1025,7 @@ unsafe fn ZSTD_row_fillHashCache(
         (iLimit.wrapping_offset_from(base.wrapping_offset(idx as isize)) as core::ffi::c_long + 1)
             as u32
     };
-    let lim = idx.wrapping_add(if (8) < maxElemsToPrefetch {
+    let lim = idx.wrapping_add(if 8 < maxElemsToPrefetch {
         8
     } else {
         maxElemsToPrefetch
@@ -1256,7 +1256,7 @@ unsafe fn ZSTD_row_getMatchMask(
             chunk ^= splatChar;
             chunk = (((chunk | x80) - x01) | chunk) & x80;
             matches <<= chunkSize;
-            matches |= ((chunk.wrapping_mul(extractMagic)) >> shiftAmount) as ZSTD_VecMask;
+            matches |= (chunk.wrapping_mul(extractMagic) >> shiftAmount) as ZSTD_VecMask;
             i -= chunkSize as isize;
 
             if i < 0 {
@@ -1363,7 +1363,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
             prefetch_read_data(((*dms).hashTable).add(ddsIdx), Locality::L1);
         }
         ddsExtraAttempts = if cParams.searchLog > ROW_LOG {
-            1 << (cParams.searchLog).wrapping_sub(ROW_LOG)
+            1 << cParams.searchLog.wrapping_sub(ROW_LOG)
         } else {
             0
         };
@@ -1411,7 +1411,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         ms.nextToUpdate = curr;
         hash
     };
-    ms.hashSaltEntropy = (ms.hashSaltEntropy).wrapping_add(hash); // collect salt entropy
+    ms.hashSaltEntropy = ms.hashSaltEntropy.wrapping_add(hash); // collect salt entropy
 
     // Get the hash for ip, compute the appropriate row
     let relRow = hash >> ZSTD_ROW_HASH_TAG_BITS << ROW_LOG;
@@ -1451,7 +1451,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let pos = ZSTD_row_nextIndex(tagRow, rowMask);
     *tagRow.offset(pos as isize) = tag as u8;
     *row.offset(pos as isize) = ms.nextToUpdate;
-    ms.nextToUpdate = (ms.nextToUpdate).wrapping_add(1);
+    ms.nextToUpdate = ms.nextToUpdate.wrapping_add(1);
 
     // Return the longest match
     for currMatch in 0..numMatches {
@@ -2641,7 +2641,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
 
                 // catch up
                 if offBase > ZSTD_REP_NUM {
-                    let matchIndex = ((start.wrapping_offset_from(base)) as usize)
+                    let matchIndex = (start.wrapping_offset_from(base) as usize)
                         .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
                         as u32;
                     let mut match_0 = if matchIndex < dictLimit {
