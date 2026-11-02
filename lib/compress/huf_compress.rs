@@ -190,13 +190,13 @@ impl HUF_CElt {
         debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
         self.0 = nbBits;
     }
-}
 
-const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
-    let nbBits = elt.get_nb_bits();
-    if nbBits > 0 {
-        debug_assert!(value >> nbBits == 0);
-        elt.0 |= value << (size_of::<HUF_CElt>() * 8 - nbBits);
+    const fn set_value(&mut self, value: usize) {
+        let nbBits = self.get_nb_bits();
+        if nbBits > 0 {
+            debug_assert!(value >> nbBits == 0);
+            self.0 |= value << (size_of::<HUF_CElt>() * 8 - nbBits);
+        }
     }
 }
 
@@ -204,7 +204,7 @@ const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
 const HUF_END_MARK: HUF_CElt = {
     let mut endMark = HUF_CElt(0);
     endMark.set_nb_bits(1);
-    HUF_setValue(&mut endMark, 1);
+    endMark.set_value(1);
     endMark
 };
 
@@ -373,7 +373,7 @@ pub fn HUF_readCTable(
         /* assign value within rank, symbol order */
         for elt in &mut ct[..nbSymbols as usize] {
             let val = &mut valPerRank[elt.get_nb_bits()];
-            HUF_setValue(elt, *val as usize);
+            elt.set_value(*val as usize);
             *val += 1;
         }
     }
@@ -844,7 +844,7 @@ fn HUF_buildCTableFromTree(
     }
     for n in 0..alphabetSize {
         let fresh19 = &mut valPerRank[ct[n as usize].get_nb_bits()];
-        HUF_setValue(&mut ct[n as usize], *fresh19 as usize); /* assign value within rank, symbol order */
+        ct[n as usize].set_value(*fresh19 as usize); /* assign value within rank, symbol order */
         *fresh19 += 1;
     }
 
