@@ -62,14 +62,14 @@ pub const BITCOST_MULTIPLIER: u32 = 1 << BITCOST_ACCURACY;
 
 /// provide estimated "cost" of a stat in full bits only
 #[inline]
-fn ZSTD_bitWeight(stat: u32) -> u32 {
+const fn ZSTD_bitWeight(stat: u32) -> u32 {
     (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER)
 }
 
 /// provide fractional-bit "cost" of a stat,
 /// using linear interpolation approximation
 #[inline]
-fn ZSTD_fracWeight(rawStat: u32) -> u32 {
+const fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     let stat = rawStat.wrapping_add(1);
     let hb = ZSTD_highbit32(stat);
     let BWeight = hb * BITCOST_MULTIPLIER;
@@ -84,7 +84,7 @@ fn ZSTD_fracWeight(rawStat: u32) -> u32 {
 /// provide the cost of a stat, using either the full-bits or
 /// fractional-bit estimate depending on `optLevel`
 #[inline]
-fn WEIGHT(stat: u32, optLevel: core::ffi::c_int) -> u32 {
+const fn WEIGHT(stat: u32, optLevel: u32) -> u32 {
     match optLevel {
         0 => ZSTD_bitWeight(stat),
         _ => ZSTD_fracWeight(stat),
@@ -95,7 +95,7 @@ fn ZSTD_compressedLiterals(opt_state: &optState_t) -> bool {
     opt_state.literalCompressionMode != ParamSwitch::Disable
 }
 
-fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: core::ffi::c_int) {
+fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: u32) {
     if ZSTD_compressedLiterals(opt_state) {
         opt_state.litSumBasePrice = WEIGHT(opt_state.litSum, optLevel);
     }
@@ -144,7 +144,7 @@ unsafe fn ZSTD_rescaleFreqs(
     opt_state: &mut optState_t,
     src: *const u8,
     srcSize: usize,
-    optLevel: core::ffi::c_int,
+    optLevel: u32,
 ) {
     let compressedLiterals = ZSTD_compressedLiterals(opt_state);
     opt_state.priceType = OptPrice::Dynamic;
@@ -265,11 +265,7 @@ unsafe fn ZSTD_rescaleFreqs(
 
 /// price of a single literal.
 /// does not include price of literalLength symbol
-unsafe fn ZSTD_rawLiteralCost(
-    literal: u8,
-    opt_state: &optState_t,
-    optLevel: core::ffi::c_int,
-) -> u32 {
+unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &optState_t, optLevel: u32) -> u32 {
     if !ZSTD_compressedLiterals(opt_state) {
         return 8 * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
@@ -288,11 +284,7 @@ unsafe fn ZSTD_rawLiteralCost(
 }
 
 /// Cost of literalLength symbol
-unsafe fn ZSTD_litLengthPrice(
-    litLength: u32,
-    opt_state: &optState_t,
-    optLevel: core::ffi::c_int,
-) -> u32 {
+unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &optState_t, optLevel: u32) -> u32 {
     if opt_state.priceType == OptPrice::Predef {
         return WEIGHT(litLength, optLevel);
     }
@@ -326,7 +318,7 @@ unsafe fn ZSTD_getMatchPrice(
     offBase: u32,
     matchLength: u32,
     opt_state: &optState_t,
-    optLevel: core::ffi::c_int,
+    optLevel: u32,
 ) -> u32 {
     let offCode = ZSTD_highbit32(offBase);
     let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
@@ -1133,7 +1125,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
     ZSTD_optLdm_maybeAddMatch(matches, nbMatches, optLdm, currPosInBlock, minMatch);
 }
 
-unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
+unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
