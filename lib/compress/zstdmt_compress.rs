@@ -392,7 +392,6 @@ unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
     let start = ZSTD_customMalloc(bSize, (*bufPool).cMem);
     buffer.start = start; // note : start can be NULL if malloc fails
     buffer.capacity = if start.is_null() { 0 } else { bSize };
-    start.is_null();
     buffer
 }
 
