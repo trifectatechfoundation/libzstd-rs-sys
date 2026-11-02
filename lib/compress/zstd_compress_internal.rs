@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::internal::MEM_readLE32;
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
@@ -73,7 +71,7 @@ pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
 /// Minimum compression required to generate a compress block or a compressed
 /// literals section. note: use same formula for both situations
 #[inline]
-pub(crate) fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
+pub(crate) fn ZSTD_minGain(srcSize: usize, strat: ZSTD_strategy) -> usize {
     let minlog = if strat >= ZSTD_btultra {
         strat.wrapping_sub(1)
     } else {
@@ -163,18 +161,18 @@ pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
 /// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
 /// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
 #[inline]
-pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: u32) {
+pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: usize, index: u32) {
     let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
-    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
     *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
 }
 
 /// Helper function for short cache matchfinders.
 /// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
 #[inline]
-pub(crate) fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
-    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+pub(crate) fn ZSTD_comparePackedTags(packedTag1: usize, packedTag2: usize) -> bool {
+    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
+    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
     tag1 == tag2
 }
 
@@ -203,7 +201,7 @@ pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[repr(C)]
 pub struct ZSTD_prefixDict_s {
     pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
+    pub dictSize: usize,
     pub dictContentType: ZSTD_dictContentType_e,
 }
 
@@ -212,7 +210,7 @@ pub struct ZSTD_prefixDict_s {
 pub struct ZSTD_localDict {
     pub dictBuffer: *mut core::ffi::c_void,
     pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
+    pub dictSize: usize,
     pub dictContentType: ZSTD_dictContentType_e,
     pub cdict: *mut ZSTD_CDict,
 }
@@ -381,8 +379,8 @@ pub struct ZSTD_blockState_t {
 pub struct SeqCollector {
     pub collectSequences: core::ffi::c_int,
     pub seqStart: *mut ZSTD_Sequence,
-    pub seqIndex: size_t,
-    pub maxSequences: size_t,
+    pub seqIndex: usize,
+    pub maxSequences: usize,
 }
 
 /// Indicates whether this compression proceeds directly from user-provided
@@ -514,19 +512,19 @@ pub type ZSTD_BlockCompressor_f = unsafe fn(
     &mut SeqStore_t,
     &mut RepCodes,
     *const core::ffi::c_void,
-    size_t,
-) -> size_t;
+    usize,
+) -> usize;
 
 /// Writes uncompressed block to dst buffer from given src.
 /// Returns the size of the block
 #[inline]
 pub unsafe fn ZSTD_noCompressBlock(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
+    srcSize: usize,
     lastBlock: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let cBlockHeader24 = u32::from(lastBlock)
         .wrapping_add((BlockType::Raw as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);

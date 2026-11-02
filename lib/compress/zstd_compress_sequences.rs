@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType, STREAM_ACCUMULATOR_MIN};
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -63,7 +61,7 @@ fn ZSTD_getFSEMaxSymbolValue(ctable: &[FSE_CTable]) -> u16 {
 
 /// Returns true if we should use ncount=-1 else we should
 /// use ncount=1 for low probability symbols instead.
-fn ZSTD_useLowProbCount(nbSeq: size_t) -> bool {
+fn ZSTD_useLowProbCount(nbSeq: usize) -> bool {
     // Heuristic: This should cover most blocks <= 16K and
     // start to fade out after 16K to about 32K depending on
     // compressibility.
@@ -75,9 +73,9 @@ fn ZSTD_useLowProbCount(nbSeq: size_t) -> bool {
 unsafe fn ZSTD_NCountCost(
     count: &[core::ffi::c_uint],
     max: u8,
-    nbSeq: size_t,
+    nbSeq: usize,
     FSELog: core::ffi::c_uint,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut wksp: [u8; 512] = [0; 512];
     let mut norm: [i16; 53] = [0; 53];
     let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
@@ -100,16 +98,16 @@ unsafe fn ZSTD_NCountCost(
 
 /// Returns the cost in bits of encoding the distribution described by count
 /// using the entropy bound.
-fn ZSTD_entropyCost(count: &[core::ffi::c_uint], max: u8, total: size_t) -> size_t {
+fn ZSTD_entropyCost(count: &[core::ffi::c_uint], max: u8, total: usize) -> usize {
     let mut cost = 0u32;
     for &c in &count[..usize::from(max) + 1] {
-        let mut norm = (256u32.wrapping_mul(c) as size_t / total) as core::ffi::c_uint;
+        let mut norm = (256u32.wrapping_mul(c) as usize / total) as core::ffi::c_uint;
         if c != 0 && norm == 0 {
             norm = 1;
         }
         cost = cost.wrapping_add(c.wrapping_mul(kInverseProbabilityLog256[norm as usize]));
     }
-    (cost >> 8) as size_t
+    (cost >> 8) as usize
 }
 
 /// Returns the cost in bits of encoding the distribution in count using ctable.
@@ -118,7 +116,7 @@ pub fn ZSTD_fseBitCost(
     ctable: &[FSE_CTable],
     count: &[core::ffi::c_uint],
     max: u8,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let count = &count[..usize::from(max) + 1];
     let kAccuracyLog = 8;
     let mut cost = 0usize;
@@ -134,7 +132,7 @@ pub fn ZSTD_fseBitCost(
             if bitCost >= badCost {
                 return Err(Error::GENERIC);
             }
-            cost = cost.wrapping_add(count[s as usize] as size_t * bitCost as size_t);
+            cost = cost.wrapping_add(count[s as usize] as usize * bitCost as usize);
         }
     }
     Ok(cost >> kAccuracyLog)
@@ -148,7 +146,7 @@ pub fn ZSTD_crossEntropyCost(
     accuracyLog: core::ffi::c_uint,
     count: &[core::ffi::c_uint],
     max: u8,
-) -> size_t {
+) -> usize {
     let count = &count[..usize::from(max) + 1];
     let norm = &norm[..count.len()];
     let shift = 8u32 - accuracyLog;
@@ -156,7 +154,7 @@ pub fn ZSTD_crossEntropyCost(
     for (&n, &c) in norm.iter().zip(count) {
         let normAcc = if n != -1 { n as u8 } else { 1 };
         let norm256 = normAcc << shift;
-        cost += c.wrapping_mul(kInverseProbabilityLog256[usize::from(norm256)]) as size_t;
+        cost += c.wrapping_mul(kInverseProbabilityLog256[usize::from(norm256)]) as usize;
     }
     cost >> 8
 }
@@ -165,8 +163,8 @@ pub unsafe fn ZSTD_selectEncodingType(
     repeatMode: &mut FSE_repeat,
     count: &[core::ffi::c_uint],
     max: u8,
-    mostFrequent: size_t,
-    nbSeq: size_t,
+    mostFrequent: usize,
+    nbSeq: usize,
     FSELog: core::ffi::c_uint,
     prevCTable: &[FSE_CTable],
     defaultNorm: &[core::ffi::c_short],
@@ -187,7 +185,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     if (strategy as core::ffi::c_uint) < ZSTD_lazy {
         if isDefaultAllowed == DefaultPolicy::Allowed {
             let staticFse_nbSeq_max = 1000;
-            let mult = 10u32.wrapping_sub(strategy as core::ffi::c_uint) as size_t;
+            let mult = 10u32.wrapping_sub(strategy as core::ffi::c_uint) as usize;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
             if *repeatMode == FSE_repeat::Valid && nbSeq < staticFse_nbSeq_max {
@@ -247,7 +245,7 @@ pub unsafe fn ZSTD_selectEncodingType(
 
 pub unsafe fn ZSTD_buildCTable(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     nextCTable: &mut [FSE_CTable],
     FSELog: u32,
     type_0: SymbolEncodingType,
@@ -259,8 +257,8 @@ pub unsafe fn ZSTD_buildCTable(
     defaultMax: u8,
     prevCTable: &[FSE_CTable],
     entropyWorkspace: *mut core::ffi::c_void,
-    entropyWorkspaceSize: size_t,
-) -> Result<size_t, Error> {
+    entropyWorkspaceSize: usize,
+) -> Result<usize, Error> {
     let nbSeq = codeTable.len();
     let op = dst as *mut u8;
     let oend: *const u8 = op.add(dstCapacity);
@@ -329,7 +327,7 @@ pub unsafe fn ZSTD_buildCTable(
 #[inline(always)]
 unsafe fn ZSTD_encodeSequences_body(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     CTable_MatchLength: &[FSE_CTable; 363],
     mlCodeTable: &[u8],
     CTable_OffsetBits: &[FSE_CTable; 193],
@@ -338,7 +336,7 @@ unsafe fn ZSTD_encodeSequences_body(
     llCodeTable: &[u8],
     sequences: &[SeqDef],
     longOffsets: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let nbSeq = sequences.len();
     let (lastSeq, sequences) = sequences.split_last().unwrap();
     let (&lastMl, mlCodeTable) = mlCodeTable[..nbSeq].split_last().unwrap();
@@ -455,7 +453,7 @@ unsafe fn ZSTD_encodeSequences_body(
 
 unsafe fn ZSTD_encodeSequences_default(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     CTable_MatchLength: &[FSE_CTable; 363],
     mlCodeTable: &[u8],
     CTable_OffsetBits: &[FSE_CTable; 193],
@@ -464,7 +462,7 @@ unsafe fn ZSTD_encodeSequences_default(
     llCodeTable: &[u8],
     sequences: &[SeqDef],
     longOffsets: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
@@ -482,7 +480,7 @@ unsafe fn ZSTD_encodeSequences_default(
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_encodeSequences_bmi2(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     CTable_MatchLength: &[FSE_CTable; 363],
     mlCodeTable: &[u8],
     CTable_OffsetBits: &[FSE_CTable; 193],
@@ -491,7 +489,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     llCodeTable: &[u8],
     sequences: &[SeqDef],
     longOffsets: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     ZSTD_encodeSequences_body(
         dst,
         dstCapacity,
@@ -508,7 +506,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
 
 pub unsafe fn ZSTD_encodeSequences(
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     CTable_MatchLength: &[FSE_CTable; 363],
     mlCodeTable: &[u8],
     CTable_OffsetBits: &[FSE_CTable; 193],
@@ -518,7 +516,7 @@ pub unsafe fn ZSTD_encodeSequences(
     sequences: &[SeqDef],
     longOffsets: bool,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if bmi2 {
         return ZSTD_encodeSequences_bmi2(
             dst,

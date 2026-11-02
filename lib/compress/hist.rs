@@ -1,11 +1,9 @@
 use core::ptr;
 
-use libc::size_t;
-
 use crate::lib::common::error_private::Error;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
-pub const HIST_WKSP_SIZE: size_t =
-    (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
+pub const HIST_WKSP_SIZE: usize =
+    (HIST_WKSP_SIZE_U32 as usize).wrapping_mul(size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -143,14 +141,14 @@ pub unsafe fn HIST_countFast_wksp(
     maxSymbolValuePtr: &mut u8,
     source: &[u8],
     workSpace: *mut core::ffi::c_void,
-    workSpaceSize: size_t,
+    workSpaceSize: usize,
 ) -> Result<core::ffi::c_uint, Error> {
     // checked before the workspace, which this path does not touch
-    if source.len() < HIST_FAST_THRESHOLD as size_t {
+    if source.len() < HIST_FAST_THRESHOLD as usize {
         // heuristic threshold
         return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
-    if workSpace as size_t & 3 != 0 {
+    if workSpace as usize & 3 != 0 {
         // must be aligned on 4-bytes boundaries
         return Err(Error::GENERIC);
     }
@@ -174,7 +172,7 @@ pub unsafe fn HIST_countFast_wksp_array(
     source: &[u8],
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
 ) -> Result<core::ffi::c_uint, Error> {
-    if source.len() < HIST_FAST_THRESHOLD as size_t {
+    if source.len() < HIST_FAST_THRESHOLD as usize {
         // heuristic threshold
         return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
@@ -195,9 +193,9 @@ pub unsafe fn HIST_count_wksp(
     maxSymbolValuePtr: &mut u8,
     source: &[u8],
     workSpace: *mut core::ffi::c_void,
-    workSpaceSize: size_t,
+    workSpaceSize: usize,
 ) -> Result<core::ffi::c_uint, Error> {
-    if workSpace as size_t & 3 != 0 {
+    if workSpace as usize & 3 != 0 {
         // must be aligned on 4-bytes boundaries
         return Err(Error::GENERIC);
     }

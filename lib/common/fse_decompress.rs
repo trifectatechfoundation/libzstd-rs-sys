@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::fse::{
     FSE_DTableHeader, FSE_decode_t, FSE_BUILD_DTABLE_WKSP_SIZE, FSE_DECOMPRESS_WKSP_SIZE,
     FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG, FSE_TABLESTEP,
@@ -277,7 +275,7 @@ fn FSE_decompress_wksp_body(
     maxLog: core::ffi::c_uint,
     workspace: &mut Workspace,
     bmi2: core::ffi::c_int,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut tableLog: core::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE;
     const { assert!(size_of::<Workspace>() >= size_of::<FSE_DecompressWksp>()) };
@@ -318,7 +316,7 @@ fn FSE_decompress_wksp_body_default(
     cSrc: &[u8],
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0)
 }
 
@@ -328,7 +326,7 @@ fn FSE_decompress_wksp_body_bmi2(
     cSrc: &[u8],
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1)
 }
 
@@ -338,7 +336,7 @@ pub(super) fn FSE_decompress_wksp_bmi2(
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if bmi2 {
         // SAFETY: the bmi2 feature is enabled.
         unsafe { FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace) }

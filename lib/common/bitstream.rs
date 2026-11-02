@@ -1,7 +1,5 @@
 use core::marker::PhantomData;
 
-use libc::size_t;
-
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::MEM_writeLEST;
 use crate::lib::polyfill::unlikely;
@@ -29,10 +27,7 @@ pub(crate) struct BIT_CStream_t {
 
 impl BIT_CStream_t {
     #[inline]
-    pub(crate) fn new(
-        startPtr: *mut core::ffi::c_void,
-        dstCapacity: size_t,
-    ) -> Result<Self, Error> {
+    pub(crate) fn new(startPtr: *mut core::ffi::c_void, dstCapacity: usize) -> Result<Self, Error> {
         if dstCapacity <= size_of::<BitContainerType>() {
             return Err(Error::dstSize_tooSmall);
         }
@@ -75,7 +70,7 @@ impl BIT_CStream_t {
     /// Assumption: `bitContainer` has not overflowed
     #[inline]
     pub(crate) unsafe fn flush_bits(&mut self) {
-        let nbBytes = (self.bitPos >> 3) as size_t;
+        let nbBytes = (self.bitPos >> 3) as usize;
         debug_assert!(self.bitPos < BitContainerType::BITS);
         debug_assert!(self.ptr <= self.endPtr);
         MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
@@ -89,7 +84,7 @@ impl BIT_CStream_t {
     /// Assumption: `bitContainer` has not overflowed
     #[inline]
     pub(crate) unsafe fn flush_bits_fast(&mut self) {
-        let nbBytes = (self.bitPos >> 3) as size_t;
+        let nbBytes = (self.bitPos >> 3) as usize;
         debug_assert!(self.bitPos < BitContainerType::BITS);
         debug_assert!(self.ptr <= self.endPtr);
         MEM_writeLEST(self.ptr as *mut core::ffi::c_void, self.bitContainer);
@@ -105,7 +100,7 @@ impl BIT_CStream_t {
     /// - The size of the stream in bytes
     /// - 0 if it could not fit into `dstBuffer`
     #[inline]
-    pub(crate) unsafe fn close(mut self) -> size_t {
+    pub(crate) unsafe fn close(mut self) -> usize {
         self.add_bits_fast(1, 1);
         self.flush_bits();
         if self.ptr >= self.endPtr {
