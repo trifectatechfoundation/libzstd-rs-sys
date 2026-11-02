@@ -169,8 +169,10 @@ unsafe fn HUF_compressWeights(
     Ok(op.offset_from_unsigned(ostart))
 }
 
-const fn HUF_getNbBits(elt: HUF_CElt) -> usize {
-    elt.0 & 0xff
+impl HUF_CElt {
+    const fn get_nb_bits(self) -> usize {
+        self.0 & 0xff
+    }
 }
 
 const fn HUF_getNbBitsFast(elt: HUF_CElt) -> usize {
@@ -191,7 +193,7 @@ const fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: usize) {
 }
 
 const fn HUF_setValue(elt: &mut HUF_CElt, value: usize) {
-    let nbBits = HUF_getNbBits(*elt);
+    let nbBits = elt.get_nb_bits();
     if nbBits > 0 {
         debug_assert!(value >> nbBits == 0);
         elt.0 |= value << (size_of::<HUF_CElt>() * 8 - nbBits);
@@ -253,7 +255,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         .iter_mut()
         .zip(&ct[..maxSymbolValue])
     {
-        *weight = bitsToWeight[HUF_getNbBits(elt)];
+        *weight = bitsToWeight[elt.get_nb_bits()];
     }
 
     /* attempt weights compression by FSE */
@@ -357,7 +359,7 @@ pub fn HUF_readCTable(
         let mut valPerRank: [u16; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
 
         for &elt in &ct[..nbSymbols as usize] {
-            nbPerRank[HUF_getNbBits(elt)] += 1;
+            nbPerRank[elt.get_nb_bits()] += 1;
         }
 
         /* determine stating value per rank */
@@ -373,7 +375,7 @@ pub fn HUF_readCTable(
 
         /* assign value within rank, symbol order */
         for elt in &mut ct[..nbSymbols as usize] {
-            let val = &mut valPerRank[HUF_getNbBits(*elt)];
+            let val = &mut valPerRank[elt.get_nb_bits()];
             HUF_setValue(elt, *val as usize);
             *val += 1;
         }
@@ -386,7 +388,7 @@ pub fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
     if symbolValue > CTable.header.maxSymbolValue as u32 {
         return 0;
     }
-    HUF_getNbBits(CTable.elements[symbolValue as usize]) as u32
+    CTable.elements[symbolValue as usize].get_nb_bits() as u32
 }
 
 /// Try to enforce `targetNbBits` on the Huffman tree described in `huffNode`.
@@ -846,7 +848,7 @@ fn HUF_buildCTableFromTree(
         ); /* push nbBits per symbol, symbol order */
     }
     for n in 0..alphabetSize {
-        let fresh19 = &mut valPerRank[HUF_getNbBits(ct[n as usize])];
+        let fresh19 = &mut valPerRank[ct[n as usize].get_nb_bits()];
         HUF_setValue(&mut ct[n as usize], *fresh19 as usize); /* assign value within rank, symbol order */
         *fresh19 += 1;
     }
@@ -910,7 +912,7 @@ pub fn HUF_estimateCompressedSize(CTable: &CTable, count: &[c_uint], maxSymbolVa
     let ct = &CTable.elements;
     let mut nbBits = 0usize;
     for (elt, &c) in ct[..=usize::from(maxSymbolValue)].iter().zip(count) {
-        nbBits += HUF_getNbBits(*elt) * c as usize;
+        nbBits += elt.get_nb_bits() * c as usize;
     }
     nbBits >> 3
 }
@@ -927,7 +929,7 @@ pub fn HUF_validateCTable(CTable: &CTable, count: &[c_uint], maxSymbolValue: u8)
     }
     for (elt, &c) in ct[..=usize::from(maxSymbolValue)].iter().zip(count) {
         // NOTE: use `&` rather than `&&` to keep the loop branch-free
-        bad |= (c != 0) & (HUF_getNbBits(*elt) == 0);
+        bad |= (c != 0) & (elt.get_nb_bits() == 0);
     }
     !bad
 }
@@ -994,12 +996,12 @@ impl HUF_CStream_t {
     ///   otherwise it must be `false`.
     #[inline(always)]
     fn add_bits(&mut self, elt: HUF_CElt, idx: bool, kFast: bool) {
-        debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
+        debug_assert!(elt.get_nb_bits() <= HUF_TABLELOG_ABSOLUTEMAX);
         // This is efficient on x86-64 with BMI2 because shrx
         // only reads the low 6 bits of the register. The compiler
         // knows this and elides the mask. When fast is set,
         // every operation can use the same value loaded from elt.
-        self.bitContainer[usize::from(idx)] >>= HUF_getNbBits(elt);
+        self.bitContainer[usize::from(idx)] >>= elt.get_nb_bits();
         self.bitContainer[usize::from(idx)] |= if kFast {
             HUF_getValueFast(elt)
         } else {
