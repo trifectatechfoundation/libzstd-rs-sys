@@ -2680,9 +2680,6 @@ fn ZSTD_sizeof_matchState(
     let optPotentialSpace =
         (ZSTD_cwksp_aligned64_alloc_size((usize::from(MaxML) + 1).wrapping_mul(size_of::<u32>())))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                ((MaxOff + 1) as size_t).wrapping_mul(size_of::<u32>()),
-            ))
-            .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
                 (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
@@ -3112,9 +3109,6 @@ unsafe fn ZSTD_reset_matchState(
     if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
         ms.opt.matchLengthFreq =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxML as usize + 1]>())
-                .cast();
-        ms.opt.offCodeFreq =
-            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxOff as usize + 1]>())
                 .cast();
         ms.opt.matchTable =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[ZSTD_match_t; ZSTD_OPT_SIZE]>()).cast();

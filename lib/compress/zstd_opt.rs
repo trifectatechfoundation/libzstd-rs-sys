@@ -210,7 +210,7 @@ unsafe fn ZSTD_rescaleFreqs(
 
             let ofstate = FSE_CState_t::new(&(*opt_state.symbolCosts).fse.offcodeCTable);
             let mut offCodeSum = 0u32;
-            for (of, freq) in opt_state.offCodeFreq_mut().iter_mut().enumerate() {
+            for (of, freq) in opt_state.offCodeFreq.iter_mut().enumerate() {
                 let scaleLog_2 = 10u32;
                 let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of as u32);
                 *freq = if bitCost_2 != 0 {
@@ -249,7 +249,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1,
             ];
-            opt_state.offCodeFreq_mut().copy_from_slice(&baseOFCfreqs);
+            opt_state.offCodeFreq.copy_from_slice(&baseOFCfreqs);
             opt_state.offCodeSum = baseOFCfreqs.iter().sum();
         }
     } else {
@@ -259,7 +259,7 @@ unsafe fn ZSTD_rescaleFreqs(
         }
         opt_state.litLengthSum = ZSTD_scaleStats(&mut opt_state.litLengthFreq, 11);
         opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq_mut(), 11);
-        opt_state.offCodeSum = ZSTD_scaleStats(opt_state.offCodeFreq_mut(), 11);
+        opt_state.offCodeSum = ZSTD_scaleStats(&mut opt_state.offCodeFreq, 11);
     }
 
     ZSTD_setBasePrices(opt_state, optLevel);
@@ -352,7 +352,7 @@ unsafe fn ZSTD_getMatchPrice(
     }
 
     // dynamic statistics
-    let offCodeFreq = opt_state.offCodeFreq()[offCode as usize];
+    let offCodeFreq = opt_state.offCodeFreq[offCode as usize];
     let mut price = (offCode * BITCOST_MULTIPLIER)
         .wrapping_add((opt_state.offCodeSumBasePrice).wrapping_sub(WEIGHT(offCodeFreq, optLevel)));
     if optLevel < 2 && offCode >= 20 {
@@ -400,7 +400,7 @@ unsafe fn ZSTD_updateStats(
 
     // offset code: follows storeSeq() numeric representation
     let offCode = ZSTD_highbit32(offBase);
-    let freq = &mut opt_state.offCodeFreq_mut()[offCode as usize];
+    let freq = &mut opt_state.offCodeFreq[offCode as usize];
     *freq = freq.wrapping_add(1);
     opt_state.offCodeSum = opt_state.offCodeSum.wrapping_add(1);
 

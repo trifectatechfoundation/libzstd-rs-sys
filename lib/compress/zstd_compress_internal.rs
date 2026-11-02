@@ -309,7 +309,7 @@ pub struct optState_t {
     pub litFreq: [core::ffi::c_uint; MaxLit as usize + 1],
     pub litLengthFreq: [core::ffi::c_uint; MaxLL as usize + 1],
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
-    pub offCodeFreq: *mut [core::ffi::c_uint; MaxOff as usize + 1],
+    pub offCodeFreq: [core::ffi::c_uint; MaxOff as usize + 1],
     pub matchTable: *mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     pub priceTable: *mut [ZSTD_optimal_t; ZSTD_OPT_SIZE],
     pub litSum: u32,
@@ -331,7 +331,7 @@ impl Default for optState_t {
             litFreq: [0; MaxLit as usize + 1],
             litLengthFreq: [0; MaxLL as usize + 1],
             matchLengthFreq: core::ptr::null_mut(),
-            offCodeFreq: core::ptr::null_mut(),
+            offCodeFreq: [0; MaxOff as usize + 1],
             matchTable: core::ptr::null_mut(),
             priceTable: core::ptr::null_mut(),
             litSum: 0,
@@ -360,16 +360,6 @@ impl optState_t {
         &mut self,
     ) -> &mut [core::ffi::c_uint; MaxML as usize + 1] {
         &mut *self.matchLengthFreq
-    }
-
-    pub(crate) unsafe fn offCodeFreq(&self) -> &[core::ffi::c_uint; MaxOff as usize + 1] {
-        &*self.offCodeFreq
-    }
-
-    pub(crate) unsafe fn offCodeFreq_mut(
-        &mut self,
-    ) -> &mut [core::ffi::c_uint; MaxOff as usize + 1] {
-        &mut *self.offCodeFreq
     }
 }
 
