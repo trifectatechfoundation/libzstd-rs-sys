@@ -265,7 +265,7 @@ impl LdmParams {
             if self.hashLog > 0 {
                 // if params->hashLog is set, derive hashRateLog from it
                 if self.windowLog > self.hashLog {
-                    self.hashRateLog = (self.windowLog).wrapping_sub(self.hashLog);
+                    self.hashRateLog = self.windowLog.wrapping_sub(self.hashLog);
                 }
             } else {
                 // mapping from [fast, rate7] to [btultra2, rate4]
@@ -294,9 +294,9 @@ impl LdmParams {
     /// Estimate the space needed for long distance matching tables or 0 if LDM is disabled.
     pub fn get_table_size(self) -> size_t {
         let ldmHSize = 1usize << self.hashLog;
-        let ldmBucketSizeLog = (self.bucketSizeLog.min(self.hashLog)) as size_t;
+        let ldmBucketSizeLog = self.bucketSizeLog.min(self.hashLog) as size_t;
         let ldmBucketSize = 1 << (self.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
-        let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
+        let totalSize = ZSTD_cwksp_alloc_size(ldmBucketSize).wrapping_add(ZSTD_cwksp_alloc_size(
             ldmHSize.wrapping_mul(size_of::<LdmEntry>()),
         ));
         if self.enableLdm == ParamSwitch::Enable {
@@ -616,7 +616,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
             let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
-            let seq = (rawSeqStore.seq).add(rawSeqStore.size);
+            let seq = rawSeqStore.seq.add(rawSeqStore.size);
 
             // Out of sequence storage
             if rawSeqStore.size == rawSeqStore.capacity {
@@ -625,7 +625,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
             (*seq).matchLength = mLength as u32;
             (*seq).offset = offset;
-            rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
+            rawSeqStore.size = rawSeqStore.size.wrapping_add(1);
 
             // Insert the current entry into the hash table --- it must be
             // done after the previous block to avoid clobbering bestEntry
@@ -720,7 +720,7 @@ impl LdmState {
             //    generated.
             // Prepend the leftover literals from the last call
             if prevSize < sequences.size {
-                let fresh5 = &mut (*(sequences.seq).add(prevSize)).litLength;
+                let fresh5 = &mut (*sequences.seq.add(prevSize)).litLength;
                 *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
                 leftoverSize = newLeftoverSize;
             } else {
@@ -742,19 +742,19 @@ pub fn ZSTD_ldm_skipSequences(
         let seq = &mut seqs[*pos];
         if srcSize <= seq.litLength as size_t {
             // Skip past srcSize literals
-            seq.litLength = (seq.litLength).wrapping_sub(srcSize as u32);
+            seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
             return;
         }
         srcSize = srcSize.wrapping_sub(seq.litLength as size_t);
         seq.litLength = 0;
         if srcSize < seq.matchLength as size_t {
             // Skip past the first srcSize of the match
-            seq.matchLength = (seq.matchLength).wrapping_sub(srcSize as u32);
+            seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
             if seq.matchLength < minMatch {
                 // The match is too short, omit it
                 let matchLength = seq.matchLength;
                 if let Some(next) = seqs.get_mut(*pos + 1) {
-                    next.litLength = (next.litLength).wrapping_add(matchLength);
+                    next.litLength = next.litLength.wrapping_add(matchLength);
                 }
                 *pos += 1;
             }
@@ -780,7 +780,7 @@ fn maybeSplitSequence(
     let mut sequence = seqs[*pos];
 
     // Likely: No partial sequence
-    if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
+    if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
         *pos += 1;
         return sequence;
     }
@@ -788,7 +788,7 @@ fn maybeSplitSequence(
     // Cut the sequence short (offset == 0 ==> rest is literals).
     if remaining <= sequence.litLength {
         sequence.offset = 0;
-    } else if remaining < (sequence.litLength).wrapping_add(sequence.matchLength) {
+    } else if remaining < sequence.litLength.wrapping_add(sequence.matchLength) {
         sequence.matchLength = remaining.wrapping_sub(sequence.litLength);
         if sequence.matchLength < minMatch {
             sequence.offset = 0;
@@ -803,12 +803,12 @@ fn maybeSplitSequence(
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
 pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: size_t) {
-    let mut currPos = (rawSeqStore.posInSequence).wrapping_add(nbBytes) as u32;
+    let mut currPos = rawSeqStore.posInSequence.wrapping_add(nbBytes) as u32;
     while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
-        let currSeq = *(rawSeqStore.seq).add(rawSeqStore.pos);
-        if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
-            currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
-            rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
+        let currSeq = *rawSeqStore.seq.add(rawSeqStore.pos);
+        if currPos >= currSeq.litLength.wrapping_add(currSeq.matchLength) {
+            currPos = currPos.wrapping_sub(currSeq.litLength.wrapping_add(currSeq.matchLength));
+            rawSeqStore.pos = rawSeqStore.pos.wrapping_add(1);
         } else {
             rawSeqStore.posInSequence = currPos as size_t;
             break;
@@ -889,7 +889,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             newLitLength,
             ip.sub(newLitLength),
             iend,
-            (sequence.offset).wrapping_add(ZSTD_REP_NUM),
+            sequence.offset.wrapping_add(ZSTD_REP_NUM),
             sequence.matchLength as size_t,
         );
         ip = ip.offset(sequence.matchLength as isize);

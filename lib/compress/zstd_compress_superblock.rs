@@ -298,7 +298,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // block, since it isn't worth optimizing.
     if writeEntropy
         && fseMetadata.lastCountSize != 0
-        && (fseMetadata.lastCountSize).wrapping_add(bitstreamSize) < 4
+        && fseMetadata.lastCountSize.wrapping_add(bitstreamSize) < 4
     {
         return Ok(0);
     }
@@ -561,7 +561,7 @@ unsafe fn ZSTD_estimateSubBlockSize(
         wkspSize,
         writeSeqEntropy,
     )
-    .wrapping_add((estLitSize).wrapping_add(ZSTD_BLOCKHEADERSIZE));
+    .wrapping_add(estLitSize.wrapping_add(ZSTD_BLOCKHEADERSIZE));
 
     EstimatedBlockSize {
         estLitSize,
@@ -591,7 +591,7 @@ fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bo
 fn countLiterals(seqStore: &SeqStore_t, sp: &[SeqDef]) -> size_t {
     let mut total = 0usize;
     for seq in sp {
-        total = total.wrapping_add((ZSTD_getSequenceLength(seqStore, seq)).litLength as size_t);
+        total = total.wrapping_add(ZSTD_getSequenceLength(seqStore, seq).litLength as size_t);
     }
     total
 }
@@ -706,10 +706,10 @@ unsafe fn ZSTD_compressSubBlock_multi(
             .unwrap_or(BYTESCALE as size_t);
 
         let avgSeqCost =
-            (ebs.estBlockSize).wrapping_sub(ebs.estLitSize) * BYTESCALE as size_t / nbSeqs;
+            ebs.estBlockSize.wrapping_sub(ebs.estLitSize) * BYTESCALE as size_t / nbSeqs;
 
         let nbSubBlocks =
-            ((ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize).max(1);
+            (ebs.estBlockSize.wrapping_add(targetCBlockSize / 2) / targetCBlockSize).max(1);
         let mut blockBudgetSupp = 0;
         let avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;
         // simplification: if estimates states that the full superblock doesn't compress, just bail out immediately
@@ -852,7 +852,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 ZSTD_updateRep(
                     &mut rep,
                     seq.offBase,
-                    (ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0,
+                    ZSTD_getSequenceLength(seqStorePtr, seq).litLength == 0,
                 );
             }
             (*nextCBlock).rep = rep;

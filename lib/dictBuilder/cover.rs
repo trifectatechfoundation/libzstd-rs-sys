@@ -45,7 +45,7 @@ impl COVER_map_t {
     }
 }
 
-const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
+const MAP_EMPTY_VALUE: core::ffi::c_int = -1;
 
 #[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
@@ -154,7 +154,7 @@ fn COVER_map_clear(map: &mut COVER_map_t) {
 
 fn COVER_map_hash(map: &mut COVER_map_t, key: u32) -> u32 {
     const COVER_prime4bytes: u32 = 2654435761;
-    (key.wrapping_mul(COVER_prime4bytes)) >> 32u32.wrapping_sub(map.sizeLog)
+    key.wrapping_mul(COVER_prime4bytes) >> 32u32.wrapping_sub(map.sizeLog)
 }
 
 fn COVER_map_index(map: &mut COVER_map_t, key: u32) -> u32 {
@@ -461,18 +461,18 @@ fn COVER_selectSegment(
         let newDmer = ctx.dmerAt[pos as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
         if *newDmerOcc == 0 {
-            activeSegment.score = (activeSegment.score).wrapping_add(freqs[newDmer as usize]);
+            activeSegment.score = activeSegment.score.wrapping_add(freqs[newDmer as usize]);
         }
         activeSegment.end = pos.wrapping_add(1);
         *newDmerOcc = (*newDmerOcc).wrapping_add(1);
-        if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
+        if activeSegment.end.wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delDmer = ctx.dmerAt[activeSegment.begin as usize];
             let delDmerOcc = COVER_map_at(activeDmers, delDmer);
-            activeSegment.begin = (activeSegment.begin).wrapping_add(1);
+            activeSegment.begin = activeSegment.begin.wrapping_add(1);
             *delDmerOcc = (*delDmerOcc).wrapping_sub(1);
             if *delDmerOcc == 0 {
                 COVER_map_remove(activeDmers, delDmer);
-                activeSegment.score = (activeSegment.score).wrapping_sub(freqs[delDmer as usize]);
+                activeSegment.score = activeSegment.score.wrapping_sub(freqs[delDmer as usize]);
             }
         }
         if activeSegment.score > bestSegment.score {
@@ -865,8 +865,7 @@ fn train_from_buffer_cover(
         return err.to_error_code();
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
-    let mut activeDmers =
-        COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
+    let mut activeDmers = COVER_map_t::new(parameters.k.wrapping_sub(parameters.d).wrapping_add(1));
     if displayLevel >= 2 {
         eprintln!("Building dictionary");
     }
@@ -980,7 +979,7 @@ pub(super) fn COVER_best_finish(
     let compressedSize = selection.totalCompressedSize;
     let dictSize = selection.dictSize;
     let mut guard = best.mutex.lock().unwrap();
-    guard.liveJobs = (guard.liveJobs).wrapping_sub(1);
+    guard.liveJobs = guard.liveJobs.wrapping_sub(1);
     let liveJobs = guard.liveJobs;
     if compressedSize < guard.compressedSize {
         if let Some(slice) = guard.dict.get_mut(..selection.dictContent.len()) {
@@ -1117,8 +1116,7 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let mut dict: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dictBufferCapacity);
     let mut freqs = ctx.freqs.clone();
     let displayLevel = ctx.displayLevel;
-    let mut activeDmers =
-        COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
+    let mut activeDmers = COVER_map_t::new(parameters.k.wrapping_sub(parameters.d).wrapping_add(1));
 
     let dict_tail = COVER_buildDictionary(ctx, &mut freqs, &mut activeDmers, &mut dict, parameters);
 

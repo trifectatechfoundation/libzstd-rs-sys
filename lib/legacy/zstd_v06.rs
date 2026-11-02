@@ -556,7 +556,7 @@ unsafe fn FSEv06_buildDTable(
     DTableH.fastMode = 1;
     let largeLimit = (1 << tableLog.wrapping_sub(1)) as i16;
     for s in 0..maxSV1 {
-        if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
+        if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -1 {
             (*tableDecode.offset(highThreshold as isize)).symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
             *symbolNext.as_mut_ptr().offset(s as isize) = 1;
@@ -862,7 +862,7 @@ unsafe fn HUFv06_readStats(
     if weightTotal == 0 {
         return Error::corruption_detected.to_error_code();
     }
-    let tableLog = (BITv06_highbit32(weightTotal)).wrapping_add(1);
+    let tableLog = BITv06_highbit32(weightTotal).wrapping_add(1);
     if tableLog > HUFv06_ABSOLUTEMAX_TABLELOG as u32 {
         return Error::corruption_detected.to_error_code();
     }
@@ -870,7 +870,7 @@ unsafe fn HUFv06_readStats(
     let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
     let verif = (1 << BITv06_highbit32(rest)) as u32;
-    let lastWeight = (BITv06_highbit32(rest)).wrapping_add(1);
+    let lastWeight = BITv06_highbit32(rest).wrapping_add(1);
     if verif != rest {
         return Error::corruption_detected.to_error_code();
     }
@@ -2859,12 +2859,12 @@ unsafe fn ZSTDv06_execSequence(
     dictEnd: *const u8,
 ) -> size_t {
     let oLitEnd = op.add(sequence.litLength);
-    let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
+    let sequenceLength = sequence.litLength.wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
     let oend_8 = oend.wrapping_sub(8);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
-    let seqLength = (sequence.litLength).wrapping_add(sequence.matchLength);
+    let seqLength = sequence.litLength.wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from_unsigned(op) {
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -2899,7 +2899,7 @@ unsafe fn ZSTDv06_execSequence(
         let length1 = dictEnd.offset_from_unsigned(match_0);
         core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
-        sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
+        sequence.matchLength = sequence.matchLength.wrapping_sub(length1);
         match_0 = base;
         if op > oend_8 || sequence.matchLength < MINMATCH as size_t {
             while op < oMatchEnd {

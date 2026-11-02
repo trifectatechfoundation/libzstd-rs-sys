@@ -43,7 +43,7 @@ pub(crate) fn ZSTD_LLcode(litLength: u32) -> u32 {
     ];
     static LL_deltaCode: u32 = 19;
     if litLength > 63 {
-        (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
+        ZSTD_highbit32(litLength).wrapping_add(LL_deltaCode)
     } else {
         LL_Code[litLength as usize] as core::ffi::c_uint
     }
@@ -63,7 +63,7 @@ pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
     ];
     static ML_deltaCode: u32 = 36;
     if mlBase > 127 {
-        (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
+        ZSTD_highbit32(mlBase).wrapping_add(ML_deltaCode)
     } else {
         ML_Code[mlBase as usize] as core::ffi::c_uint
     }
@@ -88,7 +88,7 @@ impl ZSTD_window_t {
         self.dictBase = c" ".as_ptr() as *const u8;
         self.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
         self.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
-        self.nextSrc = (self.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
+        self.nextSrc = self.base.wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
         self.nbOverflowCorrections = 0;
     }
 
@@ -564,16 +564,16 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
         seqStorePtr.longLengthPos =
             (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart) as u32;
     }
-    (*(seqStorePtr.sequences)).litLength = litLength as u16;
-    (*(seqStorePtr.sequences)).offBase = offBase;
+    (*seqStorePtr.sequences).litLength = litLength as u16;
+    (*seqStorePtr.sequences).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(usize::from(MINMATCH));
     if mlBase > 0xffff {
         seqStorePtr.longLengthType = LongLengthType::Match;
         seqStorePtr.longLengthPos =
             (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart) as u32;
     }
-    (*(seqStorePtr.sequences)).mlBase = mlBase as u16;
-    seqStorePtr.sequences = (seqStorePtr.sequences).add(1);
+    (*seqStorePtr.sequences).mlBase = mlBase as u16;
+    seqStorePtr.sequences = seqStorePtr.sequences.add(1);
 }
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeq(
@@ -599,7 +599,7 @@ pub(crate) unsafe fn ZSTD_storeSeq(
     } else {
         ZSTD_safecopyLiterals(seqStorePtr.lit, literals, litEnd, litLimit_w);
     }
-    seqStorePtr.lit = (seqStorePtr.lit).add(litLength);
+    seqStorePtr.lit = seqStorePtr.lit.add(litLength);
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 
@@ -941,12 +941,12 @@ impl ZSTD_window_t {
         // Check if blocks follow each other
         if src != self.nextSrc as *const core::ffi::c_void || forceNonContiguous {
             // not contiguous
-            let distanceFromBase = (self.nextSrc).wrapping_offset_from(self.base) as usize;
+            let distanceFromBase = self.nextSrc.wrapping_offset_from(self.base) as usize;
             self.lowLimit = self.dictLimit;
             self.dictLimit = distanceFromBase as u32;
             self.dictBase = self.base;
             self.base = ip.wrapping_sub(distanceFromBase);
-            if (self.dictLimit).wrapping_sub(self.lowLimit) < HASH_READ_SIZE as u32 {
+            if self.dictLimit.wrapping_sub(self.lowLimit) < HASH_READ_SIZE as u32 {
                 self.lowLimit = self.dictLimit;
             }
             contiguous = false;
@@ -954,8 +954,8 @@ impl ZSTD_window_t {
         self.nextSrc = ip.wrapping_add(srcSize);
 
         // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
-        if (ip.wrapping_add(srcSize) > (self.dictBase).wrapping_offset(self.lowLimit as isize))
-            && (ip < (self.dictBase).wrapping_offset(self.dictLimit as isize))
+        if (ip.wrapping_add(srcSize) > self.dictBase.wrapping_offset(self.lowLimit as isize))
+            && (ip < self.dictBase.wrapping_offset(self.dictLimit as isize))
         {
             let highInputIdx = ip
                 .wrapping_add(srcSize)
@@ -1059,7 +1059,7 @@ impl ZSTD_window_t {
         let minIndexToOverflowCorrect = cycleSize
             .wrapping_add(maxDist.max(cycleSize))
             .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-        let adjustment = (self.nbOverflowCorrections).wrapping_add(1);
+        let adjustment = self.nbOverflowCorrections.wrapping_add(1);
         let adjustedIndex = minIndexToOverflowCorrect
             .wrapping_mul(adjustment)
             .max(minIndexToOverflowCorrect);
