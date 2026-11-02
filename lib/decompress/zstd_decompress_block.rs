@@ -1595,16 +1595,16 @@ fn ZSTD_decodeSequence(
             // avoids branches, and avoids accidentally reading 0 bits.
             let extraBits = LONG_OFFSETS_MAX_EXTRA_BITS_32;
             offset = (ofBase as usize).wrapping_add(
-                (seqState
+                seqState
                     .DStream
-                    .read_bits_fast(u32::from(ofBits) - extraBits) as usize)
+                    .read_bits_fast(u32::from(ofBits) - extraBits)
                     << extraBits,
             );
             seqState.DStream.reload();
-            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as usize);
+            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits));
         } else {
-            offset = (ofBase as usize)
-                .wrapping_add(seqState.DStream.read_bits_fast(u32::from(ofBits)) as usize);
+            offset =
+                (ofBase as usize).wrapping_add(seqState.DStream.read_bits_fast(u32::from(ofBits)));
             if MEM_32bits() {
                 seqState.DStream.reload();
             }
@@ -1621,11 +1621,11 @@ fn ZSTD_decodeSequence(
             seqState.prevOffset[0] = offset;
         } else {
             offset = (ofBase.wrapping_add(ll0 as u32) as usize)
-                .wrapping_add(seqState.DStream.read_bits_fast(1) as usize);
+                .wrapping_add(seqState.DStream.read_bits_fast(1));
 
             let mut temp = match offset {
                 3 => seqState.prevOffset[0] - 1,
-                _ => seqState.prevOffset[offset as usize],
+                _ => seqState.prevOffset[offset],
             };
             temp = temp.wrapping_sub((temp == 0) as _); /* 0 is not valid: input corrupted => force offset to -1 => corruption detected at execSequence */
 
@@ -1642,7 +1642,7 @@ fn ZSTD_decodeSequence(
     if mlBits > 0 {
         seq.matchLength = seq
             .matchLength
-            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as usize);
+            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint));
     }
 
     if cfg!(target_pointer_width = "32")
@@ -1660,7 +1660,7 @@ fn ZSTD_decodeSequence(
 
     if llBits > 0 {
         seq.litLength = (seq.litLength)
-            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as usize);
+            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint));
     }
     if MEM_32bits() {
         seqState.DStream.reload();
@@ -2282,7 +2282,7 @@ const fn ZSTD_maxShortOffset() -> usize {
             // The maximum offBase is (1 << (STREAM_ACCUMULATOR_MIN + 1)) - 1.
             // This offBase would require STREAM_ACCUMULATOR_MIN extra bits.
             // Then we have to subtract ZSTD_REP_NUM to get the maximum possible offset.
-            let maxOffbase = ((1 as usize) << (STREAM_ACCUMULATOR_MIN + 1)).wrapping_sub(1);
+            let maxOffbase = (1usize << (STREAM_ACCUMULATOR_MIN + 1)).wrapping_sub(1);
 
             maxOffbase.wrapping_sub(ZSTD_REP_NUM as usize)
         }

@@ -2656,7 +2656,7 @@ pub(crate) fn ZSTDv05_findFrameSizeInfoLegacy(
     dBound: &mut core::ffi::c_ulonglong,
 ) {
     let mut ip = src;
-    let mut nbBlocks = 0 as usize;
+    let mut nbBlocks = 0usize;
     let mut blockProperties = blockProperties_t {
         blockType: bt_compressed,
         origSize: 0,

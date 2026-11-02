@@ -389,9 +389,9 @@ fn FSE_normalizeM2(
         return Ok(());
     }
 
-    if total / ToDistribute as usize > lowOne as usize {
+    if total / ToDistribute > lowOne as usize {
         // risk of rounding to zero
-        lowOne = (total * 3 / (ToDistribute * 2) as usize) as u32;
+        lowOne = (total * 3 / (ToDistribute * 2)) as u32;
         for (current, &c) in slice.iter_mut().zip(count) {
             if *current == NOT_YET_ASSIGNED && c <= lowOne {
                 *current = 1;

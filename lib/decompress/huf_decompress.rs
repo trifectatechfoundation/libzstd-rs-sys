@@ -279,7 +279,7 @@ unsafe fn init_remaining_dstream<'a>(
         return Err(Error::corruption_detected);
     }
 
-    let bitContainer = MEM_readLEST(args.ip[stream] as *const core::ffi::c_void) as usize;
+    let bitContainer = MEM_readLEST(args.ip[stream] as *const core::ffi::c_void);
     let bitsConsumed = args.bits[stream].trailing_zeros();
     let start = args.ilowest as *const core::ffi::c_char;
     let limitPtr = start.add(size_of::<usize>());
@@ -785,7 +785,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
             HUF_DECODER_FAST_TABLELOG as u32,
         );
 
-        if op.wrapping_add(length as usize) != segmentEnd {
+        if op.wrapping_add(length) != segmentEnd {
             return Err(Error::corruption_detected);
         }
     }
@@ -1589,7 +1589,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
             HUF_DECODER_FAST_TABLELOG as u32,
         );
 
-        if op.add(length as usize) != segmentEnd {
+        if op.add(length) != segmentEnd {
             return Err(Error::corruption_detected);
         }
     }
