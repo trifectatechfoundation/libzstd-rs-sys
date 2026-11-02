@@ -44,7 +44,7 @@ use crate::lib::compress::zstd_compress_internal::{
 };
 use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
 use crate::lib::polyfill::PointerExt;
-use crate::lib::zstd::{ParamSwitch, ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
+use crate::lib::zstd::{ParamSwitch, ZSTD_BLOCKSIZE_MAX};
 
 #[inline]
 fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
