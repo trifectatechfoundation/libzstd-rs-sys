@@ -8144,6 +8144,7 @@ unsafe fn ZSTD_compressStream_generic(
     };
 
     if (*zcs).appliedParams.inBufferMode == ZSTD_bm_stable {
+        debug_assert!(input.pos >= (*zcs).stableIn_notConsumed);
         input.pos = input.pos.wrapping_sub((*zcs).stableIn_notConsumed);
         if !ip.is_null() {
             ip = ip.sub((*zcs).stableIn_notConsumed);
@@ -8158,8 +8159,15 @@ unsafe fn ZSTD_compressStream_generic(
         assert!(!(*zcs).outBuff.is_null());
         assert!((*zcs).outBuffSize > 0);
     }
-    (input.src).is_null();
-    (output.dst).is_null();
+    if input.src.is_null() {
+        debug_assert_eq!(input.size, 0);
+    }
+    debug_assert!(input.pos <= input.size);
+    if output.dst.is_null() {
+        debug_assert_eq!(output.size, 0);
+    }
+    debug_assert!(output.pos <= output.size);
+    debug_assert!(flushMode <= ZSTD_e_end);
 
     loop {
         match (*zcs).streamStage {
