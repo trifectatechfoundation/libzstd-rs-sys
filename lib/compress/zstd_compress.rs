@@ -2692,7 +2692,7 @@ fn ZSTD_sizeof_matchState(
                 ZSTD_OPT_SIZE.wrapping_mul(size_of::<ZSTD_match_t>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
+                ZSTD_OPT_SIZE.wrapping_mul(size_of::<ZSTD_optimal_t>()),
             ));
     let lazyAdditionalSpace = if ZSTD_rowMatchFinderUsed(cParams.strategy, useRowMatchFinder) {
         ZSTD_cwksp_aligned64_alloc_size(hSize)
@@ -3130,10 +3130,8 @@ unsafe fn ZSTD_reset_matchState(
                 .cast();
         ms.opt.matchTable =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[ZSTD_match_t; ZSTD_OPT_SIZE]>()).cast();
-        ms.opt.priceTable = ZSTD_cwksp_reserve_aligned64(
-            ws,
-            (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
-        ) as *mut ZSTD_optimal_t;
+        ms.opt.priceTable =
+            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[ZSTD_optimal_t; ZSTD_OPT_SIZE]>()).cast();
     }
 
     ms.cParams = *cParams;
