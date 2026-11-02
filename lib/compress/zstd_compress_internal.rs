@@ -308,7 +308,7 @@ pub enum OptPrice {
 pub struct optState_t {
     pub litFreq: *mut [core::ffi::c_uint; MaxLit as usize + 1],
     pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
-    pub matchLengthFreq: *mut core::ffi::c_uint,
+    pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
     pub offCodeFreq: *mut core::ffi::c_uint,
     pub matchTable: *mut ZSTD_match_t,
     pub priceTable: *mut ZSTD_optimal_t,
@@ -346,12 +346,14 @@ impl optState_t {
         &mut *self.litLengthFreq
     }
 
-    pub(crate) unsafe fn matchLengthFreq(&self) -> &[core::ffi::c_uint] {
-        core::slice::from_raw_parts(self.matchLengthFreq, usize::from(MaxML) + 1)
+    pub(crate) unsafe fn matchLengthFreq(&self) -> &[core::ffi::c_uint; MaxML as usize + 1] {
+        &*self.matchLengthFreq
     }
 
-    pub(crate) unsafe fn matchLengthFreq_mut(&mut self) -> &mut [core::ffi::c_uint] {
-        core::slice::from_raw_parts_mut(self.matchLengthFreq, usize::from(MaxML) + 1)
+    pub(crate) unsafe fn matchLengthFreq_mut(
+        &mut self,
+    ) -> &mut [core::ffi::c_uint; MaxML as usize + 1] {
+        &mut *self.matchLengthFreq
     }
 
     pub(crate) unsafe fn offCodeFreq(&self) -> &[core::ffi::c_uint] {
