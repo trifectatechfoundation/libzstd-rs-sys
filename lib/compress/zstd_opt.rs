@@ -1,7 +1,7 @@
 pub type ZSTD_getAllMatchesFn = unsafe fn(
     &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     &mut ZSTD_MatchState_t,
-    *mut u32,
+    &mut u32,
     *const u8,
     *const u8,
     &RepCodes,
@@ -411,7 +411,7 @@ unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u3
 // Assumption: always within prefix (i.e. not within extDict)
 unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     ms: &ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
+    nextToUpdate3: &mut u32,
     ip: *const u8,
 ) -> u32 {
     let hashTable3 = ms.hashTable3;
@@ -594,7 +594,7 @@ pub unsafe fn ZSTD_updateTree(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *
 unsafe fn ZSTD_insertBtAndGetAllMatches(
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
+    nextToUpdate3: &mut u32,
     ip: *const u8,
     iLimit: *const u8,
     dictMode: DictMode,
@@ -957,7 +957,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u32>(
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     ms: &mut ZSTD_MatchState_t,
-    nextToUpdate3: *mut u32,
+    nextToUpdate3: &mut u32,
     ip: *const u8,
     iHighLimit: *const u8,
     rep: &RepCodes,
