@@ -2,7 +2,7 @@ use core::ffi::c_char;
 use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::entropy_common::FSE_readNCount;

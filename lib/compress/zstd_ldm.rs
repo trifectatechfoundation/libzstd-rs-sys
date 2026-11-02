@@ -56,7 +56,7 @@ pub struct LdmRollingHashState {
     pub stopMask: u64,
 }
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::xxhash::ZSTD_XXH64_slice;

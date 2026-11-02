@@ -1,7 +1,7 @@
 use core::ptr;
 
+use crate::lib::polyfill::libc::size_t;
 use core::ffi::{c_char, c_int, c_uint, c_void};
-use libc::size_t;
 
 use crate::lib::compress::hist::HIST_add;
 

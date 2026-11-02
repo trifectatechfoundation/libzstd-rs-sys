@@ -1,5 +1,5 @@
+use crate::lib::polyfill::libc::size_t;
 use core::ffi::{c_int, c_uint, c_ulonglong};
-use libc::size_t;
 
 #[cfg(doc)]
 use crate::{

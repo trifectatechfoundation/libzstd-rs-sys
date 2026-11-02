@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use core::ptr;
 
-use libc::{calloc, free, malloc};
+use crate::lib::polyfill::libc::{calloc, free, malloc};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE32, MEM_readLEST};

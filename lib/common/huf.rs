@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::fse::FSE_DECOMPRESS_WKSP_SIZE_U32;
 use crate::lib::zstd::ZSTD_btultra;

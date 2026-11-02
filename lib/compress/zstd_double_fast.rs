@@ -1,6 +1,6 @@
 use crate::lib::polyfill::{branch_barrier, PointerExt};
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, Locality};
 use crate::lib::common::mem::{MEM_read32, MEM_read64};

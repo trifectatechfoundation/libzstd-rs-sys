@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};

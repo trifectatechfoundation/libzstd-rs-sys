@@ -1,7 +1,9 @@
 use std::mem::MaybeUninit;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use libc::size_t;
+use crate::lib::polyfill::Instant;
+
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};

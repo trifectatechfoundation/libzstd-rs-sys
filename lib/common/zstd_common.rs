@@ -1,4 +1,4 @@
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::error_private::{
     ERR_getErrorCode, ERR_getErrorName, ERR_getErrorString, ERR_isError,

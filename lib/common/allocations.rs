@@ -21,7 +21,7 @@ pub(crate) unsafe fn ZSTD_customMalloc(
             let layout = core::alloc::Layout::from_size_align_unchecked(size, 16);
             std::alloc::alloc(layout).cast()
         }
-        feature = "c-allocator" => libc::malloc(size),
+        feature = "c-allocator" => crate::lib::polyfill::libc::malloc(size),
         _ => {
             panic!("no allocator specified");
         }
@@ -48,7 +48,7 @@ pub(crate) unsafe fn ZSTD_customCalloc(
             let layout = core::alloc::Layout::from_size_align_unchecked(size, 16);
             std::alloc::alloc_zeroed(layout).cast()
         }
-        feature = "c-allocator" => libc::calloc(1, size),
+        feature = "c-allocator" => crate::lib::polyfill::libc::calloc(1, size),
         _ => {
             panic!("no allocator specified");
         }
@@ -72,7 +72,7 @@ pub(crate) unsafe fn ZSTD_customFree(
                 std::alloc::dealloc(ptr.cast(), layout)
             }
             feature = "c-allocator" => {
-                libc::free(ptr);
+                crate::lib::polyfill::libc::free(ptr);
             }
             _ => {
                 panic!("no allocator specified");

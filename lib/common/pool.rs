@@ -2,7 +2,8 @@ use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
+use crate::lib::polyfill::ZSTD_MULTITHREAD;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
 use crate::lib::zstd::ZSTD_customMem;
@@ -73,7 +74,7 @@ pub(crate) unsafe fn POOL_create_advanced(
     queueSize: size_t,
     customMem: ZSTD_customMem,
 ) -> *mut POOL_ctx {
-    if numThreads == 0 {
+    if numThreads == 0 || !ZSTD_MULTITHREAD {
         return core::ptr::null_mut();
     }
     let ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
@@ -181,7 +182,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     if threadPool.is_null() {
         return 1;
     }
-    libc::memcpy(
+    crate::lib::polyfill::libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
         (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),

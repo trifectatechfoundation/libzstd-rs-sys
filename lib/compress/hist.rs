@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::size_t;
+use crate::lib::polyfill::libc::size_t;
 
 use crate::lib::common::error_private::Error;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;

@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{free, malloc, memcpy, ptrdiff_t, size_t};
+use crate::lib::polyfill::libc::{free, malloc, memcpy, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
