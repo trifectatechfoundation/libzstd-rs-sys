@@ -45,7 +45,7 @@ use crate::lib::compress::zstd_compress_internal::{
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::ZSTD_compressionParameters;
 
-pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
+pub const ZSTD_ROW_HASH_CACHE_SIZE: usize = 8;
 
 /// absolute maximum number of entries per row, for all configurations
 const ZSTD_ROW_HASH_MAX_ENTRIES: usize = 64;
@@ -965,7 +965,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
 
 pub const ZSTD_ROW_HASH_TAG_MASK: core::ffi::c_uint =
     (1u32 << ZSTD_ROW_HASH_TAG_BITS).wrapping_sub(1);
-pub const ZSTD_ROW_HASH_CACHE_MASK: core::ffi::c_int = ZSTD_ROW_HASH_CACHE_SIZE - 1;
+pub const ZSTD_ROW_HASH_CACHE_MASK: usize = ZSTD_ROW_HASH_CACHE_SIZE - 1;
 
 /// Starting from the LSB, returns the idx of the next non-zero bit.
 /// Basically counting the number of trailing zeroes.
@@ -1039,7 +1039,7 @@ unsafe fn ZSTD_row_fillHashCache(
         ) as u32;
         let row = hash >> ZSTD_ROW_HASH_TAG_BITS << rowLog;
         ZSTD_row_prefetch(hashTable, tagTable, row, rowLog);
-        ms.hashCache[(idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as usize] = hash;
+        ms.hashCache[idx as usize & ZSTD_ROW_HASH_CACHE_MASK] = hash;
     }
 }
 
@@ -1059,7 +1059,7 @@ unsafe fn ZSTD_row_nextCachedHash(
 ) -> u32 {
     let newHash = ZSTD_hashPtrSalted(
         base.wrapping_offset(idx as isize)
-            .offset(ZSTD_ROW_HASH_CACHE_SIZE as isize) as *const core::ffi::c_void,
+            .add(ZSTD_ROW_HASH_CACHE_SIZE) as *const core::ffi::c_void,
         hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
         mls,
         hashSalt,
@@ -1067,10 +1067,7 @@ unsafe fn ZSTD_row_nextCachedHash(
     let row = newHash >> ZSTD_ROW_HASH_TAG_BITS << rowLog;
     ZSTD_row_prefetch(hashTable, tagTable, row, rowLog);
 
-    core::mem::replace(
-        &mut cache[(idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as usize],
-        newHash,
-    )
+    core::mem::replace(&mut cache[idx as usize & ZSTD_ROW_HASH_CACHE_MASK], newHash)
 }
 
 /// Updates the hash table with positions starting from updateStartIdx until updateEndIdx.
@@ -1645,7 +1642,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
     let mut anchor = istart;
     let iend = istart.add(srcSize);
     let ilimit = if searchMethod == SearchMethod::RowHash {
-        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
+        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE)
     } else {
         iend.sub(8)
     };
@@ -2392,7 +2389,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
     let mut anchor = istart;
     let iend = istart.add(srcSize);
     let ilimit = if searchMethod == SearchMethod::RowHash {
-        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE as usize)
+        iend.sub(8).sub(ZSTD_ROW_HASH_CACHE_SIZE)
     } else {
         iend.sub(8)
     };
