@@ -231,9 +231,9 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     dictMode: DictMode,
 ) -> usize {
     let dms = ms.dictMatchState;
-    let dmsCParams: *const ZSTD_compressionParameters = &(*dms).cParams;
+    let dmsCParams = &(*dms).cParams;
     let dictHashTable: *const u32 = (*dms).hashTable;
-    let hashLog = (*dmsCParams).hashLog;
+    let hashLog = dmsCParams.hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let mut dictMatchIndex = *dictHashTable.add(h);
 
@@ -248,7 +248,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     let dictIndexDelta = ms.window.lowLimit.wrapping_sub(dictHighLimit);
 
     let dictBt = (*dms).chainTable;
-    let btLog = ((*dmsCParams).chainLog).wrapping_sub(1);
+    let btLog = dmsCParams.chainLog.wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let btLow = if btMask >= dictHighLimit.wrapping_sub(dictLowLimit) {
         dictLowLimit
