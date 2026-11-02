@@ -6422,19 +6422,10 @@ unsafe fn ZSTD_loadDictionaryContent(
 
     // If the dict is larger than we can reasonably index in our tables, only load the suffix.
     let maxDictSize_0 = 1
-        << (if (if params.cParams.hashLog.wrapping_add(3) > params.cParams.chainLog.wrapping_add(1)
-        {
-            params.cParams.hashLog.wrapping_add(3)
-        } else {
-            params.cParams.chainLog.wrapping_add(1)
-        }) < 31
-        {
-            (params.cParams.hashLog)
-                .wrapping_add(3)
-                .max(params.cParams.chainLog.wrapping_add(1))
-        } else {
-            31
-        });
+        << Ord::min(
+            Ord::max(params.cParams.hashLog + 3, params.cParams.chainLog + 1),
+            31,
+        );
     if srcSize > maxDictSize_0 as size_t {
         ip = iend.sub(maxDictSize_0 as usize);
         srcSize = maxDictSize_0 as size_t;
