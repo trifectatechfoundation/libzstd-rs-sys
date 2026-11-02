@@ -4790,8 +4790,10 @@ unsafe fn ZSTD_maybeRLE(seqStore: &SeqStore_t) -> bool {
     nbSeqs < 4 && nbLits < 10
 }
 
-fn ZSTD_blockState_confirmRepcodesAndEntropyTables(bs: &mut ZSTD_blockState_t) {
-    core::mem::swap(&mut bs.prevCBlock, &mut bs.nextCBlock);
+impl ZSTD_blockState_t {
+    fn confirm_repcodes_and_entropy_tables(&mut self) {
+        core::mem::swap(&mut self.prevCBlock, &mut self.nextCBlock);
+    }
 }
 
 /// Writes the block header
@@ -5459,7 +5461,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     // Sequence collection not supported when block splitting */
     if (*zc).seqCollector.collectSequences != 0 {
         ZSTD_copyBlockSequences(&mut (*zc).seqCollector, seqStore, &dRepOriginal)?;
-        ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+        (*zc).blockState.confirm_repcodes_and_entropy_tables();
         return Ok(0);
     }
 
@@ -5483,7 +5485,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         )?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
     } else {
-        ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+        (*zc).blockState.confirm_repcodes_and_entropy_tables();
         writeBlockHeader(op as *mut core::ffi::c_void, cSeqsSize, srcSize, lastBlock);
         cSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(cSeqsSize);
     }
@@ -5718,7 +5720,7 @@ unsafe fn ZSTD_compressBlock_internal(
                 &(*zc).seqStore,
                 &(*(*zc).blockState.prevCBlock).rep,
             )?;
-            ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+            (*zc).blockState.confirm_repcodes_and_entropy_tables();
             return Ok(0);
         }
 
@@ -5749,7 +5751,7 @@ unsafe fn ZSTD_compressBlock_internal(
         }
     }
     if cSize > 1 {
-        ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+        (*zc).blockState.confirm_repcodes_and_entropy_tables();
     }
 
     // We check that dictionaries have offset codes available for the first
@@ -5791,7 +5793,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
                 let maxCSize = srcSize
                     .wrapping_sub(ZSTD_minGain(srcSize, (*zc).appliedParams.cParams.strategy));
                 if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
-                    ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
+                    (*zc).blockState.confirm_repcodes_and_entropy_tables();
                     return Ok(cSize);
                 }
             }
@@ -9279,7 +9281,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 )?
             } else {
                 // Error checking and repcodes update
-                ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
+                (*cctx).blockState.confirm_repcodes_and_entropy_tables();
                 (*(*cctx).blockState.prevCBlock)
                     .entropy
                     .fse
@@ -9682,7 +9684,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         }
 
         // Error checking and repcodes update
-        ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*cctx).blockState);
+        (*cctx).blockState.confirm_repcodes_and_entropy_tables();
         (*(*cctx).blockState.prevCBlock)
             .entropy
             .fse
