@@ -3677,11 +3677,11 @@ unsafe fn ZSTD_copyCCtx_internal(
     ZSTD_cwksp_mark_tables_clean(&mut (*dstCCtx).workspace);
 
     // copy dictionary offsets
-    let srcMatchState: *const ZSTD_MatchState_t = &(*srcCCtx).blockState.matchState;
+    let srcMatchState = &(*srcCCtx).blockState.matchState;
     let dstMatchState: &mut ZSTD_MatchState_t = &mut (*dstCCtx).blockState.matchState;
-    dstMatchState.window = (*srcMatchState).window;
-    dstMatchState.nextToUpdate = (*srcMatchState).nextToUpdate;
-    dstMatchState.loadedDictEnd = (*srcMatchState).loadedDictEnd;
+    dstMatchState.window = srcMatchState.window;
+    dstMatchState.nextToUpdate = srcMatchState.nextToUpdate;
+    dstMatchState.loadedDictEnd = srcMatchState.loadedDictEnd;
 
     (*dstCCtx).dictID = (*srcCCtx).dictID;
     (*dstCCtx).dictContentSize = (*srcCCtx).dictContentSize;
