@@ -9,7 +9,6 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_count_2segments, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
     ZSTD_writeTaggedIndex, HASH_READ_SIZE, REPCODE1_TO_OFFBASE, ZSTD_SHORT_CACHE_TAG_BITS,
 };
-use crate::lib::zstd::ZSTD_compressionParameters;
 
 unsafe fn ZSTD_fillDoubleHashTableForCDict(
     ms: &mut ZSTD_MatchState_t,
