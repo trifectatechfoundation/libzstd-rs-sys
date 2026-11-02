@@ -3127,10 +3127,8 @@ unsafe fn ZSTD_reset_matchState(
         ms.opt.offCodeFreq =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxOff as usize + 1]>())
                 .cast();
-        ms.opt.matchTable = ZSTD_cwksp_reserve_aligned64(
-            ws,
-            (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
-        ) as *mut ZSTD_match_t;
+        ms.opt.matchTable =
+            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[ZSTD_match_t; ZSTD_OPT_SIZE]>()).cast();
         ms.opt.priceTable = ZSTD_cwksp_reserve_aligned64(
             ws,
             (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_optimal_t>()),
