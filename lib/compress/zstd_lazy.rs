@@ -105,9 +105,9 @@ unsafe fn ZSTD_insertDUBT1(
     btLow: u32,
     dictMode: DictMode,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
+    let cParams = &ms.cParams;
     let bt = ms.chainTable;
-    let btLog = ((*cParams).chainLog).wrapping_sub(1);
+    let btLog = cParams.chainLog.wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
@@ -131,7 +131,7 @@ unsafe fn ZSTD_insertDUBT1(
     let mut matchIndex = *smallerPtr; // this candidate is unsorted: next sorted candidate is reached through *smallerPtr, while *largerPtr contains previous unsorted candidate (which is already saved and can be overwritten)
     let mut dummy32: u32 = 0; // to be nullified at the end
     let windowValid = ms.window.lowLimit;
-    let maxDistance = 1 << (*cParams).windowLog;
+    let maxDistance = 1 << cParams.windowLog;
     let windowLow = if curr.wrapping_sub(windowValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
     } else {
