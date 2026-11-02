@@ -832,21 +832,20 @@ unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> Result<usize, Err
     let mut nextRankStart: u32 = 0;
     for n in 1..tableLog + 1 {
         let current = nextRankStart;
-        nextRankStart = nextRankStart
-            .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
-        *rankVal.as_mut_ptr().offset(n as isize) = current;
+        nextRankStart = nextRankStart.wrapping_add(rankVal[n as usize] << n.wrapping_sub(1));
+        rankVal[n as usize] = current;
     }
     for n in 0..nbSymbols {
-        let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
+        let w = huffWeight[n as usize] as u32;
         let length = (1 << w >> 1) as u32;
         let mut D = HUFv05_DEltX2 { byte: 0, nbBits: 0 };
         D.byte = n as u8;
         D.nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
-        let start = *rankVal.as_mut_ptr().offset(w as isize);
+        let start = rankVal[w as usize];
         for i in start..start.wrapping_add(length) {
             *dt.offset(i as isize) = D;
         }
-        let fresh9 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
+        let fresh9 = &mut rankVal[w as usize];
         *fresh9 = (*fresh9).wrapping_add(length);
     }
     Ok(iSize)
@@ -1776,24 +1775,14 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<usize, E
     let Q = (cSrc.len() * 16 / dst.capacity()) as u32;
     let mut Dtime: [u32; 3] = [0; 3];
     for n in 0..3 {
-        *Dtime.as_mut_ptr().offset(n as isize) = ((*(*algoTime.as_ptr().offset(Q as isize))
-            .as_ptr()
-            .offset(n as isize))
-        .tableTime)
-            .wrapping_add(
-                (*(*algoTime.as_ptr().offset(Q as isize))
-                    .as_ptr()
-                    .offset(n as isize))
-                .decode256Time
-                    * D256,
-            );
+        Dtime[n] = algoTime[Q as usize][n]
+            .tableTime
+            .wrapping_add(algoTime[Q as usize][n].decode256Time * D256);
     }
-    let fresh37 = &mut (*Dtime.as_mut_ptr().add(1));
-    *fresh37 = (*fresh37).wrapping_add(*Dtime.as_mut_ptr().add(1) >> 4);
-    let fresh38 = &mut (*Dtime.as_mut_ptr().add(2));
-    *fresh38 = (*fresh38).wrapping_add(*Dtime.as_mut_ptr().add(2) >> 3);
+    Dtime[1] = Dtime[1].wrapping_add(Dtime[1] >> 4);
+    Dtime[2] = Dtime[2].wrapping_add(Dtime[2] >> 3);
     let mut algoNb = 0;
-    if *Dtime.as_mut_ptr().add(1) < *Dtime.as_mut_ptr() {
+    if Dtime[1] < Dtime[0] {
         algoNb = 1;
     }
     decompress[algoNb](dst, cSrc)
