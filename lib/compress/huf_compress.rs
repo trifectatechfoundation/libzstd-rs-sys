@@ -173,10 +173,10 @@ impl HUF_CElt {
     const fn get_nb_bits(self) -> usize {
         self.0 & 0xff
     }
-}
 
-const fn HUF_getNbBitsFast(elt: HUF_CElt) -> usize {
-    elt.0
+    const fn get_nb_bits_fast(self) -> usize {
+        self.0
+    }
 }
 
 const fn HUF_getValue(elt: HUF_CElt) -> usize {
@@ -1010,7 +1010,7 @@ impl HUF_CStream_t {
         // We only read the low 8 bits of bitC->bitPos[idx] so it
         // doesn't matter that the high bits have noise from the value.
         let fresh21 = &mut self.bitPos[usize::from(idx)];
-        *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
+        *fresh21 = (*fresh21).wrapping_add(elt.get_nb_bits_fast());
         debug_assert!((self.bitPos[usize::from(idx)] & 0xFF) <= HUF_BITS_IN_CONTAINER);
         // The last 4-bits of elt are dirty if fast is set,
         // so we must not be overwriting bits that have already been
