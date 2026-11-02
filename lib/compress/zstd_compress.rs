@@ -5248,8 +5248,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
     seqStore: &mut SeqStore_t,
     zc: *mut ZSTD_CCtx,
 ) -> Result<usize, Error> {
-    let entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t =
-        &mut (*zc).blockSplitCtx.entropyMetadata;
+    let entropyMetadata = &mut (*zc).blockSplitCtx.entropyMetadata;
     ZSTD_buildBlockEntropyStats(
         seqStore,
         &(*(*zc).blockState.prevCBlock).entropy,
@@ -5272,7 +5271,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
-        (*entropyMetadata).hufMetadata.hType == SymbolEncodingType::Compressed,
+        entropyMetadata.hufMetadata.hType == SymbolEncodingType::Compressed,
         true,
     ))
 }
