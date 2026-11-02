@@ -8349,7 +8349,10 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
 ) -> usize {
-    if let Err(err) = ZSTD_compressStream2_internal(zcs, output, input, ZSTD_e_continue) {
+    let input = input.as_mut().unwrap();
+    let output = output.as_mut().unwrap();
+
+    if let Err(err) = compress_stream(zcs, output, input, ZSTD_e_continue) {
         return err.to_error_code();
     }
     ZSTD_nextInputSizeHint_MTorST(zcs)
@@ -8548,20 +8551,21 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
     input: *mut ZSTD_inBuffer,
     endOp: ZSTD_EndDirective,
 ) -> usize {
-    ZSTD_compressStream2_internal(cctx, output, input, endOp)
-        .unwrap_or_else(|err| err.to_error_code())
+    let input = input.as_mut().unwrap();
+    let output = output.as_mut().unwrap();
+    compress_stream(cctx, output, input, endOp).unwrap_or_else(|err| err.to_error_code())
 }
 
-unsafe fn ZSTD_compressStream2_internal(
+unsafe fn compress_stream(
     cctx: *mut ZSTD_CCtx,
-    output: *mut ZSTD_outBuffer,
-    input: *mut ZSTD_inBuffer,
+    output: &mut ZSTD_outBuffer,
+    input: &mut ZSTD_inBuffer,
     endOp: ZSTD_EndDirective,
 ) -> Result<usize, Error> {
-    if (*output).pos > (*output).size {
+    if output.pos > output.size {
         return Err(Error::dstSize_tooSmall);
     }
-    if (*input).pos > (*input).size {
+    if input.pos > input.size {
         return Err(Error::srcSize_wrong);
     }
     if endOp > ZSTD_e_end as core::ffi::c_int as u32 {
@@ -8571,7 +8575,7 @@ unsafe fn ZSTD_compressStream2_internal(
     // transparent initialization stage
     if (*cctx).streamStage == StreamStage::Init {
         // no obligation to start from pos==0
-        let inputSize = ((*input).size).wrapping_sub((*input).pos);
+        let inputSize = input.size.wrapping_sub(input.pos);
         let totalInputSize = inputSize.wrapping_add((*cctx).stableIn_notConsumed);
         if (*cctx).requestedParams.inBufferMode == ZSTD_bm_stable
             && endOp == ZSTD_e_continue
@@ -8579,15 +8583,15 @@ unsafe fn ZSTD_compressStream2_internal(
         {
             if (*cctx).stableIn_notConsumed != 0 {
                 // check stable source guarantees
-                if (*input).src != (*cctx).expectedInBuffer.src {
+                if input.src != (*cctx).expectedInBuffer.src {
                     return Err(Error::stabilityCondition_notRespected);
                 }
-                if (*input).pos != (*cctx).expectedInBuffer.size {
+                if input.pos != (*cctx).expectedInBuffer.size {
                     return Err(Error::stabilityCondition_notRespected);
                 }
             }
             // pretend input was consumed, to give a sense forward progress
-            (*input).pos = (*input).size;
+            input.pos = input.size;
             // save stable inBuffer, for later control, and flush/end
             (*cctx).expectedInBuffer = *input;
             // but actually input wasn't consumed, so keep track of position from where compression shall resume
@@ -8610,17 +8614,17 @@ unsafe fn ZSTD_compressStream2_internal(
         }
         if (*cctx).stableIn_notConsumed != 0 {
             // some early data was skipped - make it available for consumption
-            (*input).pos = ((*input).pos).wrapping_sub((*cctx).stableIn_notConsumed);
+            input.pos = input.pos.wrapping_sub((*cctx).stableIn_notConsumed);
             (*cctx).stableIn_notConsumed = 0;
         }
         loop {
-            let ipos = (*input).pos;
-            let opos = (*output).pos;
+            let ipos = input.pos;
+            let opos = output.pos;
             let result = ZSTDMT_compressStream_generic((*cctx).mtctx, output, input, endOp);
             (*cctx).consumedSrcSize = ((*cctx).consumedSrcSize)
-                .wrapping_add(((*input).pos).wrapping_sub(ipos) as core::ffi::c_ulonglong);
+                .wrapping_add(input.pos.wrapping_sub(ipos) as core::ffi::c_ulonglong);
             (*cctx).producedCSize = ((*cctx).producedCSize)
-                .wrapping_add(((*output).pos).wrapping_sub(opos) as core::ffi::c_ulonglong);
+                .wrapping_add(output.pos.wrapping_sub(opos) as core::ffi::c_ulonglong);
             flushMin = result.inspect_err(|_| {
                 ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
             })?;
@@ -8632,14 +8636,14 @@ unsafe fn ZSTD_compressStream2_internal(
             if endOp == ZSTD_e_continue {
                 // We only require some progress with ZSTD_e_continue, not maximal progress.
                 // We're done if we've consumed or produced any bytes, or either buffer is full.
-                if (*input).pos != ipos
-                    || (*output).pos != opos
-                    || (*input).pos == (*input).size
-                    || (*output).pos == (*output).size
+                if input.pos != ipos
+                    || output.pos != opos
+                    || input.pos == input.size
+                    || output.pos == output.size
                 {
                     break;
                 }
-            } else if flushMin == 0 || (*output).pos == (*output).size {
+            } else if flushMin == 0 || output.pos == output.size {
                 // We require maximal progress. We're done when the flush is complete or the
                 // output buffer is full.
                 break;
@@ -8680,8 +8684,9 @@ pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
         pos: *srcPos,
     };
 
-    // ZSTD_compressStream2() will check validity of dstPos and srcPos
-    let cErr = ZSTD_compressStream2(cctx, &mut output, &mut input, endOp);
+    // compress_stream() will check validity of dstPos and srcPos
+    let cErr =
+        compress_stream(cctx, &mut output, &mut input, endOp).unwrap_or_else(|e| e.to_error_code());
     *dstPos = output.pos;
     *srcPos = input.pos;
     cErr
@@ -9794,7 +9799,8 @@ pub unsafe extern "C" fn ZSTD_flushStream(
 ) -> usize {
     let mut input = inBuffer_forEndFlush(zcs);
     input.size = input.pos; // do not ingest more input during flush
-    ZSTD_compressStream2(zcs, output, &mut input, ZSTD_e_flush)
+    let output = output.as_mut().unwrap();
+    compress_stream(zcs, output, &mut input, ZSTD_e_flush).unwrap_or_else(|e| e.to_error_code())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_endStream))]
@@ -9803,8 +9809,8 @@ pub unsafe extern "C" fn ZSTD_endStream(
     output: *mut ZSTD_outBuffer,
 ) -> usize {
     let mut input = inBuffer_forEndFlush(zcs);
-    let remainingToFlush = match ZSTD_compressStream2_internal(zcs, output, &mut input, ZSTD_e_end)
-    {
+    let output = output.as_mut().unwrap();
+    let remainingToFlush = match compress_stream(zcs, output, &mut input, ZSTD_e_end) {
         Ok(remaining) => remaining,
         Err(err) => return err.to_error_code(),
     };
