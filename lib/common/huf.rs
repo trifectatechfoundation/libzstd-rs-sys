@@ -27,7 +27,9 @@ const _: () = assert!(
 
 pub(crate) const HUF_CTABLEBOUND: usize = 129;
 
-pub(crate) type HUF_CElt = usize;
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub(crate) struct HUF_CElt(pub(crate) usize);
 
 pub const fn HUF_CTABLE_SIZE_ST(maxSymbolValue: usize) -> usize {
     maxSymbolValue + 2 /* Use tables of usize, for proper alignment */
@@ -102,7 +104,7 @@ impl Default for CTable {
     fn default() -> Self {
         Self {
             header: HUF_CTableHeader::default(),
-            elements: [0; _],
+            elements: [HUF_CElt(0); _],
         }
     }
 }
