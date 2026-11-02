@@ -5013,7 +5013,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     prevEntropy: &ZSTD_entropyCTables_t,
     nextEntropy: &mut ZSTD_entropyCTables_t,
     cctxParams: &ZSTD_CCtx_params,
-    entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t,
+    entropyMetadata: &mut ZSTD_entropyCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: usize,
 ) -> Result<(), Error> {
@@ -5026,23 +5026,23 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         0
     };
 
-    (*entropyMetadata).hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
+    entropyMetadata.hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
         core::slice::from_raw_parts(seqStorePtr.litStart, litSize),
         &prevEntropy.huf,
         &mut nextEntropy.huf,
-        &mut (*entropyMetadata).hufMetadata,
+        &mut entropyMetadata.hufMetadata,
         cctxParams.literals_compression_is_disabled(),
         workspace,
         wkspSize,
         hufFlags,
     )?;
 
-    (*entropyMetadata).fseMetadata.fseTablesSize = ZSTD_buildBlockEntropyStats_sequences(
+    entropyMetadata.fseMetadata.fseTablesSize = ZSTD_buildBlockEntropyStats_sequences(
         seqStorePtr,
         &prevEntropy.fse,
         &mut nextEntropy.fse,
         cctxParams,
-        &mut (*entropyMetadata).fseMetadata,
+        &mut entropyMetadata.fseMetadata,
         workspace,
         wkspSize,
     )?;
