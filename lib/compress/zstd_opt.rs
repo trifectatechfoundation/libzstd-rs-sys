@@ -167,7 +167,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 // generate literals statistics from huffman table
                 let symbolCosts = opt_state.symbolCosts;
                 let mut litSum = 0u32;
-                for (lit, freq) in opt_state.litFreq_mut().iter_mut().enumerate() {
+                for (lit, freq) in opt_state.litFreq.iter_mut().enumerate() {
                     let scaleLog = 11u32; // scale to 2K
                     let bitCost = HUF_getNbBitsFromCTable(&(*symbolCosts).huf.CTable, lit as u32);
                     *freq = if bitCost != 0 {
@@ -227,12 +227,12 @@ unsafe fn ZSTD_rescaleFreqs(
                 // base initial cost of literals on direct frequency within src
                 let mut lit_0 = MaxLit;
                 HIST_count_simple(
-                    opt_state.litFreq.cast(),
+                    opt_state.litFreq.as_mut_ptr(),
                     &mut lit_0,
                     core::slice::from_raw_parts(src, srcSize), // use raw first block to init statistics
                 );
                 opt_state.litSum =
-                    ZSTD_downscaleStats(opt_state.litFreq_mut(), 8, BaseDirective::Possible);
+                    ZSTD_downscaleStats(&mut opt_state.litFreq, 8, BaseDirective::Possible);
             }
 
             let baseLLfreqs: [u32; MaxLL as usize + 1] = [
@@ -255,7 +255,7 @@ unsafe fn ZSTD_rescaleFreqs(
     } else {
         // new block: scale down accumulated statistics
         if compressedLiterals {
-            opt_state.litSum = ZSTD_scaleStats(opt_state.litFreq_mut(), 12);
+            opt_state.litSum = ZSTD_scaleStats(&mut opt_state.litFreq, 12);
         }
         opt_state.litLengthSum = ZSTD_scaleStats(opt_state.litLengthFreq_mut(), 11);
         opt_state.matchLengthSum = ZSTD_scaleStats(opt_state.matchLengthFreq_mut(), 11);
@@ -286,7 +286,7 @@ unsafe fn ZSTD_rawLiteralsCost(
     }
 
     // dynamic statistics
-    let litFreq = opt_state.litFreq();
+    let litFreq = &opt_state.litFreq;
     let mut price = opt_state.litSumBasePrice * litLength;
     let litPriceMax = opt_state.litSumBasePrice.wrapping_sub(BITCOST_MULTIPLIER);
     for u in 0..litLength {
@@ -384,7 +384,7 @@ unsafe fn ZSTD_updateStats(
 ) {
     // literals
     if ZSTD_compressedLiterals(opt_state) {
-        let litFreq = opt_state.litFreq_mut();
+        let litFreq = &mut opt_state.litFreq;
         for u in 0..litLength {
             let freq = &mut litFreq[usize::from(*literals.add(u as usize))];
             *freq = freq.wrapping_add(ZSTD_LITFREQ_ADD);

@@ -305,9 +305,8 @@ pub enum OptPrice {
 }
 
 #[repr(C)]
-#[derive(Default)]
 pub struct optState_t {
-    pub litFreq: *mut [core::ffi::c_uint; MaxLit as usize + 1],
+    pub litFreq: [core::ffi::c_uint; MaxLit as usize + 1],
     pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
     pub offCodeFreq: *mut [core::ffi::c_uint; MaxOff as usize + 1],
@@ -326,17 +325,33 @@ pub struct optState_t {
     pub literalCompressionMode: ParamSwitch,
 }
 
+impl Default for optState_t {
+    fn default() -> Self {
+        Self {
+            litFreq: [0; MaxLit as usize + 1],
+            litLengthFreq: core::ptr::null_mut(),
+            matchLengthFreq: core::ptr::null_mut(),
+            offCodeFreq: core::ptr::null_mut(),
+            matchTable: core::ptr::null_mut(),
+            priceTable: core::ptr::null_mut(),
+            litSum: 0,
+            litLengthSum: 0,
+            matchLengthSum: 0,
+            offCodeSum: 0,
+            litSumBasePrice: 0,
+            litLengthSumBasePrice: 0,
+            matchLengthSumBasePrice: 0,
+            offCodeSumBasePrice: 0,
+            priceType: OptPrice::default(),
+            symbolCosts: core::ptr::null(),
+            literalCompressionMode: ParamSwitch::default(),
+        }
+    }
+}
+
 /// The statistics tables are reserved in the workspace by `ZSTD_reset_matchState`, and so
 /// are only valid when the strategy is at least `ZSTD_btopt`.
 impl optState_t {
-    pub(crate) unsafe fn litFreq(&self) -> &[core::ffi::c_uint; MaxLit as usize + 1] {
-        &*self.litFreq
-    }
-
-    pub(crate) unsafe fn litFreq_mut(&mut self) -> &mut [core::ffi::c_uint; MaxLit as usize + 1] {
-        &mut *self.litFreq
-    }
-
     pub(crate) unsafe fn litLengthFreq(&self) -> &[core::ffi::c_uint; MaxLL as usize + 1] {
         &*self.litLengthFreq
     }

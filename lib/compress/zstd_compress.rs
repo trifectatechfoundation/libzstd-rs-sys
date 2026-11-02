@@ -719,8 +719,8 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_internal::{
     repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
-    LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
-    MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
+    LitHufLog, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, MaxSeq,
+    OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH,
     ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_FSE_HEADERS_SIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
     ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
@@ -2686,9 +2686,6 @@ fn ZSTD_sizeof_matchState(
                 ((MaxOff + 1) as size_t).wrapping_mul(size_of::<u32>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                ((1 << Litbits) as size_t).wrapping_mul(size_of::<u32>()),
-            ))
-            .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
                 (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
@@ -3116,8 +3113,6 @@ unsafe fn ZSTD_reset_matchState(
 
     // opt parser space
     if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
-        ms.opt.litFreq =
-            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; 1 << Litbits]>()).cast();
         ms.opt.litLengthFreq =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxLL as usize + 1]>())
                 .cast();
