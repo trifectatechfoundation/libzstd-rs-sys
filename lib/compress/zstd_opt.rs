@@ -335,7 +335,7 @@ unsafe fn ZSTD_litLengthPrice(
 /// @offBase: sumtype, representing an offset or a repcode, and using numeric representation of ZSTD_storeSeq()
 /// @optLevel: when <2, favors small offset for decompression speed (improved cache efficiency)
 #[inline(always)]
-unsafe fn ZSTD_getMatchPrice(
+fn ZSTD_getMatchPrice(
     offBase: u32,
     matchLength: u32,
     opt_state: &optState_t,
