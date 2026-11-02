@@ -965,13 +965,15 @@ pub struct HUF_CStream_t {
 }
 
 impl HUF_CStream_t {
-    pub unsafe fn new(startPtr: *mut c_void, dstCapacity: size_t) -> Result<Self, Error> {
+    pub fn new(startPtr: *mut c_void, dstCapacity: size_t) -> Result<Self, Error> {
         if dstCapacity <= size_of::<size_t>() {
             return Err(Error::dstSize_tooSmall);
         }
 
         let startPtr = startPtr as *mut u8;
-        let endPtr = startPtr.add(dstCapacity).sub(size_of::<size_t>());
+        let endPtr = startPtr
+            .wrapping_add(dstCapacity)
+            .wrapping_sub(size_of::<size_t>());
 
         Ok(HUF_CStream_t {
             bitContainer: [0; 2],
