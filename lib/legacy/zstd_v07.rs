@@ -2674,16 +2674,16 @@ unsafe fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     if dict.len() < 12 {
         return Err(Error::dictionary_corrupted);
     }
-    *dctx.rep.as_mut_ptr() = MEM_readLE32(dict.as_ptr().cast());
-    if *dctx.rep.as_mut_ptr() == 0 || *dctx.rep.as_mut_ptr() as usize >= dict.len() {
+    dctx.rep[0] = MEM_readLE32(dict.as_ptr().cast());
+    if dctx.rep[0] == 0 || dctx.rep[0] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    *dctx.rep.as_mut_ptr().add(1) = MEM_readLE32(dict[4..].as_ptr().cast());
-    if *dctx.rep.as_mut_ptr().add(1) == 0 || *dctx.rep.as_mut_ptr().add(1) as usize >= dict.len() {
+    dctx.rep[1] = MEM_readLE32(dict[4..].as_ptr().cast());
+    if dctx.rep[1] == 0 || dctx.rep[1] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
-    *dctx.rep.as_mut_ptr().add(2) = MEM_readLE32(dict[8..].as_ptr().cast());
-    if *dctx.rep.as_mut_ptr().add(2) == 0 || *dctx.rep.as_mut_ptr().add(2) as usize >= dict.len() {
+    dctx.rep[2] = MEM_readLE32(dict[8..].as_ptr().cast());
+    if dctx.rep[2] == 0 || dctx.rep[2] as usize >= dict.len() {
         return Err(Error::dictionary_corrupted);
     }
     dict = &dict[12..];
