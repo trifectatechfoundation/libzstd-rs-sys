@@ -1433,9 +1433,9 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 prefetch_read_data(dictBase.wrapping_add(matchIndex as usize), Locality::L1);
             }
 
-            *matchBuffer.as_mut_ptr().add(numMatches) = matchIndex;
-            numMatches = numMatches.wrapping_add(1);
-            nbAttempts = nbAttempts.wrapping_sub(1);
+            matchBuffer[numMatches] = matchIndex;
+            numMatches += 1;
+            nbAttempts -= 1;
         }
         matches &= matches.wrapping_sub(1);
     }
@@ -1448,12 +1448,11 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     ms.nextToUpdate = ms.nextToUpdate.wrapping_add(1);
 
     // Return the longest match
-    for currMatch in 0..numMatches {
-        let matchIndex_0 = *matchBuffer.as_mut_ptr().add(currMatch);
+    for &matchIndex in &matchBuffer[..numMatches] {
         let mut currentMl = 0;
 
-        if dictMode != DictMode::ExtDict || matchIndex_0 >= dictLimit {
-            let match_0 = base.wrapping_offset(matchIndex_0 as isize);
+        if dictMode != DictMode::ExtDict || matchIndex >= dictLimit {
+            let match_0 = base.wrapping_offset(matchIndex as isize);
             // read 4B starting from (match + ml + 1 - sizeof(U32))
             if MEM_read32(match_0.add(ml).sub(3) as *const core::ffi::c_void)
                 == MEM_read32(ip.add(ml).sub(3) as *const core::ffi::c_void)
@@ -1461,7 +1460,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 currentMl = ZSTD_count(ip, match_0, iLimit);
             }
         } else {
-            let match_1 = dictBase.wrapping_offset(matchIndex_0 as isize);
+            let match_1 = dictBase.wrapping_offset(matchIndex as isize);
             if MEM_read32(match_1 as *const core::ffi::c_void)
                 == MEM_read32(ip as *const core::ffi::c_void)
             {
@@ -1475,7 +1474,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // Save best solution
         if currentMl > ml {
             ml = currentMl;
-            *offsetPtr = curr.wrapping_sub(matchIndex_0).wrapping_add(ZSTD_REP_NUM) as usize;
+            *offsetPtr = curr.wrapping_sub(matchIndex).wrapping_add(ZSTD_REP_NUM) as usize;
             if ip.add(currentMl) == iLimit {
                 break; // best possible, avoids read overflow on next attempt
             }
