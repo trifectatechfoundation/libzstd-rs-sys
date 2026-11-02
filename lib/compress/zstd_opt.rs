@@ -227,7 +227,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 // base initial cost of literals on direct frequency within src
                 let mut lit_0 = MaxLit;
                 HIST_count_simple(
-                    opt_state.litFreq,
+                    opt_state.litFreq.cast(),
                     &mut lit_0,
                     core::slice::from_raw_parts(src, srcSize), // use raw first block to init statistics
                 );

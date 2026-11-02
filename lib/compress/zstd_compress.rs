@@ -719,7 +719,7 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_internal::{
     repStartValue, BlockType, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm, LL_defaultNormLog,
-    LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff,
+    LitHufLog, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxLit, MaxML, MaxOff,
     MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog, RepCodes, SymbolEncodingType,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, LONGNBSEQ, MINMATCH, WILDCOPY_OVERLENGTH,
     ZSTD_BLOCKHEADERSIZE, ZSTD_MAX_FSE_HEADERS_SIZE, ZSTD_MAX_HUF_HEADER_SIZE, ZSTD_OPT_NUM,
@@ -2686,7 +2686,7 @@ fn ZSTD_sizeof_matchState(
                 ((MaxOff + 1) as size_t).wrapping_mul(size_of::<u32>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                ((1 << Litbits) as size_t).wrapping_mul(size_of::<u32>()),
+                (usize::from(MaxLit) + 1).wrapping_mul(size_of::<u32>()),
             ))
             .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
                 (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
@@ -3116,10 +3116,9 @@ unsafe fn ZSTD_reset_matchState(
 
     // opt parser space
     if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
-        ms.opt.litFreq = ZSTD_cwksp_reserve_aligned64(
-            ws,
-            ((1 << Litbits) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>()),
-        ) as *mut core::ffi::c_uint;
+        ms.opt.litFreq =
+            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxLit as usize + 1]>())
+                .cast();
         ms.opt.litLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
             (usize::from(MaxLL) + 1).wrapping_mul(size_of::<core::ffi::c_uint>()),
