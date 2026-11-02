@@ -1780,7 +1780,7 @@ unsafe fn ZSTDMT_createCompressionJob(
 /// - or an error
 unsafe fn ZSTDMT_flushProduced(
     mtctx: *mut ZSTDMT_CCtx,
-    output: *mut ZSTD_outBuffer,
+    output: &mut ZSTD_outBuffer,
     blockToFlush: bool,
     end: ZSTD_EndDirective,
 ) -> Result<usize, Error> {
@@ -1841,17 +1841,17 @@ unsafe fn ZSTDMT_flushProduced(
         // compression is ongoing or completed
         let toFlush = cSize
             .wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
-            .min(((*output).size).wrapping_sub((*output).pos));
+            .min(output.size.wrapping_sub(output.pos));
         if toFlush > 0 {
             core::ptr::copy_nonoverlapping(
                 ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start)
                     .cast::<u8>()
                     .add((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed),
-                ((*output).dst).cast::<u8>().add((*output).pos),
+                output.dst.cast::<u8>().add(output.pos),
                 toFlush,
             );
         }
-        (*output).pos = ((*output).pos).wrapping_add(toFlush);
+        output.pos = output.pos.wrapping_add(toFlush);
         let fresh11 = &mut (*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed;
         *fresh11 = (*fresh11).wrapping_add(toFlush); // can write: this value is only used by mtctx
 
@@ -2144,8 +2144,8 @@ pub unsafe fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> usize {
 /// The minimum amount of data remaining to flush, 0 if none
 pub unsafe fn ZSTDMT_compressStream_generic(
     mtctx: *mut ZSTDMT_CCtx,
-    output: *mut ZSTD_outBuffer,
-    input: *mut ZSTD_inBuffer,
+    output: &mut ZSTD_outBuffer,
+    input: &mut ZSTD_inBuffer,
     mut endOp: ZSTD_EndDirective,
 ) -> Result<usize, Error> {
     let mut forwardInputProgress = false;
@@ -2156,7 +2156,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     }
 
     // fill input buffer
-    if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
+    if (*mtctx).jobReady == 0 && input.size > input.pos {
         // support NULL input
         if ((*mtctx).inBuff.buffer.start).is_null() && !ZSTDMT_tryGetInputRange(mtctx) {
             // It is only possible for this operation to fail if there are
@@ -2169,18 +2169,18 @@ pub unsafe fn ZSTDMT_compressStream_generic(
                 endOp = ZSTD_e_flush;
             }
             core::ptr::copy_nonoverlapping(
-                ((*input).src).cast::<u8>().add((*input).pos),
+                input.src.cast::<u8>().add(input.pos),
                 ((*mtctx).inBuff.buffer.start)
                     .cast::<u8>()
                     .add((*mtctx).inBuff.filled),
                 syncPoint.toLoad,
             );
-            (*input).pos = ((*input).pos).wrapping_add(syncPoint.toLoad);
+            input.pos = input.pos.wrapping_add(syncPoint.toLoad);
             (*mtctx).inBuff.filled = ((*mtctx).inBuff.filled).wrapping_add(syncPoint.toLoad);
             forwardInputProgress = syncPoint.toLoad > 0;
         }
     }
-    if (*input).pos < (*input).size && endOp == ZSTD_e_end {
+    if input.pos < input.size && endOp == ZSTD_e_end {
         // Can't end yet because the input is not fully consumed.
         // We are in one of these cases:
         // - mtctx->inBuff is NULL & empty: we couldn't get an input buffer so don't create a new job.
@@ -2207,7 +2207,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
         !forwardInputProgress, // block if there was no forward input progress
         endOp,
     )?;
-    if (*input).pos < (*input).size {
+    if input.pos < input.size {
         return Ok(remainingToFlush.max(1)); // input not consumed: do not end flush yet
     }
     Ok(remainingToFlush)
