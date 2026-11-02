@@ -263,39 +263,28 @@ unsafe fn ZSTD_rescaleFreqs(
     ZSTD_setBasePrices(opt_state, optLevel);
 }
 
-/// price of literals (only) in specified segment (which length can be 0).
+/// price of a single literal.
 /// does not include price of literalLength symbol
-unsafe fn ZSTD_rawLiteralsCost(
-    literals: *const u8,
-    litLength: u32,
+unsafe fn ZSTD_rawLiteralCost(
+    literal: u8,
     opt_state: &optState_t,
     optLevel: core::ffi::c_int,
 ) -> u32 {
-    if litLength == 0 {
-        return 0;
-    }
-
     if !ZSTD_compressedLiterals(opt_state) {
-        return (litLength << 3) * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
+        return 8 * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
 
     if opt_state.priceType == OptPrice::Predef {
-        return litLength * 6 * BITCOST_MULTIPLIER; // 6 bit per literal - no statistic used
+        return 6 * BITCOST_MULTIPLIER; // 6 bit per literal - no statistic used
     }
 
     // dynamic statistics
-    let litFreq = opt_state.litFreq();
-    let mut price = opt_state.litSumBasePrice * litLength;
     let litPriceMax = opt_state.litSumBasePrice.wrapping_sub(BITCOST_MULTIPLIER);
-    for u in 0..litLength {
-        let litPrice = Ord::min(
-            WEIGHT(litFreq[usize::from(*literals.add(u as usize))], optLevel),
-            litPriceMax,
-        );
-        price = price.wrapping_sub(litPrice);
-    }
-
-    price
+    let litPrice = Ord::min(
+        WEIGHT(opt_state.litFreq()[usize::from(literal)], optLevel),
+        litPriceMax,
+    );
+    opt_state.litSumBasePrice.wrapping_sub(litPrice)
 }
 
 /// Cost of literalLength symbol
@@ -1294,7 +1283,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                     // Fix current position with one literal if cheaper
                     let litlen_0 = opt[cur - 1].litlen.wrapping_add(1);
                     let price = opt[cur - 1].price
-                        + ZSTD_rawLiteralsCost(ip.add(cur).sub(1), 1, &ms.opt, OPT_LEVEL)
+                        + ZSTD_rawLiteralCost(*ip.add(cur).sub(1), &ms.opt, OPT_LEVEL)
                             as core::ffi::c_int
                         + (ZSTD_litLengthPrice(litlen_0, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                             - ZSTD_litLengthPrice(litlen_0.wrapping_sub(1), &ms.opt, OPT_LEVEL)
@@ -1313,13 +1302,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: core::ffi::c_int>(
                         {
                             // check next position, in case it would be cheaper
                             let with1literal = prevMatch.price
-                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                + ZSTD_rawLiteralCost(*ip.add(cur), &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as core::ffi::c_int
                                     - ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL)
                                         as core::ffi::c_int);
                             let withMoreLiterals = price
-                                + ZSTD_rawLiteralsCost(ip.add(cur), 1, &ms.opt, OPT_LEVEL)
+                                + ZSTD_rawLiteralCost(*ip.add(cur), &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int
                                 + (ZSTD_litLengthPrice(litlen_0.wrapping_add(1), &ms.opt, OPT_LEVEL)
                                     as core::ffi::c_int
