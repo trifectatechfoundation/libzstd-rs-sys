@@ -41,7 +41,6 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_index_overlap_check, ZSTD_storeSeq, REPCODE1_TO_OFFBASE, ZSTD_DUBT_UNSORTED_MARK,
 };
 use crate::lib::polyfill::PointerExt;
-use crate::lib::zstd::ZSTD_compressionParameters;
 
 pub const ZSTD_ROW_HASH_CACHE_SIZE: usize = 8;
 
