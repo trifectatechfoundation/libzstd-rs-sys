@@ -817,16 +817,18 @@ use crate::lib::zstd::{
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 
-#[inline]
-fn ZSTD_cwksp_assert_internal_consistency(ws: &mut ZSTD_cwksp) {
-    assert!(ws.workspace <= ws.objectEnd);
-    assert!(ws.objectEnd <= ws.tableEnd);
-    assert!(ws.objectEnd <= ws.tableValidEnd);
-    assert!(ws.tableEnd <= ws.allocStart);
-    assert!(ws.tableValidEnd <= ws.allocStart);
-    assert!(ws.allocStart <= ws.workspaceEnd);
-    assert!(ws.initOnceStart <= ZSTD_cwksp_initialAllocStart(ws));
-    assert!(ws.workspace <= ws.initOnceStart);
+impl ZSTD_cwksp {
+    #[inline]
+    fn assert_internal_consistency(&mut self) {
+        assert!(self.workspace <= self.objectEnd);
+        assert!(self.objectEnd <= self.tableEnd);
+        assert!(self.objectEnd <= self.tableValidEnd);
+        assert!(self.tableEnd <= self.allocStart);
+        assert!(self.tableValidEnd <= self.allocStart);
+        assert!(self.allocStart <= self.workspaceEnd);
+        assert!(self.initOnceStart <= ZSTD_cwksp_initialAllocStart(self));
+        assert!(self.workspace <= self.initOnceStart);
+    }
 }
 
 /// Align must be a power of 2.
@@ -903,7 +905,7 @@ fn ZSTD_cwksp_reserve_internal_buffer_space(
 ) -> *mut core::ffi::c_void {
     let alloc = ws.allocStart.wrapping_byte_sub(bytes);
     let bottom = ws.tableEnd;
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
     if alloc < bottom {
         ws.allocFailed = 1;
         return core::ptr::null_mut();
@@ -937,7 +939,7 @@ fn ZSTD_cwksp_internal_advance_phase(
             ws.tableValidEnd = Ord::max(ws.tableValidEnd, ws.tableEnd);
         }
         ws.phase = phase;
-        ZSTD_cwksp_assert_internal_consistency(ws);
+        ws.assert_internal_consistency();
     }
     Ok(())
 }
@@ -1011,7 +1013,7 @@ fn ZSTD_cwksp_reserve_table(ws: &mut ZSTD_cwksp, bytes: usize) -> *mut core::ffi
     let alloc = ws.tableEnd;
     let end = alloc.wrapping_byte_add(bytes);
     let top = ws.allocStart;
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
     if end > top {
         ws.allocFailed = 1;
         return core::ptr::null_mut();
@@ -1027,7 +1029,7 @@ fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: usize) -> *mut core::ff
     let roundedBytes = ZSTD_cwksp_align(bytes, size_of::<*mut core::ffi::c_void>());
     let alloc = ws.objectEnd;
     let end = alloc.wrapping_byte_add(roundedBytes);
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
     if ws.phase != CwkspAllocPhase::Objects || end > ws.workspaceEnd {
         ws.allocFailed = 1;
         return core::ptr::null_mut();
@@ -1041,13 +1043,13 @@ fn ZSTD_cwksp_reserve_object(ws: &mut ZSTD_cwksp, bytes: usize) -> *mut core::ff
 #[inline]
 fn ZSTD_cwksp_mark_tables_dirty(ws: &mut ZSTD_cwksp) {
     ws.tableValidEnd = ws.objectEnd;
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
 }
 
 #[inline]
 fn ZSTD_cwksp_mark_tables_clean(ws: &mut ZSTD_cwksp) {
     ws.tableValidEnd = Ord::max(ws.tableValidEnd, ws.tableEnd);
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
 }
 
 /// Zero the part of the allocated tables not already marked clean.
@@ -1067,7 +1069,7 @@ unsafe fn ZSTD_cwksp_clean_tables(ws: &mut ZSTD_cwksp) {
 #[inline]
 fn ZSTD_cwksp_clear_tables(ws: &mut ZSTD_cwksp) {
     ws.tableEnd = ws.objectEnd;
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
 }
 
 /// Invalidates all buffer, aligned, and table allocations.
@@ -1078,7 +1080,7 @@ fn ZSTD_cwksp_clear(ws: &mut ZSTD_cwksp) {
     ws.allocStart = ZSTD_cwksp_initialAllocStart(ws);
     ws.allocFailed = 0;
     ws.phase = Ord::min(ws.phase, CwkspAllocPhase::AlignedInitOnce);
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
 }
 
 #[inline]
@@ -1105,7 +1107,7 @@ fn ZSTD_cwksp_init(
     ws.isStatic = isStatic;
     ZSTD_cwksp_clear(ws);
     ws.workspaceOversizedDuration = 0;
-    ZSTD_cwksp_assert_internal_consistency(ws);
+    ws.assert_internal_consistency();
 }
 
 #[inline]
