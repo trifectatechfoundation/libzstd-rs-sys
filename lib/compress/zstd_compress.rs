@@ -3116,10 +3116,8 @@ unsafe fn ZSTD_reset_matchState(
 
     // opt parser space
     if forWho == ResetTarget::CCtx && cParams.strategy >= ZSTD_btopt {
-        ms.opt.litFreq = ZSTD_cwksp_reserve_aligned64(
-            ws,
-            ((1 << Litbits) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>()),
-        ) as *mut core::ffi::c_uint;
+        ms.opt.litFreq =
+            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; 1 << Litbits]>()).cast();
         ms.opt.litLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
             (usize::from(MaxLL) + 1).wrapping_mul(size_of::<core::ffi::c_uint>()),
