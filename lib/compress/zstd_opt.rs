@@ -1,5 +1,5 @@
 pub type ZSTD_getAllMatchesFn = unsafe fn(
-    &mut [ZSTD_match_t],
+    &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     &mut ZSTD_MatchState_t,
     *mut u32,
     *const u8,
@@ -37,7 +37,7 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore,
+    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
 };
 use crate::lib::compress::zstd_compress_internal::{
     optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
@@ -613,7 +613,7 @@ pub unsafe fn ZSTD_updateTree(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *
 
 #[inline(always)]
 unsafe fn ZSTD_insertBtAndGetAllMatches(
-    matches: &mut [ZSTD_match_t],
+    matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
     ip: *const u8,
@@ -976,7 +976,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
 
 #[inline(always)]
 unsafe fn ZSTD_btGetAllMatches_internal<DICT_MODE: DictModeMarker, const MLS: u32>(
-    matches: &mut [ZSTD_match_t],
+    matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     ms: &mut ZSTD_MatchState_t,
     nextToUpdate3: *mut u32,
     ip: *const u8,
@@ -1091,7 +1091,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 /// based on it's 'matchStartPosInBlock' and 'matchEndPosInBlock',
 /// into 'matches'. Maintains the correct ordering of 'matches'.
 unsafe fn ZSTD_optLdm_maybeAddMatch(
-    matches: &mut [ZSTD_match_t],
+    matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
     optLdm: &ZSTD_optLdm_t,
     currPosInBlock: u32,
@@ -1123,7 +1123,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
 /// Wrapper function to update ldm seq store and call ldm functions as necessary.
 unsafe fn ZSTD_optLdm_processMatchCandidate(
     optLdm: &mut ZSTD_optLdm_t,
-    matches: &mut [ZSTD_match_t],
+    matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
     currPosInBlock: u32,
     remainingBytes: u32,
