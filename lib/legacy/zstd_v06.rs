@@ -2800,7 +2800,7 @@ unsafe fn ZSTDv06_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
     }
     if offset < ZSTDv06_REP_NUM as usize {
         if llCode == 0 && offset <= 1 {
-            offset = (1 as usize).wrapping_sub(offset);
+            offset = 1usize.wrapping_sub(offset);
         }
         if offset != 0 {
             let temp = *((*seqState).prevOffset).as_mut_ptr().add(offset);
@@ -3229,7 +3229,7 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
 ) {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
-    let mut nbBlocks = 0 as usize;
+    let mut nbBlocks = 0usize;
     let mut blockProperties = {
         blockProperties_t {
             blockType: bt_compressed,
@@ -3695,7 +3695,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                         }
                     }
 
-                    let neededOutSize = ((1 as usize) << (*zbd).fParams.windowLog)
+                    let neededOutSize = (1usize << (*zbd).fParams.windowLog)
                         .wrapping_add(blockSize)
                         .wrapping_add((WILDCOPY_OVERLENGTH * 2) as usize);
                     if (*zbd).outBuffSize < neededOutSize {

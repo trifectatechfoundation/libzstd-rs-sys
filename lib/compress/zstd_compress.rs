@@ -1270,7 +1270,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     if !ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
         ((8usize << 10) + 512)
-            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((MaxSeq + 2) as usize))
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(ZSTD_SLIPBLOCK_WORKSPACESIZE)
             .wrapping_add(2usize.wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
     ) {
@@ -4027,8 +4027,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let mut op = ostart;
 
     entropyWorkspace = count.add(MaxSeq + 1) as *mut core::ffi::c_void;
-    entropyWkspSize = (entropyWkspSize as usize)
-        .wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
+    entropyWkspSize =
+        entropyWkspSize.wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
 
     // Compress literals
     let numSequences = seqStorePtr

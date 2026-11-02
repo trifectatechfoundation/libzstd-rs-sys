@@ -594,9 +594,9 @@ fn COVER_ctx_init<'a>(
     }
     ctx.samples = samples;
     ctx.samplesSizes = samplesSizes;
-    ctx.nbSamples = nbSamples as usize;
-    ctx.nbTrainSamples = nbTrainSamples as usize;
-    ctx.nbTestSamples = nbTestSamples as usize;
+    ctx.nbSamples = nbSamples;
+    ctx.nbTrainSamples = nbTrainSamples;
+    ctx.nbTestSamples = nbTestSamples;
     ctx.suffixSize = trainingSamplesSize
         .wrapping_sub(if d as usize > size_of::<u64>() {
             d as usize
@@ -689,7 +689,7 @@ fn COVER_buildDictionary<'a>(
         4,
     );
     let maxZeroScoreRun = (epochs.num >> 3).clamp(10, 100) as usize;
-    let mut zeroScoreRun = 0 as usize;
+    let mut zeroScoreRun = 0usize;
     let mut last_update_time = Instant::now();
     let displayLevel = ctx.displayLevel;
     if displayLevel >= 2 {
@@ -722,7 +722,7 @@ fn COVER_buildDictionary<'a>(
 
             tail = tail.wrapping_sub(segmentSize);
             dict[tail..][..segmentSize].copy_from_slice(as_uninit(
-                &ctx.samples[segment.begin as usize..][..segmentSize as usize],
+                &ctx.samples[segment.begin as usize..][..segmentSize],
             ));
 
             if displayLevel >= 2 {

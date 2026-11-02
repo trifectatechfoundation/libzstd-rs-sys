@@ -65,7 +65,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
 
     core::ptr::copy_nonoverlapping(src.as_ptr(), ostart.add(flSize), src.len());
 
-    Ok(src.len().wrapping_add(flSize as usize))
+    Ok(src.len().wrapping_add(flSize))
 }
 
 fn allBytesIdentical(src: &[u8]) -> bool {

@@ -1413,7 +1413,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
         }
 
         frameSizeInfo.nbBlocks = nbBlocks;
-        frameSizeInfo.compressedSize = ip as usize;
+        frameSizeInfo.compressedSize = ip;
         frameSizeInfo.decompressedBound = if zfh.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN {
             zfh.frameContentSize
         } else {

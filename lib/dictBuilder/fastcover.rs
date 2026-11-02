@@ -308,7 +308,7 @@ fn FASTCOVER_buildDictionary<'a>(
     let epochs = COVER_computeEpochs(dict.len() as u32, ctx.nbDmers as u32, parameters.k, 1);
     let maxZeroScoreRun = 10;
     let displayLevel = ctx.displayLevel;
-    let mut zeroScoreRun = 0 as usize;
+    let mut zeroScoreRun = 0usize;
     let mut last_update_time = Instant::now();
     if displayLevel >= 2 {
         eprintln!(
@@ -339,7 +339,7 @@ fn FASTCOVER_buildDictionary<'a>(
             }
             tail = tail.wrapping_sub(segmentSize);
             dict[tail..][..segmentSize].copy_from_slice(super::cover::as_uninit(
-                &ctx.samples[segment.begin as usize..][..segmentSize as usize],
+                &ctx.samples[segment.begin as usize..][..segmentSize],
             ));
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);

@@ -2,8 +2,7 @@ use core::ptr;
 
 use crate::lib::common::error_private::Error;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
-pub const HIST_WKSP_SIZE: usize =
-    (HIST_WKSP_SIZE_U32 as usize).wrapping_mul(size_of::<core::ffi::c_uint>());
+pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32.wrapping_mul(size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -548,7 +548,7 @@ fn ZDICT_trainBuffer_legacy(
     // It's not used at this stage, but planned to become useful in a later update
     let mut filePos = vec![0u32; nbFiles];
     // filePos[0] is intentionally left 0
-    for pos in 1..nbFiles as usize {
+    for pos in 1..nbFiles {
         filePos[pos] =
             (filePos[pos - 1] as usize).wrapping_add(fileSizes[pos.wrapping_sub(1)]) as u32;
     }
@@ -1237,7 +1237,7 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
 ) -> usize {
     let nbSamples = samplesSizes.len();
     let dictListSize = Ord::max(Ord::max(10000, nbSamples), maxDictSize / 16);
-    let mut dictList = vec![DictItem::default(); dictListSize as usize];
+    let mut dictList = vec![DictItem::default(); dictListSize];
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {

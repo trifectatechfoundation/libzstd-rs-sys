@@ -296,8 +296,8 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                 mLength = usize::from(
                     *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
                 );
-                ip0 = ip0.sub(mLength as usize);
-                match0 = match0.sub(mLength as usize);
+                ip0 = ip0.sub(mLength);
+                match0 = match0.sub(mLength);
                 offcode = REPCODE1_TO_OFFBASE;
                 mLength = mLength.wrapping_add(4);
 
@@ -949,8 +949,8 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 mLength = usize::from(
                     *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
                 );
-                ip0 = ip0.sub(mLength as usize);
-                match0 = match0.sub(mLength as usize);
+                ip0 = ip0.sub(mLength);
+                match0 = match0.sub(mLength);
                 offcode = REPCODE1_TO_OFFBASE;
                 mLength = mLength.wrapping_add(4);
                 current_block = 1352918242886884122;
