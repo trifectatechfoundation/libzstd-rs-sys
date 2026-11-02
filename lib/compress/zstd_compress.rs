@@ -3124,10 +3124,9 @@ unsafe fn ZSTD_reset_matchState(
         ms.opt.matchLengthFreq =
             ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxML as usize + 1]>())
                 .cast();
-        ms.opt.offCodeFreq = ZSTD_cwksp_reserve_aligned64(
-            ws,
-            ((MaxOff + 1) as size_t).wrapping_mul(size_of::<core::ffi::c_uint>()),
-        ) as *mut core::ffi::c_uint;
+        ms.opt.offCodeFreq =
+            ZSTD_cwksp_reserve_aligned64(ws, size_of::<[core::ffi::c_uint; MaxOff as usize + 1]>())
+                .cast();
         ms.opt.matchTable = ZSTD_cwksp_reserve_aligned64(
             ws,
             (ZSTD_OPT_SIZE as size_t).wrapping_mul(size_of::<ZSTD_match_t>()),
