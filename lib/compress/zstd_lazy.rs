@@ -978,7 +978,7 @@ fn ZSTD_VecMask_next(val: ZSTD_VecMask) -> u32 {
 /// value to reflect the update. Essentially cycles backwards from [1, {entries per row})
 #[inline(always)]
 fn ZSTD_row_nextIndex(tagRow: &mut u8, rowMask: u32) -> u32 {
-    let mut next = (*tagRow as core::ffi::c_int - 1) as u32 & rowMask;
+    let mut next = u32::from(*tagRow).wrapping_sub(1) & rowMask;
     next = next.wrapping_add(if next == 0 { rowMask } else { 0 }); // skip first position
     *tagRow = next as u8;
     next
