@@ -205,10 +205,6 @@ fn COVER_map_remove(map: &mut COVER_map_t, key: u32) {
     }
 }
 
-fn COVER_map_destroy(map: &mut COVER_map_t) {
-    drop(core::mem::take(&mut map.data));
-}
-
 fn COVER_cmp(ctx: &COVER_ctx_t, lp: &u32, rp: &u32) -> Ordering {
     let lhs = *lp as usize;
     let rhs = *rp as usize;
@@ -509,13 +505,6 @@ fn COVER_checkParameters(parameters: ZDICT_cover_params_t, maxDictSize: usize) -
     }
 
     true
-}
-
-fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
-    drop(core::mem::take(&mut ctx.suffix));
-    drop(core::mem::take(&mut ctx.freqs));
-    drop(core::mem::take(&mut ctx.dmerAt));
-    drop(core::mem::take(&mut ctx.offsets));
 }
 
 impl<'a> COVER_ctx_t<'a> {
@@ -892,8 +881,6 @@ fn train_from_buffer_cover(
             eprintln!("Constructed dictionary of size {}", size);
         }
     });
-    COVER_ctx_destroy(&mut ctx);
-    COVER_map_destroy(&mut activeDmers);
     dictionarySize
 }
 
@@ -1107,7 +1094,7 @@ fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
 
 #[expect(
     clippy::boxed_local,
-    reason = "Box is needed because the main thread may destroy `data.ctx` immediately after the completion signal from `COVER_best_finish`"
+    reason = "Box is needed because the main thread may drop `data.ctx` immediately after the completion signal from `COVER_best_finish`"
 )]
 fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let ctx = data.ctx;
@@ -1294,18 +1281,17 @@ unsafe fn optimize_train_from_buffer_cover(
             displayLevel - 1
         };
 
-        let mut ctx =
-            match COVER_ctx_t::new(samples, samplesSizes, d, splitPoint, childDisplayLevel) {
-                Ok(ctx) => ctx,
-                Err(err) => {
-                    if displayLevel >= 1 {
-                        eprintln!("Failed to initialize context");
-                    }
-                    drop(COVER_best_wait(&best));
-                    POOL_free(pool);
-                    return err.to_error_code();
+        let ctx = match COVER_ctx_t::new(samples, samplesSizes, d, splitPoint, childDisplayLevel) {
+            Ok(ctx) => ctx,
+            Err(err) => {
+                if displayLevel >= 1 {
+                    eprintln!("Failed to initialize context");
                 }
-            };
+                drop(COVER_best_wait(&best));
+                POOL_free(pool);
+                return err.to_error_code();
+            }
+        };
         if !warned {
             COVER_warnOnSmallCorpus(dict.len(), ctx.suffix.len(), displayLevel);
             warned = true;
@@ -1368,7 +1354,6 @@ unsafe fn optimize_train_from_buffer_cover(
         }
 
         drop(COVER_best_wait(&best));
-        COVER_ctx_destroy(&mut ctx);
     }
 
     if displayLevel >= 2 {

@@ -174,11 +174,6 @@ fn FASTCOVER_checkParameters(
     true
 }
 
-fn FASTCOVER_ctx_destroy(ctx: &mut FASTCOVER_ctx_t) {
-    drop(core::mem::take(&mut (ctx.freqs)));
-    drop(core::mem::take(&mut (ctx.offsets)));
-}
-
 fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     let f = ctx.f;
     let d = ctx.d;
@@ -368,7 +363,7 @@ fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
 
 #[expect(
     clippy::boxed_local,
-    reason = "Box is needed because the main thread may destroy `data.ctx` immediately after the completion signal from `COVER_best_finish`"
+    reason = "Box is needed because the main thread may drop `data.ctx` immediately after the completion signal from `COVER_best_finish`"
 )]
 fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     let ctx = data.ctx;
@@ -592,7 +587,6 @@ fn train_from_buffer_fastcover(
     if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize);
     }
-    FASTCOVER_ctx_destroy(&mut ctx);
     drop(segmentFreqs);
     dictionarySize
 }
@@ -856,7 +850,6 @@ fn optimize_train_from_buffer_fastcover(
         }
 
         drop(COVER_best_wait(&best));
-        FASTCOVER_ctx_destroy(&mut ctx);
     }
 
     if displayLevel >= 2 {
