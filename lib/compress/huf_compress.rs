@@ -1203,7 +1203,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     Ok(bitC.close())
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
     dst: *mut c_void,
     dstSize: usize,

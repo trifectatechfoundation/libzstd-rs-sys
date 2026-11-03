@@ -324,7 +324,7 @@ fn FSE_decompress_wksp_body_default(
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0)
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn FSE_decompress_wksp_body_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
