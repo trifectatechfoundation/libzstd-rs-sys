@@ -1306,11 +1306,9 @@ unsafe fn optimize_train_from_buffer_cover(
                 shrinkDict,
                 zParams: ZDICT_params_t {
                     notificationLevel: ctx.displayLevel as u32,
-                    compressionLevel: 0,
-                    dictID: 0,
+                    ..parameters.zParams
                 },
-                nbThreads: 0,
-                shrinkDictMaxRegression: 0,
+                ..*parameters
             };
 
             let data = Box::new(COVER_tryParameters_data_t {
