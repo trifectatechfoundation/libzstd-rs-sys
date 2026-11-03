@@ -2038,71 +2038,82 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             sequences[seqNb as usize] = sequence;
         }
 
-        for seqNb in seqAdvance..nbSeq {
-            let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
-            if dctx.litBufferLocation == LitLocation::ZSTD_split
-                && litPtr
-                    .add(sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength)
-                    > dctx.litBufferEnd
-            {
-                let leftoverLit = dctx.litBufferEnd.offset_from_unsigned(litPtr);
-                if leftoverLit != 0 {
-                    if leftoverLit > oend.offset_from_unsigned(op) {
-                        return Err(Error::dstSize_tooSmall);
+        // Peel the last sequence so is_last_sequence is a constant in the hot loop.
+        macro_rules! long_step {
+            ($seqNb:expr, $last:expr) => {{
+                let seqNb = $seqNb;
+                let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, $last);
+                if dctx.litBufferLocation == LitLocation::ZSTD_split
+                    && litPtr.add(
+                        sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength,
+                    ) > dctx.litBufferEnd
+                {
+                    let leftoverLit = dctx.litBufferEnd.offset_from_unsigned(litPtr);
+                    if leftoverLit != 0 {
+                        if leftoverLit > oend.offset_from_unsigned(op) {
+                            return Err(Error::dstSize_tooSmall);
+                        }
+                        ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
+                        sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize]
+                            .litLength -= leftoverLit;
+                        op = op.add(leftoverLit);
                     }
-                    ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
-                    sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength -=
-                        leftoverLit;
-                    op = op.add(leftoverLit);
-                }
-                litPtr = dctx.litExtraBuffer.as_mut_ptr();
-                litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
-                dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
-                let oneSeqSize = ZSTD_execSequence(
-                    op,
-                    oend,
-                    sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize],
-                    &mut litPtr,
-                    litBufferEnd,
-                    prefixStart,
-                    dictStart,
-                    dictEnd,
-                )?;
-
-                prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence_0, prefixStart, dictEnd);
-                sequences[(seqNb & STORED_SEQS_MASK) as usize] = sequence_0;
-                op = op.add(oneSeqSize);
-            } else {
-                let sequence = sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize];
-                let oneSeqSize_0 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                    ZSTD_execSequenceSplitLitBuffer(
-                        Writer::from_raw_parts(op, oend.offset_from_unsigned(op)),
+                    litPtr = dctx.litExtraBuffer.as_mut_ptr();
+                    litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
+                    dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
+                    let oneSeqSize = ZSTD_execSequence(
+                        op,
                         oend,
-                        litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
                         sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize],
                         &mut litPtr,
                         litBufferEnd,
                         prefixStart,
                         dictStart,
                         dictEnd,
-                    )?
-                } else {
-                    ZSTD_execSequence(
-                        op,
-                        oend,
-                        sequence,
-                        &mut litPtr,
-                        litBufferEnd,
-                        prefixStart,
-                        dictStart,
-                        dictEnd,
-                    )?
-                };
+                    )?;
 
-                prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence_0, prefixStart, dictEnd);
-                sequences[(seqNb & STORED_SEQS_MASK) as usize] = sequence_0;
-                op = op.add(oneSeqSize_0);
+                    prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence_0, prefixStart, dictEnd);
+                    sequences[(seqNb & STORED_SEQS_MASK) as usize] = sequence_0;
+                    op = op.add(oneSeqSize);
+                } else {
+                    let sequence = sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize];
+                    let oneSeqSize_0 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
+                        ZSTD_execSequenceSplitLitBuffer(
+                            Writer::from_raw_parts(op, oend.offset_from_unsigned(op)),
+                            oend,
+                            litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
+                            sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize],
+                            &mut litPtr,
+                            litBufferEnd,
+                            prefixStart,
+                            dictStart,
+                            dictEnd,
+                        )?
+                    } else {
+                        ZSTD_execSequence(
+                            op,
+                            oend,
+                            sequence,
+                            &mut litPtr,
+                            litBufferEnd,
+                            prefixStart,
+                            dictStart,
+                            dictEnd,
+                        )?
+                    };
+
+                    prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence_0, prefixStart, dictEnd);
+                    sequences[(seqNb & STORED_SEQS_MASK) as usize] = sequence_0;
+                    op = op.add(oneSeqSize_0);
+                }
+            }};
+        }
+        if seqAdvance < nbSeq {
+            for seqNb in seqAdvance..nbSeq - 1 {
+                long_step!(seqNb, false);
             }
+            long_step!(nbSeq - 1, true);
+            let _ = prefetchPos;
         }
 
         if !seqState.DStream.is_empty() {
