@@ -174,24 +174,24 @@ fn FASTCOVER_checkParameters(
     true
 }
 
-fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
-    let f = ctx.f;
-    let d = ctx.d;
-    let skip = ctx.accelParams.skip;
-    let readLength = if d > 8 { d } else { 8 };
-    for i in 0..ctx.nbTrainSamples {
-        let mut start = ctx.offsets[i];
-        let currSampleEnd = ctx.offsets[i + 1];
-        while start.wrapping_add(readLength as usize) <= currSampleEnd {
-            let dmerIndex =
-                FASTCOVER_hashPtrToIndex(ctx.samples[start..][..8].try_into().unwrap(), f, d);
-            ctx.freqs[dmerIndex] += 1;
-            start = start.wrapping_add(skip as usize).wrapping_add(1);
+impl<'a> FASTCOVER_ctx_t<'a> {
+    fn compute_frequency(&mut self) {
+        let f = self.f;
+        let d = self.d;
+        let skip = self.accelParams.skip;
+        let readLength = if d > 8 { d } else { 8 };
+        for i in 0..self.nbTrainSamples {
+            let mut start = self.offsets[i];
+            let currSampleEnd = self.offsets[i + 1];
+            while start.wrapping_add(readLength as usize) <= currSampleEnd {
+                let dmerIndex =
+                    FASTCOVER_hashPtrToIndex(self.samples[start..][..8].try_into().unwrap(), f, d);
+                self.freqs[dmerIndex] += 1;
+                start = start.wrapping_add(skip as usize).wrapping_add(1);
+            }
         }
     }
-}
 
-impl<'a> FASTCOVER_ctx_t<'a> {
     fn new(
         samples: &'a [u8],
         samplesSizes: &'a [usize],
@@ -288,7 +288,7 @@ impl<'a> FASTCOVER_ctx_t<'a> {
         if displayLevel >= 2 {
             eprintln!("Computing frequencies");
         }
-        FASTCOVER_computeFrequency(&mut ctx);
+        ctx.compute_frequency();
         Ok(ctx)
     }
 }
