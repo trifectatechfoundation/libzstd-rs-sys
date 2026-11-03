@@ -405,17 +405,19 @@ fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     COVER_best_finish(data.best, parameters, &selection);
 }
 
-fn FASTCOVER_convertToCoverParams(
-    fastCoverParams: ZDICT_fastCover_params_t,
-    coverParams: &mut ZDICT_cover_params_t,
-) {
-    coverParams.k = fastCoverParams.k;
-    coverParams.d = fastCoverParams.d;
-    coverParams.steps = fastCoverParams.steps;
-    coverParams.nbThreads = fastCoverParams.nbThreads;
-    coverParams.splitPoint = fastCoverParams.splitPoint;
-    coverParams.zParams = fastCoverParams.zParams;
-    coverParams.shrinkDict = fastCoverParams.shrinkDict;
+impl From<ZDICT_fastCover_params_t> for ZDICT_cover_params_t {
+    fn from(value: ZDICT_fastCover_params_t) -> Self {
+        ZDICT_cover_params_t {
+            k: value.k,
+            d: value.d,
+            steps: value.steps,
+            nbThreads: value.nbThreads,
+            splitPoint: value.splitPoint,
+            shrinkDict: value.shrinkDict,
+            shrinkDictMaxRegression: value.shrinkDictMaxRegression,
+            zParams: value.zParams,
+        }
+    }
 }
 
 fn FASTCOVER_convertToFastCoverParams(
@@ -518,8 +520,7 @@ fn train_from_buffer_fastcover(
     } else {
         parameters.accel
     };
-    let mut coverParams = ZDICT_cover_params_t::default();
-    FASTCOVER_convertToCoverParams(parameters, &mut coverParams);
+    let coverParams = ZDICT_cover_params_t::from(parameters);
     if !FASTCOVER_checkParameters(
         coverParams,
         dictBufferCapacity,
@@ -756,8 +757,7 @@ fn optimize_train_from_buffer_fastcover(
     }
 
     let best = COVER_best_t::new();
-    let mut coverParams = ZDICT_cover_params_t::default();
-    FASTCOVER_convertToCoverParams(*parameters, &mut coverParams);
+    let coverParams = ZDICT_cover_params_t::from(*parameters);
     let accelParams = FASTCOVER_defaultAccelParameters[accel as usize];
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
