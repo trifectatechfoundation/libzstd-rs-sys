@@ -171,7 +171,12 @@ fn FSE_buildDTable_internal(
         let symbol = usize::from(elt.symbol);
         let nextState = u32::from(symbols[symbol]);
         symbols[symbol] += 1;
-        elt.nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
+        // tableLog - highbit(nextState); `| 1` drops the zero check.
+        // `nextState >= 1` because every symbol in the table has a count of at least 1.
+        debug_assert!(nextState >= 1);
+        elt.nbBits = tableLog
+            .wrapping_sub(31)
+            .wrapping_add((nextState | 1).leading_zeros()) as u8;
         elt.newState = (nextState << elt.nbBits).wrapping_sub(tableSize as u32) as u16;
     }
 
