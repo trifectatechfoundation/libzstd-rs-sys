@@ -313,9 +313,19 @@ fn HUF_rescaleStats(
     if tableLog < targetTableLog {
         let scale = targetTableLog as usize - tableLog as usize;
 
-        /* Increase the weight for all non-zero probability symbols by scale. */
-        for weight in huffWeight[..nbSymbols as usize].iter_mut() {
-            *weight += (if *weight == 0 { 0 } else { scale }) as u8;
+        // Increase the weight for all non-zero probability symbols by scale, 8 at a time.
+        // Weights are <= 12, so adding 0x7f sets a byte's high bit iff it is non-zero, and no
+        // step carries into the next byte.  Entries past nbSymbols are never read; little-endian
+        // order keeps any carry out of them away from the valid (lower) entries.
+        const LOW7: u64 = 0x7f7f_7f7f_7f7f_7f7f;
+        const HIGH: u64 = 0x8080_8080_8080_8080;
+        let n = (nbSymbols as usize)
+            .next_multiple_of(8)
+            .min(huffWeight.len());
+        for chunk in huffWeight[..n].as_chunks_mut::<8>().0 {
+            let w = u64::from_le_bytes(*chunk);
+            let nonzero = (w.wrapping_add(LOW7) & HIGH) >> 7;
+            *chunk = w.wrapping_add(nonzero * scale as u64).to_le_bytes();
         }
 
         // Update rankVal to reflect the new weights.
