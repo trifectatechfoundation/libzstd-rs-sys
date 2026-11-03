@@ -1490,7 +1490,9 @@ fn HUF_decompress4X2_usingDTable_internal_default(
 unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
     args: &mut HUF_DecompressFastArgs,
 ) {
-    let dtable: &[HUF_DEltX2; 4096] = core::mem::transmute(args.dt);
+    // Read entries as one u32 (this loop only runs on little-endian 64-bit targets): loading the
+    // three fields separately costs an extra instruction per symbol on aarch64.
+    let dtable: &[u32; 4096] = core::mem::transmute(args.dt);
     let ilowest = args.ilowest;
 
     let mut bits = args.bits;
@@ -1565,9 +1567,9 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 if (($decode3) != 0 || ($stream) != 3) {
                     let index = (bits[($stream)] >> 53);
                     let entry = dtable[index as usize];
-                    MEM_write16(op[($stream)].cast(), entry.sequence);
-                    bits[($stream)] <<= (entry.nbBits) & 0x3F;
-                    op[($stream)] = op[($stream)].add(usize::from(entry.length));
+                    MEM_write16(op[($stream)].cast(), entry as u16);
+                    bits[($stream)] <<= (entry >> 16) & 0x3F;
+                    op[($stream)] = op[($stream)].add((entry >> 24) as usize);
                 }
             };
         }
