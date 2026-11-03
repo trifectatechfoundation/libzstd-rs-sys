@@ -336,6 +336,26 @@ fn HUF_fillDTableX1<const N: usize>(dt: &mut [HUF_DEltX1], symbols: &[u8], nbBit
     }
 }
 
+/// Fill with 64-bit stores, as LLVM does not reliably vectorize the element-wise loop (notably
+/// under PGO).  `length` must be a multiple of `Q * 4`.
+#[inline(always)]
+fn HUF_fillDTableX1_wide<const Q: usize>(
+    dt: &mut [HUF_DEltX1],
+    symbols: &[u8],
+    nbBits: u8,
+    length: usize,
+) {
+    for (chunk, &byte) in dt.chunks_exact_mut(length).zip(symbols) {
+        let d4 = u64::from(u16::from_ne_bytes([nbBits, byte])) * 0x0001_0001_0001_0001;
+        let (quads, rest) = chunk.as_chunks_mut::<4>();
+        debug_assert!(rest.is_empty() && quads.len() % Q == 0);
+        for q in quads.as_chunks_mut::<Q>().0 {
+            // SAFETY: `q` is `Q * 4` two-byte entries, i.e. `Q` u64s.
+            unsafe { q.as_mut_ptr().cast::<[u64; Q]>().write_unaligned([d4; Q]) };
+        }
+    }
+}
+
 pub fn HUF_readDTableX1_wksp(
     DTable: &mut DTable,
     src: &[u8],
@@ -420,13 +440,9 @@ pub fn HUF_readDTableX1_wksp(
         match length {
             1 => HUF_fillDTableX1::<1>(dt, symbols, nbBits),
             2 => HUF_fillDTableX1::<2>(dt, symbols, nbBits),
-            4 => HUF_fillDTableX1::<4>(dt, symbols, nbBits),
-            8 => HUF_fillDTableX1::<8>(dt, symbols, nbBits),
-            _ => {
-                for (chunk, &byte) in dt.chunks_exact_mut(length).zip(symbols) {
-                    chunk.fill(HUF_DEltX1 { nbBits, byte });
-                }
-            }
+            4 => HUF_fillDTableX1_wide::<1>(dt, symbols, nbBits, 4),
+            8 => HUF_fillDTableX1_wide::<2>(dt, symbols, nbBits, 8),
+            _ => HUF_fillDTableX1_wide::<4>(dt, symbols, nbBits, length),
         }
 
         symbol += symbolCount;
