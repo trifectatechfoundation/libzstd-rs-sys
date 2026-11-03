@@ -6590,14 +6590,12 @@ unsafe fn FIO_listFile(
     );
     let error = getFileInfo(&mut info, inFileName);
     match error as core::ffi::c_uint {
-        1 => {
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    c"Error while parsing \"%s\" \n".as_ptr(),
-                    inFileName,
-                );
-            }
+        1 if g_display_prefs.displayLevel >= 1 => {
+            fprintf(
+                stderr,
+                c"Error while parsing \"%s\" \n".as_ptr(),
+                inFileName,
+            );
         }
         2 => {
             fprintf(
