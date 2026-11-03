@@ -1552,8 +1552,8 @@ impl<const N: usize> ZSTD_fseState<'_, N> {
     #[inline(always)]
     fn symbol(&self) -> ZSTD_seqSymbol {
         const { assert!(N.is_power_of_two()) };
-        // A valid table only produces states below `1 << tableLog`, so the mask is a no-op.
-        self.table[self.state & (N - 1)]
+        // Tables built by this crate only produce states below `1 << tableLog`.
+        self.table[self.state]
     }
 
     #[inline(always)]
