@@ -1369,7 +1369,14 @@ unsafe fn ZSTD_execSequence(
         }
         match_0 = dictEnd.offset(match_0.addr() as isize - prefixStart.addr() as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
-            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            // Short matches into the dictionary are common with dictionaries; avoid a memmove
+            // call.  The 16-byte read stays inside the dictionary, the over-write is covered by
+            // oMatchEnd <= oend_w as for wildcopy, and copy16 loads before it stores.
+            if sequence.matchLength <= 16 && match_0.wrapping_add(16) <= dictEnd {
+                ZSTD_copy16(oLitEnd, match_0);
+            } else {
+                core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            }
             return Ok(sequenceLength);
         }
 
@@ -1488,7 +1495,12 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         }
         match_0 = dictEnd.sub(sequence.offset - oLitEnd.offset_from_unsigned(prefixStart));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            // See ZSTD_execSequence.
+            if sequence.matchLength <= 16 && match_0.wrapping_add(16) <= dictEnd {
+                ZSTD_copy16(oLitEnd, match_0);
+            } else {
+                core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            }
             return Ok(sequenceLength);
         }
 
