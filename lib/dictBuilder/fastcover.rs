@@ -810,11 +810,9 @@ fn optimize_train_from_buffer_fastcover(
                 shrinkDict,
                 zParams: ZDICT_params_t {
                     notificationLevel: ctx.displayLevel as core::ffi::c_uint,
-                    compressionLevel: 0,
-                    dictID: 0,
+                    ..coverParams.zParams
                 },
-                nbThreads: 0,
-                shrinkDictMaxRegression: 0,
+                ..coverParams
             };
 
             let data = Box::new(FASTCOVER_tryParameters_data_t {
