@@ -1948,7 +1948,8 @@ fn ZSTD_prefetchMatch(
     prefixStart: *const u8,
     dictEnd: *const u8,
 ) -> usize {
-    let matchBase = if sequence.offset > prefetchPos.wrapping_add(sequence.litLength) {
+    let prefetchPos = prefetchPos.wrapping_add(sequence.litLength);
+    let matchBase = if sequence.offset > prefetchPos {
         dictEnd
     } else {
         prefixStart
