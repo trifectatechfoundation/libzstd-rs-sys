@@ -721,10 +721,15 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         }
     }
 
+    // Equal lengths let LLVM use a single bounds check for all three lookups.
+    let nsym = normalizedCounter.len();
+    let symbols = &mut wksp.symbols[..nsym];
+    let baseValue = &baseValue[..nsym];
+    let nbAdditionalBits = &nbAdditionalBits[..nsym];
     for seq_symbol in tableDecode[..tableSize].iter_mut() {
         let symbol = seq_symbol.baseValue as usize;
-        let nextState = wksp.symbols[symbol] as u32;
-        wksp.symbols[symbol] += 1;
+        let nextState = symbols[symbol] as u32;
+        symbols[symbol] += 1;
 
         let nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
 
