@@ -795,7 +795,7 @@ fn ZSTD_buildFSETable_body_default<const N: usize>(
     );
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
@@ -2223,7 +2223,7 @@ fn ZSTD_decompressSequencesLong_default(
     unsafe { ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn ZSTD_decompressSequences_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
@@ -2234,7 +2234,7 @@ fn ZSTD_decompressSequences_bmi2(
     unsafe { ZSTD_decompressSequences_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
@@ -2245,7 +2245,7 @@ fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn ZSTD_decompressSequencesLong_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
