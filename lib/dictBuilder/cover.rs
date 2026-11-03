@@ -518,121 +518,125 @@ fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
     drop(core::mem::take(&mut ctx.offsets));
 }
 
-fn COVER_ctx_init<'a>(
-    ctx: &'_ mut COVER_ctx_t<'a>,
-    samples: &'a [u8],
-    samplesSizes: &'a [usize],
-    d: core::ffi::c_uint,
-    splitPoint: core::ffi::c_double,
-    displayLevel: core::ffi::c_int,
-) -> Result<(), Error> {
-    let nbSamples = samplesSizes.len();
-    let totalSamplesSize = samples.len();
-    let nbTrainSamples = if splitPoint < 1.0f64 {
-        (nbSamples as core::ffi::c_double * splitPoint) as usize
-    } else {
-        nbSamples
-    };
-    let nbTestSamples = if splitPoint < 1.0f64 {
-        nbSamples.wrapping_sub(nbTrainSamples)
-    } else {
-        nbSamples
-    };
-    let trainingSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[..nbTrainSamples].iter().sum()
-    } else {
-        totalSamplesSize
-    };
-    let testSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[nbTrainSamples..][..nbTestSamples].iter().sum()
-    } else {
-        totalSamplesSize
-    };
-    ctx.displayLevel = displayLevel;
-    if totalSamplesSize < Ord::max(d as usize, size_of::<u64>())
-        || totalSamplesSize >= COVER_MAX_SAMPLES_SIZE
-    {
-        if displayLevel >= 1 {
-            eprintln!(
-                "Total samples size is too large ({} MB), maximum size is {} MB",
-                totalSamplesSize >> 20,
-                COVER_MAX_SAMPLES_SIZE >> 20,
-            );
-        }
-        return Err(Error::srcSize_wrong);
-    }
-    if nbTrainSamples < 5 {
-        if displayLevel >= 1 {
-            eprintln!(
-                "Total number of training samples is {} and is invalid.",
-                nbTrainSamples,
-            );
-        }
-        return Err(Error::srcSize_wrong);
-    }
-    if nbTestSamples < 1 {
-        if displayLevel >= 1 {
-            eprintln!(
-                "Total number of testing samples is {} and is invalid.",
-                nbTestSamples,
-            );
-        }
-        return Err(Error::srcSize_wrong);
-    }
-    *ctx = COVER_ctx_t::default();
-    if displayLevel >= 2 {
-        eprintln!(
-            "Training on {} samples of total size {}",
-            nbTrainSamples, trainingSamplesSize,
-        );
-    }
-    if displayLevel >= 2 {
-        eprintln!(
-            "Testing on {} samples of total size {}",
-            nbTestSamples, testSamplesSize,
-        );
-    }
-    ctx.samples = samples;
-    ctx.samplesSizes = samplesSizes;
-    ctx.nbSamples = nbSamples;
-    ctx.nbTrainSamples = nbTrainSamples;
-    ctx.nbTestSamples = nbTestSamples;
-    ctx.suffixSize = trainingSamplesSize
-        .wrapping_sub(if d as usize > size_of::<u64>() {
-            d as usize
+impl<'a> COVER_ctx_t<'a> {
+    fn new(
+        samples: &'a [u8],
+        samplesSizes: &'a [usize],
+        d: core::ffi::c_uint,
+        splitPoint: core::ffi::c_double,
+        displayLevel: core::ffi::c_int,
+    ) -> Result<Self, Error> {
+        let nbSamples = samplesSizes.len();
+        let totalSamplesSize = samples.len();
+        let nbTrainSamples = if splitPoint < 1.0f64 {
+            (nbSamples as core::ffi::c_double * splitPoint) as usize
         } else {
-            size_of::<u64>()
-        })
-        .wrapping_add(1);
-    ctx.suffix = (0..ctx.suffixSize as u32).collect();
-    ctx.dmerAt = Box::from(vec![0u32; ctx.suffixSize]);
-    ctx.offsets = Box::from(vec![0usize; nbSamples + 1]);
-    ctx.freqs = Box::default();
-    ctx.d = d;
-    ctx.offsets[0] = 0;
-    for i in 1..nbSamples + 1 {
-        ctx.offsets[i] =
-            ctx.offsets[i.wrapping_sub(1)].wrapping_add(samplesSizes[i.wrapping_sub(1)]);
-    }
-    if displayLevel >= 2 {
-        eprintln!("Constructing partial suffix array");
-    }
-    stableSort(ctx);
-    if displayLevel >= 2 {
-        eprintln!("Computing frequencies");
-    }
-    COVER_groupBy(
-        ctx,
-        if ctx.d <= 8 {
-            COVER_cmp8 as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
+            nbSamples
+        };
+        let nbTestSamples = if splitPoint < 1.0f64 {
+            nbSamples.wrapping_sub(nbTrainSamples)
         } else {
-            COVER_cmp as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
-        },
-    );
+            nbSamples
+        };
+        let trainingSamplesSize = if splitPoint < 1.0f64 {
+            samplesSizes[..nbTrainSamples].iter().sum()
+        } else {
+            totalSamplesSize
+        };
+        let testSamplesSize = if splitPoint < 1.0f64 {
+            samplesSizes[nbTrainSamples..][..nbTestSamples].iter().sum()
+        } else {
+            totalSamplesSize
+        };
+        if totalSamplesSize < Ord::max(d as usize, size_of::<u64>())
+            || totalSamplesSize >= COVER_MAX_SAMPLES_SIZE
+        {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total samples size is too large ({} MB), maximum size is {} MB",
+                    totalSamplesSize >> 20,
+                    COVER_MAX_SAMPLES_SIZE >> 20,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if nbTrainSamples < 5 {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total number of training samples is {} and is invalid.",
+                    nbTrainSamples,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if nbTestSamples < 1 {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total number of testing samples is {} and is invalid.",
+                    nbTestSamples,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if displayLevel >= 2 {
+            eprintln!(
+                "Training on {} samples of total size {}",
+                nbTrainSamples, trainingSamplesSize,
+            );
+        }
+        if displayLevel >= 2 {
+            eprintln!(
+                "Testing on {} samples of total size {}",
+                nbTestSamples, testSamplesSize,
+            );
+        }
+        let suffixSize = trainingSamplesSize
+            .wrapping_sub(if d as usize > size_of::<u64>() {
+                d as usize
+            } else {
+                size_of::<u64>()
+            })
+            .wrapping_add(1);
+        let mut ctx = COVER_ctx_t {
+            samples,
+            offsets: Box::from(vec![0usize; nbSamples + 1]),
+            samplesSizes,
+            nbSamples,
+            nbTrainSamples,
+            nbTestSamples,
+            suffix: (0..suffixSize as u32).collect(),
+            suffixSize,
+            freqs: Box::default(),
+            dmerAt: Box::from(vec![0u32; suffixSize]),
+            d,
+            displayLevel,
+        };
+        ctx.offsets[0] = 0;
+        for i in 1..nbSamples + 1 {
+            ctx.offsets[i] =
+                ctx.offsets[i.wrapping_sub(1)].wrapping_add(samplesSizes[i.wrapping_sub(1)]);
+        }
+        if displayLevel >= 2 {
+            eprintln!("Constructing partial suffix array");
+        }
+        stableSort(&mut ctx);
+        if displayLevel >= 2 {
+            eprintln!("Computing frequencies");
+        }
+        let d = ctx.d;
+        COVER_groupBy(
+            &mut ctx,
+            if d <= 8 {
+                COVER_cmp8 as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
+            } else {
+                COVER_cmp as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
+            },
+        );
 
-    core::mem::swap(&mut ctx.freqs, &mut ctx.suffix);
+        core::mem::swap(&mut ctx.freqs, &mut ctx.suffix);
 
-    Ok(())
+        Ok(ctx)
+    }
 }
 
 pub(super) fn COVER_warnOnSmallCorpus(
@@ -830,7 +834,6 @@ fn train_from_buffer_cover(
 ) -> usize {
     let dictBufferCapacity = dict.len();
 
-    let mut ctx = COVER_ctx_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     if !COVER_checkParameters(parameters, dictBufferCapacity) {
@@ -852,16 +855,16 @@ fn train_from_buffer_cover(
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    if let Err(err) = COVER_ctx_init(
-        &mut ctx,
+    let mut ctx = match COVER_ctx_t::new(
         samples,
         samplesSizes,
         parameters.d,
         parameters.splitPoint,
         displayLevel,
     ) {
-        return err.to_error_code();
-    }
+        Ok(ctx) => ctx,
+        Err(err) => return err.to_error_code(),
+    };
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
     let mut activeDmers = COVER_map_t::new(parameters.k.wrapping_sub(parameters.d).wrapping_add(1));
     if displayLevel >= 2 {
@@ -1283,7 +1286,6 @@ unsafe fn optimize_train_from_buffer_cover(
     let best = COVER_best_t::new();
 
     for d in (kMinD..=kMaxD).step_by(2) {
-        let mut ctx = COVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
         }
@@ -1293,21 +1295,18 @@ unsafe fn optimize_train_from_buffer_cover(
             displayLevel - 1
         };
 
-        if let Err(err) = COVER_ctx_init(
-            &mut ctx,
-            samples,
-            samplesSizes,
-            d,
-            splitPoint,
-            childDisplayLevel,
-        ) {
-            if displayLevel >= 1 {
-                eprintln!("Failed to initialize context");
-            }
-            drop(COVER_best_wait(&best));
-            POOL_free(pool);
-            return err.to_error_code();
-        }
+        let mut ctx =
+            match COVER_ctx_t::new(samples, samplesSizes, d, splitPoint, childDisplayLevel) {
+                Ok(ctx) => ctx,
+                Err(err) => {
+                    if displayLevel >= 1 {
+                        eprintln!("Failed to initialize context");
+                    }
+                    drop(COVER_best_wait(&best));
+                    POOL_free(pool);
+                    return err.to_error_code();
+                }
+            };
         if !warned {
             COVER_warnOnSmallCorpus(dict.len(), ctx.suffix.len(), displayLevel);
             warned = true;
