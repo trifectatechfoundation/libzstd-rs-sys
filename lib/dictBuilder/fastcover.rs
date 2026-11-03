@@ -492,6 +492,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     };
 
     train_from_buffer_fastcover(dict, samples, samplesSizes, parameters)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 fn train_from_buffer_fastcover(
@@ -499,7 +500,7 @@ fn train_from_buffer_fastcover(
     samples: &[u8],
     samplesSizes: &[usize],
     mut parameters: ZDICT_fastCover_params_t,
-) -> usize {
+) -> Result<usize, Error> {
     let dictBufferCapacity = dict.len();
 
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
@@ -525,23 +526,23 @@ fn train_from_buffer_fastcover(
         if displayLevel >= 1 {
             eprintln!("FASTCOVER parameters incorrect");
         }
-        return Error::parameter_outOfBound.to_error_code();
+        return Err(Error::parameter_outOfBound);
     }
     if samplesSizes.is_empty() {
         if displayLevel >= 1 {
             eprintln!("FASTCOVER must have at least one input file");
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     let accelParams = FASTCOVER_defaultAccelParameters[parameters.accel as usize];
 
-    let mut ctx = match FASTCOVER_ctx_t::new(
+    let mut ctx = FASTCOVER_ctx_t::new(
         samples,
         samplesSizes,
         coverParams.d,
@@ -549,15 +550,12 @@ fn train_from_buffer_fastcover(
         parameters.f,
         accelParams,
         displayLevel,
-    ) {
-        Ok(ctx) => ctx,
-        Err(err) => {
-            if displayLevel >= 1 {
-                eprintln!("Failed to initialize context");
-            }
-            return err.to_error_code();
+    )
+    .inspect_err(|_| {
+        if displayLevel >= 1 {
+            eprintln!("Failed to initialize context");
         }
-    };
+    })?;
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
     if displayLevel >= 2 {
         eprintln!("Building dictionary");
@@ -587,10 +585,11 @@ fn train_from_buffer_fastcover(
             coverParams.zParams,
         )
     }
-    .unwrap_or_else(|err| err.to_error_code());
-    if !ERR_isError(dictionarySize) && displayLevel >= 2 {
-        eprintln!("Constructed dictionary of size {}", dictionarySize);
-    }
+    .inspect(|size| {
+        if displayLevel >= 2 {
+            eprintln!("Constructed dictionary of size {}", size);
+        }
+    });
     drop(segmentFreqs);
     dictionarySize
 }
