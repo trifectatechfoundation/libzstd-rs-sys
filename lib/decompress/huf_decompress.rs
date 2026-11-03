@@ -2028,6 +2028,7 @@ pub struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
+    #[inline(always)]
     pub(crate) fn from_slice(slice: &'a mut [u8]) -> Self {
         let len = slice.len();
         let ptr = NonNull::new(slice.as_mut_ptr()).unwrap();
@@ -2042,6 +2043,7 @@ impl<'a> Writer<'a> {
     ///
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
+    #[inline(always)]
     pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
         let ptr = NonNull::new(ptr);
 
@@ -2059,7 +2061,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn capacity(&self) -> usize {
         match self.ptr {
             None => 0,
@@ -2067,12 +2069,12 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_null(&self) -> bool {
         self.ptr.is_none()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         match self.ptr {
             None => true,
@@ -2080,7 +2082,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_ptr(&self) -> *const u8 {
         match self.ptr {
             None => core::ptr::null(),
@@ -2088,12 +2090,12 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_ptr_range(&self) -> Range<*const u8> {
         self.as_ptr()..self.as_ptr().wrapping_add(self.capacity())
     }
 
-    #[inline]
+    #[inline(always)]
     pub unsafe fn as_slice(&self) -> &[u8] {
         match self.ptr {
             None => &[],
@@ -2101,7 +2103,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
         match self.ptr {
             None => core::ptr::null_mut(),
@@ -2109,7 +2111,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut u8> {
         match self.ptr {
             None => core::ptr::null_mut()..core::ptr::null_mut(),
@@ -2117,6 +2119,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub fn subslice<R: core::ops::RangeBounds<usize>>(&mut self, range: R) -> Self {
         let Some(ptr) = self.ptr else {
             match (range.start_bound(), range.end_bound()) {
@@ -2162,6 +2165,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn quarter(&mut self) -> Option<(Self, Self, Self, Self)> {
         let capacity = self.capacity();
         let segment_size = capacity.div_ceil(4);
@@ -2192,6 +2196,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn write_u8(&mut self, byte: u8) {
         let Some(ptr) = self.ptr else {
             panic!("write out of bounds");
@@ -2208,6 +2213,7 @@ impl<'a> Writer<'a> {
         self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(1)) }
     }
 
+    #[inline(always)]
     pub(crate) fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
 

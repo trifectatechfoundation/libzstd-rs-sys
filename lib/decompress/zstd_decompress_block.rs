@@ -100,6 +100,7 @@ pub struct ZSTD_fseState<'a, const N: usize> {
 }
 
 impl<'a, const N: usize> ZSTD_fseState<'a, N> {
+    #[inline(always)]
     pub(crate) fn new(bit_dstream: &mut BIT_DStream_t, dt: &'a SymbolTable<N>) -> Self {
         let table = &dt.symbols;
 
