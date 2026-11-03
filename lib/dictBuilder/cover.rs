@@ -824,6 +824,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     };
 
     train_from_buffer_cover(dict, samples, samplesSizes, parameters)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 fn train_from_buffer_cover(
@@ -831,7 +832,7 @@ fn train_from_buffer_cover(
     samples: &[u8],
     samplesSizes: &[usize],
     mut parameters: ZDICT_cover_params_t,
-) -> usize {
+) -> Result<usize, Error> {
     let dictBufferCapacity = dict.len();
 
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
@@ -840,31 +841,28 @@ fn train_from_buffer_cover(
         if displayLevel >= 1 {
             eprintln!("Cover parameters incorrect");
         }
-        return Error::parameter_outOfBound.to_error_code();
+        return Err(Error::parameter_outOfBound);
     }
     if samplesSizes.is_empty() {
         if displayLevel >= 1 {
             eprintln!("Cover must have at least one input file");
         }
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256,);
         }
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
-    let mut ctx = match COVER_ctx_t::new(
+    let mut ctx = COVER_ctx_t::new(
         samples,
         samplesSizes,
         parameters.d,
         parameters.splitPoint,
         displayLevel,
-    ) {
-        Ok(ctx) => ctx,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
     let mut activeDmers = COVER_map_t::new(parameters.k.wrapping_sub(parameters.d).wrapping_add(1));
     if displayLevel >= 2 {
@@ -889,10 +887,11 @@ fn train_from_buffer_cover(
             parameters.zParams,
         )
     }
-    .unwrap_or_else(|err| err.to_error_code());
-    if !ERR_isError(dictionarySize) && displayLevel >= 2 {
-        eprintln!("Constructed dictionary of size {}", dictionarySize,);
-    }
+    .inspect(|size| {
+        if displayLevel >= 2 {
+            eprintln!("Constructed dictionary of size {}", size);
+        }
+    });
     COVER_ctx_destroy(&mut ctx);
     COVER_map_destroy(&mut activeDmers);
     dictionarySize
