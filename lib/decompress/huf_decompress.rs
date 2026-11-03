@@ -926,6 +926,7 @@ impl HUF_DEltX2 {
     }
 }
 
+#[inline(always)]
 fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::c_int) -> u32 {
     const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, sequence) == 0);
     const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, nbBits) == 2);
@@ -945,6 +946,7 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
         .wrapping_add((level as u32) << 24)
 }
 
+#[inline(always)]
 fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
     HUF_DEltX2::from_u32(HUF_buildDEltX2U32(
         symbol as u32,
@@ -954,6 +956,7 @@ fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_in
     ))
 }
 
+#[inline(always)]
 fn HUF_fillDTableX2ForWeight(
     DTableRank: &mut [HUF_DEltX2],
     sorted_symbols: &[sortedSymbol_t],
@@ -963,11 +966,39 @@ fn HUF_fillDTableX2ForWeight(
     level: core::ffi::c_int,
 ) {
     let length = 1 << (tableLog.wrapping_sub(nbBits) & 0x1f);
-    let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
+    let fill = |dt: &mut [HUF_DEltX2], n: usize| {
+        HUF_fillDTableX2Runs(dt, sorted_symbols, n, |s| {
+            HUF_buildDEltX2(s, nbBits, baseSeq, level)
+        })
+    };
+    match length {
+        1 => fill(DTableRank, 1),
+        2 => fill(DTableRank, 2),
+        4 => fill(DTableRank, 4),
+        8 => fill(DTableRank, 8),
+        _ => fill(DTableRank, length),
+    }
+}
 
+/// Write a run of `length` copies of each symbol's entry, 8 entries per store group for long
+/// runs, so the stores don't depend on LLVM vectorizing a variable-length fill.
+#[inline(always)]
+fn HUF_fillDTableX2Runs(
+    DTableRank: &mut [HUF_DEltX2],
+    sorted_symbols: &[sortedSymbol_t],
+    length: usize,
+    elt: impl Fn(u8) -> HUF_DEltX2,
+) {
+    let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
     for (sorted_symbol, chunk) in sorted_symbols.iter().zip(chunks) {
-        let DElt = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
-        chunk.fill(DElt);
+        let DElt = elt(sorted_symbol.symbol);
+        if length < 8 {
+            chunk.fill(DElt);
+        } else {
+            for group in chunk.as_chunks_mut::<8>().0 {
+                *group = [DElt; 8];
+            }
+        }
     }
 }
 
