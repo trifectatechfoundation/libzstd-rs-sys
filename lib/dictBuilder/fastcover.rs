@@ -201,10 +201,10 @@ impl<'a> FASTCOVER_ctx_t<'a> {
         accelParams: FASTCOVER_accel_t,
         displayLevel: core::ffi::c_int,
     ) -> Result<Self, Error> {
-        let nbSamples = samplesSizes.len() as core::ffi::c_uint;
+        let nbSamples = samplesSizes.len();
         let totalSamplesSize = samplesSizes.iter().sum::<usize>();
         let nbTrainSamples = if splitPoint < 1.0f64 {
-            (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
+            (nbSamples as core::ffi::c_double * splitPoint) as usize
         } else {
             nbSamples
         };
@@ -214,14 +214,12 @@ impl<'a> FASTCOVER_ctx_t<'a> {
             nbSamples
         };
         let trainingSamplesSize = if splitPoint < 1.0f64 {
-            samplesSizes[..nbTrainSamples as usize].iter().sum()
+            samplesSizes[..nbTrainSamples].iter().sum()
         } else {
             totalSamplesSize
         };
         let testSamplesSize = if splitPoint < 1.0f64 {
-            samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
-                .iter()
-                .sum()
+            samplesSizes[nbTrainSamples..][..nbTestSamples].iter().sum()
         } else {
             totalSamplesSize
         };
@@ -270,11 +268,11 @@ impl<'a> FASTCOVER_ctx_t<'a> {
         }
         let mut ctx = FASTCOVER_ctx_t {
             samples,
-            offsets: Box::from(vec![0usize; nbSamples as usize + 1]),
+            offsets: Box::from(vec![0usize; nbSamples + 1]),
             samplesSizes,
-            nbSamples: nbSamples as usize,
-            nbTrainSamples: nbTrainSamples as usize,
-            nbTestSamples: nbTestSamples as usize,
+            nbSamples,
+            nbTrainSamples,
+            nbTestSamples,
             nbDmers: trainingSamplesSize.wrapping_sub(Ord::max(d as usize, size_of::<u64>())) + 1,
             freqs: Box::from(vec![0u32; 1 << f]),
             d,
@@ -283,7 +281,7 @@ impl<'a> FASTCOVER_ctx_t<'a> {
             displayLevel,
         };
 
-        for i in 1..nbSamples as usize + 1 {
+        for i in 1..nbSamples + 1 {
             ctx.offsets[i] = ctx.offsets[i - 1] + samplesSizes[i - 1];
         }
 
