@@ -191,105 +191,108 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     }
 }
 
-fn FASTCOVER_ctx_init<'a>(
-    ctx: &mut FASTCOVER_ctx_t<'a>,
-    samples: &'a [u8],
-    samplesSizes: &'a [usize],
-    d: core::ffi::c_uint,
-    splitPoint: core::ffi::c_double,
-    f: core::ffi::c_uint,
-    accelParams: FASTCOVER_accel_t,
-    displayLevel: core::ffi::c_int,
-) -> Result<(), Error> {
-    let nbSamples = samplesSizes.len() as core::ffi::c_uint;
-    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-    let nbTrainSamples = if splitPoint < 1.0f64 {
-        (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
-    } else {
-        nbSamples
-    };
-    let nbTestSamples = if splitPoint < 1.0f64 {
-        nbSamples.wrapping_sub(nbTrainSamples)
-    } else {
-        nbSamples
-    };
-    let trainingSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[..nbTrainSamples as usize].iter().sum()
-    } else {
-        totalSamplesSize
-    };
-    let testSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
-            .iter()
-            .sum()
-    } else {
-        totalSamplesSize
-    };
+impl<'a> FASTCOVER_ctx_t<'a> {
+    fn new(
+        samples: &'a [u8],
+        samplesSizes: &'a [usize],
+        d: core::ffi::c_uint,
+        splitPoint: core::ffi::c_double,
+        f: core::ffi::c_uint,
+        accelParams: FASTCOVER_accel_t,
+        displayLevel: core::ffi::c_int,
+    ) -> Result<Self, Error> {
+        let nbSamples = samplesSizes.len() as core::ffi::c_uint;
+        let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+        let nbTrainSamples = if splitPoint < 1.0f64 {
+            (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
+        } else {
+            nbSamples
+        };
+        let nbTestSamples = if splitPoint < 1.0f64 {
+            nbSamples.wrapping_sub(nbTrainSamples)
+        } else {
+            nbSamples
+        };
+        let trainingSamplesSize = if splitPoint < 1.0f64 {
+            samplesSizes[..nbTrainSamples as usize].iter().sum()
+        } else {
+            totalSamplesSize
+        };
+        let testSamplesSize = if splitPoint < 1.0f64 {
+            samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
+                .iter()
+                .sum()
+        } else {
+            totalSamplesSize
+        };
 
-    ctx.displayLevel = displayLevel;
-    if totalSamplesSize < Ord::max(d as usize, size_of::<u64>())
-        || totalSamplesSize >= FASTCOVER_MAX_SAMPLES_SIZE
-    {
-        if displayLevel >= 1 {
+        if totalSamplesSize < Ord::max(d as usize, size_of::<u64>())
+            || totalSamplesSize >= FASTCOVER_MAX_SAMPLES_SIZE
+        {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total samples size is too large ({} MB), maximum size is {} MB",
+                    totalSamplesSize >> 20,
+                    FASTCOVER_MAX_SAMPLES_SIZE >> 20,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if nbTrainSamples < 5 {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total number of training samples is {} and is invalid",
+                    nbTrainSamples,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if nbTestSamples < 1 {
+            if displayLevel >= 1 {
+                eprintln!(
+                    "Total number of testing samples is {} and is invalid.",
+                    nbTestSamples,
+                );
+            }
+            return Err(Error::srcSize_wrong);
+        }
+        if displayLevel >= 2 {
             eprintln!(
-                "Total samples size is too large ({} MB), maximum size is {} MB",
-                totalSamplesSize >> 20,
-                FASTCOVER_MAX_SAMPLES_SIZE >> 20,
+                "Training on {} samples of total size {}",
+                nbTrainSamples, trainingSamplesSize,
             );
         }
-        return Err(Error::srcSize_wrong);
-    }
-    if nbTrainSamples < 5 {
-        if displayLevel >= 1 {
+        if displayLevel >= 2 {
             eprintln!(
-                "Total number of training samples is {} and is invalid",
-                nbTrainSamples,
+                "Testing on {} samples of total size {}",
+                nbTestSamples, testSamplesSize,
             );
         }
-        return Err(Error::srcSize_wrong);
-    }
-    if nbTestSamples < 1 {
-        if displayLevel >= 1 {
-            eprintln!(
-                "Total number of testing samples is {} and is invalid.",
-                nbTestSamples,
-            );
+        let mut ctx = FASTCOVER_ctx_t {
+            samples,
+            offsets: Box::from(vec![0usize; nbSamples as usize + 1]),
+            samplesSizes,
+            nbSamples: nbSamples as usize,
+            nbTrainSamples: nbTrainSamples as usize,
+            nbTestSamples: nbTestSamples as usize,
+            nbDmers: trainingSamplesSize.wrapping_sub(Ord::max(d as usize, size_of::<u64>())) + 1,
+            freqs: Box::from(vec![0u32; 1 << f]),
+            d,
+            f,
+            accelParams,
+            displayLevel,
+        };
+
+        for i in 1..nbSamples as usize + 1 {
+            ctx.offsets[i] = ctx.offsets[i - 1] + samplesSizes[i - 1];
         }
-        return Err(Error::srcSize_wrong);
-    }
-    if displayLevel >= 2 {
-        eprintln!(
-            "Training on {} samples of total size {}",
-            nbTrainSamples, trainingSamplesSize,
-        );
-    }
-    if displayLevel >= 2 {
-        eprintln!(
-            "Testing on {} samples of total size {}",
-            nbTestSamples, testSamplesSize,
-        );
-    }
-    ctx.samples = samples;
-    ctx.samplesSizes = samplesSizes;
-    ctx.nbSamples = nbSamples as usize;
-    ctx.nbTrainSamples = nbTrainSamples as usize;
-    ctx.nbTestSamples = nbTestSamples as usize;
-    ctx.nbDmers = trainingSamplesSize.wrapping_sub(Ord::max(d as usize, size_of::<u64>())) + 1;
-    ctx.d = d;
-    ctx.f = f;
-    ctx.accelParams = accelParams;
-    ctx.offsets = Box::from(vec![0usize; nbSamples as usize + 1]);
 
-    for i in 1..nbSamples as usize + 1 {
-        ctx.offsets[i] = ctx.offsets[i - 1] + samplesSizes[i - 1];
+        if displayLevel >= 2 {
+            eprintln!("Computing frequencies");
+        }
+        FASTCOVER_computeFrequency(&mut ctx);
+        Ok(ctx)
     }
-
-    ctx.freqs = Box::from(vec![0u32; 1 << f]);
-    if displayLevel >= 2 {
-        eprintln!("Computing frequencies");
-    }
-    FASTCOVER_computeFrequency(ctx);
-    Ok(())
 }
 
 fn FASTCOVER_buildDictionary<'a>(
@@ -499,7 +502,6 @@ fn train_from_buffer_fastcover(
 ) -> usize {
     let dictBufferCapacity = dict.len();
 
-    let mut ctx = FASTCOVER_ctx_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     parameters.f = if parameters.f == 0 {
@@ -539,8 +541,7 @@ fn train_from_buffer_fastcover(
     }
     let accelParams = FASTCOVER_defaultAccelParameters[parameters.accel as usize];
 
-    if let Err(err) = FASTCOVER_ctx_init(
-        &mut ctx,
+    let mut ctx = match FASTCOVER_ctx_t::new(
         samples,
         samplesSizes,
         coverParams.d,
@@ -549,11 +550,14 @@ fn train_from_buffer_fastcover(
         accelParams,
         displayLevel,
     ) {
-        if displayLevel >= 1 {
-            eprintln!("Failed to initialize context");
+        Ok(ctx) => ctx,
+        Err(err) => {
+            if displayLevel >= 1 {
+                eprintln!("Failed to initialize context");
+            }
+            return err.to_error_code();
         }
-        return err.to_error_code();
-    }
+    };
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
     if displayLevel >= 2 {
         eprintln!("Building dictionary");
@@ -758,7 +762,6 @@ fn optimize_train_from_buffer_fastcover(
     }
 
     for d in (kMinD..=kMaxD).step_by(2) {
-        let mut ctx = FASTCOVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
         }
@@ -768,8 +771,7 @@ fn optimize_train_from_buffer_fastcover(
             displayLevel - 1
         };
 
-        if let Err(err) = FASTCOVER_ctx_init(
-            &mut ctx,
+        let ctx = match FASTCOVER_ctx_t::new(
             samples,
             samplesSizes,
             d,
@@ -778,13 +780,16 @@ fn optimize_train_from_buffer_fastcover(
             accelParams,
             childDisplayLevel,
         ) {
-            if displayLevel >= 1 {
-                eprintln!("Failed to initialize context");
+            Ok(ctx) => ctx,
+            Err(err) => {
+                if displayLevel >= 1 {
+                    eprintln!("Failed to initialize context");
+                }
+                drop(COVER_best_wait(&best));
+                unsafe { POOL_free(pool) };
+                return err.to_error_code();
             }
-            drop(COVER_best_wait(&best));
-            unsafe { POOL_free(pool) };
-            return err.to_error_code();
-        }
+        };
         if warned == 0 {
             COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
             warned = 1;
