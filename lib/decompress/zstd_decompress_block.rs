@@ -1550,9 +1550,14 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
 
 impl<const N: usize> ZSTD_fseState<'_, N> {
     #[inline(always)]
-    fn symbol(&self) -> ZSTD_seqSymbol {
+    fn symbol<const ASSUME_IN_RANGE: bool>(&self) -> ZSTD_seqSymbol {
         const { assert!(N.is_power_of_two()) };
         // Tables built by this crate only produce states below `1 << tableLog`.
+        // x86_64 only: on Apple silicon removing the bounds check made decoding 4-8% slower.
+        #[cfg(all(feature = "unsafe-performance-experimental", target_arch = "x86_64"))]
+        if ASSUME_IN_RANGE && self.state >= N {
+            unsafe { core::hint::unreachable_unchecked() };
+        }
         self.table[self.state]
     }
 
@@ -1571,7 +1576,7 @@ const LONG_OFFSETS_MAX_EXTRA_BITS_32: u32 =
     (ZSTD_WINDOWLOG_MAX_32 as u32).saturating_sub(STREAM_ACCUMULATOR_MIN_32);
 
 #[inline(always)]
-fn ZSTD_decodeSequence(
+fn ZSTD_decodeSequence<const ASSUME_STATES_IN_RANGE: bool>(
     seqState: &mut seqState_t,
     longOffsets: Offset,
     is_last_sequence: bool,
@@ -1581,9 +1586,9 @@ fn ZSTD_decodeSequence(
         matchLength: 0,
         offset: 0,
     };
-    let llDInfo = seqState.stateLL.symbol();
-    let mlDInfo = seqState.stateML.symbol();
-    let ofDInfo = seqState.stateOffb.symbol();
+    let llDInfo = seqState.stateLL.symbol::<ASSUME_STATES_IN_RANGE>();
+    let mlDInfo = seqState.stateML.symbol::<ASSUME_STATES_IN_RANGE>();
+    let ofDInfo = seqState.stateOffb.symbol::<ASSUME_STATES_IN_RANGE>();
 
     seq.matchLength = mlDInfo.baseValue as usize;
     seq.litLength = llDInfo.baseValue as usize;
@@ -1742,7 +1747,7 @@ fn ZSTD_decompressSequences_bodySplitLitBuffer(
         }
 
         while nbSeq != 0 {
-            sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
+            sequence = ZSTD_decodeSequence::<true>(&mut seqState, offset, nbSeq == 1);
 
             if litPtr.wrapping_add(sequence.litLength) > dctx.litBufferEnd {
                 break;
@@ -1810,7 +1815,7 @@ fn ZSTD_decompressSequences_bodySplitLitBuffer(
             }
 
             while nbSeq != 0 {
-                let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
+                let sequence_0 = ZSTD_decodeSequence::<true>(&mut seqState, offset, nbSeq == 1);
                 let oneSeqSize_1 = unsafe {
                     ZSTD_execSequence(
                         op.as_mut_ptr(),
@@ -1900,7 +1905,7 @@ unsafe fn ZSTD_decompressSequences_body(
         }
 
         for _ in 0..nbSeq - 1 {
-            let sequence = ZSTD_decodeSequence(&mut seqState, offset, false);
+            let sequence = ZSTD_decodeSequence::<true>(&mut seqState, offset, false);
             let oneSeqSize = ZSTD_execSequence(
                 op,
                 oend,
@@ -1914,7 +1919,7 @@ unsafe fn ZSTD_decompressSequences_body(
             op = op.add(oneSeqSize);
         }
 
-        let sequence = ZSTD_decodeSequence(&mut seqState, offset, true);
+        let sequence = ZSTD_decodeSequence::<true>(&mut seqState, offset, true);
         let oneSeqSize = ZSTD_execSequence(
             op,
             oend,
@@ -2022,7 +2027,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         let mut sequences: [seq_t; 8] = [seq_t::default(); 8];
 
         for seqNb in 0..seqAdvance {
-            let sequence = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
+            let sequence = ZSTD_decodeSequence::<false>(&mut seqState, offset, seqNb == nbSeq - 1);
             prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence, prefixStart, dictEnd);
             sequences[seqNb as usize] = sequence;
         }
@@ -2031,7 +2036,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         macro_rules! long_step {
             ($seqNb:expr, $last:expr) => {{
                 let seqNb = $seqNb;
-                let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, $last);
+                let sequence_0 = ZSTD_decodeSequence::<false>(&mut seqState, offset, $last);
                 if dctx.litBufferLocation == LitLocation::ZSTD_split
                     && litPtr.add(
                         sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength,
