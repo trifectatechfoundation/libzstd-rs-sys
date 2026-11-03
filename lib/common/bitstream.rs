@@ -201,6 +201,7 @@ const fn get_middle_bits(
 }
 
 impl<'a> BIT_DStream_t<'a> {
+    #[inline(always)]
     pub(crate) fn new(srcBuffer: &'a [u8]) -> Result<Self, Error> {
         if srcBuffer.is_empty() {
             return Err(Error::srcSize_wrong);
@@ -266,7 +267,6 @@ impl<'a> BIT_DStream_t<'a> {
     ///
     /// - On 32-bit systems, `maxNbBits==24`.
     /// - On 64-bit systems, `maxNbBits==56`.
-    #[inline(always)]
     const fn look_bits(&self, nbBits: u32) -> BitContainerType {
         get_middle_bits(
             self.bitContainer,
@@ -278,7 +278,7 @@ impl<'a> BIT_DStream_t<'a> {
     }
 
     /// Like [`look_bits`], but only works when `nbBits >= 1`
-    #[inline]
+    #[inline(always)]
     pub(crate) const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
@@ -304,7 +304,7 @@ impl<'a> BIT_DStream_t<'a> {
     }
 
     /// Like [`read_bits`], but only works when `nbBits >= 1`
-    #[inline]
+    #[inline(always)]
     pub(crate) const fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
@@ -318,7 +318,6 @@ impl<'a> BIT_DStream_t<'a> {
     ///
     ///  1. bitstream is valid : bitsConsumed <= sizeof(bitD->bitContainer)*8
     ///  2. look window is valid after shifted down : bitD->ptr >= bitD->start
-    #[inline]
     unsafe fn reload_internal(&mut self) {
         // quickcheck hits this
         // debug_assert!(self.bitsConsumed as usize >= 8 * size_of::<usize>());
@@ -328,7 +327,7 @@ impl<'a> BIT_DStream_t<'a> {
         self.bitContainer = unsafe { core::ptr::read_unaligned(self.ptr as *const usize) }.to_le();
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn reload_fast(&mut self) -> StreamStatus {
         if self.ptr < self.limitPtr {
             StreamStatus::Overflow
@@ -383,6 +382,7 @@ impl<'a> BIT_DStream_t<'a> {
         result
     }
 
+    #[inline(always)]
     pub(crate) fn is_empty(&self) -> bool {
         self.ptr == self.start && self.bitsConsumed == BitContainerType::BITS
     }
