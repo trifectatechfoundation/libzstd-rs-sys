@@ -93,7 +93,7 @@ pub struct HUF_DEltX1 {
 #[repr(C)]
 pub struct HUF_ReadDTableX1_Workspace {
     rankVal: [u32; 13],
-    rankStart: [u32; 13],
+    rankStart: [u32; 16],
     statsWksp: crate::lib::common::entropy_common::Workspace,
     symbols: [u8; 256],
     huffWeight: [u8; 256],
@@ -416,11 +416,23 @@ pub fn HUF_readDTableX1_wksp(
         wksp.rankStart[n] = curr;
     }
 
-    for (n, w) in wksp.huffWeight[..nbSymbols as usize].iter().enumerate() {
-        let w = usize::from(*w);
-        wksp.symbols[wksp.rankStart[w] as usize] = n as u8;
-        wksp.rankStart[w] += 1;
+    // Weights are <= tableLog <= 12 and positions are < nbSymbols <= 256, so the masks and the
+    // `u8` index are lossless; they let the compiler drop the bounds checks.
+    let rankStart = &mut wksp.rankStart;
+    let symbols = &mut wksp.symbols;
+    let (quads, rest) = wksp.huffWeight[..nbSymbols as usize].as_chunks::<4>();
+    let mut n = 0u8;
+    let mut place = |w: u8| {
+        let w = usize::from(w & 15);
+        let r = rankStart[w];
+        symbols[usize::from(r as u8)] = n;
+        rankStart[w] = r + 1;
+        n = n.wrapping_add(1);
+    };
+    for q in quads {
+        q.iter().for_each(|&w| place(w));
     }
+    rest.iter().for_each(|&w| place(w));
 
     // fill DTable
     //
