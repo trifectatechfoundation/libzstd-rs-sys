@@ -237,8 +237,8 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     let mut dictMatchIndex = *dictHashTable.add(h);
 
     let base = ms.window.base;
-    let prefixStart = base.offset(ms.window.dictLimit as isize);
-    let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+    let prefixStart = base.wrapping_offset(ms.window.dictLimit as isize);
+    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
     let dictBase = (*dms).window.base;
     let dictEnd = (*dms).window.nextSrc;
     let dictHighLimit =
@@ -1715,7 +1715,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
         // check repCode
         if isDxS {
-            let repIndex = (ip.offset_from(base) as core::ffi::c_long as u32)
+            let repIndex = (ip.wrapping_offset_from(base) as core::ffi::c_long as u32)
                 .wrapping_add(1)
                 .wrapping_sub(offset_1);
             let repMatch = if (dictMode == DictMode::DictMatchState
@@ -1724,7 +1724,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
             {
                 dictBase.offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
             } else {
-                base.offset(repIndex as isize)
+                base.wrapping_offset(repIndex as isize)
             };
             if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
                 && MEM_read32(repMatch as *const core::ffi::c_void)
@@ -1836,15 +1836,14 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 }
 
                                 if isDxS {
-                                    let repIndex_0 = (ip.offset_from(base) as core::ffi::c_long
-                                        as u32)
+                                    let repIndex_0 = (ip.wrapping_offset_from(base) as u32)
                                         .wrapping_sub(offset_1);
                                     let repMatch_0 = if repIndex_0 < prefixLowestIndex {
-                                        dictBase
-                                            .offset(repIndex_0.wrapping_sub(dictIndexDelta)
-                                                as isize)
+                                        dictBase.wrapping_offset(
+                                            repIndex_0.wrapping_sub(dictIndexDelta) as isize,
+                                        )
                                     } else {
-                                        base.offset(repIndex_0 as isize)
+                                        base.wrapping_offset(repIndex_0 as isize)
                                     };
                                     if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
                                         && MEM_read32(repMatch_0 as *const core::ffi::c_void)
@@ -1929,15 +1928,16 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     }
 
                                     if isDxS {
-                                        let repIndex_1 = (ip.offset_from(base) as core::ffi::c_long
+                                        let repIndex_1 = (ip.wrapping_offset_from(base)
+                                            as core::ffi::c_long
                                             as u32)
                                             .wrapping_sub(offset_1);
                                         let repMatch_1 = if repIndex_1 < prefixLowestIndex {
-                                            dictBase
-                                                .offset(repIndex_1.wrapping_sub(dictIndexDelta)
-                                                    as isize)
+                                            dictBase.wrapping_offset(
+                                                repIndex_1.wrapping_sub(dictIndexDelta) as isize,
+                                            )
                                         } else {
-                                            base.offset(repIndex_1 as isize)
+                                            base.wrapping_offset(repIndex_1 as isize)
                                         };
                                         if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
                                             && MEM_read32(repMatch_1 as *const core::ffi::c_void)
@@ -2018,16 +2018,15 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                             }
 
                             if isDxS {
-                                let matchIndex = (start.offset_from(base) as core::ffi::c_long
-                                    as usize)
+                                let matchIndex = (start.wrapping_offset_from(base) as usize)
                                     .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
                                     as u32;
                                 let mut match_0 = if matchIndex < prefixLowestIndex {
                                     dictBase
-                                        .offset(matchIndex as isize)
-                                        .sub(dictIndexDelta as usize)
+                                        .wrapping_offset(matchIndex as isize)
+                                        .wrapping_sub(dictIndexDelta as usize)
                                 } else {
-                                    base.offset(matchIndex as isize)
+                                    base.wrapping_offset(matchIndex as isize)
                                 };
                                 let mStart = if matchIndex < prefixLowestIndex {
                                     dictLowest
@@ -2070,14 +2069,14 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         // check immediate repcode
         if isDxS {
             while ip <= ilimit {
-                let current2 = ip.offset_from(base) as core::ffi::c_long as u32;
+                let current2 = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
                 let repIndex_2 = current2.wrapping_sub(offset_2);
                 let repMatch_2 = if repIndex_2 < prefixLowestIndex {
                     dictBase
                         .sub(dictIndexDelta as usize)
                         .offset(repIndex_2 as isize)
                 } else {
-                    base.offset(repIndex_2 as isize)
+                    base.wrapping_offset(repIndex_2 as isize)
                 };
                 if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex_2)
                     && MEM_read32(repMatch_2 as *const core::ffi::c_void)
