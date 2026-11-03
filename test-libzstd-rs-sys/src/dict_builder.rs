@@ -599,9 +599,9 @@ fn test_optimize_train_from_buffer_cover_pool(thread_count: u32) {
             shrinkDict: 0,
             shrinkDictMaxRegression: 1,
             zParams: ZDICT_params_t {
-                compressionLevel: 3,
+                compressionLevel: 5,
                 notificationLevel: 1,
-                dictID: 0,
+                dictID: 1234,
             },
         };
 
@@ -663,7 +663,6 @@ fn test_optimize_train_from_buffer_fastcover_single_threaded() {
 }
 
 #[test]
-#[ignore = "let's fix the single-threaded case first"]
 #[cfg(not(target_family = "wasm"))]
 fn test_optimize_train_from_buffer_fastcover_multi_threaded() {
     test_optimize_train_from_buffer_fastcover_pool(4);
@@ -696,9 +695,9 @@ fn test_optimize_train_from_buffer_fastcover_pool(thread_count: u32) {
             shrinkDict: 0,
             shrinkDictMaxRegression: 1,
             zParams: ZDICT_params_t {
-                compressionLevel: 3,
+                compressionLevel: 5,
                 notificationLevel: 1,
-                dictID: 0,
+                dictID: 1234,
             },
             f: 20,
             accel: 1,

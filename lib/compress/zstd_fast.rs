@@ -563,7 +563,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
     let maxDistance = 1 << cParams.windowLog;
-    let endIndex = istart.offset_from_unsigned(base).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     assert!(endIndex - prefixStartIndex <= maxDistance);
 
     let _ = hasStep; // not currently specialized on whether it's accelerated
@@ -593,7 +593,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
             ZSTD_comparePackedTags(dictMatchIndexAndTag as usize, dictHashAndTag0);
 
         let mut matchIndex = *hashTable.add(hash0);
-        let mut curr = ip0.offset_from(base) as core::ffi::c_long as u32;
+        let mut curr = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let mut step = stepSize as usize;
         let kStepIncr = (1 << kSearchStrength) as usize;
         let mut nextStep = ip0.add(kStepIncr);
@@ -722,7 +722,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                         break 's_135;
                     }
 
-                    curr = ip0.offset_from(base) as core::ffi::c_long as u32;
+                    curr = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
                     hash0 = hash1;
                 }
             }
@@ -743,11 +743,11 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                 ip0.sub(2) as *const core::ffi::c_void,
                 hlog,
                 MLS,
-            )) = ip0.sub(2).offset_from(base) as core::ffi::c_long as u32;
+            )) = ip0.sub(2).wrapping_offset_from(base) as core::ffi::c_long as u32;
 
             // check immediate repcode
             while ip0 <= ilimit {
-                let current2 = ip0.offset_from(base) as core::ffi::c_long as u32;
+                let current2 = ip0.wrapping_offset_from(base) as core::ffi::c_long as u32;
                 let repIndex2 = current2.wrapping_sub(offset_2);
                 let repMatch2 = if repIndex2 < prefixStartIndex {
                     dictBase
