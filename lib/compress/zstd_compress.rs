@@ -442,8 +442,6 @@ pub struct ZSTD_SequencePosition {
     pub posInSrc: usize,
 }
 
-pub type S64 = i64;
-
 #[repr(C)]
 pub struct seqStoreSplits<'a> {
     pub splitLocations: &'a mut [u32; ZSTD_MAX_NB_BLOCK_SPLITS],
@@ -5864,7 +5862,7 @@ unsafe fn ZSTD_optimalBlockSize(
     blockSizeMax: usize,
     mut splitLevel: core::ffi::c_int,
     strat: ZSTD_strategy,
-    savings: S64,
+    savings: i64,
 ) -> usize {
     // Split level based on compression strategy, from `fast` to `btultra2`
     static splitLevels: [core::ffi::c_int; 10] = [0, 0, 1, 2, 2, 3, 3, 4, 4, 4];
@@ -5922,7 +5920,7 @@ unsafe fn ZSTD_compress_frameChunk(
     let ostart = dst as *mut u8;
     let mut op = ostart;
     let maxDist = 1 << (*cctx).appliedParams.cParams.windowLog;
-    let mut savings = (*cctx).consumedSrcSize as S64 - (*cctx).producedCSize as S64;
+    let mut savings = (*cctx).consumedSrcSize as i64 - (*cctx).producedCSize as i64;
 
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
         ZSTD_XXH64_update_slice(
@@ -6039,7 +6037,7 @@ unsafe fn ZSTD_compress_frameChunk(
         // otherwise only full blocks are used.
         // But being conservative is fine,
         // since splitting barely compressible blocks is not fruitful anyway.
-        savings += blockSize as S64 - cSize as S64;
+        savings += blockSize as i64 - cSize as i64;
         ip = ip.add(blockSize);
         remaining = remaining.wrapping_sub(blockSize);
         op = op.add(cSize);
