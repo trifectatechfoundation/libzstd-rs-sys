@@ -155,11 +155,9 @@ impl SeqStore_t {
     }
 }
 
-pub type SeqDef = SeqDef_s;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct SeqDef_s {
+pub struct SeqDef {
     pub offBase: u32,
     pub litLength: u16,
     pub mlBase: u16,
