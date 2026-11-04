@@ -49,7 +49,7 @@ use crate::lib::legacy::zstd_v05::{
     ZSTDv05_getFrameParams, ZSTDv05_parameters,
 };
 use crate::lib::legacy::zstd_v06::{
-    ZBUFFv06_DCtx_s, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
+    ZBUFFv06_DCtx, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
     ZBUFFv06_decompressInitDictionary, ZBUFFv06_freeDCtx, ZSTDv06_createDCtx,
     ZSTDv06_decompress_usingDict, ZSTDv06_findFrameSizeInfoLegacy, ZSTDv06_frameParams,
     ZSTDv06_freeDCtx, ZSTDv06_getFrameParams,
@@ -80,7 +80,6 @@ pub struct ZSTD_cpuid_t {
     pub f7c: u32,
 }
 type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
-type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 
 #[derive(Default)]
 #[repr(C)]

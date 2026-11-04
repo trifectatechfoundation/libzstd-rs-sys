@@ -130,7 +130,7 @@ struct algo_time_t {
     decode256Time: u32,
 }
 #[repr(C)]
-pub(crate) struct ZBUFFv06_DCtx_s {
+pub(crate) struct ZBUFFv06_DCtx {
     zd: *mut ZSTDv06_DCtx,
     fParams: ZSTDv06_frameParams,
     stage: ZBUFFv06_dStage,
@@ -151,7 +151,6 @@ const ZBUFFds_load: ZBUFFv06_dStage = 3;
 const ZBUFFds_read: ZBUFFv06_dStage = 2;
 const ZBUFFds_loadHeader: ZBUFFv06_dStage = 1;
 const ZBUFFds_init: ZBUFFv06_dStage = 0;
-type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb526 as core::ffi::c_uint;
 static ZSTDv06_frameHeaderSize_min: usize = 5;
 const ZSTDv06_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
