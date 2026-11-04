@@ -39,12 +39,51 @@ pub const fn HUF_CTABLE_SIZE(maxSymbolValue: usize) -> usize {
     HUF_CTABLE_SIZE_ST(maxSymbolValue) * size_of::<usize>()
 }
 
-pub(crate) const HUF_flags_bmi2: core::ffi::c_uint = 1;
-pub(crate) const HUF_flags_optimalDepth: core::ffi::c_uint = 2;
-pub(crate) const HUF_flags_preferRepeat: core::ffi::c_uint = 4;
-pub(crate) const HUF_flags_suspectUncompressible: core::ffi::c_uint = 8;
-pub(crate) const HUF_flags_disableAsm: core::ffi::c_uint = 16;
-pub(crate) const HUF_flags_disableFast: core::ffi::c_uint = 32;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[repr(transparent)]
+pub struct HUF_flags(core::ffi::c_uint);
+
+impl HUF_flags {
+    /// - If compiled with DYNAMIC_BMI2: Set flag only if the CPU supports BMI2 at runtime.
+    /// - Otherwise: ignored.
+    pub const BMI2: Self = Self(1 << 0);
+    /// - If set: test possible table depths to find the one that produces the smallest header + encoded size.
+    /// - If unset: use heuristic to find the table depth.
+    pub const OPTIMAL_DEPTH: Self = Self(1 << 1);
+    /// - If set: if the previous table can encode the input, always reuse the previous table.
+    /// - If unset: if the previous table can encode the input, reuse the previous table if it results in a smaller output.
+    pub const PREFER_REPEAT: Self = Self(1 << 2);
+    /// - If set: sample the input and check if the sample is uncompressible, if it is then don't attempt to compress.
+    /// - If unset: always histogram the entire input.
+    pub const SUSPECT_UNCOMPRESSIBLE: Self = Self(1 << 3);
+    /// - If set: don't use assembly implementations
+    /// - If unset: allow using assembly implementations
+    pub const DISABLE_ASM: Self = Self(1 << 4);
+    /// - If set: don't use the fast decoding loop, always use the fallback decoding loop.
+    /// - If unset: use the fast decoding loop when possible.
+    pub const DISABLE_FAST: Self = Self(1 << 5);
+
+    pub const fn empty() -> Self {
+        Self(0)
+    }
+
+    pub const fn bits(self) -> core::ffi::c_uint {
+        self.0
+    }
+
+    pub const fn contains(self, flags: Self) -> bool {
+        self.0 & flags.0 == flags.0
+    }
+
+    #[must_use]
+    pub const fn with(self, flags: Self, enabled: bool) -> Self {
+        if enabled {
+            Self(self.0 | flags.0)
+        } else {
+            Self(self.0 & !flags.0)
+        }
+    }
+}
 
 pub(crate) const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 

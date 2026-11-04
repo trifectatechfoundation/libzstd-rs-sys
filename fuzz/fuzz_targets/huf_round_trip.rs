@@ -36,27 +36,17 @@ struct HufFlags {
 }
 
 impl HufFlags {
-    fn to_c_int(&self) -> c_int {
-        let mut flags = 0;
-        if self.bmi2 {
-            flags |= 1; // HUF_flags_bmi2
-        }
-        if self.optimal_depth {
-            flags |= 2; // HUF_flags_optimalDepth
-        }
-        if self.prefer_repeat {
-            flags |= 4; // HUF_flags_preferRepeat
-        }
-        if self.suspect_uncompressible {
-            flags |= 8; // HUF_flags_suspectUncompressible
-        }
-        if self.disable_asm {
-            flags |= 16; // HUF_flags_disableAsm
-        }
-        if self.disable_fast {
-            flags |= 32; // HUF_flags_disableFast
-        }
-        flags
+    fn to_flags(&self) -> HUF_flags {
+        HUF_flags::empty()
+            .with(HUF_flags::BMI2, self.bmi2)
+            .with(HUF_flags::OPTIMAL_DEPTH, self.optimal_depth)
+            .with(HUF_flags::PREFER_REPEAT, self.prefer_repeat)
+            .with(
+                HUF_flags::SUSPECT_UNCOMPRESSIBLE,
+                self.suspect_uncompressible,
+            )
+            .with(HUF_flags::DISABLE_ASM, self.disable_asm)
+            .with(HUF_flags::DISABLE_FAST, self.disable_fast)
     }
 }
 
@@ -88,7 +78,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     if size <= 1 {
         return;
     }
-    let flags = input.flags.to_c_int();
+    let flags = input.flags.to_flags();
 
     // Calculate compression buffer size (0 to 4 * size)
     let cbuf_size = (input.cbuf_size_mult as usize % 5) * size;

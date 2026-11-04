@@ -697,7 +697,7 @@ use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{
-    CTable, HUF_flags_optimalDepth, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+    CTable, HUF_flags, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
     HUF_SYMBOLVALUE_MAX_U8, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
@@ -4823,7 +4823,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     literalsCompressionIsDisabled: bool,
     workspace: *mut core::ffi::c_void,
     wkspSize: usize,
-    hufFlags: core::ffi::c_int,
+    hufFlags: HUF_flags,
 ) -> Result<usize, Error> {
     let wkspStart = workspace as *mut u8;
     let wkspEnd = wkspStart.add(wkspSize);
@@ -5013,11 +5013,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     let litSize = seqStorePtr.lit.offset_from_unsigned(seqStorePtr.litStart);
     let huf_useOptDepth =
         cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint;
-    let hufFlags = if huf_useOptDepth {
-        HUF_flags_optimalDepth as core::ffi::c_int
-    } else {
-        0
-    };
+    let hufFlags = HUF_flags::empty().with(HUF_flags::OPTIMAL_DEPTH, huf_useOptDepth);
 
     entropyMetadata.hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
         core::slice::from_raw_parts(seqStorePtr.litStart, litSize),

@@ -1,7 +1,7 @@
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::FSE_CTable;
-use crate::lib::common::huf::{CTable, HUF_flags_bmi2, HUF_SYMBOLVALUE_MAX};
+use crate::lib::common::huf::{CTable, HUF_flags, HUF_SYMBOLVALUE_MAX};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     BlockType, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits, ML_defaultNorm,
@@ -99,11 +99,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         cLitSize = cLitSize.wrapping_add(hufMetadata.hufDesSize);
     }
 
-    let flags = if bmi2 {
-        HUF_flags_bmi2 as core::ffi::c_int
-    } else {
-        0
-    };
+    let flags = HUF_flags::empty().with(HUF_flags::BMI2, bmi2);
     let cSize = if singleStream {
         HUF_compress1X_usingCTable(
             op as *mut core::ffi::c_void,

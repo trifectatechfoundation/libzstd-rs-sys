@@ -12,7 +12,7 @@ use crate::lib::common::compiler::{prefetch_area, prefetch_read_data, prefetch_v
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::FSE_TABLESTEP;
-use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
+use crate::lib::common::huf::HUF_flags;
 use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
@@ -376,21 +376,9 @@ fn ZSTD_decodeLiteralsBlock(
     };
     let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
-    let flags = {
-        let bmi_flag = if dctx.bmi2 {
-            HUF_flags_bmi2 as core::ffi::c_int
-        } else {
-            0
-        };
-
-        let disable_asm_flag = if dctx.disableHufAsm {
-            HUF_flags_disableAsm as core::ffi::c_int
-        } else {
-            0
-        };
-
-        bmi_flag | disable_asm_flag
-    };
+    let flags = HUF_flags::empty()
+        .with(HUF_flags::BMI2, dctx.bmi2)
+        .with(HUF_flags::DISABLE_ASM, dctx.disableHufAsm);
 
     let lhlCode = (src[0] >> 2 & 0b11) as u32;
     let singleStream = lhlCode == 0;

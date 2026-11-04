@@ -1,7 +1,6 @@
 use crate::lib::common::error_private::Error;
 use crate::lib::common::huf::{
-    CTable, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
-    HUF_flags_suspectUncompressible, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+    CTable, HUF_flags, HUF_repeat, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
 };
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{LitHufLog, SymbolEncodingType};
@@ -22,7 +21,7 @@ pub type huf_compress_f = unsafe fn(
     usize,
     &mut CTable,
     &mut HUF_repeat,
-    core::ffi::c_int,
+    HUF_flags,
 ) -> Result<usize, Error>;
 
 pub unsafe fn ZSTD_noCompressLiterals(
@@ -169,23 +168,17 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     let mut repeat = prevHuf.repeatMode;
-    let flags = (if bmi2 {
-        HUF_flags_bmi2 as core::ffi::c_int
-    } else {
-        0
-    }) | (if (strategy as core::ffi::c_uint) < ZSTD_lazy && src.len() <= 1024 {
-        HUF_flags_preferRepeat as core::ffi::c_int
-    } else {
-        0
-    }) | (if strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint {
-        HUF_flags_optimalDepth as core::ffi::c_int
-    } else {
-        0
-    }) | (if suspectUncompressible {
-        HUF_flags_suspectUncompressible as core::ffi::c_int
-    } else {
-        0
-    });
+    let flags = HUF_flags::empty()
+        .with(HUF_flags::BMI2, bmi2)
+        .with(
+            HUF_flags::PREFER_REPEAT,
+            strategy < ZSTD_lazy && src.len() <= 1024,
+        )
+        .with(
+            HUF_flags::OPTIMAL_DEPTH,
+            strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint,
+        )
+        .with(HUF_flags::SUSPECT_UNCOMPRESSIBLE, suspectUncompressible);
     if repeat == HUF_repeat::Valid && lhSize == 3 {
         singleStream = true;
     }
