@@ -27,7 +27,7 @@ use crate::lib::zstd::{
     ParamSwitch, ZSTD_EndDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_btultra, ZSTD_btultra2,
     ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e,
     ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush,
-    ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_lazy2, ZSTD_outBuffer_s, ZSTD_strategy,
+    ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_lazy2, ZSTD_outBuffer, ZSTD_strategy,
     ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_UNKNOWN,
 };
 
@@ -187,7 +187,6 @@ struct ZSTDMT_jobDescription {
     frameChecksumNeeded: core::ffi::c_uint,
 }
 
-type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[repr(C)]
 struct SyncPoint {
     toLoad: usize,

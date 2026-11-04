@@ -29,11 +29,10 @@ use libzstd_rs_sys::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 use libzstd_rs_sys::lib::zstd::{
     Format, ParamSwitch, ZSTD_ResetDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_cParameter,
     ZSTD_compressionParameters, ZSTD_dParameter, ZSTD_error_frameParameter_windowTooLarge,
-    ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer, ZSTD_outBuffer_s, ZSTD_strategy,
-    ZSTD_BLOCKSIZE_MAX, ZSTD_CHAINLOG_MAX, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
-    ZSTD_FRAMEHEADERSIZE_MAX, ZSTD_LDM_HASHLOG_MAX, ZSTD_MAGICNUMBER, ZSTD_MAGIC_SKIPPABLE_MASK,
-    ZSTD_MAGIC_SKIPPABLE_START, ZSTD_WINDOWLOG_LIMIT_DEFAULT, ZSTD_WINDOWLOG_MAX,
-    ZSTD_WINDOWLOG_MIN,
+    ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_outBuffer, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX,
+    ZSTD_CHAINLOG_MAX, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_FRAMEHEADERSIZE_MAX,
+    ZSTD_LDM_HASHLOG_MAX, ZSTD_MAGICNUMBER, ZSTD_MAGIC_SKIPPABLE_MASK, ZSTD_MAGIC_SKIPPABLE_START,
+    ZSTD_WINDOWLOG_LIMIT_DEFAULT, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MIN,
 };
 
 use crate::fileio_asyncio::{
@@ -1611,7 +1610,7 @@ unsafe fn setInBuffer(buf: *const core::ffi::c_void, size: size_t, pos: size_t) 
     }
 }
 unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: size_t, pos: size_t) -> ZSTD_outBuffer {
-    ZSTD_outBuffer_s {
+    ZSTD_outBuffer {
         dst: buf,
         size,
         pos,
