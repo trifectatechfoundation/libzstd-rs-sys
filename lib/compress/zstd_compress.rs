@@ -787,9 +787,9 @@ use crate::lib::compress::zstd_opt::{
 use crate::lib::compress::zstd_preSplit::{ZSTD_splitBlock, ZSTD_SLIPBLOCK_WORKSPACESIZE};
 use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
-    ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_nextInputSizeHint,
-    ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
-    ZSTDMT_JOBSIZE_MAX, ZSTDMT_JOBSIZE_MIN, ZSTDMT_NBWORKERS_MAX,
+    ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow,
+    ZSTDMT_updateCParams_whileCompressing, ZSTDMT_JOBSIZE_MAX, ZSTDMT_JOBSIZE_MIN,
+    ZSTDMT_NBWORKERS_MAX,
 };
 use crate::lib::zstd::{
     Format, ParamSwitch, ZSTD_EndDirective, ZSTD_ResetDirective, ZSTD_Sequence,
@@ -8355,7 +8355,7 @@ unsafe fn ZSTD_compressStream_generic(
 
 unsafe fn ZSTD_nextInputSizeHint_MTorST(cctx: *const ZSTD_CCtx) -> usize {
     if (*cctx).appliedParams.nbWorkers >= 1 {
-        return ZSTDMT_nextInputSizeHint((*cctx).mtctx);
+        return (*(*cctx).mtctx).next_input_size_hint();
     }
     (*cctx).next_input_size_hint()
 }

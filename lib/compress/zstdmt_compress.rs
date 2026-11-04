@@ -2127,12 +2127,14 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     syncPoint
 }
 
-pub unsafe fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> usize {
-    let mut hintInSize = ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled);
-    if hintInSize == 0 {
-        hintInSize = (*mtctx).targetSectionSize;
+impl ZSTDMT_CCtx {
+    pub fn next_input_size_hint(&self) -> usize {
+        let mut hintInSize = self.targetSectionSize.wrapping_sub(self.inBuff.filled);
+        if hintInSize == 0 {
+            hintInSize = self.targetSectionSize;
+        }
+        hintInSize
     }
-    hintInSize
 }
 
 /// internal use only - exposed to be invoked from zstd_compress.c
