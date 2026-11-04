@@ -16,17 +16,10 @@ use crate::fileio::g_display_prefs;
 extern "C" {
     static mut stderr: *mut FILE;
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FIO_display_prefs_s {
-    pub displayLevel: core::ffi::c_int,
-    pub progressSetting: FIO_progressSetting_e,
-}
 pub type FIO_progressSetting_e = core::ffi::c_uint;
 pub const FIO_ps_always: FIO_progressSetting_e = 2;
 pub const FIO_ps_never: FIO_progressSetting_e = 1;
 pub const FIO_ps_auto: FIO_progressSetting_e = 0;
-pub type FIO_display_prefs_t = FIO_display_prefs_s;
 pub type FIO_compressionType_t = core::ffi::c_uint;
 pub const FIO_lz4Compression: FIO_compressionType_t = 4;
 pub const FIO_lzmaCompression: FIO_compressionType_t = 3;
