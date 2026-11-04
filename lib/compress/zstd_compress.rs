@@ -3,11 +3,9 @@ use core::ptr;
 
 use crate::lib::polyfill::PointerExt;
 
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
-
 #[derive(Default)]
 #[repr(C)]
-pub struct ZSTD_CCtx_s {
+pub struct ZSTD_CCtx {
     pub(super) stage: CompressionStage,
     pub(super) cParamsChanged: core::ffi::c_int,
     pub(super) bmi2: core::ffi::c_int,
@@ -7174,7 +7172,7 @@ pub unsafe extern "C" fn ZSTD_compress(
     srcSize: usize,
     compressionLevel: core::ffi::c_int,
 ) -> usize {
-    let mut ctxBody = ZSTD_CCtx_s::default();
+    let mut ctxBody = ZSTD_CCtx::default();
     ZSTD_initCCtx(&mut ctxBody, ZSTD_customMem::default());
     let result = ZSTD_compressCCtx(
         &mut ctxBody,

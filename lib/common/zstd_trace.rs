@@ -1,4 +1,4 @@
-use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s, ZSTD_CCtx_s};
+use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s};
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
 
 #[derive(Default)]
@@ -13,7 +13,7 @@ pub struct ZSTD_Trace {
     pub uncompressedSize: usize,
     pub compressedSize: usize,
     pub params: *const ZSTD_CCtx_params_s,
-    pub cctx: *const ZSTD_CCtx_s,
+    pub cctx: *const ZSTD_CCtx,
     pub dctx: *const ZSTD_DCtx_s,
 }
 
