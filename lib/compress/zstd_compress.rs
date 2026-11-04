@@ -8427,11 +8427,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
     let mut params = (*cctx).requestedParams;
     let prefixDict = (*cctx).prefixDict;
     (*cctx).init_local_dict()?;
-    ptr::write_bytes(
-        &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut u8,
-        0,
-        size_of::<ZSTD_prefixDict>(),
-    );
+    (*cctx).prefixDict = ZSTD_prefixDict::default();
     if !((*cctx).cdict).is_null() && ((*cctx).localDict.cdict).is_null() {
         // Let the cdict's compression level take priority over the requested params.
         // But do not take the cdict's compression level if the "cdict" is actually a localDict
