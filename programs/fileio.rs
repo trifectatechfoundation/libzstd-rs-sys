@@ -55,7 +55,7 @@ use crate::util::{
     UTIL_utime,
 };
 
-enum lzma_internal_s {}
+enum lzma_internal {}
 enum internal_state {}
 
 extern "C" {
@@ -186,7 +186,6 @@ struct lzma_stream {
 }
 type lzma_reserved_enum = core::ffi::c_uint;
 const LZMA_RESERVED_ENUM: lzma_reserved_enum = 0;
-type lzma_internal = lzma_internal_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct lzma_allocator {
