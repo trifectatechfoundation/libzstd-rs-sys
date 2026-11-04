@@ -170,7 +170,7 @@ struct sortedSymbol_t {
 }
 type litBlockType_t = core::ffi::c_uint;
 #[repr(C)]
-pub(crate) struct ZBUFFv07_DCtx_s {
+pub(crate) struct ZBUFFv07_DCtx {
     zd: *mut ZSTDv07_DCtx,
     fParams: ZSTDv07_frameParams,
     stage: ZBUFFv07_dStage,
@@ -191,7 +191,6 @@ const ZBUFFds_load: ZBUFFv07_dStage = 3;
 const ZBUFFds_read: ZBUFFv07_dStage = 2;
 const ZBUFFds_loadHeader: ZBUFFv07_dStage = 1;
 const ZBUFFds_init: ZBUFFv07_dStage = 0;
-type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb527;
 const ZSTDv07_MAGIC_SKIPPABLE_START: core::ffi::c_uint = 0x184d2a50;
 const ZSTDv07_WINDOWLOG_MAX_32: core::ffi::c_int = 25;
