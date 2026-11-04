@@ -23,11 +23,9 @@ use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp_array, HIST_
 #[cfg(doc)]
 use crate::lib::common::bitstream::BIT_CStream_t;
 
-pub type nodeElt = nodeElt_s;
-
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct nodeElt_s {
+pub struct nodeElt {
     pub count: u32,
     pub parent: u16,
     pub byte: u8,
@@ -876,7 +874,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
     }
-    huffNodeTbl.fill(nodeElt_s::default());
+    huffNodeTbl.fill(nodeElt::default());
     /* sort, decreasing order */
     HUF_sort(
         &mut huffNodeTbl[1..],
