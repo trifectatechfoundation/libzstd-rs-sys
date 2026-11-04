@@ -16,9 +16,9 @@ extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn stat(__file: *const core::ffi::c_char, __buf: *mut stat) -> core::ffi::c_int;
-    fn fstat(__fd: core::ffi::c_int, __buf: *mut stat) -> core::ffi::c_int;
-    fn lstat(__file: *const core::ffi::c_char, __buf: *mut stat) -> core::ffi::c_int;
+    fn stat(__file: *const core::ffi::c_char, __buf: *mut Stat) -> core::ffi::c_int;
+    fn fstat(__fd: core::ffi::c_int, __buf: *mut Stat) -> core::ffi::c_int;
+    fn lstat(__file: *const core::ffi::c_char, __buf: *mut Stat) -> core::ffi::c_int;
     fn utimensat(
         __fd: core::ffi::c_int,
         __path: *const core::ffi::c_char,
@@ -46,7 +46,7 @@ type __blkcnt_t = core::ffi::c_long;
 type __syscall_slong_t = core::ffi::c_long;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct stat {
+pub struct Stat {
     pub st_dev: __dev_t,
     pub st_ino: __ino_t,
     pub st_nlink: __nlink_t,
@@ -66,7 +66,6 @@ pub struct stat {
 type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
-pub type stat_t = stat;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_HumanReadableSize_t {
@@ -143,7 +142,7 @@ pub unsafe fn UTIL_traceFileStat() {
 pub unsafe fn UTIL_fstat(
     fd: core::ffi::c_int,
     filename: *const core::ffi::c_char,
-    statbuf: *mut stat_t,
+    statbuf: *mut Stat,
 ) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
@@ -176,12 +175,12 @@ pub unsafe fn UTIL_fstat(
 }
 pub unsafe fn UTIL_stat(
     filename: *const core::ffi::c_char,
-    statbuf: *mut stat_t,
+    statbuf: *mut Stat,
 ) -> core::ffi::c_int {
     UTIL_fstat(-(1), filename, statbuf)
 }
 pub unsafe fn UTIL_isFdRegularFile(fd: core::ffi::c_int) -> core::ffi::c_int {
-    let mut statbuf = core::mem::zeroed::<stat>();
+    let mut statbuf = core::mem::zeroed::<Stat>();
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -210,7 +209,7 @@ pub unsafe fn UTIL_isFdRegularFile(fd: core::ffi::c_int) -> core::ffi::c_int {
     ret
 }
 pub unsafe fn UTIL_isRegularFile(infilename: *const core::ffi::c_char) -> core::ffi::c_int {
-    let mut statbuf = core::mem::zeroed::<stat>();
+    let mut statbuf = core::mem::zeroed::<Stat>();
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -237,14 +236,14 @@ pub unsafe fn UTIL_isRegularFile(infilename: *const core::ffi::c_char) -> core::
     }
     ret
 }
-pub unsafe fn UTIL_isRegularFileStat(statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isRegularFileStat(statbuf: *const Stat) -> core::ffi::c_int {
     (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as core::ffi::c_int as __mode_t)
         as core::ffi::c_int
         != 0) as core::ffi::c_int
 }
 pub unsafe fn UTIL_chmod(
     filename: *const core::ffi::c_char,
-    statbuf: *const stat_t,
+    statbuf: *const Stat,
     permissions: mode_t,
 ) -> core::ffi::c_int {
     UTIL_fchmod(-(1), filename, statbuf, permissions)
@@ -252,10 +251,10 @@ pub unsafe fn UTIL_chmod(
 pub unsafe fn UTIL_fchmod(
     fd: core::ffi::c_int,
     filename: *const core::ffi::c_char,
-    mut statbuf: *const stat_t,
+    mut statbuf: *const Stat,
     permissions: mode_t,
 ) -> core::ffi::c_int {
-    let mut localStatBuf = core::mem::zeroed::<stat>();
+    let mut localStatBuf = core::mem::zeroed::<Stat>();
     if g_traceFileStat != 0 {
         fprintf(
             stderr,
@@ -375,7 +374,7 @@ pub unsafe fn UTIL_fchmod(
 }
 pub unsafe fn UTIL_utime(
     filename: *const core::ffi::c_char,
-    statbuf: *const stat_t,
+    statbuf: *const Stat,
 ) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
@@ -417,17 +416,17 @@ pub unsafe fn UTIL_utime(
 }
 pub unsafe fn UTIL_setFileStat(
     filename: *const core::ffi::c_char,
-    statbuf: *const stat_t,
+    statbuf: *const Stat,
 ) -> core::ffi::c_int {
     UTIL_setFDStat(-(1), filename, statbuf)
 }
 pub unsafe fn UTIL_setFDStat(
     fd: core::ffi::c_int,
     filename: *const core::ffi::c_char,
-    statbuf: *const stat_t,
+    statbuf: *const Stat,
 ) -> core::ffi::c_int {
     let mut res = 0;
-    let mut curStatBuf = stat {
+    let mut curStatBuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -515,7 +514,7 @@ pub unsafe fn UTIL_setFDStat(
     -res
 }
 pub unsafe fn UTIL_isDirectory(infilename: *const core::ffi::c_char) -> core::ffi::c_int {
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -567,7 +566,7 @@ pub unsafe fn UTIL_isDirectory(infilename: *const core::ffi::c_char) -> core::ff
     }
     ret
 }
-pub unsafe fn UTIL_isDirectoryStat(statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isDirectoryStat(statbuf: *const Stat) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -622,7 +621,7 @@ pub unsafe fn UTIL_isSameFile(
         fprintf(stderr, c"\n".as_ptr());
         g_traceDepth += 1;
     }
-    let mut file1Stat = stat {
+    let mut file1Stat = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -648,7 +647,7 @@ pub unsafe fn UTIL_isSameFile(
         },
         __glibc_reserved: [0; 3],
     };
-    let mut file2Stat = stat {
+    let mut file2Stat = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -693,8 +692,8 @@ pub unsafe fn UTIL_isSameFile(
 pub unsafe fn UTIL_isSameFileStat(
     fName1: *const core::ffi::c_char,
     fName2: *const core::ffi::c_char,
-    file1Stat: *const stat_t,
-    file2Stat: *const stat_t,
+    file1Stat: *const Stat,
+    file2Stat: *const Stat,
 ) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     assert!(!fName1.is_null());
@@ -741,7 +740,7 @@ pub unsafe fn UTIL_isFIFO(infilename: *const core::ffi::c_char) -> core::ffi::c_
         fprintf(stderr, c"\n".as_ptr());
         g_traceDepth += 1;
     }
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -792,7 +791,7 @@ pub unsafe fn UTIL_isFIFO(infilename: *const core::ffi::c_char) -> core::ffi::c_
     }
     0
 }
-pub unsafe fn UTIL_isFIFOStat(statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isFIFOStat(statbuf: *const Stat) -> core::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o10000 as core::ffi::c_int as __mode_t {
         return 1;
     }
@@ -852,7 +851,7 @@ pub unsafe fn UTIL_isFileDescriptorPipe(filename: *const core::ffi::c_char) -> c
     }
     0
 }
-pub unsafe fn UTIL_isBlockDevStat(statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isBlockDevStat(statbuf: *const Stat) -> core::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o60000 as core::ffi::c_int as __mode_t {
         return 1;
     }
@@ -870,7 +869,7 @@ pub unsafe fn UTIL_isLink(infilename: *const core::ffi::c_char) -> core::ffi::c_
         fprintf(stderr, c"\n".as_ptr());
         g_traceDepth += 1;
     }
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -969,7 +968,7 @@ pub unsafe fn UTIL_fakeStderrIsConsole() {
     g_fakeStderrIsConsole = 1;
 }
 pub unsafe fn UTIL_getFileSize(infilename: *const core::ffi::c_char) -> u64 {
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -1032,7 +1031,7 @@ pub unsafe fn UTIL_getFileSize(infilename: *const core::ffi::c_char) -> u64 {
     }
     size
 }
-pub unsafe fn UTIL_getFileSizeStat(statbuf: *const stat_t) -> u64 {
+pub unsafe fn UTIL_getFileSizeStat(statbuf: *const Stat) -> u64 {
     if UTIL_isRegularFileStat(statbuf) == 0 {
         return UTIL_FILESIZE_UNKNOWN as u64;
     }
@@ -1245,7 +1244,7 @@ unsafe fn UTIL_createLinePointers(
 pub unsafe fn UTIL_createFileNamesTable_fromFileList(
     fileList: *const core::ffi::c_char,
 ) -> *mut FileNamesTable {
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -1642,7 +1641,7 @@ unsafe fn isFileNameValidForMirroredOutput(filename: *const core::ffi::c_char) -
 }
 pub const DIR_DEFAULT_MODE: core::ffi::c_int = 0o755 as core::ffi::c_int;
 unsafe fn getDirMode(dirName: *const core::ffi::c_char) -> mode_t {
-    let mut st = stat {
+    let mut st = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
