@@ -112,10 +112,10 @@ struct InBuff_t {
     buffer: Buffer,
     filled: usize,
 }
-type Buffer = buffer_s;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct buffer_s {
+struct Buffer {
     start: *mut core::ffi::c_void,
     capacity: usize,
 }
@@ -251,7 +251,7 @@ pub const ZSTDMT_JOBSIZE_MAX: core::ffi::c_int = if MEM_32bits() {
     1024 * (1 << 20)
 };
 
-const g_nullBuffer: Buffer = buffer_s {
+const g_nullBuffer: Buffer = Buffer {
     start: core::ptr::null_mut(),
     capacity: 0,
 };
@@ -385,7 +385,7 @@ unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
     }
     drop(guard);
 
-    let mut buffer = buffer_s {
+    let mut buffer = Buffer {
         start: core::ptr::null_mut::<core::ffi::c_void>(),
         capacity: 0,
     };
@@ -1981,7 +1981,7 @@ unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> bool {
     let inUse = ZSTDMT_getInputDataInUse(mtctx);
     let spaceLeft = ((*mtctx).roundBuff.capacity).wrapping_sub((*mtctx).roundBuff.pos);
     let spaceNeeded = (*mtctx).targetSectionSize;
-    let mut buffer = buffer_s {
+    let mut buffer = Buffer {
         start: core::ptr::null_mut::<core::ffi::c_void>(),
         capacity: 0,
     };
