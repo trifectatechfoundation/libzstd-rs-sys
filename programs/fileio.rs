@@ -143,7 +143,7 @@ pub struct FIO_Dict_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FIO_ctx_s {
+pub struct FIO_ctx_t {
     pub nbFilesTotal: core::ffi::c_int,
     pub hasStdinInput: core::ffi::c_int,
     pub hasStdoutOutput: core::ffi::c_int,
@@ -152,7 +152,6 @@ pub struct FIO_ctx_s {
     pub totalBytesInput: size_t,
     pub totalBytesOutput: size_t,
 }
-pub type FIO_ctx_t = FIO_ctx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct cRess_t {
