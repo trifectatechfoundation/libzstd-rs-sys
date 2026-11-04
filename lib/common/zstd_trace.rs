@@ -1,5 +1,5 @@
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params};
-use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
+use crate::lib::decompress::ZSTD_DCtx;
 
 #[derive(Default)]
 #[repr(C)]
@@ -14,7 +14,7 @@ pub struct ZSTD_Trace {
     pub compressedSize: usize,
     pub params: *const ZSTD_CCtx_params,
     pub cctx: *const ZSTD_CCtx,
-    pub dctx: *const ZSTD_DCtx_s,
+    pub dctx: *const ZSTD_DCtx,
 }
 
 pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
