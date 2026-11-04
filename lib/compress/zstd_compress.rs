@@ -8389,31 +8389,30 @@ impl ZSTD_CCtx {
             self.expectedOutBufferSize = output.size.wrapping_sub(output.pos);
         }
     }
-}
 
-/// Validate that the input/output buffers match the expectations set by
-/// ZSTD_setBufferExpectations.
-unsafe fn ZSTD_checkBufferStability(
-    cctx: *const ZSTD_CCtx,
-    output: &ZSTD_outBuffer,
-    input: &ZSTD_inBuffer,
-    _endOp: ZSTD_EndDirective,
-) -> Result<(), Error> {
-    if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
-        let expect = (*cctx).expectedInBuffer;
-        if expect.src != input.src || expect.pos != input.pos {
-            return Err(Error::stabilityCondition_notRespected);
+    /// Validate that the input/output buffers match the expectations set by
+    /// ZSTD_setBufferExpectations.
+    fn check_buffer_stability(
+        &self,
+        output: &ZSTD_outBuffer,
+        input: &ZSTD_inBuffer,
+    ) -> Result<(), Error> {
+        if self.appliedParams.inBufferMode == ZSTD_bm_stable {
+            let expect = self.expectedInBuffer;
+            if expect.src != input.src || expect.pos != input.pos {
+                return Err(Error::stabilityCondition_notRespected);
+            }
         }
-    }
 
-    if (*cctx).appliedParams.outBufferMode == ZSTD_bm_stable {
-        let outBufferSize = output.size.wrapping_sub(output.pos);
-        if (*cctx).expectedOutBufferSize != outBufferSize {
-            return Err(Error::stabilityCondition_notRespected);
+        if self.appliedParams.outBufferMode == ZSTD_bm_stable {
+            let outBufferSize = output.size.wrapping_sub(output.pos);
+            if self.expectedOutBufferSize != outBufferSize {
+                return Err(Error::stabilityCondition_notRespected);
+            }
         }
-    }
 
-    Ok(())
+        Ok(())
+    }
 }
 
 /// If @endOp == ZSTD_e_end, @inSize becomes pledgedSrcSize.
@@ -8620,7 +8619,7 @@ unsafe fn compress_stream(
         (*cctx).set_buffer_expectations(output, input);
     }
 
-    ZSTD_checkBufferStability(cctx, output, input, endOp)?;
+    (*cctx).check_buffer_stability(output, input)?;
 
     // compression stage
     if (*cctx).appliedParams.nbWorkers > 0 {
