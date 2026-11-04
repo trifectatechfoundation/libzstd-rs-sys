@@ -3,9 +3,7 @@ use crate::lib::common::fse::{
     FSE_DTableHeader, FSE_decode_t, FSE_MIN_TABLELOG, FSE_TABLELOG_ABSOLUTE_MAX,
 };
 use crate::lib::common::fse_decompress::{FSE_DecompressWksp, FSE_decompress_wksp_bmi2};
-use crate::lib::common::huf::{
-    HUF_flags_bmi2, HUF_READ_STATS_WORKSPACE_SIZE_U32, HUF_TABLELOG_MAX,
-};
+use crate::lib::common::huf::{HUF_flags, HUF_READ_STATS_WORKSPACE_SIZE_U32, HUF_TABLELOG_MAX};
 use crate::lib::polyfill::likely;
 
 #[inline(always)]
@@ -230,7 +228,7 @@ pub(crate) fn HUF_readStats(
         tableLogPtr,
         src,
         &mut wksp,
-        0,
+        HUF_flags::empty(),
     )
 }
 #[inline(always)]
@@ -448,10 +446,8 @@ pub(crate) fn HUF_readStats_wksp(
     tableLogPtr: &mut u32,
     src: &[u8],
     workspace: &mut Workspace,
-    flags: core::ffi::c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
-    let use_bmi2 = flags & HUF_flags_bmi2 as core::ffi::c_int != 0;
-
     HUF_readStats_body(
         huffWeight,
         hwSize,
@@ -460,7 +456,7 @@ pub(crate) fn HUF_readStats_wksp(
         tableLogPtr,
         src,
         workspace,
-        use_bmi2,
+        flags.contains(HUF_flags::BMI2),
     )
 }
 
@@ -559,7 +555,7 @@ mod tests {
                         src.len(),
                         &mut workspace,
                         size_of::<Workspace>(),
-                        if bmi2 { HUF_flags_bmi2 as core::ffi::c_int } else { 0 },
+                        HUF_flags::empty().with(HUF_flags::BMI2, bmi2).bits() as core::ffi::c_int,
                     );
 
                     let v = match ERR_getErrorCode(v) {

@@ -7,11 +7,9 @@ use crate::lib::common::fse::{
     FSE_CTable, FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32, FSE_CTABLE_SIZE_U32,
 };
 use crate::lib::common::huf::{
-    CTable, HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth,
-    HUF_flags_preferRepeat, HUF_flags_suspectUncompressible, HUF_repeat, SymbolTable,
-    HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX,
-    HUF_SYMBOLVALUE_MAX_U8, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX,
-    HUF_WORKSPACE_SIZE,
+    CTable, HUF_CElt, HUF_CTableHeader, HUF_flags, HUF_repeat, SymbolTable, HUF_BLOCKSIZE_MAX,
+    HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_SYMBOLVALUE_MAX_U8,
+    HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -1225,9 +1223,9 @@ unsafe fn HUF_compress1X_usingCTable_internal(
     dstSize: usize,
     src: &[u8],
     CTable: &CTable,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
-    if flags & HUF_flags_bmi2 as c_int != 0 {
+    if flags.contains(HUF_flags::BMI2) {
         return HUF_compress1X_usingCTable_internal_bmi2(dst, dstSize, src, CTable);
     }
     HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, CTable)
@@ -1238,7 +1236,7 @@ pub unsafe fn HUF_compress1X_usingCTable(
     dstSize: usize,
     src: &[u8],
     CTable: &CTable,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
     HUF_compress1X_usingCTable_internal(dst, dstSize, src, CTable, flags)
 }
@@ -1248,7 +1246,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     dstSize: usize,
     src: &[u8],
     CTable: &CTable,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
     let segmentSize = src.len().div_ceil(4); /* first 3 segments */
     let ostart = dst as *mut u8;
@@ -1340,7 +1338,7 @@ pub unsafe fn HUF_compress4X_usingCTable(
     dstSize: usize,
     src: &[u8],
     CTable: &CTable,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
     HUF_compress4X_usingCTable_internal(dst, dstSize, src, CTable, flags)
 }
@@ -1359,7 +1357,7 @@ unsafe fn HUF_compressCTable_internal(
     src: &[u8],
     nbStreams: HUF_nbStreams_e,
     CTable: &CTable,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
     let cSize = match nbStreams {
         HUF_nbStreams_e::Single => HUF_compress1X_usingCTable_internal(
@@ -1433,12 +1431,12 @@ pub unsafe fn HUF_optimalTableLog(
     wkspSize: usize,
     table: &mut CTable,
     count: &[c_uint],
-    flags: c_int,
+    flags: HUF_flags,
 ) -> c_uint {
     debug_assert!(srcSize > 1); /* Not supported, RLE should be used instead */
     debug_assert!(wkspSize >= size_of::<HUF_buildCTable_wksp_tables>());
 
-    if flags & HUF_flags_optimalDepth as c_int == 0 {
+    if !flags.contains(HUF_flags::OPTIMAL_DEPTH) {
         /* cheap evaluation, based on FSE */
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
@@ -1499,7 +1497,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     mut wkspSize: usize,
     oldHufTable: &mut CTable,
     repeat: &mut HUF_repeat,
-    flags: c_int,
+    flags: HUF_flags,
 ) -> Result<usize, Error> {
     const { assert!(matches!(NB_STREAMS, 1 | 4)) };
 
@@ -1562,12 +1560,12 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     }
 
     /* Heuristic : If old table is valid, use it for small inputs */
-    if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat == HUF_repeat::Valid {
+    if flags.contains(HUF_flags::PREFER_REPEAT) && *repeat == HUF_repeat::Valid {
         return HUF_compressCTable_internal(ostart, op, oend, src, nbStreams, oldHufTable, flags);
     }
 
     /* If uncompressible data is suspected, do a smaller sampling first */
-    if flags & HUF_flags_suspectUncompressible as c_int != 0
+    if flags.contains(HUF_flags::SUSPECT_UNCOMPRESSIBLE)
         && src.len() >= SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO
     {
         let mut largestTotal = 0usize;
@@ -1620,7 +1618,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     }
 
     /* Heuristic : use existing table for small inputs */
-    if flags & HUF_flags_preferRepeat as c_int != 0 && *repeat != HUF_repeat::None {
+    if flags.contains(HUF_flags::PREFER_REPEAT) && *repeat != HUF_repeat::None {
         return HUF_compressCTable_internal(ostart, op, oend, src, nbStreams, oldHufTable, flags);
     }
 

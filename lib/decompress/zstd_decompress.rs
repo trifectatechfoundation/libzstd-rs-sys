@@ -5,6 +5,7 @@ use core::ptr::{self, NonNull};
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::HUF_flags;
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
@@ -2232,7 +2233,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Re
     let workspace = &mut entropy.LLTable;
     let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
 
-    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, 0)
+    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, HUF_flags::empty())
         .map_err(|_| Error::dictionary_corrupted)?;
 
     dictPtr = &dictPtr[hSize..];
