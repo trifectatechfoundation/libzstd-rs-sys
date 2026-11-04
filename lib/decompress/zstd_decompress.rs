@@ -25,8 +25,8 @@ use crate::lib::decompress::zstd_decompress_block::{
 };
 use crate::lib::decompress::{
     blockProperties_t, DecompressStage, DictUses, LL_base, ML_base, NextInputType, OF_base,
-    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_entropyDTables_t,
-    ZSTD_frame, ZSTD_skippableFrame,
+    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_entropyDTables_t, ZSTD_frame,
+    ZSTD_skippableFrame,
 };
 use crate::lib::zstd::{
     BufferMode, ForceIgnoreChecksum, Format, ZSTD_ResetDirective, ZSTD_customMem, ZSTD_dParameter,
@@ -3121,7 +3121,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_reset(
     }
 }
 
-impl ZSTD_DCtx_s {
+impl ZSTD_DCtx {
     fn reset(&mut self, reset: ZSTD_ResetDirective) -> Result<(), Error> {
         if matches!(
             reset,

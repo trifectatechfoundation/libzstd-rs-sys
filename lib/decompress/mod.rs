@@ -199,8 +199,6 @@ impl Workspace {
     }
 }
 
-pub type ZSTD_DCtx = ZSTD_DCtx_s;
-
 /// Decompression context
 ///
 /// When decompressing many times, it is recommended to allocate a context only once, and reuse it
@@ -212,7 +210,7 @@ pub type ZSTD_DCtx = ZSTD_DCtx_s;
 ///
 /// Use one context per thread for parallel execution.
 #[repr(C)]
-pub struct ZSTD_DCtx_s {
+pub struct ZSTD_DCtx {
     LLTptr: Option<NonNull<SymbolTable<512>>>,
     MLTptr: Option<NonNull<SymbolTable<512>>>,
     OFTptr: Option<NonNull<SymbolTable<256>>>,
