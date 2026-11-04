@@ -46,7 +46,7 @@ pub struct BMK_benchParams_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct BMK_timedFnState_s {
+pub struct BMK_timedFnState_t {
     pub timeSpent_ns: PTime,
     pub timeBudget_ns: PTime,
     pub runBudget_ns: PTime,
@@ -54,7 +54,6 @@ pub struct BMK_timedFnState_s {
     pub nbLoops: core::ffi::c_uint,
     pub coolTime: UTIL_time_t,
 }
-pub type BMK_timedFnState_t = BMK_timedFnState_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct tfs_align {
@@ -186,7 +185,7 @@ pub unsafe fn BMK_initStatic_timedFnState(
     if buffer.is_null() {
         return core::ptr::null_mut();
     }
-    if size < size_of::<BMK_timedFnState_s>() {
+    if size < size_of::<BMK_timedFnState_t>() {
         return core::ptr::null_mut();
     }
     if !(buffer as size_t).is_multiple_of(tfs_alignment) {
