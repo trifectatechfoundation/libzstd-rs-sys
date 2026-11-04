@@ -46,7 +46,7 @@ use crate::fileio_asyncio::{
 };
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 use crate::util::{
-    stat, stat_t, FileNamesTable, UTIL_HumanReadableSize_t, UTIL_compareStr,
+    FileNamesTable, Stat, UTIL_HumanReadableSize_t, UTIL_compareStr,
     UTIL_createMirroredDestDirName, UTIL_getFileSize, UTIL_getFileSizeStat, UTIL_isBlockDevStat,
     UTIL_isCompressedFile, UTIL_isConsole, UTIL_isDirectory, UTIL_isDirectoryStat, UTIL_isFIFOStat,
     UTIL_isFdRegularFile, UTIL_isFileDescriptorPipe, UTIL_isRegularFile, UTIL_isRegularFileStat,
@@ -157,7 +157,7 @@ pub struct FIO_ctx_t {
 pub struct cRess_t {
     pub dict: FIO_Dict_t,
     pub dictFileName: *const core::ffi::c_char,
-    pub dictFileStat: stat_t,
+    pub dictFileStat: Stat,
     pub cctx: *mut ZSTD_CStream,
     pub writeCtx: *mut WritePoolCtx_t,
     pub readCtx: *mut ReadPoolCtx_t,
@@ -679,7 +679,7 @@ pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const
     }
 }
 unsafe fn FIO_removeFile(path: *const core::ffi::c_char) -> core::ffi::c_int {
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -730,7 +730,7 @@ unsafe fn FIO_removeFile(path: *const core::ffi::c_char) -> core::ffi::c_int {
 unsafe fn FIO_openSrcFile(
     prefs: *const FIO_prefs_t,
     srcFileName: *const core::ffi::c_char,
-    statbuf: *mut stat_t,
+    statbuf: *mut Stat,
 ) -> *mut FILE {
     let allowBlockDevices = if !prefs.is_null() {
         (*prefs).allowBlockDevices
@@ -914,7 +914,7 @@ unsafe fn FIO_openDstFile(
     }
     f
 }
-unsafe fn FIO_getDictFileStat(fileName: *const core::ffi::c_char, dictFileStat: *mut stat_t) {
+unsafe fn FIO_getDictFileStat(fileName: *const core::ffi::c_char, dictFileStat: *mut Stat) {
     assert!(!dictFileStat.is_null());
     if fileName.is_null() {
         return;
@@ -975,7 +975,7 @@ unsafe fn FIO_setDictBufferMalloc(
     dict: *mut FIO_Dict_t,
     fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    dictFileStat: *mut stat_t,
+    dictFileStat: *mut Stat,
 ) -> size_t {
     let mut fileHandle = core::ptr::null_mut::<FILE>();
     let mut fileSize: size_t = 0;
@@ -1108,7 +1108,7 @@ unsafe fn FIO_setDictBufferMMap(
     dict: *mut FIO_Dict_t,
     fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    dictFileStat: *mut stat_t,
+    dictFileStat: *mut Stat,
 ) -> size_t {
     let mut fileHandle: core::ffi::c_int = 0;
     let mut fileSize: u64 = 0;
@@ -1234,7 +1234,7 @@ unsafe fn FIO_initDict(
     dict: *mut FIO_Dict_t,
     fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    dictFileStat: *mut stat_t,
+    dictFileStat: *mut Stat,
     dictBufferType: FIO_dictBufferType_t,
 ) {
     (*dict).dictBufferType = dictBufferType;
@@ -1708,7 +1708,7 @@ unsafe fn FIO_createCResources(
             dictBufferType: FIO_mallocDict,
         },
         dictFileName: core::ptr::null::<core::ffi::c_char>(),
-        dictFileStat: stat {
+        dictFileStat: Stat {
             st_dev: 0,
             st_ino: 0,
             st_nlink: 0,
@@ -4057,7 +4057,7 @@ unsafe fn FIO_compressFilename_dstFile(
     ress: cRess_t,
     dstFileName: *const core::ffi::c_char,
     srcFileName: *const core::ffi::c_char,
-    srcFileStat: *const stat_t,
+    srcFileStat: *const Stat,
     compressionLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut closeDstFile = 0;
@@ -4260,7 +4260,7 @@ unsafe fn FIO_compressFilename_srcFile(
 ) -> core::ffi::c_int {
     let mut result: core::ffi::c_int = 0;
     let mut srcFile = core::ptr::null_mut::<FILE>();
-    let mut srcFileStat = stat {
+    let mut srcFileStat = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -4814,7 +4814,7 @@ unsafe fn FIO_createDResources(
 ) -> dRess_t {
     let mut useMMap = ((*prefs).mmapDict == ParamSwitch::Enable) as core::ffi::c_int;
     let forceNoUseMMap = ((*prefs).mmapDict == ParamSwitch::Disable) as core::ffi::c_int;
-    let mut statbuf = stat {
+    let mut statbuf = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -4850,11 +4850,7 @@ unsafe fn FIO_createDResources(
         writeCtx: core::ptr::null_mut::<WritePoolCtx_t>(),
         readCtx: core::ptr::null_mut::<ReadPoolCtx_t>(),
     };
-    ptr::write_bytes(
-        &mut statbuf as *mut stat_t as *mut u8,
-        0,
-        size_of::<stat_t>(),
-    );
+    ptr::write_bytes(&mut statbuf as *mut Stat as *mut u8, 0, size_of::<Stat>());
     ptr::write_bytes(
         &mut ress as *mut dRess_t as *mut u8,
         0,
@@ -5711,7 +5707,7 @@ unsafe fn FIO_decompressDstFile(
     ress: dRess_t,
     dstFileName: *const core::ffi::c_char,
     srcFileName: *const core::ffi::c_char,
-    srcFileStat: *const stat_t,
+    srcFileStat: *const Stat,
 ) -> core::ffi::c_int {
     let mut result: core::ffi::c_int = 0;
     let mut releaseDstFile = 0;
@@ -5769,7 +5765,7 @@ unsafe fn FIO_decompressSrcFile(
     srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut srcFile = core::ptr::null_mut::<FILE>();
-    let mut srcFileStat = stat {
+    let mut srcFileStat = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
@@ -6369,7 +6365,7 @@ unsafe fn getFileInfo_fileConfirmed(
     inFileName: *const core::ffi::c_char,
 ) -> InfoError {
     let mut status = info_success;
-    let mut srcFileStat = stat {
+    let mut srcFileStat = Stat {
         st_dev: 0,
         st_ino: 0,
         st_nlink: 0,
