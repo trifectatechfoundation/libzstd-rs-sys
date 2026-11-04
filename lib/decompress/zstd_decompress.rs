@@ -51,7 +51,7 @@ use crate::lib::legacy::zstd_v05::{
 use crate::lib::legacy::zstd_v06::{
     ZBUFFv06_DCtx_s, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
     ZBUFFv06_decompressInitDictionary, ZBUFFv06_freeDCtx, ZSTDv06_createDCtx,
-    ZSTDv06_decompress_usingDict, ZSTDv06_findFrameSizeInfoLegacy, ZSTDv06_frameParams_s,
+    ZSTDv06_decompress_usingDict, ZSTDv06_findFrameSizeInfoLegacy, ZSTDv06_frameParams,
     ZSTDv06_freeDCtx, ZSTDv06_getFrameParams,
 };
 use crate::lib::legacy::zstd_v07::{
@@ -150,7 +150,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
             }
         }
         6 => {
-            let mut fParams = ZSTDv06_frameParams_s::default();
+            let mut fParams = ZSTDv06_frameParams::default();
             match unsafe { ZSTDv06_getFrameParams(&mut fParams, ptr, src.len() as _) } {
                 0 => Some(fParams.frameContentSize),
                 _ => None,
