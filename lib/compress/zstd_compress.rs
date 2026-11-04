@@ -165,10 +165,8 @@ pub struct SeqDef_s {
     pub mlBase: u16,
 }
 
-pub type ZSTD_CDict = ZSTD_CDict_s;
-
 #[repr(C)]
-pub struct ZSTD_CDict_s {
+pub struct ZSTD_CDict {
     pub dictContent: *const core::ffi::c_void,
     pub dictContentSize: usize,
     /// The dictContentType the CDict was created with
