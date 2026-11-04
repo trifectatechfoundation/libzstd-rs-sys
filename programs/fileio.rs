@@ -238,10 +238,10 @@ type lzma_bool = core::ffi::c_uchar;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct z_stream {
-    next_in: *mut Bytef,
+    next_in: *mut Byte,
     avail_in: uInt,
     total_in: uLong,
-    next_out: *mut Bytef,
+    next_out: *mut Byte,
     avail_out: uInt,
     total_out: uLong,
     msg: *mut core::ffi::c_char,
@@ -258,7 +258,6 @@ type voidpf = *mut core::ffi::c_void;
 type free_func = Option<unsafe extern "C" fn(voidpf, voidpf) -> ()>;
 type alloc_func = Option<unsafe extern "C" fn(voidpf, uInt, uInt) -> voidpf>;
 type uInt = core::ffi::c_uint;
-type Bytef = Byte;
 type Byte = core::ffi::c_uchar;
 type z_streamp = *mut z_stream;
 type speedChange_e = core::ffi::c_uint;
@@ -2828,10 +2827,10 @@ unsafe fn FIO_compressGzFrame(
     let mut inFileSize = 0 as core::ffi::c_ulonglong;
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = z_stream {
-        next_in: core::ptr::null_mut::<Bytef>(),
+        next_in: core::ptr::null_mut::<Byte>(),
         avail_in: 0,
         total_in: 0,
-        next_out: core::ptr::null_mut::<Bytef>(),
+        next_out: core::ptr::null_mut::<Byte>(),
         avail_out: 0,
         total_out: 0,
         msg: core::ptr::null_mut::<core::ffi::c_char>(),
@@ -2887,9 +2886,9 @@ unsafe fn FIO_compressGzFrame(
         exit(71);
     }
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
-    strm.next_in = core::ptr::null_mut::<Bytef>();
+    strm.next_in = core::ptr::null_mut::<Byte>();
     strm.avail_in = 0;
-    strm.next_out = (*writeJob).buffer as *mut Bytef;
+    strm.next_out = (*writeJob).buffer as *mut Byte;
     strm.avail_out = (*writeJob).bufferSize as uInt;
     loop {
         let mut ret_0: core::ffi::c_int = 0;
@@ -2942,7 +2941,7 @@ unsafe fn FIO_compressGzFrame(
             (*writeJob).usedBufferSize = cSize;
             AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
             outFileSize = outFileSize.wrapping_add(cSize as core::ffi::c_ulonglong);
-            strm.next_out = (*writeJob).buffer as *mut Bytef;
+            strm.next_out = (*writeJob).buffer as *mut Byte;
             strm.avail_out = (*writeJob).bufferSize as uInt;
         }
         if srcFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
@@ -2999,7 +2998,7 @@ unsafe fn FIO_compressGzFrame(
             (*writeJob).usedBufferSize = cSize_0;
             AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
             outFileSize = outFileSize.wrapping_add(cSize_0 as core::ffi::c_ulonglong);
-            strm.next_out = (*writeJob).buffer as *mut Bytef;
+            strm.next_out = (*writeJob).buffer as *mut Byte;
             strm.avail_out = (*writeJob).bufferSize as uInt;
         }
         if ret_1 == Z_STREAM_END {
@@ -5349,10 +5348,10 @@ unsafe fn FIO_decompressGzFrame(
 ) -> core::ffi::c_ulonglong {
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = z_stream {
-        next_in: core::ptr::null_mut::<Bytef>(),
+        next_in: core::ptr::null_mut::<Byte>(),
         avail_in: 0,
         total_in: 0,
-        next_out: core::ptr::null_mut::<Bytef>(),
+        next_out: core::ptr::null_mut::<Byte>(),
         avail_out: 0,
         total_out: 0,
         msg: core::ptr::null_mut::<core::ffi::c_char>(),
@@ -5370,7 +5369,7 @@ unsafe fn FIO_decompressGzFrame(
     strm.zalloc = None;
     strm.zfree = None;
     strm.opaque = core::ptr::null_mut();
-    strm.next_in = core::ptr::null_mut::<Bytef>();
+    strm.next_in = core::ptr::null_mut::<Byte>();
     strm.avail_in = 0;
     if inflateInit2_(
         &mut strm,
@@ -5382,7 +5381,7 @@ unsafe fn FIO_decompressGzFrame(
         return FIO_ERROR_FRAME_DECODING as core::ffi::c_ulonglong;
     }
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
-    strm.next_out = (*writeJob).buffer as *mut Bytef;
+    strm.next_out = (*writeJob).buffer as *mut Byte;
     strm.avail_out = (*writeJob).bufferSize as uInt;
     strm.avail_in = (*(*ress).readCtx).srcBufferLoaded as uInt;
     strm.next_in = (*(*ress).readCtx).srcBuffer as *mut core::ffi::c_uchar;
@@ -5424,7 +5423,7 @@ unsafe fn FIO_decompressGzFrame(
                 (*writeJob).usedBufferSize = decompBytes;
                 AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
                 outFileSize = outFileSize.wrapping_add(decompBytes as core::ffi::c_ulonglong);
-                strm.next_out = (*writeJob).buffer as *mut Bytef;
+                strm.next_out = (*writeJob).buffer as *mut Byte;
                 strm.avail_out = (*writeJob).bufferSize as uInt;
             }
             if ret == Z_STREAM_END {
