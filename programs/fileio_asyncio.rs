@@ -28,7 +28,7 @@ pub const FIO_gzipCompression: FIO_compressionType_t = 1;
 pub const FIO_zstdCompression: FIO_compressionType_t = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FIO_prefs_s {
+pub struct FIO_prefs_t {
     pub compressionType: FIO_compressionType_t,
     pub sparseFileSupport: core::ffi::c_int,
     pub dictIDFlag: core::ffi::c_int,
@@ -62,7 +62,6 @@ pub struct FIO_prefs_s {
     pub passThrough: core::ffi::c_int,
     pub mmapDict: ParamSwitch,
 }
-pub type FIO_prefs_t = FIO_prefs_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct IOPoolCtx_t {

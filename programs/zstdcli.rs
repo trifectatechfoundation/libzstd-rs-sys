@@ -72,43 +72,6 @@ pub const FIO_lzmaCompression: FIO_compressionType_t = 3;
 pub const FIO_xzCompression: FIO_compressionType_t = 2;
 pub const FIO_gzipCompression: FIO_compressionType_t = 1;
 pub const FIO_zstdCompression: FIO_compressionType_t = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FIO_prefs_s {
-    pub compressionType: FIO_compressionType_t,
-    pub sparseFileSupport: core::ffi::c_int,
-    pub dictIDFlag: core::ffi::c_int,
-    pub checksumFlag: core::ffi::c_int,
-    pub jobSize: core::ffi::c_int,
-    pub overlapLog: core::ffi::c_int,
-    pub adaptiveMode: core::ffi::c_int,
-    pub useRowMatchFinder: core::ffi::c_int,
-    pub rsyncable: core::ffi::c_int,
-    pub minAdaptLevel: core::ffi::c_int,
-    pub maxAdaptLevel: core::ffi::c_int,
-    pub ldmFlag: core::ffi::c_int,
-    pub ldmHashLog: core::ffi::c_int,
-    pub ldmMinMatch: core::ffi::c_int,
-    pub ldmBucketSizeLog: core::ffi::c_int,
-    pub ldmHashRateLog: core::ffi::c_int,
-    pub streamSrcSize: size_t,
-    pub targetCBlockSize: size_t,
-    pub srcSizeHint: core::ffi::c_int,
-    pub testMode: core::ffi::c_int,
-    pub literalCompressionMode: ParamSwitch,
-    pub removeSrcFile: core::ffi::c_int,
-    pub overwrite: core::ffi::c_int,
-    pub asyncIO: core::ffi::c_int,
-    pub memLimit: core::ffi::c_uint,
-    pub nbWorkers: core::ffi::c_int,
-    pub excludeCompressedFiles: core::ffi::c_int,
-    pub patchFromMode: core::ffi::c_int,
-    pub contentSize: core::ffi::c_int,
-    pub allowBlockDevices: core::ffi::c_int,
-    pub passThrough: core::ffi::c_int,
-    pub mmapDict: ParamSwitch,
-}
-pub type FIO_prefs_t = FIO_prefs_s;
 pub type BMK_mode_t = core::ffi::c_uint;
 pub const BMK_compressOnly: BMK_mode_t = 2;
 pub const BMK_decodeOnly: BMK_mode_t = 1;
