@@ -8420,40 +8420,40 @@ impl ZSTD_CCtx {
 /// If @endOp == ZSTD_e_end, @inSize becomes pledgedSrcSize.
 /// Otherwise, it's ignored.
 unsafe fn ZSTD_CCtx_init_compressStream2(
-    cctx: *mut ZSTD_CCtx,
+    cctx: &mut ZSTD_CCtx,
     endOp: ZSTD_EndDirective,
     inSize: usize,
 ) -> Result<(), Error> {
-    let mut params = (*cctx).requestedParams;
-    let prefixDict = (*cctx).prefixDict;
-    (*cctx).init_local_dict()?;
-    (*cctx).prefixDict = ZSTD_prefixDict::default();
-    if !((*cctx).cdict).is_null() && ((*cctx).localDict.cdict).is_null() {
+    let mut params = cctx.requestedParams;
+    let prefixDict = cctx.prefixDict;
+    cctx.init_local_dict()?;
+    cctx.prefixDict = ZSTD_prefixDict::default();
+    if !cctx.cdict.is_null() && cctx.localDict.cdict.is_null() {
         // Let the cdict's compression level take priority over the requested params.
         // But do not take the cdict's compression level if the "cdict" is actually a localDict
         // generated from ZSTD_initLocalDict().
-        params.compressionLevel = (*(*cctx).cdict).compressionLevel;
+        params.compressionLevel = (*cctx.cdict).compressionLevel;
     }
 
     if endOp == ZSTD_e_end {
-        (*cctx).pledgedSrcSizePlusOne = inSize.wrapping_add(1) as core::ffi::c_ulonglong;
+        cctx.pledgedSrcSizePlusOne = inSize.wrapping_add(1) as core::ffi::c_ulonglong;
     }
 
     let dictSize = if !prefixDict.dict.is_null() {
         prefixDict.dictSize
-    } else if !((*cctx).cdict).is_null() {
-        (*(*cctx).cdict).dictContentSize
+    } else if !cctx.cdict.is_null() {
+        (*cctx.cdict).dictContentSize
     } else {
         0
     };
     let mode = ZSTD_getCParamMode(
-        (*cctx).cdict,
+        cctx.cdict,
         &params,
-        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
+        cctx.pledgedSrcSizePlusOne.wrapping_sub(1),
     );
     params.cParams = ZSTD_getCParamsFromCCtxParams_internal(
         &params,
-        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
+        cctx.pledgedSrcSizePlusOne.wrapping_sub(1),
         dictSize,
         mode,
     );
@@ -8474,82 +8474,77 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         return Err(Error::parameter_combination_unsupported);
     }
 
-    if ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1)
-        <= ZSTDMT_JOBSIZE_MIN as core::ffi::c_ulonglong
-    {
+    if cctx.pledgedSrcSizePlusOne.wrapping_sub(1) <= ZSTDMT_JOBSIZE_MIN as core::ffi::c_ulonglong {
         // do not invoke multi-threading when src size is too small
         params.nbWorkers = 0;
     }
     if params.nbWorkers > 0 {
-        (*cctx).traceCtx = ZSTD_trace_compress_begin(cctx);
+        cctx.traceCtx = ZSTD_trace_compress_begin(cctx);
 
         // mt context creation
-        if ((*cctx).mtctx).is_null() {
-            (*cctx).mtctx = ZSTDMT_createCCtx_advanced(
-                params.nbWorkers as u32,
-                (*cctx).customMem,
-                (*cctx).pool,
-            );
-            if ((*cctx).mtctx).is_null() {
+        if cctx.mtctx.is_null() {
+            cctx.mtctx =
+                ZSTDMT_createCCtx_advanced(params.nbWorkers as u32, cctx.customMem, cctx.pool);
+            if cctx.mtctx.is_null() {
                 return Err(Error::memory_allocation);
             }
         }
 
         // mt compression
         ZSTDMT_initCStream_internal(
-            (*cctx).mtctx,
+            cctx.mtctx,
             prefixDict.dict,
             prefixDict.dictSize,
             prefixDict.dictContentType,
-            (*cctx).cdict,
+            cctx.cdict,
             params,
-            ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
+            cctx.pledgedSrcSizePlusOne.wrapping_sub(1),
         )?;
 
-        (*cctx).dictID = if !((*cctx).cdict).is_null() {
-            (*(*cctx).cdict).dictID
+        cctx.dictID = if !cctx.cdict.is_null() {
+            (*cctx.cdict).dictID
         } else {
             0
         };
-        (*cctx).dictContentSize = if !((*cctx).cdict).is_null() {
-            (*(*cctx).cdict).dictContentSize
+        cctx.dictContentSize = if !cctx.cdict.is_null() {
+            (*cctx.cdict).dictContentSize
         } else {
             prefixDict.dictSize
         };
-        (*cctx).consumedSrcSize = 0;
-        (*cctx).producedCSize = 0;
-        (*cctx).streamStage = StreamStage::Load;
-        (*cctx).appliedParams = params;
+        cctx.consumedSrcSize = 0;
+        cctx.producedCSize = 0;
+        cctx.streamStage = StreamStage::Load;
+        cctx.appliedParams = params;
     } else {
-        let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1);
+        let pledgedSrcSize = cctx.pledgedSrcSizePlusOne.wrapping_sub(1);
         ZSTD_compressBegin_internal(
             cctx,
             prefixDict.dict,
             prefixDict.dictSize,
             prefixDict.dictContentType,
             DictTableLoadMethod::Fast,
-            (*cctx).cdict,
+            cctx.cdict,
             &params,
             pledgedSrcSize,
             BufferedPolicy::Buffered,
         )?;
 
-        (*cctx).inToCompress = 0;
-        (*cctx).inBuffPos = 0;
+        cctx.inToCompress = 0;
+        cctx.inBuffPos = 0;
 
-        if (*cctx).appliedParams.inBufferMode == ZSTD_bm_buffered {
+        if cctx.appliedParams.inBufferMode == ZSTD_bm_buffered {
             // for small input: avoid automatic flush on reaching end of block, since
             // it would require to add a 3-bytes null block to end frame
-            (*cctx).inBuffTarget = ((*cctx).blockSizeMax)
-                .wrapping_add(usize::from((*cctx).blockSizeMax as u64 == pledgedSrcSize));
+            cctx.inBuffTarget = (cctx.blockSizeMax)
+                .wrapping_add(usize::from(cctx.blockSizeMax as u64 == pledgedSrcSize));
         } else {
-            (*cctx).inBuffTarget = 0;
+            cctx.inBuffTarget = 0;
         }
 
-        (*cctx).outBuffFlushedSize = 0;
-        (*cctx).outBuffContentSize = (*cctx).outBuffFlushedSize;
-        (*cctx).streamStage = StreamStage::Load;
-        (*cctx).frameEnded = 0;
+        cctx.outBuffFlushedSize = 0;
+        cctx.outBuffContentSize = cctx.outBuffFlushedSize;
+        cctx.streamStage = StreamStage::Load;
+        cctx.frameEnded = 0;
     }
 
     Ok(())
@@ -8613,7 +8608,7 @@ unsafe fn compress_stream(
             // don't initialize yet, wait for the first block of flush() order, for better parameters adaptation
             return Ok((*cctx).requestedParams.format.frame_header_size_min());
         }
-        ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize)?;
+        ZSTD_CCtx_init_compressStream2(&mut *cctx, endOp, totalInputSize)?;
         (*cctx).set_buffer_expectations(output, input);
     }
 
@@ -9327,7 +9322,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     let mut cSize = 0usize;
 
     // Transparent initialization stage, same as compressStream2()
-    if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, srcSize) {
+    if let Err(err) = ZSTD_CCtx_init_compressStream2(&mut *cctx, ZSTD_e_end, srcSize) {
         return err.to_error_code();
     }
 
@@ -9738,7 +9733,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     if litCapacity < litSize {
         return Error::workSpace_tooSmall.to_error_code();
     }
-    if let Err(err) = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, decompressedSize) {
+    if let Err(err) = ZSTD_CCtx_init_compressStream2(&mut *cctx, ZSTD_e_end, decompressedSize) {
         return err.to_error_code();
     }
 
