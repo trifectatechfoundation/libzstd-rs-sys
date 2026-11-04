@@ -340,10 +340,9 @@ pub struct ZSTD_inBuffer {
     pub pos: usize,
 }
 
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ZSTD_outBuffer_s {
+pub struct ZSTD_outBuffer {
     /// Pointer to start of output buffer
     pub dst: *mut core::ffi::c_void,
     /// Size of output buffer

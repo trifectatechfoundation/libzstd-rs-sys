@@ -791,7 +791,7 @@ use crate::lib::zstd::{
     ZSTD_dictAttachPref_e, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy,
     ZSTD_dlm_byRef, ZSTD_e_continue, ZSTD_e_end, ZSTD_e_flush, ZSTD_fast, ZSTD_frameParameters,
     ZSTD_frameProgression, ZSTD_greedy, ZSTD_inBuffer, ZSTD_lazy, ZSTD_lazy2, ZSTD_outBuffer,
-    ZSTD_outBuffer_s, ZSTD_parameters, ZSTD_sequenceProducer_F, ZSTD_sf_explicitBlockDelimiters,
+    ZSTD_parameters, ZSTD_sequenceProducer_F, ZSTD_sf_explicitBlockDelimiters,
     ZSTD_sf_noBlockDelimiters, ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_BLOCKSIZE_MAX_MIN,
     ZSTD_CHAINLOG_MAX, ZSTD_CHAINLOG_MIN, ZSTD_CLEVEL_DEFAULT, ZSTD_CONTENTSIZE_UNKNOWN,
     ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX, ZSTD_LDM_BUCKETSIZELOG_MIN,
@@ -8671,7 +8671,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
     srcPos: *mut usize,
     endOp: ZSTD_EndDirective,
 ) -> usize {
-    let mut output = ZSTD_outBuffer_s {
+    let mut output = ZSTD_outBuffer {
         dst,
         size: dstCapacity,
         pos: *dstPos,
