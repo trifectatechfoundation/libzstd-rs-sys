@@ -3407,19 +3407,17 @@ static attachDictSizeCutoffs: [usize; 10] = [
     8 * (1 << 10),
 ];
 
-unsafe fn ZSTD_shouldAttachDict(
-    cdict: *const ZSTD_CDict,
-    params: &ZSTD_CCtx_params,
-    pledgedSrcSize: u64,
-) -> bool {
-    let cutoff = attachDictSizeCutoffs[(*cdict).matchState.cParams.strategy as usize];
-    let dedicatedDictSearch = (*cdict).matchState.dedicatedDictSearch;
-    dedicatedDictSearch != 0
-        || (pledgedSrcSize <= cutoff as u64
-            || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-            || params.attachDictPref == ZSTD_dictAttachPref_e::ZSTD_dictForceAttach)
-            && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceCopy
-            && params.forceWindow == 0
+impl ZSTD_CDict {
+    fn should_attach_dict(&self, params: &ZSTD_CCtx_params, pledgedSrcSize: u64) -> bool {
+        let cutoff = attachDictSizeCutoffs[self.matchState.cParams.strategy as usize];
+        let dedicatedDictSearch = self.matchState.dedicatedDictSearch;
+        dedicatedDictSearch != 0
+            || (pledgedSrcSize <= cutoff as u64
+                || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
+                || params.attachDictPref == ZSTD_dictAttachPref_e::ZSTD_dictForceAttach)
+                && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceCopy
+                && params.forceWindow == 0
+    }
 }
 
 unsafe fn ZSTD_resetCCtx_byAttachingCDict(
@@ -3605,7 +3603,7 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
     pledgedSrcSize: u64,
     zbuff: BufferedPolicy,
 ) -> Result<(), Error> {
-    if ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
+    if (*cdict).should_attach_dict(params, pledgedSrcSize) {
         ZSTD_resetCCtx_byAttachingCDict(cctx, cdict, *params, pledgedSrcSize, zbuff)
     } else {
         ZSTD_resetCCtx_byCopyingCDict(cctx, cdict, *params, pledgedSrcSize, zbuff)
@@ -7841,7 +7839,7 @@ unsafe fn ZSTD_getCParamMode(
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
 ) -> CParamMode {
-    if !cdict.is_null() && ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
+    if !cdict.is_null() && (*cdict).should_attach_dict(params, pledgedSrcSize) {
         CParamMode::AttachDict
     } else {
         CParamMode::NoAttachDict
