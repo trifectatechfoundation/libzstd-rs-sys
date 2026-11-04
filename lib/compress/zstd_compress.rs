@@ -8377,19 +8377,17 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     (*zcs).next_input_size_hint_mt_or_st()
 }
 
-/// After a compression call, set the expected input/output buffer.
-/// This is validated at the start of the next compression call.
-unsafe fn ZSTD_setBufferExpectations(
-    cctx: *mut ZSTD_CCtx,
-    output: &ZSTD_outBuffer,
-    input: &ZSTD_inBuffer,
-) {
-    if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
-        (*cctx).expectedInBuffer = *input;
-    }
+impl ZSTD_CCtx {
+    /// After a compression call, set the expected input/output buffer.
+    /// This is validated at the start of the next compression call.
+    fn set_buffer_expectations(&mut self, output: &ZSTD_outBuffer, input: &ZSTD_inBuffer) {
+        if self.appliedParams.inBufferMode == ZSTD_bm_stable {
+            self.expectedInBuffer = *input;
+        }
 
-    if (*cctx).appliedParams.outBufferMode == ZSTD_bm_stable {
-        (*cctx).expectedOutBufferSize = output.size.wrapping_sub(output.pos);
+        if self.appliedParams.outBufferMode == ZSTD_bm_stable {
+            self.expectedOutBufferSize = output.size.wrapping_sub(output.pos);
+        }
     }
 }
 
@@ -8619,7 +8617,7 @@ unsafe fn compress_stream(
             return Ok((*cctx).requestedParams.format.frame_header_size_min());
         }
         ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize)?;
-        ZSTD_setBufferExpectations(cctx, output, input);
+        (*cctx).set_buffer_expectations(output, input);
     }
 
     ZSTD_checkBufferStability(cctx, output, input, endOp)?;
@@ -8671,12 +8669,12 @@ unsafe fn compress_stream(
 
         // Either we don't require maximum forward progress, we've finished the
         // flush, or we are out of output space.
-        ZSTD_setBufferExpectations(cctx, output, input);
+        (*cctx).set_buffer_expectations(output, input);
         return Ok(flushMin);
     }
 
     ZSTD_compressStream_generic(cctx, output, input, endOp)?;
-    ZSTD_setBufferExpectations(cctx, output, input);
+    (*cctx).set_buffer_expectations(output, input);
 
     Ok(((*cctx).outBuffContentSize).wrapping_sub((*cctx).outBuffFlushedSize))
 }
