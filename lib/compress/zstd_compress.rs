@@ -8105,15 +8105,17 @@ pub unsafe extern "C" fn ZSTD_initCStream(
     0
 }
 
-unsafe fn ZSTD_nextInputSizeHint(cctx: *const ZSTD_CCtx) -> usize {
-    if (*cctx).appliedParams.inBufferMode == ZSTD_bm_stable {
-        return ((*cctx).blockSizeMax).wrapping_sub((*cctx).stableIn_notConsumed);
+impl ZSTD_CCtx {
+    fn next_input_size_hint(&self) -> usize {
+        if self.appliedParams.inBufferMode == ZSTD_bm_stable {
+            return (self.blockSizeMax).wrapping_sub(self.stableIn_notConsumed);
+        }
+        let mut hintInSize = (self.inBuffTarget).wrapping_sub(self.inBuffPos);
+        if hintInSize == 0 {
+            hintInSize = self.blockSizeMax;
+        }
+        hintInSize
     }
-    let mut hintInSize = ((*cctx).inBuffTarget).wrapping_sub((*cctx).inBuffPos);
-    if hintInSize == 0 {
-        hintInSize = (*cctx).blockSizeMax;
-    }
-    hintInSize
 }
 
 /// Internal function for all *compressStream*() variants.
@@ -8348,14 +8350,14 @@ unsafe fn ZSTD_compressStream_generic(
     if (*zcs).frameEnded != 0 {
         return Ok(0);
     }
-    Ok(ZSTD_nextInputSizeHint(zcs))
+    Ok((*zcs).next_input_size_hint())
 }
 
 unsafe fn ZSTD_nextInputSizeHint_MTorST(cctx: *const ZSTD_CCtx) -> usize {
     if (*cctx).appliedParams.nbWorkers >= 1 {
         return ZSTDMT_nextInputSizeHint((*cctx).mtctx);
     }
-    ZSTD_nextInputSizeHint(cctx)
+    (*cctx).next_input_size_hint()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream))]
