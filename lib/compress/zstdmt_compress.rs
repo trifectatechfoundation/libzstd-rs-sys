@@ -128,9 +128,8 @@ struct Range {
 }
 
 type ZSTDMT_seqPool = ZSTDMT_bufferPool;
-type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
 
-struct ZSTDMT_bufferPool_s {
+struct ZSTDMT_bufferPool {
     poolMutex: Mutex<()>,
     bufferSize: usize,
     totalBuffers: core::ffi::c_uint,
