@@ -195,11 +195,9 @@ pub enum StreamStage {
     Flush = 2,
 }
 
-pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
-
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ZSTD_prefixDict_s {
+pub struct ZSTD_prefixDict {
     pub dict: *const core::ffi::c_void,
     pub dictSize: usize,
     pub dictContentType: ZSTD_dictContentType_e,
