@@ -329,10 +329,9 @@ impl TryFrom<i32> for Format {
     }
 }
 
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ZSTD_inBuffer_s {
+pub struct ZSTD_inBuffer {
     /// Pointer to start of input buffer
     pub src: *const core::ffi::c_void,
     /// Size of input buffer

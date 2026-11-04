@@ -19,7 +19,7 @@ use libzstd_rs_sys::lib::decompress::zstd_decompress::{
 use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
 use libzstd_rs_sys::lib::zstd::{
     ParamSwitch, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_compressionParameters,
-    ZSTD_error_dstSize_tooSmall, ZSTD_inBuffer_s, ZSTD_outBuffer_s, ZSTD_CONTENTSIZE_ERROR,
+    ZSTD_error_dstSize_tooSmall, ZSTD_inBuffer, ZSTD_outBuffer_s, ZSTD_CONTENTSIZE_ERROR,
     ZSTD_CONTENTSIZE_UNKNOWN,
 };
 
@@ -620,7 +620,7 @@ unsafe fn local_defaultDecompress(
 ) -> size_t {
     let mut moreToFlush = 1;
     let dctx = addArgs as *mut ZSTD_DCtx;
-    let mut in_0 = ZSTD_inBuffer_s {
+    let mut in_0 = ZSTD_inBuffer {
         src: srcBuffer,
         size: srcSize,
         pos: 0,
