@@ -8353,11 +8353,13 @@ unsafe fn ZSTD_compressStream_generic(
     Ok((*zcs).next_input_size_hint())
 }
 
-unsafe fn ZSTD_nextInputSizeHint_MTorST(cctx: *const ZSTD_CCtx) -> usize {
-    if (*cctx).appliedParams.nbWorkers >= 1 {
-        return (*(*cctx).mtctx).next_input_size_hint();
+impl ZSTD_CCtx {
+    unsafe fn next_input_size_hint_mt_or_st(&self) -> usize {
+        if self.appliedParams.nbWorkers >= 1 {
+            return (*self.mtctx).next_input_size_hint();
+        }
+        self.next_input_size_hint()
     }
-    (*cctx).next_input_size_hint()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream))]
@@ -8372,7 +8374,7 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     if let Err(err) = compress_stream(zcs, output, input, ZSTD_e_continue) {
         return err.to_error_code();
     }
-    ZSTD_nextInputSizeHint_MTorST(zcs)
+    (*zcs).next_input_size_hint_mt_or_st()
 }
 
 /// After a compression call, set the expected input/output buffer.
