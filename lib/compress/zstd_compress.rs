@@ -7834,12 +7834,12 @@ pub extern "C" fn ZSTD_CStreamOutSize() -> usize {
         .wrapping_add(4)
 }
 
-unsafe fn ZSTD_getCParamMode(
-    cdict: *const ZSTD_CDict,
+fn ZSTD_getCParamMode(
+    cdict: Option<&ZSTD_CDict>,
     params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
 ) -> CParamMode {
-    if !cdict.is_null() && (*cdict).should_attach_dict(params, pledgedSrcSize) {
+    if cdict.is_some_and(|dict| dict.should_attach_dict(params, pledgedSrcSize)) {
         CParamMode::AttachDict
     } else {
         CParamMode::NoAttachDict
@@ -8445,7 +8445,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         0
     };
     let mode = ZSTD_getCParamMode(
-        cctx.cdict,
+        cctx.cdict.as_ref(),
         &params,
         cctx.pledgedSrcSizePlusOne.wrapping_sub(1),
     );
