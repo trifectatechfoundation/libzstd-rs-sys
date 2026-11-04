@@ -828,7 +828,12 @@ fn HUF_decompress4X1_usingDTable_internal(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> Result<usize, Error> {
-    if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
+    // Like C, only gate the fast loop on BMI2 where that is detected at runtime (x86_64).
+    if cfg!(target_arch = "x86_64") && flags & HUF_flags_bmi2 as core::ffi::c_int == 0 {
+        return HUF_decompress4X1_usingDTable_internal_default(dst, src, DTable);
+    }
+
+    {
         let loopFn = match flags & HUF_flags_disableAsm as i32 {
             #[cfg(all(unix, target_arch = "x86_64"))]
             0 => HUF_decompress4X1_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
@@ -844,9 +849,12 @@ fn HUF_decompress4X1_usingDTable_internal(
             }
         }
 
-        // SAFETY: bmi2 is enabled.
-        unsafe { HUF_decompress4X1_usingDTable_internal_bmi2(dst, src, DTable) }
-    } else {
+        #[cfg(target_arch = "x86_64")]
+        {
+            // SAFETY: bmi2 is enabled.
+            unsafe { HUF_decompress4X1_usingDTable_internal_bmi2(dst, src, DTable) }
+        }
+        #[cfg(not(target_arch = "x86_64"))]
         HUF_decompress4X1_usingDTable_internal_default(dst, src, DTable)
     }
 }
@@ -1603,7 +1611,12 @@ fn HUF_decompress4X2_usingDTable_internal(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> Result<usize, Error> {
-    if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
+    // Like C, only gate the fast loop on BMI2 where that is detected at runtime (x86_64).
+    if cfg!(target_arch = "x86_64") && flags & HUF_flags_bmi2 as core::ffi::c_int == 0 {
+        return HUF_decompress4X2_usingDTable_internal_default(dst, src, DTable);
+    }
+
+    {
         let loopFn = match flags & HUF_flags_disableAsm as core::ffi::c_int {
             #[cfg(all(unix, target_arch = "x86_64"))]
             0 => HUF_decompress4X2_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
@@ -1619,9 +1632,12 @@ fn HUF_decompress4X2_usingDTable_internal(
             }
         }
 
-        // SAFETY: the bmi2 feature is enabled.
-        unsafe { HUF_decompress4X2_usingDTable_internal_bmi2(dst, src, DTable) }
-    } else {
+        #[cfg(target_arch = "x86_64")]
+        {
+            // SAFETY: bmi2 is enabled.
+            unsafe { HUF_decompress4X2_usingDTable_internal_bmi2(dst, src, DTable) }
+        }
+        #[cfg(not(target_arch = "x86_64"))]
         HUF_decompress4X2_usingDTable_internal_default(dst, src, DTable)
     }
 }
