@@ -104,8 +104,6 @@ impl TryFrom<u32> for Error {
     }
 }
 
-type ERR_enum = ZSTD_ErrorCode;
-
 pub(crate) const fn ERR_isError(code: usize) -> bool {
     code > -(ZSTD_error_maxCode as core::ffi::c_int) as usize
 }
@@ -118,7 +116,7 @@ pub(crate) const fn ERR_getErrorCode(code: usize) -> ZSTD_ErrorCode {
     code.wrapping_neg() as _
 }
 
-pub(crate) fn ERR_getErrorString(code: ERR_enum) -> *const c_char {
+pub(crate) fn ERR_getErrorString(code: ZSTD_ErrorCode) -> *const c_char {
     match code as core::ffi::c_uint {
         0 => c"No error detected".as_ptr(),
         1 => c"Error (generic)".as_ptr(),
