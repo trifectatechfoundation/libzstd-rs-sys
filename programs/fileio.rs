@@ -235,10 +235,9 @@ struct lzma_options_lzma {
 type lzma_match_finder = core::ffi::c_uint;
 type lzma_mode = core::ffi::c_uint;
 type lzma_bool = core::ffi::c_uchar;
-type z_stream = z_stream_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct z_stream_s {
+struct z_stream {
     next_in: *mut Bytef,
     avail_in: uInt,
     total_in: uLong,
@@ -2828,7 +2827,7 @@ unsafe fn FIO_compressGzFrame(
 ) -> core::ffi::c_ulonglong {
     let mut inFileSize = 0 as core::ffi::c_ulonglong;
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
-    let mut strm = z_stream_s {
+    let mut strm = z_stream {
         next_in: core::ptr::null_mut::<Bytef>(),
         avail_in: 0,
         total_in: 0,
@@ -5353,7 +5352,7 @@ unsafe fn FIO_decompressGzFrame(
     srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_ulonglong {
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
-    let mut strm = z_stream_s {
+    let mut strm = z_stream {
         next_in: core::ptr::null_mut::<Bytef>(),
         avail_in: 0,
         total_in: 0,
