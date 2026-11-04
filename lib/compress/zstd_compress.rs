@@ -293,11 +293,9 @@ pub enum CwkspAllocPhase {
     Buffers = 3,
 }
 
-pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct ZSTD_CCtx_params_s {
+pub struct ZSTD_CCtx_params {
     pub format: Format,
     pub cParams: ZSTD_compressionParameters,
     pub fParams: ZSTD_frameParameters,
@@ -1511,7 +1509,7 @@ impl ZSTD_compressionParameters {
 impl From<ZSTD_compressionParameters> for ZSTD_CCtx_params {
     fn from(cParams: ZSTD_compressionParameters) -> Self {
         // should not matter, as all cParams are presumed properly defined
-        let mut cctxParams = ZSTD_CCtx_params_s::new(ZSTD_CLEVEL_DEFAULT);
+        let mut cctxParams = ZSTD_CCtx_params::new(ZSTD_CLEVEL_DEFAULT);
         cctxParams.cParams = cParams;
 
         // Adjust advanced params according to cParams
@@ -1597,7 +1595,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    *cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
+    *cctxParams = ZSTD_CCtx_params::new_internal(&params, ZSTD_NO_CLEVEL);
 
     0
 }
@@ -6840,7 +6838,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     params: ZSTD_parameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> usize {
-    let cctxParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
+    let cctxParams = ZSTD_CCtx_params::new_internal(&params, ZSTD_NO_CLEVEL);
     match ZSTD_compressBegin_advanced_internal(
         cctx,
         dict,
@@ -6868,7 +6866,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         dictSize,
         CParamMode::NoAttachDict,
     );
-    let cctxParams = ZSTD_CCtx_params_s::new_internal(
+    let cctxParams = ZSTD_CCtx_params::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7066,7 +7064,7 @@ pub unsafe extern "C" fn ZSTD_compress_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(&params, ZSTD_NO_CLEVEL);
+    (*cctx).simpleApiParams = ZSTD_CCtx_params::new_internal(&params, ZSTD_NO_CLEVEL);
     ZSTD_compress_advanced_internal(
         cctx,
         dst,
@@ -7122,7 +7120,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
         if !dict.is_null() { dictSize } else { 0 },
         CParamMode::NoAttachDict,
     );
-    (*cctx).simpleApiParams = ZSTD_CCtx_params_s::new_internal(
+    (*cctx).simpleApiParams = ZSTD_CCtx_params::new_internal(
         &params,
         if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
@@ -7361,7 +7359,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     cParams: ZSTD_compressionParameters,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    let mut cctxParams = ZSTD_CCtx_params_s::new(0);
+    let mut cctxParams = ZSTD_CCtx_params::new(0);
     cctxParams.cParams = cParams;
     cctxParams.customMem = customMem;
     ZSTD_createCDict_advanced2(
@@ -7579,7 +7577,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         return core::ptr::null();
     }
 
-    let mut params = ZSTD_CCtx_params_s::new(0);
+    let mut params = ZSTD_CCtx_params::new(0);
     params.cParams = cParams;
     params.useRowMatchFinder = useRowMatchFinder;
     (*cdict).useRowMatchFinder = useRowMatchFinder;
@@ -7653,7 +7651,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         },
         fParams,
     };
-    let mut cctxParams = ZSTD_CCtx_params_s::new_internal(&params, (*cdict).compressionLevel);
+    let mut cctxParams = ZSTD_CCtx_params::new_internal(&params, (*cdict).compressionLevel);
 
     // Increase window log to fit the entire dictionary and source if the
     // source size is known. Limit the increase to 19, which is the

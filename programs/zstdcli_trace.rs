@@ -4,16 +4,13 @@ use std::io::Write;
 use std::sync::{Mutex, OnceLock};
 
 use libzstd_rs_sys::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
-use libzstd_rs_sys::lib::compress::zstd_compress::{
-    ZSTD_CCtx, ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s,
-};
+use libzstd_rs_sys::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtxParams_getParameter};
 use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
 use libzstd_rs_sys::lib::zstd::ZSTD_cParameter;
 
 use crate::timefn::{PTime, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 use crate::util::UTIL_isRegularFile;
 
-pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 static g_traceFile: Mutex<Option<File>> = Mutex::new(None);
 static g_enableTime: OnceLock<UTIL_time_t> = OnceLock::new();
 
