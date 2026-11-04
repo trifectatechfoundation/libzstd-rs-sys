@@ -436,6 +436,83 @@ fn test_compress_stream_2() {
     }
 }
 
+#[test]
+#[cfg_attr(miri, ignore = "slow")]
+fn test_compress_stream_2_multiple_workers() {
+    use libzstd_rs_sys::lib::zstd::{ZSTD_e_continue, ZSTD_e_end};
+    use libzstd_rs_sys::*;
+
+    // Several jobs, even at the minimum job size. Leave the pledged size unknown
+    // and start with ZSTD_e_continue so initialization takes the streaming path.
+    let input = pseudo_random(2 * 1024 * 1024, 42);
+    let mut compressed = Vec::new();
+    let mut output = [0u8; 16 * 1024];
+
+    unsafe {
+        let cctx = ZSTD_createCCtx();
+        assert!(!cctx.is_null());
+
+        for (parameter, value) in [
+            (ZSTD_cParameter::ZSTD_c_nbWorkers, 2),
+            (ZSTD_cParameter::ZSTD_c_jobSize, 512 * 1024),
+            (ZSTD_cParameter::ZSTD_c_compressionLevel, 1),
+            (ZSTD_cParameter::ZSTD_c_checksumFlag, 1),
+        ] {
+            let ret = ZSTD_CCtx_setParameter(cctx, parameter, value);
+            assert_eq!(ZSTD_isError(ret), 0);
+        }
+
+        for chunk in input.chunks(64 * 1024) {
+            let mut in_buf = ZSTD_inBuffer {
+                src: chunk.as_ptr().cast(),
+                size: chunk.len(),
+                pos: 0,
+            };
+            while in_buf.pos < in_buf.size {
+                let mut out_buf = ZSTD_outBuffer {
+                    dst: output.as_mut_ptr().cast(),
+                    size: output.len(),
+                    pos: 0,
+                };
+                let ret = ZSTD_compressStream2(cctx, &mut out_buf, &mut in_buf, ZSTD_e_continue);
+                assert_eq!(ZSTD_isError(ret), 0);
+                compressed.extend_from_slice(&output[..out_buf.pos]);
+            }
+        }
+
+        let mut in_buf = ZSTD_inBuffer {
+            src: input.as_ptr().cast(),
+            size: 0,
+            pos: 0,
+        };
+        loop {
+            let mut out_buf = ZSTD_outBuffer {
+                dst: output.as_mut_ptr().cast(),
+                size: output.len(),
+                pos: 0,
+            };
+            let ret = ZSTD_compressStream2(cctx, &mut out_buf, &mut in_buf, ZSTD_e_end);
+            assert_eq!(ZSTD_isError(ret), 0);
+            compressed.extend_from_slice(&output[..out_buf.pos]);
+            if ret == 0 {
+                break;
+            }
+        }
+        assert_eq!(ZSTD_freeCCtx(cctx), 0);
+
+        let mut decoded = vec![0u8; input.len()];
+        let ret = ZSTD_decompress(
+            decoded.as_mut_ptr().cast(),
+            decoded.len(),
+            compressed.as_ptr().cast(),
+            compressed.len(),
+        );
+        assert_eq!(ZSTD_isError(ret), 0);
+        assert_eq!(ret, input.len());
+        assert_eq!(decoded, input);
+    }
+}
+
 fn pseudo_random_step(state: &mut u64) -> u64 {
     *state = state
         .wrapping_mul(6364136223846793005)

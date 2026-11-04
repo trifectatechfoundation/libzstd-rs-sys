@@ -271,7 +271,7 @@ unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
         }
         ZSTD_customFree(
             (*bufPool).buffers as *mut core::ffi::c_void,
-            (*bufPool).bufferSize,
+            ((*bufPool).totalBuffers as usize).wrapping_mul(size_of::<Buffer>()),
             (*bufPool).cMem,
         );
     }
@@ -1713,7 +1713,7 @@ unsafe fn ZSTDMT_createCompressionJob(
         (*((*mtctx).jobs).offset(jobID as isize)).cctxPool = (*mtctx).cctxPool;
         (*((*mtctx).jobs).offset(jobID as isize)).bufPool = (*mtctx).bufPool;
         (*((*mtctx).jobs).offset(jobID as isize)).seqPool = (*mtctx).seqPool;
-        (*((*mtctx).jobs).offset(jobID as isize)).serial = &mut (*mtctx).serial;
+        (*((*mtctx).jobs).offset(jobID as isize)).serial = &raw mut (*mtctx).serial;
         (*((*mtctx).jobs).offset(jobID as isize)).jobID = (*mtctx).nextJobID;
         (*((*mtctx).jobs).offset(jobID as isize)).firstJob =
             core::ffi::c_uint::from((*mtctx).nextJobID == 0);
@@ -1755,8 +1755,7 @@ unsafe fn ZSTDMT_createCompressionJob(
     if POOL_tryAdd(
         (*mtctx).factory,
         ZSTDMT_compressionJob,
-        &mut *((*mtctx).jobs).offset(jobID as isize) as *mut ZSTDMT_jobDescription
-            as *mut core::ffi::c_void,
+        ((*mtctx).jobs).offset(jobID as isize).cast(),
     ) != 0
     {
         (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
