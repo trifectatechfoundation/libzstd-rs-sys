@@ -2474,7 +2474,7 @@ fn ZSTDv07_nextSrcSizeToDecompress(dctx: &ZSTDv07_DCtx) -> usize {
 fn ZSTDv07_isSkipFrame(dctx: &ZSTDv07_DCtx) -> bool {
     dctx.stage == ZSTDds_skipFrame
 }
-unsafe fn ZSTDv07_decompressContinue(
+fn ZSTDv07_decompressContinue(
     dctx: &mut ZSTDv07_DCtx,
     mut dst: Writer<'_>,
     src: Reader<'_>,
@@ -2550,7 +2550,9 @@ unsafe fn ZSTDv07_decompressContinue(
             let rSize = rSize?;
             dctx.previousDstEnd = dst.as_ptr().wrapping_add(rSize);
             if dctx.fParams.checksumFlag != 0 {
-                ZSTD_XXH64_update_slice(&mut dctx.xxhState, dst.subslice(..rSize).as_slice());
+                ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
+                    dst.subslice(..rSize).as_slice()
+                });
             }
             return Ok(rSize);
         }
