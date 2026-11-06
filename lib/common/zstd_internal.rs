@@ -120,7 +120,7 @@ pub(crate) static OF_defaultNorm: [i16; DefaultMaxOff as usize + 1] = [
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
 pub(crate) static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
 
-#[inline]
+#[inline(always)]
 pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
     // We use `copy` instead of `copy_nonoverlapping` here because the literal buffer can now
     // be located within the dst buffer. In circumstances where the op "catches up" to where the
