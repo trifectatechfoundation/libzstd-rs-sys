@@ -2415,7 +2415,14 @@ pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> Result<usize, Error> {
-    let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict, dictSize);
+    let dict = if dict.is_null() || dictSize == 0 {
+        &[]
+    } else {
+        unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
+    };
+
+    let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict);
+
     ZSTDv07_checkContinuity(dctx, dst.as_ptr());
     ZSTDv07_decompressFrame(dctx, dst, src)
 }
@@ -2719,18 +2726,12 @@ fn ZSTDv07_decompress_insertDictionary(
     ZSTDv07_refDictContent(dctx, dict);
     Ok(())
 }
-unsafe fn ZSTDv07_decompressBegin_usingDict(
-    dctx: &mut ZSTDv07_DCtx,
-    dict: *const core::ffi::c_void,
-    dictSize: usize,
-) -> Result<(), Error> {
+
+fn ZSTDv07_decompressBegin_usingDict(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) -> Result<(), Error> {
     ZSTDv07_decompressBegin(dctx);
-    if !dict.is_null() && dictSize != 0 {
-        ZSTDv07_decompress_insertDictionary(
-            &mut *dctx,
-            core::slice::from_raw_parts(dict.cast::<u8>(), dictSize),
-        )
-        .map_err(|_| Error::dictionary_corrupted)?;
+    if !dict.is_empty() {
+        ZSTDv07_decompress_insertDictionary(&mut *dctx, dict)
+            .map_err(|_| Error::dictionary_corrupted)?;
     }
     Ok(())
 }
@@ -2772,7 +2773,14 @@ pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
     zbd.outStart = zbd.outEnd;
     zbd.inPos = zbd.outStart;
     zbd.lhSize = zbd.inPos;
-    ZSTDv07_decompressBegin_usingDict(&mut *zbd.zd, dict, dictSize)
+
+    let dict = if dict.is_null() || dictSize == 0 {
+        &[]
+    } else {
+        unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
+    };
+
+    ZSTDv07_decompressBegin_usingDict(&mut *zbd.zd, dict)
 }
 #[inline]
 unsafe fn ZBUFFv07_limitCopy(
