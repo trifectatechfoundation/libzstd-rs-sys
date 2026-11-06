@@ -2700,20 +2700,19 @@ fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize
     dctx.litEntropy = dctx.fseEntropy;
     Ok(dictSize - dict.len())
 }
-unsafe fn ZSTDv07_decompress_insertDictionary(
+fn ZSTDv07_decompress_insertDictionary(
     dctx: &mut ZSTDv07_DCtx,
     mut dict: &[u8],
 ) -> Result<(), Error> {
-    if dict.len() < 8 {
+    let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
+        ZSTDv07_refDictContent(dctx, dict);
+        return Ok(());
+    };
+    if u32::from_le_bytes(*magic) != ZSTDv07_DICT_MAGIC {
         ZSTDv07_refDictContent(dctx, dict);
         return Ok(());
     }
-    let magic = MEM_readLE32(dict.as_ptr().cast());
-    if magic != ZSTDv07_DICT_MAGIC {
-        ZSTDv07_refDictContent(dctx, dict);
-        return Ok(());
-    }
-    dctx.dictID = MEM_readLE32(dict[4..].as_ptr() as *const core::ffi::c_void);
+    dctx.dictID = u32::from_le_bytes(*dict_id);
     dict = &dict[8..];
     let eSize = ZSTDv07_loadEntropy(dctx, dict).map_err(|_| Error::dictionary_corrupted)?;
     dict = &dict[eSize..];
