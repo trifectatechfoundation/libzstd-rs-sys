@@ -419,19 +419,20 @@ const HUFv07_TABLELOG_ABSOLUTEMAX: usize = 16;
 const HUFv07_TABLELOG_MAX: core::ffi::c_int = 12;
 const HUFv07_SYMBOLVALUE_MAX: usize = 255;
 
-unsafe fn FSEv07_readNCount(
+fn FSEv07_readNCount(
     normalizedCounter: &mut [core::ffi::c_short],
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<usize, Error> {
-    let istart = headerBuffer.as_ptr();
-    let iend = istart.add(headerBuffer.len());
-    let mut ip = istart;
+    let iend = headerBuffer.len();
+    let mut ip = 0;
     if headerBuffer.len() < 4 {
         return Err(Error::srcSize_wrong);
     }
-    let mut bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
+    let read_u32_le =
+        |offset: usize| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
+    let mut bitStream = read_u32_le(ip);
     let mut nbBits = (bitStream & 0xf).wrapping_add(FSEv07_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSEv07_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
@@ -450,9 +451,9 @@ unsafe fn FSEv07_readNCount(
             let mut n0 = charnum;
             while bitStream & 0xffff == 0xffff {
                 n0 = n0.wrapping_add(24);
-                if ip < iend.sub(5) {
-                    ip = ip.add(2);
-                    bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> bitCount;
+                if ip + 5 < iend {
+                    ip += 2;
+                    bitStream = read_u32_le(ip) >> bitCount;
                 } else {
                     bitStream >>= 16;
                     bitCount += 16;
@@ -472,10 +473,10 @@ unsafe fn FSEv07_readNCount(
                 normalizedCounter[charnum as usize] = 0;
                 charnum = charnum.wrapping_add(1);
             }
-            if ip <= iend.sub(7) || ip.offset((bitCount >> 3) as isize) <= iend.sub(4) {
-                ip = ip.offset((bitCount >> 3) as isize);
+            if ip + 7 <= iend || ip + (bitCount >> 3) as usize + 4 <= iend {
+                ip += (bitCount >> 3) as usize;
                 bitCount &= 7;
-                bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> bitCount;
+                bitStream = read_u32_le(ip) >> bitCount;
             } else {
                 bitStream >>= 2;
             }
@@ -501,25 +502,25 @@ unsafe fn FSEv07_readNCount(
             nbBits -= 1;
             threshold >>= 1;
         }
-        if ip <= iend.sub(7) || ip.offset((bitCount >> 3) as isize) <= iend.sub(4) {
-            ip = ip.offset((bitCount >> 3) as isize);
+        if ip + 7 <= iend || ip + (bitCount >> 3) as usize + 4 <= iend {
+            ip += (bitCount >> 3) as usize;
             bitCount &= 7;
         } else {
-            bitCount -= (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
-            ip = iend.sub(4);
+            bitCount -= (8 * (iend - 4 - ip)) as core::ffi::c_int;
+            ip = iend - 4;
         }
-        bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> (bitCount & 31);
+        bitStream = read_u32_le(ip) >> (bitCount & 31);
     }
     if remaining != 1 {
         return Err(Error::GENERIC);
     }
     *maxSVPtr = charnum.wrapping_sub(1);
 
-    ip = ip.offset(((bitCount + 7) >> 3) as isize);
-    if ip.offset_from_unsigned(istart) > headerBuffer.len() {
+    ip += ((bitCount + 7) >> 3) as usize;
+    if ip > headerBuffer.len() {
         return Err(Error::srcSize_wrong);
     }
-    Ok(ip.offset_from_unsigned(istart))
+    Ok(ip)
 }
 fn HUFv07_readStats(
     huffWeight: &mut [u8; HUFv07_SYMBOLVALUE_MAX + 1],
@@ -790,7 +791,7 @@ fn FSEv07_decompress(dst: Writer<'_>, cSrc: &[u8]) -> Result<usize, Error> {
         return Err(Error::srcSize_wrong);
     }
     let NCountLength =
-        unsafe { FSEv07_readNCount(&mut counting, &mut maxSymbolValue, &mut tableLog, istart)? };
+        FSEv07_readNCount(&mut counting, &mut maxSymbolValue, &mut tableLog, istart)?;
     if NCountLength >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
@@ -1986,7 +1987,7 @@ fn ZSTDv07_buildSeqTable<const N: usize>(
         3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
-            let headerSize = unsafe { FSEv07_readNCount(&mut norm, &mut max, &mut tableLog, src) }
+            let headerSize = FSEv07_readNCount(&mut norm, &mut max, &mut tableLog, src)
                 .map_err(|_| Error::corruption_detected)?;
 
             if tableLog > maxLog {
