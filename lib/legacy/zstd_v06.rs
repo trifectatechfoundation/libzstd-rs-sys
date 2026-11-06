@@ -3370,10 +3370,8 @@ unsafe fn ZSTDv06_refDictContent(
     dictSize: usize,
 ) {
     (*dctx).dictEnd = (*dctx).previousDstEnd;
-    (*dctx).vBase = (dict as *const core::ffi::c_char).offset(
-        -(((*dctx).previousDstEnd as *const core::ffi::c_char)
-            .offset_from((*dctx).base as *const core::ffi::c_char) as core::ffi::c_long
-            as isize),
+    (*dctx).vBase = (dict as *const u8).wrapping_sub(
+        ((*dctx).previousDstEnd as *const u8).offset_from_unsigned((*dctx).base as *const u8),
     ) as *const core::ffi::c_void;
     (*dctx).base = dict;
     (*dctx).previousDstEnd =
