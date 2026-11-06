@@ -3065,10 +3065,8 @@ unsafe fn ZSTDv06_decompressSequences(
 unsafe fn ZSTDv06_checkContinuity(dctx: *mut ZSTDv06_DCtx, dst: *const core::ffi::c_void) {
     if dst != (*dctx).previousDstEnd {
         (*dctx).dictEnd = (*dctx).previousDstEnd;
-        (*dctx).vBase = (dst as *const core::ffi::c_char).offset(
-            -(((*dctx).previousDstEnd as *const core::ffi::c_char)
-                .offset_from((*dctx).base as *const core::ffi::c_char)
-                as core::ffi::c_long as isize),
+        (*dctx).vBase = (dst as *const u8).wrapping_sub(
+            ((*dctx).previousDstEnd as *const u8).offset_from_unsigned((*dctx).base as *const u8),
         ) as *const core::ffi::c_void;
         (*dctx).base = dst;
         (*dctx).previousDstEnd = dst;
