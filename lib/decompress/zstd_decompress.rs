@@ -58,8 +58,7 @@ use crate::lib::legacy::zstd_v06::{
 use crate::lib::legacy::zstd_v07::{
     ZBUFFv07_DCtx, ZBUFFv07_createDCtx, ZBUFFv07_decompressContinue,
     ZBUFFv07_decompressInitDictionary, ZBUFFv07_freeDCtx, ZSTDv07_createDCtx,
-    ZSTDv07_decompress_usingDict, ZSTDv07_findFrameSizeInfoLegacy, ZSTDv07_frameParams,
-    ZSTDv07_freeDCtx, ZSTDv07_getFrameParams,
+    ZSTDv07_decompress_usingDict, ZSTDv07_findFrameSizeInfoLegacy, ZSTDv07_frameParams, ZSTDv07_getFrameParams,
 };
 
 use crate::lib::decompress::zstd_ddict::{
@@ -230,19 +229,21 @@ fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let zd = unsafe { ZSTDv07_createDCtx() };
-            if zd.is_null() {
+            let Ok(mut zd) = ZSTDv07_createDCtx() else {
                 return Err(Error::memory_allocation);
-            }
+            };
+
             let result = unsafe {
                 ZSTDv07_decompress_usingDict(
-                    &mut *zd,
+                    &mut zd,
                     Writer::from_raw_parts(dst.cast(), dstCapacity),
                     Reader::from_raw_parts(src.cast(), compressedSize),
                     dict,
                 )
             };
-            unsafe { ZSTDv07_freeDCtx(zd) };
+
+            drop(zd);
+
             result
         }
         _ => Err(Error::prefix_unknown),
