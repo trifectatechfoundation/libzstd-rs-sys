@@ -176,7 +176,7 @@ pub unsafe fn ZSTD_compressLiterals(
         )
         .with(
             HUF_flags::OPTIMAL_DEPTH,
-            strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint,
+            strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD,
         )
         .with(HUF_flags::SUSPECT_UNCOMPRESSIBLE, suspectUncompressible);
     if repeat == HUF_repeat::Valid && lhSize == 3 {

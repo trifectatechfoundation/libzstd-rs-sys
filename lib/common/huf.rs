@@ -85,7 +85,7 @@ impl HUF_flags {
     }
 }
 
-pub(crate) const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
+pub(crate) const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_uint = ZSTD_btultra;
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
