@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 use core::ptr;
+use std::alloc::AllocError;
 
 use libc::{calloc, free, malloc};
 
@@ -10,7 +11,7 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
-use crate::lib::polyfill::PointerExt;
+use crate::lib::polyfill::{box_try_new_zeroed, PointerExt};
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[derive(Copy, Clone, Default)]
@@ -171,7 +172,7 @@ struct sortedSymbol_t {
 type litBlockType_t = core::ffi::c_uint;
 #[repr(C)]
 pub(crate) struct ZBUFFv07_DCtx {
-    zd: *mut ZSTDv07_DCtx,
+    zd: Box<ZSTDv07_DCtx>,
     fParams: ZSTDv07_frameParams,
     stage: ZBUFFv07_dStage,
     inBuff: *mut u8,
@@ -1601,22 +1602,16 @@ fn ZSTDv07_decompressBegin(dctx: &mut ZSTDv07_DCtx) {
     dctx.dictID = 0;
     dctx.rep = repStartValue;
 }
-pub(crate) unsafe fn ZSTDv07_createDCtx() -> *mut ZSTDv07_DCtx {
-    let mut dctx = core::ptr::null_mut::<ZSTDv07_DCtx>();
-    dctx = calloc(1, size_of::<ZSTDv07_DCtx>()) as *mut ZSTDv07_DCtx;
-    if dctx.is_null() {
-        return core::ptr::null_mut();
-    }
-    ZSTDv07_decompressBegin(&mut *dctx);
-    dctx
+
+pub(crate) fn ZSTDv07_createDCtx() -> Result<Box<ZSTDv07_DCtx>, AllocError> {
+    // SAFETY: a zeroed ZSTDv07_DCtx is correctly initialized.
+    let mut dctx = unsafe { box_try_new_zeroed()?.assume_init() };
+
+    ZSTDv07_decompressBegin(&mut dctx);
+
+    Ok(dctx)
 }
-pub(crate) unsafe fn ZSTDv07_freeDCtx(dctx: *mut ZSTDv07_DCtx) -> usize {
-    if dctx.is_null() {
-        return 0;
-    }
-    free(dctx as *mut core::ffi::c_void);
-    0
-}
+
 fn ZSTDv07_frameHeaderSize(src: Reader<'_>) -> Result<usize, Error> {
     if src.len() < ZSTDv07_frameHeaderSize_min {
         return Err(Error::srcSize_wrong);
@@ -2720,11 +2715,13 @@ pub(crate) unsafe fn ZBUFFv07_createDCtx() -> *mut ZBUFFv07_DCtx {
     if zbd.is_null() {
         return core::ptr::null_mut();
     }
-    (*zbd).zd = ZSTDv07_createDCtx();
-    if ((*zbd).zd).is_null() {
+
+    let Ok(zd) = ZSTDv07_createDCtx() else {
         ZBUFFv07_freeDCtx(zbd);
         return core::ptr::null_mut();
-    }
+    };
+
+    (*zbd).zd = zd;
     (*zbd).stage = ZBUFFds_init;
     zbd
 }
@@ -2732,7 +2729,6 @@ pub(crate) unsafe fn ZBUFFv07_freeDCtx(zbd: *mut ZBUFFv07_DCtx) -> usize {
     if zbd.is_null() {
         return 0;
     }
-    ZSTDv07_freeDCtx((*zbd).zd);
     if !((*zbd).inBuff).is_null() {
         free((*zbd).inBuff as *mut core::ffi::c_void);
     }
@@ -2753,7 +2749,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
     zbd.inPos = zbd.outStart;
     zbd.lhSize = zbd.inPos;
 
-    ZSTDv07_decompressBegin_usingDict(&mut *zbd.zd, dict)
+    ZSTDv07_decompressBegin_usingDict(&mut zbd.zd, dict)
 }
 
 #[inline]
@@ -2832,17 +2828,17 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 }
 
                 // Consume header
-                let h1Size = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd); // == ZSTDv07_frameHeaderSize_min
+                let h1Size = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd); // == ZSTDv07_frameHeaderSize_min
                 ZSTDv07_decompressContinue(
-                    &mut *zbd.zd,
+                    &mut zbd.zd,
                     Writer::from_slice(&mut []),
                     Reader::from_raw_parts(zbd.headerBuffer.as_ptr(), h1Size),
                 )?;
                 if h1Size < zbd.lhSize {
                     // long header
-                    let h2Size = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd);
+                    let h2Size = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd);
                     ZSTDv07_decompressContinue(
-                        &mut *zbd.zd,
+                        &mut zbd.zd,
                         Writer::from_slice(&mut []),
                         Reader::from_raw_parts(zbd.headerBuffer.as_ptr().add(h1Size), h2Size),
                     )?;
@@ -2888,7 +2884,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
         if current_block == Block::Read {
             drop(current_block);
 
-            let neededInSize = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd);
+            let neededInSize = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd);
             if neededInSize == 0 {
                 // end of frame
                 zbd.stage = ZBUFFds_init;
@@ -2897,9 +2893,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             }
             if iend.offset_from_unsigned(ip) >= neededInSize {
                 // decode directly from src
-                let isSkipFrame = ZSTDv07_isSkipFrame(&*zbd.zd);
+                let isSkipFrame = ZSTDv07_isSkipFrame(&zbd.zd);
                 let decodedSize = ZSTDv07_decompressContinue(
-                    &mut *zbd.zd,
+                    &mut zbd.zd,
                     if isSkipFrame {
                         Writer::from_slice(&mut [])
                     } else {
@@ -2927,7 +2923,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
 
         if current_block == Block::Load {
             drop(current_block);
-            let neededInSize_0 = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd);
+            let neededInSize_0 = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize_0.wrapping_sub(zbd.inPos);
             let mut loadedSize: usize = 0;
@@ -2949,9 +2945,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             }
 
             // decode loaded input
-            let isSkipFrame_0 = ZSTDv07_isSkipFrame(&*zbd.zd);
+            let isSkipFrame_0 = ZSTDv07_isSkipFrame(&zbd.zd);
             let decodedSize_0 = ZSTDv07_decompressContinue(
-                &mut *zbd.zd,
+                &mut zbd.zd,
                 Writer::from_raw_parts(zbd.outBuff, zbd.outBuffSize).subslice(zbd.outStart..),
                 Reader::from_raw_parts(zbd.inBuff, neededInSize_0),
             )?;
@@ -2992,7 +2988,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
     // result
     *srcSizePtr = ip.offset_from_unsigned(istart);
     *dstCapacityPtr = op.offset_from_unsigned(ostart);
-    let mut nextSrcSizeHint = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd);
+    let mut nextSrcSizeHint = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd);
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub(zbd.inPos); // already loaded
     Ok(nextSrcSizeHint)
 }
