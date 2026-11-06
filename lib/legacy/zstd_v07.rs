@@ -2612,7 +2612,7 @@ fn ZSTDv07_refDictContent(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) {
     dctx.base = dict.as_ptr();
     dctx.previousDstEnd = dict.as_ptr_range().end;
 }
-unsafe fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize, Error> {
+fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize, Error> {
     let dictSize = dict.len();
     let hSize =
         HUFv07_readDTableX4(&mut dctx.hufTable, dict).map_err(|_| Error::dictionary_corrupted)?;
