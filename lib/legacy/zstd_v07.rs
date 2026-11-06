@@ -2507,22 +2507,14 @@ unsafe fn ZSTDv07_decompressContinue(
             if u32::from_le_bytes(src.subslice(..4).as_slice().try_into().unwrap()) & 0xfffffff0
                 == ZSTDv07_MAGIC_SKIPPABLE_START
             {
-                ptr::copy_nonoverlapping(
-                    src.as_ptr(),
-                    dctx.headerBuffer.as_mut_ptr(),
-                    ZSTDv07_frameHeaderSize_min,
-                );
+                dctx.headerBuffer[..ZSTDv07_frameHeaderSize_min].copy_from_slice(src.as_slice());
                 dctx.expected =
                     ZSTDv07_skippableHeaderSize.wrapping_sub(ZSTDv07_frameHeaderSize_min);
                 dctx.stage = ZSTDds_decodeSkippableHeader;
                 return Ok(0);
             }
             dctx.headerSize = ZSTDv07_frameHeaderSize(src.subslice(..))?;
-            ptr::copy_nonoverlapping(
-                src.as_ptr(),
-                dctx.headerBuffer.as_mut_ptr(),
-                ZSTDv07_frameHeaderSize_min,
-            );
+            dctx.headerBuffer[..ZSTDv07_frameHeaderSize_min].copy_from_slice(src.as_slice());
             if dctx.headerSize > ZSTDv07_frameHeaderSize_min {
                 dctx.expected = dctx.headerSize.wrapping_sub(ZSTDv07_frameHeaderSize_min);
                 dctx.stage = ZSTDds_decodeFrameHeader;
@@ -2570,18 +2562,15 @@ unsafe fn ZSTDv07_decompressContinue(
             dctx.stage = ZSTDds_decodeBlockHeader;
             dctx.expected = ZSTDv07_blockHeaderSize;
             let rSize = rSize?;
-            dctx.previousDstEnd = dst.as_ptr().add(rSize);
+            dctx.previousDstEnd = dst.as_ptr().wrapping_add(rSize);
             if dctx.fParams.checksumFlag != 0 {
                 ZSTD_XXH64_update_slice(&mut dctx.xxhState, dst.subslice(..rSize).as_slice());
             }
             return Ok(rSize);
         }
         4 => {
-            ptr::copy_nonoverlapping(
-                src.as_ptr(),
-                dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..].as_mut_ptr(),
-                dctx.expected,
-            );
+            dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..][..dctx.expected]
+                .copy_from_slice(src.as_slice());
             dctx.expected =
                 u32::from_le_bytes(dctx.headerBuffer[4..8].try_into().unwrap()) as usize;
             dctx.stage = ZSTDds_skipFrame;
@@ -2594,11 +2583,8 @@ unsafe fn ZSTDv07_decompressContinue(
         }
         _ => return Err(Error::GENERIC),
     }
-    ptr::copy_nonoverlapping(
-        src.as_ptr(),
-        dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..].as_mut_ptr(),
-        dctx.expected,
-    );
+    dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..][..dctx.expected]
+        .copy_from_slice(&src.as_slice()[..dctx.expected]);
     ZSTDv07_decodeFrameHeader(dctx, None)?;
     dctx.expected = ZSTDv07_blockHeaderSize;
     dctx.stage = ZSTDds_decodeBlockHeader;
