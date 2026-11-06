@@ -58,7 +58,8 @@ use crate::lib::legacy::zstd_v06::{
 use crate::lib::legacy::zstd_v07::{
     ZBUFFv07_DCtx, ZBUFFv07_createDCtx, ZBUFFv07_decompressContinue,
     ZBUFFv07_decompressInitDictionary, ZBUFFv07_freeDCtx, ZSTDv07_createDCtx,
-    ZSTDv07_decompress_usingDict, ZSTDv07_findFrameSizeInfoLegacy, ZSTDv07_frameParams, ZSTDv07_getFrameParams,
+    ZSTDv07_decompress_usingDict, ZSTDv07_findFrameSizeInfoLegacy, ZSTDv07_frameParams,
+    ZSTDv07_getFrameParams,
 };
 
 use crate::lib::decompress::zstd_ddict::{
@@ -360,7 +361,10 @@ unsafe fn ZSTD_initLegacyStream(
         }
         7 => {
             let dctx = if prevVersion != newVersion {
-                ZBUFFv07_createDCtx()
+                match ZBUFFv07_createDCtx() {
+                    Ok(dctx) => Box::into_raw(dctx),
+                    Err(_) => return Err(Error::memory_allocation),
+                }
             } else {
                 *legacyContext as *mut ZBUFFv07_DCtx
             };
