@@ -2750,19 +2750,10 @@ pub(crate) fn ZBUFFv07_decompressInitDictionary(
 }
 
 #[inline]
-unsafe fn ZBUFFv07_limitCopy(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
-) -> usize {
-    let length = if dstCapacity < srcSize {
-        dstCapacity
-    } else {
-        srcSize
-    };
+fn ZBUFFv07_limitCopy(mut dst: Writer<'_>, src: &[u8]) -> usize {
+    let length = Ord::min(dst.capacity(), src.len());
     if length > 0 {
-        ptr::copy_nonoverlapping(src, dst, length);
+        unsafe { ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), length) };
     }
     length
 }
@@ -2790,7 +2781,6 @@ fn ZBUFFv07_decompressContinue_internal(
 ) -> Result<usize, Error> {
     let iend = src.len();
     let mut ip = 0;
-    let oend = dst.capacity();
     let mut op = 0;
     let mut notDone = 1;
 
@@ -2925,14 +2915,10 @@ fn ZBUFFv07_decompressContinue_internal(
             if toLoad > zbd.inBuff.len().wrapping_sub(zbd.inPos) {
                 return Err(Error::corruption_detected); // should never happen
             }
-            loadedSize = unsafe {
-                ZBUFFv07_limitCopy(
-                    zbd.inBuff[zbd.inPos..].as_mut_ptr().cast(),
-                    toLoad,
-                    src.subslice(ip..).as_ptr().cast(),
-                    iend - ip,
-                )
-            };
+            loadedSize = ZBUFFv07_limitCopy(
+                Writer::from_slice(&mut zbd.inBuff[zbd.inPos..][..toLoad]),
+                &src.as_slice()[ip..],
+            );
             ip += loadedSize;
             zbd.inPos = zbd.inPos.wrapping_add(loadedSize);
             if loadedSize < toLoad {
@@ -2962,14 +2948,10 @@ fn ZBUFFv07_decompressContinue_internal(
             drop(current_block);
 
             let toFlushSize = zbd.outEnd.wrapping_sub(zbd.outStart);
-            let flushedSize = unsafe {
-                ZBUFFv07_limitCopy(
-                    dst.subslice(op..).as_mut_ptr().cast(),
-                    oend - op,
-                    zbd.outBuff[zbd.outStart..].as_ptr().cast(),
-                    toFlushSize,
-                )
-            };
+            let flushedSize = ZBUFFv07_limitCopy(
+                dst.subslice(op..),
+                &zbd.outBuff[zbd.outStart..][..toFlushSize],
+            );
             op += flushedSize;
             zbd.outStart = zbd.outStart.wrapping_add(flushedSize);
             if flushedSize == toFlushSize {
