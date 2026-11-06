@@ -96,7 +96,7 @@ pub struct HUF_DEltX1 {
 #[repr(C)]
 pub struct HUF_ReadDTableX1_Workspace {
     rankVal: [u32; 13],
-    rankStart: [u32; 13],
+    rankStart: [u32; 16],
     statsWksp: crate::lib::common::entropy_common::Workspace,
     symbols: [u8; 256],
     huffWeight: [u8; 256],
@@ -313,9 +313,19 @@ fn HUF_rescaleStats(
     if tableLog < targetTableLog {
         let scale = targetTableLog as usize - tableLog as usize;
 
-        /* Increase the weight for all non-zero probability symbols by scale. */
-        for weight in huffWeight[..nbSymbols as usize].iter_mut() {
-            *weight += (if *weight == 0 { 0 } else { scale }) as u8;
+        // Increase the weight for all non-zero probability symbols by scale, 8 at a time.
+        // Weights are <= 12, so adding 0x7f sets a byte's high bit iff it is non-zero, and no
+        // step carries into the next byte.  Entries past nbSymbols are never read; little-endian
+        // order keeps any carry out of them away from the valid (lower) entries.
+        const LOW7: u64 = 0x7f7f_7f7f_7f7f_7f7f;
+        const HIGH: u64 = 0x8080_8080_8080_8080;
+        let n = (nbSymbols as usize)
+            .next_multiple_of(8)
+            .min(huffWeight.len());
+        for chunk in huffWeight[..n].as_chunks_mut::<8>().0 {
+            let w = u64::from_le_bytes(*chunk);
+            let nonzero = (w.wrapping_add(LOW7) & HIGH) >> 7;
+            *chunk = w.wrapping_add(nonzero * scale as u64).to_le_bytes();
         }
 
         // Update rankVal to reflect the new weights.
@@ -336,6 +346,26 @@ fn HUF_fillDTableX1<const N: usize>(dt: &mut [HUF_DEltX1], symbols: &[u8], nbBit
     let (chunks, _) = dt.as_chunks_mut::<N>();
     for (chunk, &byte) in chunks.iter_mut().zip(symbols) {
         *chunk = [HUF_DEltX1 { nbBits, byte }; N];
+    }
+}
+
+/// Fill with 64-bit stores, as LLVM does not reliably vectorize the element-wise loop (notably
+/// under PGO).  `length` must be a multiple of `Q * 4`.
+#[inline(always)]
+fn HUF_fillDTableX1_wide<const Q: usize>(
+    dt: &mut [HUF_DEltX1],
+    symbols: &[u8],
+    nbBits: u8,
+    length: usize,
+) {
+    for (chunk, &byte) in dt.chunks_exact_mut(length).zip(symbols) {
+        let d4 = u64::from(u16::from_ne_bytes([nbBits, byte])) * 0x0001_0001_0001_0001;
+        let (quads, rest) = chunk.as_chunks_mut::<4>();
+        debug_assert!(rest.is_empty() && quads.len() % Q == 0);
+        for q in quads.as_chunks_mut::<Q>().0 {
+            // SAFETY: `q` is `Q * 4` two-byte entries, i.e. `Q` u64s.
+            unsafe { q.as_mut_ptr().cast::<[u64; Q]>().write_unaligned([d4; Q]) };
+        }
     }
 }
 
@@ -399,11 +429,23 @@ pub fn HUF_readDTableX1_wksp(
         wksp.rankStart[n] = curr;
     }
 
-    for (n, w) in wksp.huffWeight[..nbSymbols as usize].iter().enumerate() {
-        let w = usize::from(*w);
-        wksp.symbols[wksp.rankStart[w] as usize] = n as u8;
-        wksp.rankStart[w] += 1;
+    // Weights are <= tableLog <= 12 and positions are < nbSymbols <= 256, so the masks and the
+    // `u8` index are lossless; they let the compiler drop the bounds checks.
+    let rankStart = &mut wksp.rankStart;
+    let symbols = &mut wksp.symbols;
+    let (quads, rest) = wksp.huffWeight[..nbSymbols as usize].as_chunks::<4>();
+    let mut n = 0u8;
+    let mut place = |w: u8| {
+        let w = usize::from(w & 15);
+        let r = rankStart[w];
+        symbols[usize::from(r as u8)] = n;
+        rankStart[w] = r + 1;
+        n = n.wrapping_add(1);
+    };
+    for q in quads {
+        q.iter().for_each(|&w| place(w));
     }
+    rest.iter().for_each(|&w| place(w));
 
     // fill DTable
     //
@@ -423,13 +465,9 @@ pub fn HUF_readDTableX1_wksp(
         match length {
             1 => HUF_fillDTableX1::<1>(dt, symbols, nbBits),
             2 => HUF_fillDTableX1::<2>(dt, symbols, nbBits),
-            4 => HUF_fillDTableX1::<4>(dt, symbols, nbBits),
-            8 => HUF_fillDTableX1::<8>(dt, symbols, nbBits),
-            _ => {
-                for (chunk, &byte) in dt.chunks_exact_mut(length).zip(symbols) {
-                    chunk.fill(HUF_DEltX1 { nbBits, byte });
-                }
-            }
+            4 => HUF_fillDTableX1_wide::<1>(dt, symbols, nbBits, 4),
+            8 => HUF_fillDTableX1_wide::<2>(dt, symbols, nbBits, 8),
+            _ => HUF_fillDTableX1_wide::<4>(dt, symbols, nbBits, length),
         }
 
         symbol += symbolCount;
@@ -887,6 +925,7 @@ impl HUF_DEltX2 {
     }
 }
 
+#[inline(always)]
 fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::c_int) -> u32 {
     const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, sequence) == 0);
     const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, nbBits) == 2);
@@ -906,6 +945,7 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
         .wrapping_add((level as u32) << 24)
 }
 
+#[inline(always)]
 fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
     HUF_DEltX2::from_u32(HUF_buildDEltX2U32(
         symbol as u32,
@@ -915,6 +955,7 @@ fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_in
     ))
 }
 
+#[inline(always)]
 fn HUF_fillDTableX2ForWeight(
     DTableRank: &mut [HUF_DEltX2],
     sorted_symbols: &[sortedSymbol_t],
@@ -924,11 +965,39 @@ fn HUF_fillDTableX2ForWeight(
     level: core::ffi::c_int,
 ) {
     let length = 1 << (tableLog.wrapping_sub(nbBits) & 0x1f);
-    let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
+    let fill = |dt: &mut [HUF_DEltX2], n: usize| {
+        HUF_fillDTableX2Runs(dt, sorted_symbols, n, |s| {
+            HUF_buildDEltX2(s, nbBits, baseSeq, level)
+        })
+    };
+    match length {
+        1 => fill(DTableRank, 1),
+        2 => fill(DTableRank, 2),
+        4 => fill(DTableRank, 4),
+        8 => fill(DTableRank, 8),
+        _ => fill(DTableRank, length),
+    }
+}
 
+/// Write a run of `length` copies of each symbol's entry, 8 entries per store group for long
+/// runs, so the stores don't depend on LLVM vectorizing a variable-length fill.
+#[inline(always)]
+fn HUF_fillDTableX2Runs(
+    DTableRank: &mut [HUF_DEltX2],
+    sorted_symbols: &[sortedSymbol_t],
+    length: usize,
+    elt: impl Fn(u8) -> HUF_DEltX2,
+) {
+    let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
     for (sorted_symbol, chunk) in sorted_symbols.iter().zip(chunks) {
-        let DElt = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
-        chunk.fill(DElt);
+        let DElt = elt(sorted_symbol.symbol);
+        if length < 8 {
+            chunk.fill(DElt);
+        } else {
+            for group in chunk.as_chunks_mut::<8>().0 {
+                *group = [DElt; 8];
+            }
+        }
     }
 }
 
@@ -2026,6 +2095,7 @@ pub struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
+    #[inline(always)]
     pub(crate) fn from_slice(slice: &'a mut [u8]) -> Self {
         let len = slice.len();
         let ptr = NonNull::new(slice.as_mut_ptr()).unwrap();
@@ -2040,6 +2110,7 @@ impl<'a> Writer<'a> {
     ///
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
+    #[inline(always)]
     pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
         let ptr = NonNull::new(ptr);
 
@@ -2057,7 +2128,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn capacity(&self) -> usize {
         match self.ptr {
             None => 0,
@@ -2065,12 +2136,12 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_null(&self) -> bool {
         self.ptr.is_none()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         match self.ptr {
             None => true,
@@ -2078,7 +2149,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_ptr(&self) -> *const u8 {
         match self.ptr {
             None => core::ptr::null(),
@@ -2086,12 +2157,12 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_ptr_range(&self) -> Range<*const u8> {
         self.as_ptr()..self.as_ptr().wrapping_add(self.capacity())
     }
 
-    #[inline]
+    #[inline(always)]
     pub unsafe fn as_slice(&self) -> &[u8] {
         match self.ptr {
             None => &[],
@@ -2099,7 +2170,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
         match self.ptr {
             None => core::ptr::null_mut(),
@@ -2107,7 +2178,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut u8> {
         match self.ptr {
             None => core::ptr::null_mut()..core::ptr::null_mut(),
@@ -2115,6 +2186,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub fn subslice<R: core::ops::RangeBounds<usize>>(&mut self, range: R) -> Self {
         let Some(ptr) = self.ptr else {
             match (range.start_bound(), range.end_bound()) {
@@ -2160,6 +2232,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn quarter(&mut self) -> Option<(Self, Self, Self, Self)> {
         let capacity = self.capacity();
         let segment_size = capacity.div_ceil(4);
@@ -2190,6 +2263,7 @@ impl<'a> Writer<'a> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn write_u8(&mut self, byte: u8) {
         let Some(ptr) = self.ptr else {
             panic!("write out of bounds");
@@ -2206,6 +2280,7 @@ impl<'a> Writer<'a> {
         self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(1)) }
     }
 
+    #[inline(always)]
     pub(crate) fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
 
