@@ -2767,20 +2767,31 @@ unsafe fn ZBUFFv07_limitCopy(
     length
 }
 
-#[allow(clippy::drop_non_drop)]
 pub(crate) unsafe fn ZBUFFv07_decompressContinue(
     zbd: &mut ZBUFFv07_DCtx,
     dst: *mut core::ffi::c_void,
-    dstCapacityPtr: *mut usize,
+    dstCapacityPtr: &mut usize,
     src: *const core::ffi::c_void,
-    srcSizePtr: *mut usize,
+    srcSizePtr: &mut usize,
 ) -> Result<usize, Error> {
-    let istart = src as *const u8;
-    let iend = istart.add(*srcSizePtr);
-    let mut ip = istart;
-    let ostart = dst as *mut u8;
-    let oend = ostart.add(*dstCapacityPtr);
-    let mut op = ostart;
+    let dst = unsafe { Writer::from_raw_parts(dst.cast(), *dstCapacityPtr) };
+    let src = unsafe { Reader::from_raw_parts(src.cast(), *srcSizePtr) };
+
+    ZBUFFv07_decompressContinue_internal(zbd, dst, dstCapacityPtr, src, srcSizePtr)
+}
+
+#[allow(clippy::drop_non_drop)]
+fn ZBUFFv07_decompressContinue_internal(
+    zbd: &mut ZBUFFv07_DCtx,
+    mut dst: Writer<'_>,
+    dstCapacityPtr: &mut usize,
+    src: Reader<'_>,
+    srcSizePtr: &mut usize,
+) -> Result<usize, Error> {
+    let iend = src.len();
+    let mut ip = 0;
+    let oend = dst.capacity();
+    let mut op = 0;
     let mut notDone = 1;
 
     while notDone != 0 {
@@ -2799,28 +2810,20 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 if hSize != 0 {
                     // if hSize!=0, hSize > zbd->lhSize
                     let toLoad = hSize - zbd.lhSize;
-                    if toLoad > iend.offset_from_unsigned(ip) {
+                    if toLoad > iend - ip {
                         // not enough input to load full header
-                        if !ip.is_null() {
-                            ptr::copy_nonoverlapping(
-                                ip,
-                                zbd.headerBuffer.as_mut_ptr().add(zbd.lhSize),
-                                iend.offset_from_unsigned(ip),
-                            );
-                        }
-                        zbd.lhSize = zbd.lhSize.wrapping_add(iend.offset_from_unsigned(ip));
+                        let rest = &src.as_slice()[ip..];
+                        zbd.headerBuffer[zbd.lhSize..][..rest.len()].copy_from_slice(rest);
+                        zbd.lhSize = zbd.lhSize.wrapping_add(rest.len());
                         *dstCapacityPtr = 0;
                         return Ok(hSize
                             .wrapping_sub(zbd.lhSize)
                             .wrapping_add(ZSTDv07_blockHeaderSize));
                     }
-                    ptr::copy_nonoverlapping(
-                        ip,
-                        zbd.headerBuffer.as_mut_ptr().add(zbd.lhSize),
-                        toLoad,
-                    );
+                    zbd.headerBuffer[zbd.lhSize..][..toLoad]
+                        .copy_from_slice(&src.as_slice()[ip..][..toLoad]);
                     zbd.lhSize = hSize;
-                    ip = ip.add(toLoad);
+                    ip += toLoad;
                     continue;
                 }
 
@@ -2829,7 +2832,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 ZSTDv07_decompressContinue(
                     &mut zbd.zd,
                     Writer::from_slice(&mut []),
-                    Reader::from_raw_parts(zbd.headerBuffer.as_ptr(), h1Size),
+                    Reader::from_slice(&zbd.headerBuffer[..h1Size]),
                 )?;
                 if h1Size < zbd.lhSize {
                     // long header
@@ -2837,7 +2840,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     ZSTDv07_decompressContinue(
                         &mut zbd.zd,
                         Writer::from_slice(&mut []),
-                        Reader::from_raw_parts(zbd.headerBuffer.as_ptr().add(h1Size), h2Size),
+                        Reader::from_slice(&zbd.headerBuffer[h1Size..][..h2Size]),
                     )?;
                 }
                 zbd.fParams.windowSize = core::cmp::max(zbd.fParams.windowSize, 1 << 10);
@@ -2884,7 +2887,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 notDone = 0;
                 continue;
             }
-            if iend.offset_from_unsigned(ip) >= neededInSize {
+            if iend - ip >= neededInSize {
                 // decode directly from src
                 let isSkipFrame = ZSTDv07_isSkipFrame(&zbd.zd);
                 let decodedSize = ZSTDv07_decompressContinue(
@@ -2894,9 +2897,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     } else {
                         Writer::from_slice(&mut zbd.outBuff[zbd.outStart..])
                     },
-                    Reader::from_raw_parts(ip, neededInSize),
+                    src.subslice(ip..ip + neededInSize),
                 )?;
-                ip = ip.add(neededInSize);
+                ip += neededInSize;
                 if decodedSize == 0 && !isSkipFrame {
                     // this was just a header
                     continue;
@@ -2922,13 +2925,15 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             if toLoad > zbd.inBuff.len().wrapping_sub(zbd.inPos) {
                 return Err(Error::corruption_detected); // should never happen
             }
-            loadedSize = ZBUFFv07_limitCopy(
-                zbd.inBuff[zbd.inPos..].as_mut_ptr().cast(),
-                toLoad,
-                ip as *const core::ffi::c_void,
-                iend.offset_from_unsigned(ip),
-            );
-            ip = ip.add(loadedSize);
+            loadedSize = unsafe {
+                ZBUFFv07_limitCopy(
+                    zbd.inBuff[zbd.inPos..].as_mut_ptr().cast(),
+                    toLoad,
+                    src.subslice(ip..).as_ptr().cast(),
+                    iend - ip,
+                )
+            };
+            ip += loadedSize;
             zbd.inPos = zbd.inPos.wrapping_add(loadedSize);
             if loadedSize < toLoad {
                 // not enough input, wait for more
@@ -2957,13 +2962,15 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             drop(current_block);
 
             let toFlushSize = zbd.outEnd.wrapping_sub(zbd.outStart);
-            let flushedSize = ZBUFFv07_limitCopy(
-                op as *mut core::ffi::c_void,
-                oend.offset_from_unsigned(op),
-                zbd.outBuff[zbd.outStart..].as_ptr().cast(),
-                toFlushSize,
-            );
-            op = op.add(flushedSize);
+            let flushedSize = unsafe {
+                ZBUFFv07_limitCopy(
+                    dst.subslice(op..).as_mut_ptr().cast(),
+                    oend - op,
+                    zbd.outBuff[zbd.outStart..].as_ptr().cast(),
+                    toFlushSize,
+                )
+            };
+            op += flushedSize;
             zbd.outStart = zbd.outStart.wrapping_add(flushedSize);
             if flushedSize == toFlushSize {
                 zbd.stage = ZBUFFds_read;
@@ -2978,8 +2985,8 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
     }
 
     // result
-    *srcSizePtr = ip.offset_from_unsigned(istart);
-    *dstCapacityPtr = op.offset_from_unsigned(ostart);
+    *srcSizePtr = ip;
+    *dstCapacityPtr = op;
     let mut nextSrcSizeHint = ZSTDv07_nextSrcSizeToDecompress(&zbd.zd);
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub(zbd.inPos); // already loaded
     Ok(nextSrcSizeHint)
