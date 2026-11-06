@@ -2318,10 +2318,7 @@ fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
     }
 }
 
-/// # Safety
-///
-/// `src` must outlive the last decompress call that covers the same compressed block.
-unsafe fn ZSTDv07_decompressBlock_internal(
+fn ZSTDv07_decompressBlock_internal(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
     src: &[u8],
@@ -2374,13 +2371,11 @@ fn ZSTDv07_decompressFrame(
             return Err(Error::srcSize_wrong);
         }
         let decodedSize = match blockProperties.blockType {
-            bt_compressed => unsafe {
-                ZSTDv07_decompressBlock_internal(
-                    dctx,
-                    op.subslice(..),
-                    ip.subslice(..cBlockSize).as_slice(),
-                )?
-            },
+            bt_compressed => ZSTDv07_decompressBlock_internal(
+                dctx,
+                op.subslice(..),
+                ip.subslice(..cBlockSize).as_slice(),
+            )?,
             bt_raw => ZSTDv07_copyRawBlock(op.subslice(..), ip.subslice(..cBlockSize).as_slice())?,
             bt_rle => ZSTDv07_generateNxBytes(
                 op.subslice(..),
