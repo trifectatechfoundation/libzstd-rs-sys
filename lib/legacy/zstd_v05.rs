@@ -2751,10 +2751,8 @@ unsafe fn ZSTDv05_decompressContinue(
 }
 unsafe fn ZSTDv05_refDictContent(dctx: &mut ZSTDv05_DCtx, dict: &[u8]) {
     dctx.dictEnd = dctx.previousDstEnd;
-    dctx.vBase = dict.as_ptr().offset(
-        -((dctx.previousDstEnd as *const core::ffi::c_char)
-            .offset_from(dctx.base as *const core::ffi::c_char) as core::ffi::c_long
-            as isize),
+    dctx.vBase = dict.as_ptr().wrapping_sub(
+        (dctx.previousDstEnd as *const u8).offset_from_unsigned(dctx.base as *const u8),
     ) as *const core::ffi::c_void;
     dctx.base = dict.as_ptr().cast();
     dctx.previousDstEnd = dict.as_ptr().add(dict.len()) as *const core::ffi::c_void;
