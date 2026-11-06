@@ -2607,7 +2607,7 @@ unsafe fn ZSTDv07_refDictContent(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) {
     dctx.dictEnd = dctx.previousDstEnd;
     dctx.vBase = dict
         .as_ptr()
-        .offset(-dctx.previousDstEnd.offset_from(dctx.base));
+        .wrapping_sub(dctx.previousDstEnd.offset_from_unsigned(dctx.base));
     dctx.base = dict.as_ptr();
     dctx.previousDstEnd = dict.as_ptr().add(dict.len());
 }
