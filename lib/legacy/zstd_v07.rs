@@ -2189,11 +2189,11 @@ unsafe fn ZSTDv07_execSequence(
     op = oLitEnd.subslice(..);
     *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(base) {
-        if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(vBase) {
+        if sequence.offset > oLitEnd.as_ptr().addr().wrapping_sub(vBase.addr()) {
             return Err(Error::corruption_detected);
         }
-        match_0 = dictEnd.offset(-base.offset_from(match_0));
-        if match_0.add(sequence.matchLength) <= dictEnd {
+        match_0 = dictEnd.wrapping_sub(base.addr() - match_0.addr());
+        if sequence.matchLength <= dictEnd.addr() - match_0.addr() {
             core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), sequence.matchLength);
             return Ok(sequenceLength);
         }
