@@ -120,7 +120,7 @@ pub(crate) static OF_defaultNorm: [i16; DefaultMaxOff as usize + 1] = [
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
 pub(crate) static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
 
-#[inline]
+#[inline(always)]
 pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
     // We use `copy` instead of `copy_nonoverlapping` here because the literal buffer can now
     // be located within the dst buffer. In circumstances where the op "catches up" to where the
@@ -237,7 +237,11 @@ pub(crate) const ZSTD_WORKSPACETOOLARGE_MAXDURATION: core::ffi::c_int = 128;
 #[inline]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub(crate) fn ZSTD_cpuSupportsBmi2() -> bool {
-    is_x86_feature_detected!("bmi1") && is_x86_feature_detected!("bmi2")
+    // Like C's BMI2_TARGET_ATTRIBUTE, the "bmi2" variants also use lzcnt (every BMI2 CPU has it,
+    // but check anyway).
+    is_x86_feature_detected!("bmi1")
+        && is_x86_feature_detected!("bmi2")
+        && is_x86_feature_detected!("lzcnt")
 }
 
 #[inline]
