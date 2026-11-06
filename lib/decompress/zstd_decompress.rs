@@ -367,7 +367,14 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Err(Error::memory_allocation);
             }
-            let _ = ZBUFFv07_decompressInitDictionary(&mut *dctx, dict, dictSize);
+
+            let dict = if dict.is_null() || dictSize == 0 {
+                &[]
+            } else {
+                unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
+            };
+
+            let _ = ZBUFFv07_decompressInitDictionary(&mut *dctx, dict);
             *legacyContext = dctx as *mut core::ffi::c_void;
         }
         _ => {}

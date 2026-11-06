@@ -2763,10 +2763,10 @@ pub(crate) unsafe fn ZBUFFv07_freeDCtx(zbd: *mut ZBUFFv07_DCtx) -> usize {
     free(zbd as *mut core::ffi::c_void);
     0
 }
+
 pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
     zbd: &mut ZBUFFv07_DCtx,
-    dict: *const core::ffi::c_void,
-    dictSize: usize,
+    dict: &[u8],
 ) -> Result<(), Error> {
     zbd.stage = ZBUFFds_loadHeader;
     zbd.outEnd = 0;
@@ -2774,14 +2774,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
     zbd.inPos = zbd.outStart;
     zbd.lhSize = zbd.inPos;
 
-    let dict = if dict.is_null() || dictSize == 0 {
-        &[]
-    } else {
-        unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
-    };
-
     ZSTDv07_decompressBegin_usingDict(&mut *zbd.zd, dict)
 }
+
 #[inline]
 unsafe fn ZBUFFv07_limitCopy(
     dst: *mut core::ffi::c_void,
