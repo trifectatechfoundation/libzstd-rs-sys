@@ -5011,8 +5011,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     wkspSize: usize,
 ) -> Result<(), Error> {
     let litSize = seqStorePtr.lit.offset_from_unsigned(seqStorePtr.litStart);
-    let huf_useOptDepth =
-        cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD as core::ffi::c_uint;
+    let huf_useOptDepth = cctxParams.cParams.strategy >= HUF_OPTIMAL_DEPTH_THRESHOLD;
     let hufFlags = HUF_flags::empty().with(HUF_flags::OPTIMAL_DEPTH, huf_useOptDepth);
 
     entropyMetadata.hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
