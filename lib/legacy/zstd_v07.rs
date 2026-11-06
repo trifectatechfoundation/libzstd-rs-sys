@@ -2408,19 +2408,12 @@ fn ZSTDv07_decompressFrame(
     Ok(dstCapacity - op.capacity())
 }
 
-pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
+pub(crate) fn ZSTDv07_decompress_usingDict(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
     src: Reader<'_>,
-    dict: *const core::ffi::c_void,
-    dictSize: usize,
+    dict: &[u8],
 ) -> Result<usize, Error> {
-    let dict = if dict.is_null() || dictSize == 0 {
-        &[]
-    } else {
-        unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
-    };
-
     let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict);
 
     ZSTDv07_checkContinuity(dctx, dst.as_ptr());
