@@ -239,8 +239,7 @@ fn ZSTD_decompressLegacy(
                     &mut *zd,
                     Writer::from_raw_parts(dst.cast(), dstCapacity),
                     Reader::from_raw_parts(src.cast(), compressedSize),
-                    dict.as_ptr().cast(),
-                    dict.len(),
+                    dict,
                 )
             };
             unsafe { ZSTDv07_freeDCtx(zd) };
