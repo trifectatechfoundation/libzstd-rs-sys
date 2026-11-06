@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 use core::ptr;
 use std::alloc::AllocError;
 
-use libc::{calloc, free, malloc};
+use libc::{free, malloc};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLEST};
@@ -2709,33 +2709,35 @@ fn ZSTDv07_decompressBegin_usingDict(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) -> Re
     }
     Ok(())
 }
-pub(crate) unsafe fn ZBUFFv07_createDCtx() -> *mut ZBUFFv07_DCtx {
-    let mut zbd = core::ptr::null_mut::<ZBUFFv07_DCtx>();
-    zbd = calloc(1, size_of::<ZBUFFv07_DCtx>()) as *mut ZBUFFv07_DCtx;
-    if zbd.is_null() {
-        return core::ptr::null_mut();
-    }
 
-    let Ok(zd) = ZSTDv07_createDCtx() else {
-        ZBUFFv07_freeDCtx(zbd);
-        return core::ptr::null_mut();
+pub(crate) fn ZBUFFv07_createDCtx() -> Result<Box<ZBUFFv07_DCtx>, AllocError> {
+    let mut zbd = box_try_new_zeroed::<ZBUFFv07_DCtx>()?;
+
+    // SAFETY: a zeroed ZBUFFv07_DCtx with the zd field set is correctly initialized.
+    let mut zbd = unsafe {
+        (&raw mut (*zbd.as_mut_ptr()).zd).write(ZSTDv07_createDCtx()?);
+        zbd.assume_init()
     };
 
-    (*zbd).zd = zd;
-    (*zbd).stage = ZBUFFds_init;
-    zbd
+    zbd.stage = ZBUFFds_init;
+
+    Ok(zbd)
 }
+
 pub(crate) unsafe fn ZBUFFv07_freeDCtx(zbd: *mut ZBUFFv07_DCtx) -> usize {
     if zbd.is_null() {
         return 0;
     }
-    if !((*zbd).inBuff).is_null() {
-        free((*zbd).inBuff as *mut core::ffi::c_void);
+
+    let zbd = unsafe { Box::from_raw(zbd) };
+
+    if !zbd.inBuff.is_null() {
+        free(zbd.inBuff as *mut core::ffi::c_void);
     }
-    if !((*zbd).outBuff).is_null() {
-        free((*zbd).outBuff as *mut core::ffi::c_void);
+    if !zbd.outBuff.is_null() {
+        free(zbd.outBuff as *mut core::ffi::c_void);
     }
-    free(zbd as *mut core::ffi::c_void);
+
     0
 }
 
