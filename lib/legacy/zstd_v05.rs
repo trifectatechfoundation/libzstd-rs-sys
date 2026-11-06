@@ -2382,11 +2382,11 @@ unsafe fn ZSTDv05_execSequence(
     op = oLitEnd;
     *litPtr = litEnd;
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
-        if sequence.offset > oLitEnd.offset_from_unsigned(vBase) {
+        if sequence.offset > oLitEnd.addr().wrapping_sub(vBase.addr()) {
             return Err(Error::corruption_detected);
         }
-        match_0 = dictEnd.offset(-(base.offset_from(match_0) as core::ffi::c_long as isize));
-        if match_0.add(sequence.matchLength) <= dictEnd {
+        match_0 = dictEnd.wrapping_sub(base.addr() - match_0.addr());
+        if sequence.matchLength <= dictEnd.addr() - match_0.addr() {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return Ok(sequenceLength);
         }
