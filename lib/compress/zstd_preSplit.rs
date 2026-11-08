@@ -208,8 +208,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 ///
 /// # Parameters
 ///
-/// * `blockStart` - Pointer to the start of the block
-/// * `blockSize` - Size of the block (must be 128 KB)
+/// * `block` - The block (must be 128 KB)
 /// * `level` - Detection level (0-4). Higher levels spend more energy to detect block boundaries.
 /// * `workspace` - Workspace buffer (must be aligned for `usize`)
 /// * `wkspSize` - Workspace size (must be at least `ZSTD_SLIPBLOCK_WORKSPACESIZE`)
@@ -220,19 +219,13 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 /// While this could be extended to smaller sizes in the future,
 /// it is not yet clear if this would be useful. TBD.
 pub unsafe fn ZSTD_splitBlock(
-    blockStart: *const c_void,
-    blockSize: usize,
+    block: &[u8; 128 << 10],
     level: c_int,
     workspace: *mut c_void,
     wkspSize: usize,
 ) -> usize {
     debug_assert!((0..=4).contains(&level));
 
-    assert!(!blockStart.is_null());
-    assert_eq!(blockSize, 128 << 10);
-    // SAFETY: the caller provides a readable block of `blockSize` bytes,
-    // disjoint from the writable workspace. Its length was checked above.
-    let block = unsafe { &*blockStart.cast::<[u8; 128 << 10]>() };
     if level == 0 {
         return ZSTD_splitBlock_fromBorders(block, workspace, wkspSize);
     }
