@@ -734,7 +734,7 @@ fn COVER_buildDictionary<'a>(
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
-    unsafe { assume_init_ref(&dict[tail..]) }
+    unsafe { dict[tail..].assume_init_ref() }
 }
 
 pub(super) const fn as_uninit<T>(slice: &[T]) -> &[MaybeUninit<T>] {
@@ -746,14 +746,6 @@ pub(super) const fn as_uninit<T>(slice: &[T]) -> &[MaybeUninit<T>] {
     // For immutable slices, there is no risk of writing uninitialized data to assumed-initialized
     // places.
     unsafe { &*(slice as *const [T] as *const [MaybeUninit<T>]) }
-}
-
-pub(super) const unsafe fn assume_init_ref<T>(slice: &[MaybeUninit<T>]) -> &[T] {
-    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
-    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
-    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
-    // reference and thus guaranteed to be valid for reads.
-    unsafe { &*(slice as *const [MaybeUninit<T>] as *const [T]) }
 }
 
 /// Train a dictionary from an array of samples using the COVER algorithm.
