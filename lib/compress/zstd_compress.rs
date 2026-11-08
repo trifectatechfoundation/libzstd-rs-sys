@@ -3473,20 +3473,18 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
 
 unsafe fn ZSTD_copyCDictTableIntoCCtx(
     dst: *mut u32,
-    src: *const u32,
-    tableSize: usize,
+    src: &[u32],
     cParams: &ZSTD_compressionParameters,
 ) {
     if cParams.cdict_indices_are_tagged() {
         // Remove tags from the CDict table if they are present.
         // See docs on "short cache" in zstd_compress_internal.h for context.
-        for i in 0..tableSize {
-            let taggedIndex = *src.add(i);
+        for (i, &taggedIndex) in src.iter().enumerate() {
             let index = taggedIndex >> ZSTD_SHORT_CACHE_TAG_BITS;
             *dst.add(i) = index;
         }
     } else {
-        core::ptr::copy_nonoverlapping(src, dst, tableSize);
+        core::ptr::copy_nonoverlapping(src.as_ptr(), dst, src.len());
     }
 }
 
@@ -3524,8 +3522,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     let hSize = 1 << cdict_cParams.hashLog;
     ZSTD_copyCDictTableIntoCCtx(
         (*cctx).blockState.matchState.hashTable,
-        (*cdict).matchState.hashTable,
-        hSize,
+        core::slice::from_raw_parts((*cdict).matchState.hashTable, hSize),
         cdict_cParams,
     );
     // Do not copy cdict's chainTable if cctx has parameters such that it would not use chainTable
@@ -3536,8 +3533,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     ) {
         ZSTD_copyCDictTableIntoCCtx(
             (*cctx).blockState.matchState.chainTable,
-            (*cdict).matchState.chainTable,
-            chainSize,
+            core::slice::from_raw_parts((*cdict).matchState.chainTable, chainSize),
             cdict_cParams,
         );
     }
