@@ -360,7 +360,7 @@ fn FASTCOVER_buildDictionary<'a>(
     }
 
     // SAFETY: the `tail..` elements were copied from a `&[u8]` above.
-    unsafe { super::cover::assume_init_ref(&dict[tail..]) }
+    unsafe { dict[tail..].assume_init_ref() }
 }
 
 fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
