@@ -1527,7 +1527,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
     }
 
     // Initialize the CTable so we can take a (mutable) reference to its contents.
-    core::ptr::write_bytes(&raw mut (*table).CTable, 0, 1);
+    (*table).CTable = CTable::default();
 
     if src.is_empty() {
         return Ok(0); /* Uncompressed */
