@@ -3440,7 +3440,8 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         zbuff,
     )?;
 
-    let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
+    let cdictEnd = ((*cdict).matchState.window.nextSrc)
+        .wrapping_offset_from((*cdict).matchState.window.base)
         as core::ffi::c_long as u32;
     let cdictLen = cdictEnd.wrapping_sub((*cdict).matchState.window.dictLimit);
     if cdictLen != 0 {
