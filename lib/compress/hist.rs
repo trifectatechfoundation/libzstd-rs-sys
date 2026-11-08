@@ -12,7 +12,7 @@ enum CheckInput {
     CheckMaxSymbolValue,
 }
 
-pub fn HIST_add(count: &mut [core::ffi::c_uint; 1024], src: &[u8]) {
+pub fn HIST_add(count: &mut [core::ffi::c_uint; 256], src: &[u8]) {
     for &byte in src {
         count[usize::from(byte)] += 1;
     }
