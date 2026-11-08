@@ -64,21 +64,17 @@ fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>
     addEvents_generic(fp, src, SAMPLING_RATE, HASH_LOG);
 }
 
-fn abs64(s64: i64) -> u64 {
-    s64.unsigned_abs()
-}
-
 fn fpDistance(fp1: &Fingerprint, fp2: &Fingerprint, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
 
     debug_assert!(hashLog <= HASHLOG_MAX);
 
     for n in 0..(1 << hashLog) {
-        distance = distance.wrapping_add(abs64(
-            fp1.events[n as usize] as i64 * fp2.nbEvents as i64
-                - fp2.events[n as usize] as i64 * fp1.nbEvents as i64,
-        ));
+        let dst1 = fp1.events[n] as i64 * fp2.nbEvents as i64;
+        let dst2 = fp2.events[n] as i64 * fp1.nbEvents as i64;
+        distance = distance.wrapping_add(dst1.abs_diff(dst2));
     }
+
     distance
 }
 
@@ -198,7 +194,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     let distFromBegin = fpDistance(&(*fpstats).pastEvents, &*middleEvents, 8);
     let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
-    if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
+    if distFromBegin.abs_diff(distFromEnd) < minDistance {
         return 64 * (1 << 10);
     }
     (if distFromBegin > distFromEnd {
