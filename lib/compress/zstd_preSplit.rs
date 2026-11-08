@@ -41,6 +41,13 @@ pub struct FPStats {
     pub newEvents: Fingerprint,
 }
 
+#[repr(C)]
+pub struct BorderStats {
+    pub pastEvents: Fingerprint<256>,
+    pub newEvents: Fingerprint<256>,
+    pub middleEvents: Fingerprint<256>,
+}
+
 #[inline(always)]
 fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: usize, hashLog: c_uint) {
     let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
@@ -159,37 +166,25 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
 ///
 /// For better accuracy, use the more elaborate `*_byChunks` variant.
 ///
-/// `fpstats` must be zeroed before each call.
-fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], fpstats: &mut FPStats) -> usize {
+/// `stats` must be zeroed before each call.
+fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats) -> usize {
     const SEGMENT_SIZE: c_int = 512;
     let blockSize = block.len();
 
     let segment = SEGMENT_SIZE as usize;
 
-    HIST_add(
-        fpstats.pastEvents.events.first_chunk_mut().unwrap(),
-        &block[..segment],
-    );
-    HIST_add(
-        fpstats.newEvents.events.first_chunk_mut().unwrap(),
-        &block[blockSize - segment..],
-    );
-    fpstats.newEvents.nbEvents = SEGMENT_SIZE as usize;
-    fpstats.pastEvents.nbEvents = fpstats.newEvents.nbEvents;
-    if !compareFingerprints(&fpstats.pastEvents, &fpstats.newEvents, 0, 8) {
+    HIST_add(&mut stats.pastEvents.events, &block[..segment]);
+    HIST_add(&mut stats.newEvents.events, &block[blockSize - segment..]);
+    stats.newEvents.nbEvents = SEGMENT_SIZE as usize;
+    stats.pastEvents.nbEvents = stats.newEvents.nbEvents;
+    if !compareFingerprints(&stats.pastEvents, &stats.newEvents, 0, 8) {
         return blockSize;
     }
     let middle = blockSize / 2 - segment / 2;
-    let mut middleEvents = Fingerprint {
-        events: [0; HASHTABLESIZE],
-        nbEvents: SEGMENT_SIZE as usize,
-    };
-    HIST_add(
-        middleEvents.events.first_chunk_mut().unwrap(),
-        &block[middle..][..segment],
-    );
-    let distFromBegin = fpDistance(&fpstats.pastEvents, &middleEvents, 8);
-    let distFromEnd = fpDistance(&fpstats.newEvents, &middleEvents, 8);
+    HIST_add(&mut stats.middleEvents.events, &block[middle..][..segment]);
+    stats.middleEvents.nbEvents = SEGMENT_SIZE as usize;
+    let distFromBegin = fpDistance(&stats.pastEvents, &stats.middleEvents, 8);
+    let distFromEnd = fpDistance(&stats.newEvents, &stats.middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if distFromBegin.abs_diff(distFromEnd) < minDistance {
         return 64 * (1 << 10);
@@ -224,19 +219,31 @@ pub unsafe fn ZSTD_splitBlock(
     debug_assert!((0..=4).contains(&level));
 
     debug_assert!(!workspace.is_null());
-    debug_assert!(workspace.cast::<FPStats>().is_aligned());
-    const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
-    debug_assert!(wkspSize >= size_of::<FPStats>());
 
-    let fpstats = workspace.cast::<FPStats>();
-    ptr::write_bytes(fpstats, 0, 1);
-    // SAFETY: the caller provides aligned, writable workspace disjoint from the
-    // input block. `write_bytes` initializes all integer fields before borrowing.
-    let fpstats = unsafe { &mut *fpstats };
-    if level == 0 {
-        return ZSTD_splitBlock_fromBorders(block, fpstats);
+    match level {
+        0 => {
+            debug_assert!(workspace.cast::<BorderStats>().is_aligned());
+            const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<BorderStats>()) }
+            debug_assert!(wkspSize >= size_of::<BorderStats>());
+
+            let stats = workspace.cast::<BorderStats>();
+            ptr::write_bytes(stats, 0, 1);
+            // SAFETY: the caller provides aligned, writable workspace disjoint from the
+            // input block. `write_bytes` initializes all integer fields before borrowing.
+            let stats = unsafe { &mut *stats };
+            ZSTD_splitBlock_fromBorders(block, stats)
+        }
+        _ => {
+            debug_assert!(workspace.cast::<FPStats>().is_aligned());
+            const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
+            debug_assert!(wkspSize >= size_of::<FPStats>());
+
+            let fpstats = workspace.cast::<FPStats>();
+            ptr::write_bytes(fpstats, 0, 1);
+            // SAFETY: the caller provides aligned, writable workspace disjoint from the
+            // input block. `write_bytes` initializes all integer fields before borrowing.
+            let fpstats = unsafe { &mut *fpstats };
+            ZSTD_splitBlock_byChunks(block, level - 1, fpstats)
+        }
     }
-
-    // level >= 1
-    ZSTD_splitBlock_byChunks(block, level - 1, fpstats)
 }
