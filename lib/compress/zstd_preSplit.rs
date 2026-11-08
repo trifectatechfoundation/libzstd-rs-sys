@@ -166,8 +166,14 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], fpstats: &mut FPStats) -
 
     let segment = SEGMENT_SIZE as usize;
 
-    HIST_add(&mut fpstats.pastEvents.events, &block[..segment]);
-    HIST_add(&mut fpstats.newEvents.events, &block[blockSize - segment..]);
+    HIST_add(
+        fpstats.pastEvents.events.first_chunk_mut().unwrap(),
+        &block[..segment],
+    );
+    HIST_add(
+        fpstats.newEvents.events.first_chunk_mut().unwrap(),
+        &block[blockSize - segment..],
+    );
     fpstats.newEvents.nbEvents = SEGMENT_SIZE as usize;
     fpstats.pastEvents.nbEvents = fpstats.newEvents.nbEvents;
     if !compareFingerprints(&fpstats.pastEvents, &fpstats.newEvents, 0, 8) {
@@ -178,7 +184,10 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], fpstats: &mut FPStats) -
         events: [0; HASHTABLESIZE],
         nbEvents: SEGMENT_SIZE as usize,
     };
-    HIST_add(&mut middleEvents.events, &block[middle..][..segment]);
+    HIST_add(
+        middleEvents.events.first_chunk_mut().unwrap(),
+        &block[middle..][..segment],
+    );
     let distFromBegin = fpDistance(&fpstats.pastEvents, &middleEvents, 8);
     let distFromEnd = fpDistance(&fpstats.newEvents, &middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
