@@ -4,7 +4,9 @@ use core::ffi::{c_int, c_uint, c_void};
 
 use crate::lib::compress::hist::HIST_add;
 
-pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
+pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = size_of::<FPStats>();
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE == 8208);
 
 pub const THRESHOLD_PENALTY_RATE: c_int = 16;
 pub const THRESHOLD_BASE: c_int = THRESHOLD_PENALTY_RATE - 2;
@@ -226,7 +228,6 @@ pub unsafe fn ZSTD_splitBlock(
         }
         _ => {
             debug_assert!(workspace.cast::<FPStats>().is_aligned());
-            const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
             debug_assert!(wkspSize >= size_of::<FPStats>());
 
             let fpstats = workspace.cast::<FPStats>();
