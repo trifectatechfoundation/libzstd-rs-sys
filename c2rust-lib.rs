@@ -147,7 +147,10 @@ pub use crate::lib::dictBuilder::cover::{
 pub use crate::lib::dictBuilder::fastcover::{
     ZDICT_optimizeTrainFromBuffer_fastCover, ZDICT_trainFromBuffer_fastCover,
 };
-pub use crate::lib::dictBuilder::zdict::ZDICT_trainFromBuffer_legacy;
+#[allow(deprecated)] // We still export deprecated functions
+pub use crate::lib::dictBuilder::zdict::{
+    ZDICT_addEntropyTablesFromBuffer, ZDICT_trainFromBuffer_legacy,
+};
 pub use crate::lib::zdict::{
     experimental::{ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t},
     ZDICT_finalizeDictionary, ZDICT_getDictID, ZDICT_getErrorName, ZDICT_isError, ZDICT_params_t,

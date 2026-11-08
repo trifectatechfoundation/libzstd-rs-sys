@@ -870,3 +870,45 @@ fn test_optimize_train_from_buffer_cover_shrink_dict() {
         (dict_buffer, params.k, params.d)
     });
 }
+
+#[test]
+#[cfg(not(target_family = "wasm"))]
+fn test_add_entropy_tables_from_buffer() {
+    for (dict_capacity, content_size) in [(1024, 1024), (1024, 1000), (1024, 600)] {
+        assert_eq_rs_c!({
+            let mut sample_data = Vec::new();
+            let mut sample_sizes = Vec::new();
+            for &s in &SAMPLES {
+                sample_data.extend_from_slice(s.as_bytes());
+                sample_sizes.push(s.len());
+            }
+
+            let mut dict_buffer = vec![0xAAu8; dict_capacity];
+            for (dst, src) in dict_buffer[dict_capacity - content_size..]
+                .iter_mut()
+                .zip(sample_data.iter().cycle())
+            {
+                *dst = *src;
+            }
+
+            let dict_size = ZDICT_addEntropyTablesFromBuffer(
+                dict_buffer.as_mut_ptr() as *mut c_void,
+                content_size,
+                dict_capacity,
+                sample_data.as_ptr() as *const c_void,
+                sample_sizes.as_ptr(),
+                sample_sizes.len() as u32,
+            );
+
+            assert_eq!(
+                ZDICT_isError(dict_size),
+                0,
+                "Adding entropy tables failed {:?}",
+                CStr::from_ptr(ZDICT_getErrorName(dict_size)).to_str(),
+            );
+
+            dict_buffer.truncate(dict_size);
+            dict_buffer
+        });
+    }
+}
