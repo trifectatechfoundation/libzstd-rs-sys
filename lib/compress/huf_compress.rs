@@ -1,4 +1,5 @@
 use core::ffi::{c_int, c_uint, c_void};
+use core::mem::MaybeUninit;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
@@ -103,7 +104,7 @@ unsafe fn HUF_compressWeights(
     /* Scan input and build symbol stats */
     {
         let maxCount = HIST_count_simple(
-            ((*wksp).count).as_mut_ptr(),
+            &mut *(&raw mut (*wksp).count).cast::<[MaybeUninit<c_uint>; HUF_TABLELOG_MAX + 1]>(),
             &mut maxSymbolValue,
             &weightTable[..wtSize],
         ); /* never fails */
@@ -1571,7 +1572,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         let mut largestTotal = 0usize;
         let mut maxSymbolValueBegin = maxSymbolValue;
         let largestBegin = HIST_count_simple(
-            ((*table).count).as_mut_ptr(),
+            &mut *(&raw mut (*table).count)
+                .cast::<[MaybeUninit<c_uint>; HUF_SYMBOLVALUE_MAX as usize + 1]>(),
             &mut maxSymbolValueBegin,
             &src[..SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE],
         ) as usize;
@@ -1581,7 +1583,8 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         largestTotal += largestBegin;
         let mut maxSymbolValueEnd = maxSymbolValue;
         let largestEnd = HIST_count_simple(
-            ((*table).count).as_mut_ptr(),
+            &mut *(&raw mut (*table).count)
+                .cast::<[MaybeUninit<c_uint>; HUF_SYMBOLVALUE_MAX as usize + 1]>(),
             &mut maxSymbolValueEnd,
             &src[src.len() - SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE..],
         ) as usize;

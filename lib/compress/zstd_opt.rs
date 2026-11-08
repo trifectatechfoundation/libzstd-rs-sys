@@ -45,6 +45,7 @@ use crate::lib::compress::zstd_compress_internal::{
 use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_BLOCKSIZE_MAX};
+use core::mem::MaybeUninit;
 
 #[inline]
 fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
@@ -225,7 +226,9 @@ unsafe fn ZSTD_rescaleFreqs(
                 // base initial cost of literals on direct frequency within src
                 let mut lit_0 = MaxLit;
                 HIST_count_simple(
-                    opt_state.litFreq.cast(),
+                    &mut *opt_state
+                        .litFreq
+                        .cast::<[MaybeUninit<core::ffi::c_uint>; MaxLit as usize + 1]>(),
                     &mut lit_0,
                     core::slice::from_raw_parts(src, srcSize), // use raw first block to init statistics
                 );
