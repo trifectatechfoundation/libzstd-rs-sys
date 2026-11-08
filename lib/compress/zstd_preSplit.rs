@@ -1,6 +1,6 @@
 use core::ptr;
 
-use core::ffi::{c_char, c_int, c_uint, c_void};
+use core::ffi::{c_int, c_uint, c_void};
 
 use crate::lib::compress::hist::HIST_add;
 
@@ -167,8 +167,6 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     let blockSize = block.len();
 
     let fpstats = workspace as *mut FPStats;
-    let middleEvents = (workspace as *mut c_char).add(512 * size_of::<c_uint>()) as *mut c_void
-        as *mut Fingerprint;
 
     debug_assert!(!workspace.is_null());
     debug_assert!(workspace.cast::<FPStats>().is_aligned());
@@ -189,10 +187,13 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         return blockSize;
     }
     let middle = blockSize / 2 - segment / 2;
-    HIST_add(&mut (*middleEvents).events, &block[middle..][..segment]);
-    (*middleEvents).nbEvents = SEGMENT_SIZE as usize;
-    let distFromBegin = fpDistance(&(*fpstats).pastEvents, &*middleEvents, 8);
-    let distFromEnd = fpDistance(&(*fpstats).newEvents, &*middleEvents, 8);
+    let mut middleEvents = Fingerprint {
+        events: [0; HASHTABLESIZE],
+        nbEvents: SEGMENT_SIZE as usize,
+    };
+    HIST_add(&mut middleEvents.events, &block[middle..][..segment]);
+    let distFromBegin = fpDistance(&(*fpstats).pastEvents, &middleEvents, 8);
+    let distFromEnd = fpDistance(&(*fpstats).newEvents, &middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if distFromBegin.abs_diff(distFromEnd) < minDistance {
         return 64 * (1 << 10);
