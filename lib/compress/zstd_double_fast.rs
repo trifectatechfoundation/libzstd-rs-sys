@@ -493,10 +493,10 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let dictHashSmall: *const u32 = (*dms).chainTable;
     let dictStartIndex = (*dms).window.dictLimit;
     let dictBase = (*dms).window.base;
-    let dictStart = dictBase.offset(dictStartIndex as isize);
+    let dictStart = dictBase.wrapping_offset(dictStartIndex as isize);
     let dictEnd = (*dms).window.nextSrc;
-    let dictIndexDelta =
-        prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
+    let dictIndexDelta = prefixLowestIndex
+        .wrapping_sub(dictEnd.wrapping_offset_from(dictBase) as core::ffi::c_long as u32);
     let dictHBitsL = dictCParams
         .hashLog
         .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
@@ -538,7 +538,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
         let mut match_0 = base.wrapping_offset(matchIndexS as isize);
         let repIndex = curr.wrapping_add(1).wrapping_sub(offset_1);
         let repMatch = if repIndex < prefixLowestIndex {
-            dictBase.offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
+            dictBase.wrapping_offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
         } else {
             base.wrapping_offset(repIndex as isize)
         };
@@ -594,7 +594,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                 // check dictMatchState long match
                 if dictTagsMatchL {
                     let dictMatchIndexL = dictMatchIndexAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS;
-                    let mut dictMatchL = dictBase.offset(dictMatchIndexL as isize);
+                    let mut dictMatchL = dictBase.wrapping_offset(dictMatchIndexL as isize);
 
                     if dictMatchL > dictStart
                         && MEM_read64(dictMatchL as *const core::ffi::c_void)
@@ -643,7 +643,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                             // check dictMatchState short match
                             let dictMatchIndexS =
                                 dictMatchIndexAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS;
-                            match_0 = dictBase.offset(dictMatchIndexS as isize);
+                            match_0 = dictBase.wrapping_offset(dictMatchIndexS as isize);
                             matchIndexS = dictMatchIndexS.wrapping_add(dictIndexDelta);
 
                             if match_0 > dictStart
@@ -705,7 +705,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                         let dictMatchIndexL3 =
                                             dictMatchIndexAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS;
                                         let mut dictMatchL3 =
-                                            dictBase.offset(dictMatchIndexL3 as isize);
+                                            dictBase.wrapping_offset(dictMatchIndexL3 as isize);
                                         if dictMatchL3 > dictStart
                                             && MEM_read64(dictMatchL3 as *const core::ffi::c_void)
                                                 == MEM_read64(ip.add(1) as *const core::ffi::c_void)
