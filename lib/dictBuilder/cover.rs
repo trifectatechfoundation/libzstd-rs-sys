@@ -843,13 +843,9 @@ fn train_from_buffer_cover(
     ctx.freqs = freqs;
 
     let customDictContentSize = dict_tail.len();
-    let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
-    let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
     let dictionarySize = unsafe {
         finalize_dictionary(
-            dictBuffer,
-            dictBufferCapacity,
-            customDictContent,
+            dict,
             customDictContentSize,
             &samples[..samplesSizes.iter().sum()],
             samplesSizes,
@@ -994,12 +990,11 @@ pub(super) fn COVER_selectDict(
     let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let regressionTolerance =
         params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
-    largestDictbuffer[..customDictContent.len()].copy_from_slice(customDictContent);
+    largestDictbuffer[dictBufferCapacity - dictContentSize..].copy_from_slice(customDictContent);
+    // SAFETY: the content is initialized, and `finalize_dictionary` only writes initialized bytes.
     dictContentSize = unsafe {
         finalize_dictionary(
-            largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
-            dictBufferCapacity,
-            customDictContent.as_ptr() as *const core::ffi::c_void,
+            as_uninit_mut(&mut largestDictbuffer),
             dictContentSize,
             finalizeSamples,
             finalizeSamplesSizes,
@@ -1026,14 +1021,13 @@ pub(super) fn COVER_selectDict(
     let largestCompressed = totalCompressedSize;
     dictContentSize = ZDICT_DICTSIZE_MIN;
     while dictContentSize < largestDict {
-        candidateDictBuffer[..largestDict].copy_from_slice(&largestDictbuffer[..largestDict]);
+        candidateDictBuffer[dictBufferCapacity - dictContentSize..]
+            .copy_from_slice(&customDictContent[customDictContent.len() - dictContentSize..]);
+        // SAFETY: the content is initialized, and `finalize_dictionary` only writes initialized
+        // bytes.
         dictContentSize = unsafe {
             finalize_dictionary(
-                candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
-                dictBufferCapacity,
-                customDictContent[customDictContent.len() - dictContentSize..]
-                    .as_ptr()
-                    .cast(),
+                as_uninit_mut(&mut candidateDictBuffer),
                 dictContentSize,
                 finalizeSamples,
                 finalizeSamplesSizes,

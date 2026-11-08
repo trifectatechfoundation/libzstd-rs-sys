@@ -575,13 +575,9 @@ fn train_from_buffer_fastcover(
     let samplesSizes = &samplesSizes[..nbFinalizeSamples as usize];
     let samples = &samples[..samplesSizes.iter().sum()];
     let customDictContentSize = dict_tail.len();
-    let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
-    let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
     let dictionarySize = unsafe {
         finalize_dictionary(
-            dictBuffer,
-            dictBufferCapacity,
-            customDictContent,
+            dict,
             customDictContentSize,
             samples,
             samplesSizes,

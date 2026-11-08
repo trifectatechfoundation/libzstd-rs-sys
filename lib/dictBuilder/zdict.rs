@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
-use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::common::xxhash::{ZSTD_XXH64_slice, ZSTD_XXH64};
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
 };
@@ -1035,25 +1035,35 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
     };
 
-    finalize_dictionary(
-        dictBuffer,
-        dictBufferCapacity,
-        customDictContent,
-        dictContentSize,
-        samples,
-        samplesSizes,
-        params,
-    )
-    .map_err(|e| e.to_error_code())
-    .unwrap_or_else(|e| e)
+    if dictBufferCapacity < dictContentSize || dictBufferCapacity < ZDICT_DICTSIZE_MIN {
+        return Error::dstSize_tooSmall.to_error_code();
+    }
+
+    // `customDictContent` and `dictBuffer` may overlap, so move the content to the end of
+    // `dictBuffer`, where `finalize_dictionary` expects it.
+    let contentDst = dictBuffer
+        .cast::<u8>()
+        .add(dictBufferCapacity - dictContentSize);
+    if dictContentSize != 0 && contentDst.cast_const() != customDictContent.cast::<u8>() {
+        core::ptr::copy(customDictContent.cast::<u8>(), contentDst, dictContentSize);
+    }
+    let dictBuffer =
+        core::slice::from_raw_parts_mut(dictBuffer.cast::<MaybeUninit<u8>>(), dictBufferCapacity);
+
+    finalize_dictionary(dictBuffer, dictContentSize, samples, samplesSizes, params)
+        .map_err(|e| e.to_error_code())
+        .unwrap_or_else(|e| e)
 }
 
 const HBUFFSIZE: usize = 256; // should be large enough for all entropy headers
 
+/// The dictionary content is read from the last `dictContentSize` bytes of `dictBuffer`.
+///
+/// # Safety
+///
+/// The last `dictContentSize` bytes of `dictBuffer` must be initialized.
 pub(super) unsafe fn finalize_dictionary(
-    dictBuffer: *mut core::ffi::c_void,
-    dictBufferCapacity: usize,
-    customDictContent: *const core::ffi::c_void,
+    dictBuffer: &mut [MaybeUninit<u8>],
     mut dictContentSize: usize,
     samples: &[u8],
     samplesSizes: &[usize],
@@ -1069,6 +1079,8 @@ pub(super) unsafe fn finalize_dictionary(
     // the final dictionary content must be at least as large as the largest repcode
     let minContentSize = *repStartValue.iter().max().unwrap() as usize;
 
+    let dictBufferCapacity = dictBuffer.len();
+
     // check conditions
     if dictBufferCapacity < dictContentSize {
         return Err(Error::dstSize_tooSmall);
@@ -1077,9 +1089,12 @@ pub(super) unsafe fn finalize_dictionary(
         return Err(Error::dstSize_tooSmall);
     }
 
+    let contentStart = dictBufferCapacity - dictContentSize;
+    let customDictContent = unsafe { dictBuffer[contentStart..].assume_init_ref() };
+
     // dictionary header
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
-    let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
+    let randomID = ZSTD_XXH64_slice(customDictContent, 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
@@ -1095,16 +1110,18 @@ pub(super) unsafe fn finalize_dictionary(
         eprintln!("statistics ...");
     }
     let hSize = 8;
-    let eSize = ZDICT_analyzeEntropy(
-        header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
-        HBUFFSIZE.wrapping_sub(hSize),
-        compressionLevel,
-        samples,
-        samplesSizes,
-        customDictContent,
-        dictContentSize,
-        notificationLevel,
-    )?;
+    let eSize = unsafe {
+        ZDICT_analyzeEntropy(
+            header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
+            HBUFFSIZE.wrapping_sub(hSize),
+            compressionLevel,
+            samples,
+            samplesSizes,
+            customDictContent.as_ptr().cast(),
+            dictContentSize,
+            notificationLevel,
+        )
+    }?;
     let hSize = hSize.wrapping_add(eSize);
 
     // shrink the content size if it doesn't fit in the buffer
@@ -1129,21 +1146,12 @@ pub(super) unsafe fn finalize_dictionary(
     // The dictionary consists of the header, optional padding, and the content.
     // The padding comes before the content because the "best" position in the
     // dictionary is the last byte.
-    let outDictHeader = dictBuffer as *mut u8;
-    let outDictPadding = outDictHeader.add(hSize);
-    let outDictContent = outDictPadding.add(paddingSize);
-
-    // First copy the `customDictContent` into its final location.
-    // `customDictContent` and `dictBuffer` may overlap, so we must do this before
-    // any other writes into the output buffer.
-    core::ptr::copy(
-        customDictContent.cast::<u8>(),
-        outDictContent,
-        dictContentSize,
+    dictBuffer.copy_within(
+        contentStart..contentStart + dictContentSize,
+        hSize + paddingSize,
     );
-    // Then copy the header & padding into the output buffer.
-    core::ptr::copy_nonoverlapping(header.as_ptr(), outDictHeader, hSize);
-    core::ptr::write_bytes(outDictPadding, 0, paddingSize);
+    dictBuffer[..hSize].write_copy_of_slice(&header[..hSize]);
+    dictBuffer[hSize..][..paddingSize].fill(MaybeUninit::new(0));
 
     Ok(dictSize)
 }
