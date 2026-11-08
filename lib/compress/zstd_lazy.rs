@@ -997,9 +997,15 @@ fn ZSTD_row_prefetch(hashTable: *const u32, tagTable: *const u8, relRow: u32, ro
 
     assert!(rowLog == 4 || rowLog == 5 || rowLog == 6);
     // Prefetched hash row always 64-byte aligned.
-    assert!((hashTable.wrapping_add(relRow as usize) as usize).is_multiple_of(64));
+    assert!(hashTable
+        .wrapping_add(relRow as usize)
+        .addr()
+        .is_multiple_of(64));
     // Prefetched tagRow sits on correct multiple of bytes (32,64,128).
-    assert!((tagTable.wrapping_add(relRow as usize) as usize).is_multiple_of(1 << rowLog));
+    assert!(tagTable
+        .wrapping_add(relRow as usize)
+        .addr()
+        .is_multiple_of(1 << rowLog));
 }
 
 /// Fill up the hash cache starting at idx, prefetching up to ZSTD_ROW_HASH_CACHE_SIZE entries,

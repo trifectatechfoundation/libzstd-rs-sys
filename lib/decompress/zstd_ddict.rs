@@ -271,7 +271,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     debug_assert!(!dict.is_null());
 
     // sBuffer should be 8-aligned
-    if sBuffer as usize & 0b111 != 0 {
+    if sBuffer.addr() & 0b111 != 0 {
         return core::ptr::null_mut();
     }
 

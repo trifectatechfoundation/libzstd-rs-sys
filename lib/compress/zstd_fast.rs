@@ -570,7 +570,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
 
     // ensure there will be no underflow
     // when translating a dict index into a local index
-    assert!(prefixStartIndex as usize >= dictEnd as usize - dictBase as usize);
+    assert!(prefixStartIndex as usize >= dictEnd.addr() - dictBase.addr());
 
     if ms.prefetchCDictTables != 0 {
         let hashTableBytes = (1usize << dictCParams.hashLog).wrapping_mul(size_of::<u32>());

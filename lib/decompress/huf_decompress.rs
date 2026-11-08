@@ -776,7 +776,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
 
         // Decompress and validate that we've produced exactly the expected length.
         let length = HUF_decodeStreamX1(
-            Writer::from_raw_parts(op, segmentEnd as usize - op as usize),
+            Writer::from_raw_parts(op, segmentEnd.addr() - op.addr()),
             &mut bit,
             DTable.data.as_x1(),
             HUF_DECODER_FAST_TABLELOG as u32,
@@ -1591,7 +1591,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         let mut bit = init_remaining_dstream(&args, i, segmentEnd)?;
 
         let length = HUF_decodeStreamX2(
-            Writer::from_raw_parts(op, segmentEnd as usize - op as usize),
+            Writer::from_raw_parts(op, segmentEnd.addr() - op.addr()),
             &mut bit,
             DTable.data.as_x2(),
             HUF_DECODER_FAST_TABLELOG as u32,
@@ -2168,7 +2168,7 @@ impl<'a> Writer<'a> {
         let range = self.as_mut_ptr_range();
         let remainder = capacity - 3 * segment_size;
 
-        if (range.end as usize - range.start as usize) < 6 {
+        if (range.end.addr() - range.start.addr()) < 6 {
             panic!("length must be at least six when splitting into 4 streams");
         }
 

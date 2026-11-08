@@ -39,7 +39,7 @@ fn HUF_alignUpWorkspace(
     align: usize,
 ) -> *mut c_void {
     let mask = align - 1;
-    let rem = workspace as usize & mask;
+    let rem = workspace.addr() & mask;
     let add = (align - rem) & mask;
     let aligned = workspace.wrapping_byte_add(add);
 
@@ -48,7 +48,7 @@ fn HUF_alignUpWorkspace(
 
     if *workspaceSizePtr >= add {
         debug_assert!(add < align);
-        debug_assert_eq!((aligned as usize) & mask, 0);
+        debug_assert_eq!(aligned.addr() & mask, 0);
         *workspaceSizePtr -= add;
         aligned
     } else {

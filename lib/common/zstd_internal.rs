@@ -166,7 +166,7 @@ pub(crate) unsafe fn ZSTD_wildcopy(
     length: usize,
     ovtype: Overlap,
 ) {
-    let diff = op as isize - ip as isize;
+    let diff = op.addr() as isize - ip.addr() as isize;
     let oend = op.add(length);
     if ovtype == Overlap::OverlapSrcBeforeDst && diff < WILDCOPY_VECLEN as isize {
         debug_assert!(ip <= op.wrapping_sub(8).cast_const());
