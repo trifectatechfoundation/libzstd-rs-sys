@@ -28,7 +28,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     // Always insert every fastHashFillStep position into the hash table.
     // Insert the other positions if their hash entry is empty.
     while ip.offset(fastHashFillStep as isize) < iend.add(2) {
-        let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+        let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let hashAndTag = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         ZSTD_writeTaggedIndex(hashTable, hashAndTag, curr);
         if dtlm != DictTableLoadMethod::Fast {
