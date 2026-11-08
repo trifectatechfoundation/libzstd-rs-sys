@@ -154,7 +154,7 @@ pub unsafe fn HIST_countFast_wksp(
         );
         return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
-    if workSpace.addr() & 3 != 0 {
+    if !workSpace.cast::<u32>().is_aligned() {
         // must be aligned on 4-bytes boundaries
         return Err(Error::GENERIC);
     }
@@ -205,7 +205,7 @@ pub unsafe fn HIST_count_wksp(
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: usize,
 ) -> Result<core::ffi::c_uint, Error> {
-    if workSpace.addr() & 3 != 0 {
+    if !workSpace.cast::<u32>().is_aligned() {
         // must be aligned on 4-bytes boundaries
         return Err(Error::GENERIC);
     }

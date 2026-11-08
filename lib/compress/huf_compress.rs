@@ -48,7 +48,7 @@ fn HUF_alignUpWorkspace(
 
     if *workspaceSizePtr >= add {
         debug_assert!(add < align);
-        debug_assert_eq!(aligned.addr() & mask, 0);
+        debug_assert!(aligned.addr().is_multiple_of(align));
         *workspaceSizePtr -= add;
         aligned
     } else {

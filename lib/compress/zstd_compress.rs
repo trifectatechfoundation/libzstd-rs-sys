@@ -1242,8 +1242,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         // minimum size
         return core::ptr::null_mut();
     }
-    if workspace.addr() & 7 != 0 {
-        // must be 8-aligned
+    if !workspace.cast::<ZSTD_CCtx>().is_aligned() {
         return core::ptr::null_mut();
     }
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Static);
@@ -7547,8 +7546,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
         .wrapping_add(matchStateSize);
 
-    // 8-aligned
-    if workspace.addr() & 7 != 0 {
+    if !workspace.cast::<ZSTD_CDict>().is_aligned() {
         return core::ptr::null();
     }
 
