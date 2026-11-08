@@ -37,7 +37,6 @@
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(all(feature = "nightly", test), feature(test))]
 #![cfg_attr(feature = "nightly", feature(likely_unlikely))]
-#![cfg_attr(feature = "nightly", feature(cold_path))]
 #![cfg_attr(feature = "nightly", feature(hint_prefetch))]
 // FIXME
 #![allow(clippy::missing_safety_doc)]
