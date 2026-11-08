@@ -832,8 +832,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                 let repIndex2 = current2.wrapping_sub(offset_2);
                 let repMatch2 = if repIndex2 < prefixLowestIndex {
                     dictBase
-                        .offset(repIndex2 as isize)
-                        .sub(dictIndexDelta as usize)
+                        .wrapping_offset(repIndex2 as isize)
+                        .wrapping_sub(dictIndexDelta as usize)
                 } else {
                     base.wrapping_offset(repIndex2 as isize)
                 };
