@@ -274,7 +274,7 @@ unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
         );
     }
 
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*bufPool).poolMutex));
+    core::ptr::drop_in_place(&raw mut (*bufPool).poolMutex);
     ZSTD_customFree(
         bufPool as *mut core::ffi::c_void,
         size_of::<ZSTDMT_bufferPool>(),
@@ -290,10 +290,7 @@ unsafe fn ZSTDMT_createBufferPool(
     if bufPool.is_null() {
         return core::ptr::null_mut();
     }
-    core::ptr::write(
-        core::ptr::addr_of_mut!((*bufPool).poolMutex),
-        Mutex::new(()),
-    );
+    core::ptr::write(&raw mut (*bufPool).poolMutex, Mutex::new(()));
     (*bufPool).buffers = ZSTD_customCalloc(
         (maxNbBuffers as usize).wrapping_mul(size_of::<Buffer>()),
         cMem,
@@ -469,7 +466,7 @@ unsafe fn ZSTDMT_freeCCtxPool(pool: *mut ZSTDMT_CCtxPool) {
     if pool.is_null() {
         return;
     }
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*pool).poolMutex));
+    core::ptr::drop_in_place(&raw mut (*pool).poolMutex);
     if !((*pool).cctxs).is_null() {
         for cid in 0..(*pool).totalCCtx {
             ZSTD_freeCCtx(*((*pool).cctxs).offset(cid as isize));
@@ -496,10 +493,7 @@ unsafe fn ZSTDMT_createCCtxPool(
     if cctxPool.is_null() {
         return core::ptr::null_mut();
     }
-    core::ptr::write(
-        core::ptr::addr_of_mut!((*cctxPool).poolMutex),
-        Mutex::new(()),
-    );
+    core::ptr::write(&raw mut (*cctxPool).poolMutex, Mutex::new(()));
     (*cctxPool).totalCCtx = nbWorkers;
     (*cctxPool).cctxs = ZSTD_customCalloc(
         (nbWorkers as usize).wrapping_mul(size_of::<*mut ZSTD_CCtx>()),
@@ -1103,12 +1097,8 @@ unsafe fn ZSTDMT_freeJobsTable(
     }
 
     for jobNb in 0..nbJobs {
-        core::ptr::drop_in_place(core::ptr::addr_of_mut!(
-            (*jobTable.offset(jobNb as isize)).job_mutex
-        ));
-        core::ptr::drop_in_place(core::ptr::addr_of_mut!(
-            (*jobTable.offset(jobNb as isize)).job_cond
-        ));
+        core::ptr::drop_in_place(&raw mut (*jobTable.offset(jobNb as isize)).job_mutex);
+        core::ptr::drop_in_place(&raw mut (*jobTable.offset(jobNb as isize)).job_cond);
     }
 
     ZSTD_customFree(
@@ -1138,11 +1128,11 @@ unsafe fn ZSTDMT_createJobsTable(
     *nbJobsPtr = nbJobs;
     for jobNb in 0..nbJobs {
         core::ptr::write(
-            core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_mutex),
+            &raw mut (*jobTable.offset(jobNb as isize)).job_mutex,
             Mutex::new(()),
         );
         core::ptr::write(
-            core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_cond),
+            &raw mut (*jobTable.offset(jobNb as isize)).job_cond,
             Condvar::new(),
         );
     }
@@ -1240,12 +1230,8 @@ pub unsafe fn ZSTDMT_createCCtx_advanced(
 unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
     for jobID in 0..(*mtctx).jobIDMask + 1 {
         // Copy the mutex/cond out
-        let mutex = core::ptr::read(core::ptr::addr_of!(
-            (*((*mtctx).jobs).offset(jobID as isize)).job_mutex
-        ));
-        let cond = core::ptr::read(core::ptr::addr_of!(
-            (*((*mtctx).jobs).offset(jobID as isize)).job_cond
-        ));
+        let mutex = core::ptr::read(&raw const (*((*mtctx).jobs).offset(jobID as isize)).job_mutex);
+        let cond = core::ptr::read(&raw const (*((*mtctx).jobs).offset(jobID as isize)).job_cond);
 
         ZSTDMT_releaseBuffer(
             (*mtctx).bufPool,
@@ -1259,11 +1245,11 @@ unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
             size_of::<ZSTDMT_jobDescription>(),
         );
         core::ptr::write(
-            core::ptr::addr_of_mut!((*((*mtctx).jobs).offset(jobID as isize)).job_mutex),
+            &raw mut (*((*mtctx).jobs).offset(jobID as isize)).job_mutex,
             mutex,
         );
         core::ptr::write(
-            core::ptr::addr_of_mut!((*((*mtctx).jobs).offset(jobID as isize)).job_cond),
+            &raw mut (*((*mtctx).jobs).offset(jobID as isize)).job_cond,
             cond,
         );
     }
