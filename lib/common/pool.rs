@@ -85,9 +85,9 @@ pub(crate) unsafe fn POOL_create_advanced(
     (*ctx).queueTail = 0;
     (*ctx).numThreadsBusy = 0;
     (*ctx).queueEmpty = 1;
-    ptr::write(ptr::addr_of_mut!((*ctx).queueMutex), Mutex::new(()));
-    ptr::write(ptr::addr_of_mut!((*ctx).queuePushCond), Condvar::new());
-    ptr::write(ptr::addr_of_mut!((*ctx).queuePopCond), Condvar::new());
+    ptr::write(&raw mut (*ctx).queueMutex, Mutex::new(()));
+    ptr::write(&raw mut (*ctx).queuePushCond, Condvar::new());
+    ptr::write(&raw mut (*ctx).queuePopCond, Condvar::new());
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(numThreads * size_of::<JoinHandle<()>>(), customMem)
         as *mut JoinHandle<()>;
@@ -126,9 +126,9 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
         return;
     }
     POOL_join(ctx);
-    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queueMutex));
-    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePushCond));
-    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePopCond));
+    ptr::drop_in_place(&raw mut (*ctx).queueMutex);
+    ptr::drop_in_place(&raw mut (*ctx).queuePushCond);
+    ptr::drop_in_place(&raw mut (*ctx).queuePopCond);
     ZSTD_customFree(
         (*ctx).queue as *mut core::ffi::c_void,
         (*ctx).queueSize * size_of::<POOL_job>(),
