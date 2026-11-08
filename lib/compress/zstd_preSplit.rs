@@ -30,8 +30,8 @@ fn hash2(p: [u8; HASHLENGTH], hashLog: c_uint) -> c_uint {
 }
 
 #[repr(C)]
-pub struct Fingerprint {
-    pub events: [c_uint; HASHTABLESIZE],
+pub struct Fingerprint<const N: usize = HASHTABLESIZE> {
+    pub events: [c_uint; N],
     pub nbEvents: usize,
 }
 
@@ -64,10 +64,10 @@ fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>
     addEvents_generic(fp, src, SAMPLING_RATE, HASH_LOG);
 }
 
-fn fpDistance(fp1: &Fingerprint, fp2: &Fingerprint, hashLog: c_uint) -> u64 {
+fn fpDistance<const N: usize>(fp1: &Fingerprint<N>, fp2: &Fingerprint<N>, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
 
-    debug_assert!(hashLog <= HASHLOG_MAX);
+    debug_assert!(1usize << hashLog <= N);
 
     for n in 0..(1 << hashLog) {
         let dst1 = fp1.events[n] as i64 * fp2.nbEvents as i64;
@@ -81,9 +81,9 @@ fn fpDistance(fp1: &Fingerprint, fp2: &Fingerprint, hashLog: c_uint) -> u64 {
 /// Compares new events with past events.
 ///
 /// Returns `true` when the fingerprints are considered "too different".
-fn compareFingerprints(
-    ref_0: &Fingerprint,
-    newfp: &Fingerprint,
+fn compareFingerprints<const N: usize>(
+    ref_0: &Fingerprint<N>,
+    newfp: &Fingerprint<N>,
     penalty: c_int,
     hashLog: c_uint,
 ) -> bool {
