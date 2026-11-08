@@ -115,18 +115,14 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
         return Error::dictionary_corrupted.to_error_code();
     }
 
-    // FIXME: in 1.92 we can use https://doc.rust-lang.org/std/boxed/struct.Box.html#method.new_zeroed
-    let mut bs = Box::<ZSTD_compressedBlockState_t>::new_uninit();
-    unsafe { ZSTD_reset_compressedBlockState(bs.as_mut_ptr()) };
+    // SAFETY: all-zero bytes are a valid `ZSTD_compressedBlockState_t`.
+    let mut bs = unsafe { Box::<ZSTD_compressedBlockState_t>::new_zeroed().assume_init() };
+    unsafe { ZSTD_reset_compressedBlockState(&mut *bs) };
 
     let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE / 4);
 
     let dict = core::slice::from_raw_parts(dictBuffer as *const u8, dictSize);
-    match ZSTD_loadCEntropy(
-        bs.as_mut_ptr(),
-        wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        dict,
-    ) {
+    match ZSTD_loadCEntropy(&mut *bs, wksp.as_mut_ptr() as *mut core::ffi::c_void, dict) {
         Ok(size) => size,
         Err(err) => err.to_error_code(),
     }
