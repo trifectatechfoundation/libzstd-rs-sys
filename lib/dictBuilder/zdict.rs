@@ -1407,15 +1407,10 @@ fn build_dictionary_content(
             Some(v) => v,
         };
 
-        let src = uninit_slice(&samples[item.pos as usize..][..l]);
-        dictBuffer[ptr..][..l].copy_from_slice(src);
+        dictBuffer[ptr..][..l].write_copy_of_slice(&samples[item.pos as usize..][..l]);
     }
 
     Ok(())
-}
-
-fn uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
-    unsafe { &*(slice as *const [T] as *const [MaybeUninit<T>]) }
 }
 
 /// Train a dictionary from an array of samples.

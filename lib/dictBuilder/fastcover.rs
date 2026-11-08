@@ -339,9 +339,8 @@ fn FASTCOVER_buildDictionary<'a>(
                 break;
             }
             tail = tail.wrapping_sub(segmentSize);
-            dict[tail..][..segmentSize].copy_from_slice(super::cover::as_uninit(
-                &ctx.samples[segment.begin as usize..][..segmentSize],
-            ));
+            dict[tail..][..segmentSize]
+                .write_copy_of_slice(&ctx.samples[segment.begin as usize..][..segmentSize]);
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);
                 if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
@@ -870,7 +869,7 @@ fn optimize_train_from_buffer_fastcover(
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
-    dict[..dictSize].copy_from_slice(super::cover::as_uninit(&best.dict[..dictSize]));
+    dict[..dictSize].write_copy_of_slice(&best.dict[..dictSize]);
     unsafe { POOL_free(pool) };
     dictSize
 }

@@ -714,9 +714,8 @@ fn COVER_buildDictionary<'a>(
             }
 
             tail = tail.wrapping_sub(segmentSize);
-            dict[tail..][..segmentSize].copy_from_slice(as_uninit(
-                &ctx.samples[segment.begin as usize..][..segmentSize],
-            ));
+            dict[tail..][..segmentSize]
+                .write_copy_of_slice(&ctx.samples[segment.begin as usize..][..segmentSize]);
 
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);
@@ -735,17 +734,6 @@ fn COVER_buildDictionary<'a>(
         println!("\r{:79 }\r", "");
     }
     unsafe { dict[tail..].assume_init_ref() }
-}
-
-pub(super) const fn as_uninit<T>(slice: &[T]) -> &[MaybeUninit<T>] {
-    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
-    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
-    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
-    // reference and thus guaranteed to be valid for reads.
-    //
-    // For immutable slices, there is no risk of writing uninitialized data to assumed-initialized
-    // places.
-    unsafe { &*(slice as *const [T] as *const [MaybeUninit<T>]) }
 }
 
 /// Train a dictionary from an array of samples using the COVER algorithm.
@@ -1359,11 +1347,7 @@ unsafe fn optimize_train_from_buffer_cover(
         return compressedSize;
     }
     *parameters = best.parameters;
-    core::ptr::copy_nonoverlapping(
-        best.dict[..dictSize].as_ptr().cast::<MaybeUninit<u8>>(),
-        dict[..dictSize].as_mut_ptr(),
-        dictSize,
-    );
+    dict[..dictSize].write_copy_of_slice(&best.dict[..dictSize]);
     POOL_free(pool);
     dictSize
 }
