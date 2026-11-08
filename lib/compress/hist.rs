@@ -1,3 +1,4 @@
+use core::mem::MaybeUninit;
 use core::ptr;
 
 use crate::lib::common::error_private::Error;
@@ -17,37 +18,39 @@ pub fn HIST_add(count: &mut [core::ffi::c_uint; 1024], src: &[u8]) {
     }
 }
 
-pub unsafe fn HIST_count_simple(
-    count: *mut core::ffi::c_uint,
+pub fn HIST_count_simple(
+    count: &mut [MaybeUninit<core::ffi::c_uint>],
     maxSymbolValuePtr: &mut u8,
     src: &[u8],
 ) -> core::ffi::c_uint {
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
 
-    ptr::write_bytes(
-        count as *mut u8,
-        0,
-        (usize::from(maxSymbolValue) + 1) * size_of::<core::ffi::c_uint>(),
-    );
+    // FIXME: This is here just to match C, ideally we'd get rid of it eventually.
+    count.fill(MaybeUninit::new(0u32));
+
     if src.is_empty() {
         *maxSymbolValuePtr = 0;
         return 0;
     }
 
+    let mut counts = [0; 256];
     for &byte in src {
-        *count.add(usize::from(byte)) += 1;
+        counts[usize::from(byte)] += 1;
     }
+
+    let len = usize::from(maxSymbolValue) + 1;
+    count[..len].write_copy_of_slice(&counts[..len]);
 
     // `src` is non-empty, so (assuming no symbol exceeds `maxSymbolValue`, which this
     // variant deliberately does not check) at least one symbol has a non-zero count
-    while *count.add(usize::from(maxSymbolValue)) == 0 {
+    while counts[usize::from(maxSymbolValue)] == 0 {
         maxSymbolValue -= 1;
     }
     *maxSymbolValuePtr = maxSymbolValue;
 
-    for s in 0..usize::from(maxSymbolValue) + 1 {
-        largestCount = Ord::max(largestCount, *count.add(s));
+    for &c in &counts[..usize::from(maxSymbolValue) + 1] {
+        largestCount = Ord::max(largestCount, c);
     }
 
     largestCount
@@ -145,6 +148,10 @@ pub unsafe fn HIST_countFast_wksp(
     // checked before the workspace, which this path does not touch
     if source.len() < HIST_FAST_THRESHOLD as usize {
         // heuristic threshold
+        let count = core::slice::from_raw_parts_mut(
+            count.cast::<MaybeUninit<core::ffi::c_uint>>(),
+            usize::from(*maxSymbolValuePtr) + 1,
+        );
         return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
     if workSpace as usize & 3 != 0 {
@@ -173,6 +180,10 @@ pub unsafe fn HIST_countFast_wksp_array(
 ) -> Result<core::ffi::c_uint, Error> {
     if source.len() < HIST_FAST_THRESHOLD as usize {
         // heuristic threshold
+        let count = core::slice::from_raw_parts_mut(
+            count.cast::<MaybeUninit<core::ffi::c_uint>>(),
+            usize::from(*maxSymbolValuePtr) + 1,
+        );
         return Ok(HIST_count_simple(count, maxSymbolValuePtr, source));
     }
 
