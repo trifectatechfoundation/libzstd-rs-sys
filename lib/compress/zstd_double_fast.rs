@@ -22,15 +22,15 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     let hashSmall = ms.chainTable;
     let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let base = ms.window.base;
-    let mut ip = base.offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
+    let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
     // Insert the other positions into the large hash table if their entry
     // is empty.
     while ip.offset(fastHashFillStep as isize).sub(1) <= iend {
-        let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+        let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         for i in 0..fastHashFillStep {
             let smHashAndTag = ZSTD_hashPtr(
                 ip.offset(i as isize) as *const core::ffi::c_void,
