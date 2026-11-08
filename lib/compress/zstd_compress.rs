@@ -868,7 +868,7 @@ fn ZSTD_cwksp_slack_space_required() -> usize {
 fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: usize) -> usize {
     let alignBytesMask = alignBytes.wrapping_sub(1);
 
-    alignBytes.wrapping_sub(ptr as usize & alignBytesMask) & alignBytesMask
+    alignBytes.wrapping_sub(ptr.addr() & alignBytesMask) & alignBytesMask
 }
 
 /// Returns the initial value for allocStart which is used to determine the position from which
@@ -876,7 +876,7 @@ fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: usize)
 #[inline]
 fn ZSTD_cwksp_initialAllocStart(ws: &mut ZSTD_cwksp) -> *mut core::ffi::c_void {
     let mut endPtr = ws.workspaceEnd as *mut core::ffi::c_char;
-    endPtr = endPtr.wrapping_sub(endPtr as usize % ZSTD_CWKSP_ALIGNMENT_BYTES as usize);
+    endPtr = endPtr.wrapping_sub(endPtr.addr() % ZSTD_CWKSP_ALIGNMENT_BYTES as usize);
     endPtr as *mut core::ffi::c_void
 }
 
@@ -1242,7 +1242,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         // minimum size
         return core::ptr::null_mut();
     }
-    if workspace as usize & 7 != 0 {
+    if workspace.addr() & 7 != 0 {
         // must be 8-aligned
         return core::ptr::null_mut();
     }
@@ -7548,7 +7548,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         .wrapping_add(matchStateSize);
 
     // 8-aligned
-    if workspace as usize & 7 != 0 {
+    if workspace.addr() & 7 != 0 {
         return core::ptr::null();
     }
 

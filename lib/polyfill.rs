@@ -21,14 +21,14 @@ pub trait PointerExt {
 
 impl<T> PointerExt for *const T {
     fn wrapping_offset_from(self, base: Self) -> isize {
-        ((self as isize) - (base as isize)) / size_of::<T>() as isize
+        (self.addr() as isize - base.addr() as isize) / size_of::<T>() as isize
     }
 }
 
 impl<T> PointerExt for *mut T {
     /// Like `offset_from`, but without the UB.
     fn wrapping_offset_from(self, base: Self) -> isize {
-        ((self as isize) - (base as isize)) / size_of::<T>() as isize
+        (self.addr() as isize - base.addr() as isize) / size_of::<T>() as isize
     }
 }
 

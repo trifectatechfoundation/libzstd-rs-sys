@@ -1045,7 +1045,7 @@ unsafe fn ZSTD_safecopy(
     mut length: usize,
     ovtype: Overlap,
 ) {
-    let diff = op as isize - ip as isize;
+    let diff = op.addr() as isize - ip.addr() as isize;
     let oend = op.add(length);
 
     debug_assert!(match ovtype {
@@ -2302,7 +2302,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
 
     let blockSizeMax = Ord::min(dst.capacity(), dctx.block_size_max());
     let totalHistorySize =
-        dst.as_mut_ptr().wrapping_add(blockSizeMax) as usize - dctx.virtualStart as usize;
+        dst.as_mut_ptr().wrapping_add(blockSizeMax).addr() - dctx.virtualStart.addr();
     let mut offset = if MEM_32bits() && totalHistorySize > ZSTD_maxShortOffset() {
         Offset::Long
     } else {
@@ -2317,7 +2317,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
     }
     if size_of::<usize>() == 8
         && size_of::<usize>() == size_of::<*mut core::ffi::c_void>()
-        && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
+        && (usize::MAX - dst.as_mut_ptr().addr()) < (1 << 20)
     {
         return Err(Error::dstSize_tooSmall);
     }

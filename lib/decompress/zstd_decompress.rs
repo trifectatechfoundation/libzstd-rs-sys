@@ -675,7 +675,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     workspaceSize: usize,
 ) -> *mut ZSTD_DCtx {
     // workspace should be 8-aligned
-    if workspace as usize & 7 != 0 {
+    if workspace.addr() & 7 != 0 {
         return core::ptr::null_mut();
     }
 
