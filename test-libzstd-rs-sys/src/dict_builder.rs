@@ -753,3 +753,120 @@ fn test_optimize_train_from_buffer_fastcover_pool(thread_count: u32) {
         (compressed, dict_buffer)
     });
 }
+
+#[test]
+#[cfg(not(target_family = "wasm"))]
+fn test_finalize_dictionary() {
+    #[derive(Clone, Copy)]
+    enum Content {
+        Separate,
+        InPlace,
+        OverlapsStart,
+    }
+
+    for content in [Content::Separate, Content::InPlace, Content::OverlapsStart] {
+        for dict_capacity in [300, 1024] {
+            assert_eq_rs_c!({
+                let mut sample_data = Vec::new();
+                let mut sample_sizes = Vec::new();
+                for &s in &SAMPLES {
+                    sample_data.extend_from_slice(s.as_bytes());
+                    sample_sizes.push(s.len());
+                }
+
+                let custom_content: Vec<u8> =
+                    sample_data.iter().copied().cycle().take(280).collect();
+                let mut dict_buffer = vec![0xAAu8; dict_capacity];
+
+                let params = ZDICT_params_t {
+                    compressionLevel: 3,
+                    notificationLevel: 0,
+                    dictID: 0,
+                };
+
+                let content_ptr = match content {
+                    Content::Separate => custom_content.as_ptr(),
+                    Content::InPlace => {
+                        let start = dict_capacity - custom_content.len();
+                        dict_buffer[start..].copy_from_slice(&custom_content);
+                        dict_buffer[start..].as_ptr()
+                    }
+                    Content::OverlapsStart => {
+                        dict_buffer[..custom_content.len()].copy_from_slice(&custom_content);
+                        dict_buffer.as_ptr()
+                    }
+                };
+
+                let dict_size = ZDICT_finalizeDictionary(
+                    dict_buffer.as_mut_ptr() as *mut c_void,
+                    dict_buffer.len(),
+                    content_ptr as *const c_void,
+                    custom_content.len(),
+                    sample_data.as_ptr() as *const c_void,
+                    sample_sizes.as_ptr(),
+                    sample_sizes.len() as u32,
+                    params,
+                );
+
+                assert_eq!(
+                    ZDICT_isError(dict_size),
+                    0,
+                    "Dict finalization failed {:?}",
+                    CStr::from_ptr(ZDICT_getErrorName(dict_size)).to_str(),
+                );
+
+                dict_buffer.truncate(dict_size);
+                dict_buffer
+            });
+        }
+    }
+}
+
+#[test]
+#[cfg(not(target_family = "wasm"))]
+fn test_optimize_train_from_buffer_cover_shrink_dict() {
+    assert_eq_rs_c!({
+        let mut sample_data = Vec::new();
+        let mut sample_sizes = Vec::new();
+        for &s in &SAMPLES {
+            sample_data.extend_from_slice(s.as_bytes());
+            sample_sizes.push(s.len());
+        }
+
+        let mut dict_buffer = vec![0u8; 16 * 1024];
+
+        let mut params = ZDICT_cover_params_t {
+            k: 200,
+            d: 8,
+            steps: 4,
+            nbThreads: 1,
+            splitPoint: 0.5,
+            shrinkDict: 1,
+            shrinkDictMaxRegression: 1,
+            zParams: ZDICT_params_t {
+                compressionLevel: 5,
+                notificationLevel: 0,
+                dictID: 1234,
+            },
+        };
+
+        let dict_size = ZDICT_optimizeTrainFromBuffer_cover(
+            dict_buffer.as_mut_ptr() as *mut c_void,
+            dict_buffer.len(),
+            sample_data.as_ptr() as *const c_void,
+            sample_sizes.as_ptr(),
+            sample_sizes.len() as u32,
+            &mut params,
+        );
+
+        assert_eq!(
+            ZDICT_isError(dict_size),
+            0,
+            "Dict training failed {:?}",
+            CStr::from_ptr(ZDICT_getErrorName(dict_size)).to_str(),
+        );
+
+        dict_buffer.truncate(dict_size);
+        (dict_buffer, params.k, params.d)
+    });
+}
