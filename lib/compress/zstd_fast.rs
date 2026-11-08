@@ -552,8 +552,8 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let dictBase = (*dms).window.base;
     let dictStart = dictBase.wrapping_offset(dictStartIndex as isize);
     let dictEnd = (*dms).window.nextSrc;
-    let dictIndexDelta =
-        prefixStartIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32);
+    let dictIndexDelta = prefixStartIndex
+        .wrapping_sub(dictEnd.wrapping_offset_from(dictBase) as core::ffi::c_long as u32);
     let dictAndPrefixLength =
         istart.offset_from_unsigned(prefixStart) + dictEnd.offset_from_unsigned(dictStart);
     let dictHBits = dictCParams
