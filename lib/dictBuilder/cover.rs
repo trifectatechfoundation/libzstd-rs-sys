@@ -273,7 +273,7 @@ unsafe extern "C" fn COVER_strict_cmp8(
     }) as _
 }
 
-crate::lib::polyfill::cfg_select! {
+cfg_select! {
     miri => { /* a fallback implementation is used */ }
     target_vendor = "apple" => {
         extern "C" {
@@ -327,7 +327,7 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
     debug_assert_eq!(ctx.suffixSize, ctx.suffix.len());
 
     #[rustfmt::skip]
-    crate::lib::polyfill::cfg_select! {
+    cfg_select! {
         all(not(miri), target_vendor = "apple") => {
             unsafe {
                 qsort_r(

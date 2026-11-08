@@ -1,24 +1,3 @@
-macro_rules! cfg_select {
-    ({ $($tt:tt)* }) => {{
-        $crate::cfg_select! { $($tt)* }
-    }};
-    (_ => { $($output:tt)* }) => {
-        $($output)*
-    };
-    (
-        $cfg:meta => $output:tt
-        $($( $rest:tt )+)?
-    ) => {
-        #[cfg($cfg)]
-        $crate::lib::polyfill::cfg_select! { _ => $output }
-        $(
-            #[cfg(not($cfg))]
-            $crate::lib::polyfill::cfg_select! { $($rest)+ }
-        )?
-    }
-}
-pub(crate) use cfg_select;
-
 /// Keep the branches on either side of this point in source order.
 ///
 /// Once inlined, `a && b` on two cheap, side-effect-free tests becomes two branches, and LLVM

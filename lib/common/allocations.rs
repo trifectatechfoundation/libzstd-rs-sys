@@ -1,6 +1,5 @@
 use core::ptr;
 
-use crate::lib::polyfill::cfg_select;
 use crate::lib::zstd::ZSTD_customMem;
 
 #[inline]
