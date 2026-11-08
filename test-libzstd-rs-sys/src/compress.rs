@@ -1103,8 +1103,7 @@ mod pre_split {
                 // must reset statistics left by earlier blocks and levels.
                 let actual = unsafe {
                     ZSTD_splitBlock(
-                        block.as_ptr().cast(),
-                        block.len(),
+                        block.as_slice().try_into().unwrap(),
                         level,
                         workspace.as_mut_ptr().cast(),
                         size_of_val(&workspace),

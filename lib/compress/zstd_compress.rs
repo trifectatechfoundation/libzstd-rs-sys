@@ -5885,13 +5885,10 @@ unsafe fn ZSTD_optimalBlockSize(
     } else {
         splitLevel -= 2;
     }
-    ZSTD_splitBlock(
-        src,
-        blockSizeMax,
-        splitLevel,
-        (*cctx).tmpWorkspace,
-        (*cctx).tmpWkspSize,
-    )
+    debug_assert_eq!(blockSizeMax, 128 << 10);
+    // SAFETY: the caller provides `srcSize` readable bytes, and `srcSize >= 128 KB` was checked above.
+    let block = unsafe { &*src.cast::<[u8; 128 << 10]>() };
+    ZSTD_splitBlock(block, splitLevel, (*cctx).tmpWorkspace, (*cctx).tmpWkspSize)
 }
 
 /// Compress a chunk of data into one or multiple blocks.
