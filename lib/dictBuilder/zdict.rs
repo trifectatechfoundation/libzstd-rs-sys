@@ -1463,7 +1463,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     }
 
     let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH)];
-    core::ptr::copy_nonoverlapping(samplesBuffer.cast::<u8>(), new_buf.as_mut_ptr(), sBuffSize);
+    new_buf[..sBuffSize].copy_from_slice(core::slice::from_raw_parts(
+        samplesBuffer.cast::<u8>(),
+        sBuffSize,
+    ));
     fill_noise(&mut new_buf[sBuffSize..]); // guard band, for end of buffer condition
 
     ZDICT_trainFromBuffer_unsafe_legacy(
