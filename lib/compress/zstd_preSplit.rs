@@ -82,24 +82,20 @@ impl<const N: usize> Fingerprint<N> {
 
         distance
     }
-}
 
-/// Compares new events with past events.
-///
-/// Returns `true` when the fingerprints are considered "too different".
-fn compareFingerprints<const N: usize>(
-    ref_0: &Fingerprint<N>,
-    newfp: &Fingerprint<N>,
-    penalty: c_int,
-    hashLog: c_uint,
-) -> bool {
-    debug_assert!(ref_0.nbEvents > 0);
-    debug_assert!(newfp.nbEvents > 0);
+    /// Compares new events with past events.
+    ///
+    /// Returns `true` when the fingerprints are considered "too different".
+    fn compare(&self, newfp: &Self, penalty: c_int, hashLog: c_uint) -> bool {
+        debug_assert!(self.nbEvents > 0);
+        debug_assert!(newfp.nbEvents > 0);
 
-    let p50 = ref_0.nbEvents * newfp.nbEvents;
-    let deviation = ref_0.distance(newfp, hashLog);
-    let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
-    deviation >= threshold
+        let p50 = self.nbEvents * newfp.nbEvents;
+        let deviation = self.distance(newfp, hashLog);
+        let threshold =
+            p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
+        deviation >= threshold
+    }
 }
 
 fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
@@ -134,12 +130,10 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
     let mut pos = CHUNKSIZE as usize;
     while pos <= blockSize.wrapping_sub(CHUNKSIZE as usize) {
         record_f(&mut fpstats.newEvents, &block[pos..][..chunk]);
-        if compareFingerprints(
-            &fpstats.pastEvents,
-            &fpstats.newEvents,
-            penalty,
-            hashParams[level as usize],
-        ) {
+        if fpstats
+            .pastEvents
+            .compare(&fpstats.newEvents, penalty, hashParams[level as usize])
+        {
             return pos;
         } else {
             mergeEvents(&mut fpstats.pastEvents, &fpstats.newEvents);
@@ -176,7 +170,7 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats)
     HIST_add(&mut stats.newEvents.events, &block[blockSize - segment..]);
     stats.newEvents.nbEvents = SEGMENT_SIZE as usize;
     stats.pastEvents.nbEvents = stats.newEvents.nbEvents;
-    if !compareFingerprints(&stats.pastEvents, &stats.newEvents, 0, 8) {
+    if !stats.pastEvents.compare(&stats.newEvents, 0, 8) {
         return blockSize;
     }
     let middle = blockSize / 2 - segment / 2;
