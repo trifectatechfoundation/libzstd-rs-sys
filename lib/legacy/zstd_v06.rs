@@ -1115,7 +1115,7 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
+    while endSignal == BITv06_DStream_unfinished && op4 < oend.sub(7) {
         if MEM_64bits() {
             *op1 = HUFv06_decodeSymbolX2(&mut bitD1, dt, dtLog);
             op1 = op1.add(1);
@@ -1617,7 +1617,7 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
+    while endSignal == BITv06_DStream_unfinished && op4 < oend.sub(7) {
         if MEM_64bits() {
             op1 = op1.offset(HUFv06_decodeSymbolX4(
                 op1 as *mut core::ffi::c_void,

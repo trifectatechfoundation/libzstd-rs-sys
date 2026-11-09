@@ -1952,9 +1952,7 @@ unsafe fn main_0(
                                     }
                                     100 => {
                                         benchParams.mode = BMK_decodeOnly;
-                                        if operation as core::ffi::c_uint
-                                            == zom_bench as core::ffi::c_int as core::ffi::c_uint
-                                        {
+                                        if operation == zom_bench {
                                             argument = argument.offset(1);
                                         } else {
                                             operation = zom_decompress;
@@ -2093,10 +2091,7 @@ unsafe fn main_0(
                 c"Yann Collet".as_ptr(),
             );
         }
-        if operation as core::ffi::c_uint == zom_decompress as core::ffi::c_int as core::ffi::c_uint
-            && setThreads_non1 != 0
-            && g_displayLevel >= 2
-        {
+        if operation == zom_decompress && setThreads_non1 != 0 && g_displayLevel >= 2 {
             fprintf(
                 stderr,
                 c"Warning : decompression does not support multi-threading\n".as_ptr(),
@@ -2123,9 +2118,7 @@ unsafe fn main_0(
                 }
             }
         }
-        if operation as core::ffi::c_uint == zom_compress as core::ffi::c_int as core::ffi::c_uint
-            && g_displayLevel >= 4
-        {
+        if operation == zom_compress && g_displayLevel >= 4 {
             fprintf(
                 stderr,
                 c"Compressing with %u worker threads \n".as_ptr(),
@@ -2195,19 +2188,15 @@ unsafe fn main_0(
         if recursive != 0 {
             UTIL_expandFNT(&mut filenames, followLinks);
         }
-        if operation as core::ffi::c_uint == zom_list as core::ffi::c_int as core::ffi::c_uint {
+        if operation == zom_list {
             let ret = FIO_listMultipleFiles(
                 (*filenames).tableSize as core::ffi::c_uint,
                 (*filenames).fileNames,
                 g_displayLevel,
             );
             operationResult = ret;
-        } else if operation as core::ffi::c_uint
-            == zom_bench as core::ffi::c_int as core::ffi::c_uint
-        {
-            if cType as core::ffi::c_uint
-                != FIO_zstdCompression as core::ffi::c_int as core::ffi::c_uint
-            {
+        } else if operation == zom_bench {
+            if cType != FIO_zstdCompression {
                 if g_displayLevel >= 1 {
                     fprintf(
                         stderr,
@@ -2232,9 +2221,7 @@ unsafe fn main_0(
                     benchParams.ldmHashRateLog = g_ldmHashRateLog as core::ffi::c_int;
                 }
                 benchParams.literalCompressionMode = literalCompressionMode;
-                if benchParams.mode as core::ffi::c_uint
-                    == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-                {
+                if benchParams.mode == BMK_decodeOnly {
                     cLevelLast = 0;
                     cLevel = cLevelLast;
                 }
@@ -2301,15 +2288,13 @@ unsafe fn main_0(
                     );
                 }
             }
-        } else if operation as core::ffi::c_uint
-            == zom_train as core::ffi::c_int as core::ffi::c_uint
-        {
+        } else if operation == zom_train {
             let zParams = ZDICT_params_t {
                 compressionLevel: dictCLevel,
                 notificationLevel: g_displayLevel as core::ffi::c_uint,
                 dictID,
             };
-            if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
+            if dict == cover {
                 let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
                 coverParams.nbThreads = nbWorkers;
                 coverParams.zParams = zParams;
@@ -2325,9 +2310,7 @@ unsafe fn main_0(
                     optimize,
                     memLimit,
                 );
-            } else if dict as core::ffi::c_uint
-                == fastCover as core::ffi::c_int as core::ffi::c_uint
-            {
+            } else if dict == fastCover {
                 let optimize_0 =
                     (fastCoverParams.k == 0 || fastCoverParams.d == 0) as core::ffi::c_int;
                 fastCoverParams.nbThreads = nbWorkers;
@@ -2363,7 +2346,7 @@ unsafe fn main_0(
                 );
             }
         } else {
-            if operation as core::ffi::c_uint == zom_test as core::ffi::c_int as core::ffi::c_uint {
+            if operation == zom_test {
                 FIO_setTestMode(prefs, 1);
                 outFileName = nulmark.as_ptr();
                 removeSrcFile = 0;
@@ -2400,8 +2383,7 @@ unsafe fn main_0(
                 && UTIL_isConsole(stdout) != 0
                 && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr()) != -(1)
                 && forceStdout == 0
-                && operation as core::ffi::c_uint
-                    != zom_decompress as core::ffi::c_int as core::ffi::c_uint
+                && operation != zom_decompress
             {
                 if g_displayLevel >= 1 {
                     fprintf(stderr, c"stdout is a console, aborting\n".as_ptr());
@@ -2424,10 +2406,7 @@ unsafe fn main_0(
                     }
                     cLevel = maxCLevel;
                 }
-                if showDefaultCParams != 0
-                    && operation as core::ffi::c_uint
-                        == zom_decompress as core::ffi::c_int as core::ffi::c_uint
-                {
+                if showDefaultCParams != 0 && operation == zom_decompress {
                     if g_displayLevel >= 1 {
                         fprintf(
                             stderr,
@@ -2461,10 +2440,7 @@ unsafe fn main_0(
                     if hasStdout != 0 && g_displayLevel == 2 {
                         g_displayLevel = 1;
                     }
-                    if UTIL_isConsole(stderr) == 0
-                        && progress as core::ffi::c_uint
-                            != FIO_ps_always as core::ffi::c_int as core::ffi::c_uint
-                    {
+                    if UTIL_isConsole(stderr) == 0 && progress != FIO_ps_always {
                         progress = FIO_ps_never;
                     }
                     FIO_setProgressSetting(progress);
@@ -2500,9 +2476,7 @@ unsafe fn main_0(
                         dictFileName = patchFromDictFileName;
                     }
                     FIO_setMemLimit(prefs, memLimit);
-                    if operation as core::ffi::c_uint
-                        == zom_compress as core::ffi::c_int as core::ffi::c_uint
-                    {
+                    if operation == zom_compress {
                         FIO_setCompressionType(prefs, cType);
                         FIO_setContentSize(prefs, contentSize);
                         FIO_setNbWorkers(prefs, nbWorkers as core::ffi::c_int);

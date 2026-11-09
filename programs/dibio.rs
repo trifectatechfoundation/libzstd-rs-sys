@@ -495,7 +495,7 @@ pub unsafe fn DiB_trainFromFiles(
         chunkSize,
         displayLevel,
     );
-    let mut dictSize = ZSTD_error_GENERIC as core::ffi::c_int as size_t;
+    let mut dictSize = ZSTD_error_GENERIC as size_t;
     if !params.is_null() {
         DiB_fillNoise(
             (srcBuffer as *mut core::ffi::c_char).add(loadedSize) as *mut core::ffi::c_void,

@@ -8554,7 +8554,7 @@ unsafe fn compress_stream(
     if input.pos > input.size {
         return Err(Error::srcSize_wrong);
     }
-    if endOp > ZSTD_e_end as core::ffi::c_int as u32 {
+    if endOp > ZSTD_e_end {
         return Err(Error::parameter_outOfBound);
     }
 
