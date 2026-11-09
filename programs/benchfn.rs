@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{abort, free, malloc, size_t};
+use libc::{abort, free, malloc};
 
 use crate::timefn::{UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 
@@ -9,26 +9,26 @@ pub type PTime = u64;
 #[repr(C)]
 pub struct BMK_runTime_t {
     pub nanoSecPerRun: core::ffi::c_double,
-    pub sumOfReturn: size_t,
+    pub sumOfReturn: usize,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_runOutcome_t {
     pub internal_never_ever_use_directly: BMK_runTime_t,
-    pub error_result_never_ever_use_directly: size_t,
+    pub error_result_never_ever_use_directly: usize,
     pub error_tag_never_ever_use_directly: core::ffi::c_int,
 }
 pub type BMK_benchFn_t = Option<
     unsafe fn(
         *const core::ffi::c_void,
-        size_t,
+        usize,
         *mut core::ffi::c_void,
-        size_t,
+        usize,
         *mut core::ffi::c_void,
-    ) -> size_t,
+    ) -> usize,
 >;
-pub type BMK_initFn_t = Option<unsafe fn(*mut core::ffi::c_void) -> size_t>;
-pub type BMK_errorFn_t = Option<unsafe extern "C" fn(size_t) -> core::ffi::c_uint>;
+pub type BMK_initFn_t = Option<unsafe fn(*mut core::ffi::c_void) -> usize>;
+pub type BMK_errorFn_t = Option<unsafe extern "C" fn(usize) -> core::ffi::c_uint>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchParams_t {
@@ -37,12 +37,12 @@ pub struct BMK_benchParams_t {
     pub initFn: BMK_initFn_t,
     pub initPayload: *mut core::ffi::c_void,
     pub errorFn: BMK_errorFn_t,
-    pub blockCount: size_t,
+    pub blockCount: usize,
     pub srcBuffers: *const *const core::ffi::c_void,
-    pub srcSizes: *const size_t,
+    pub srcSizes: *const usize,
     pub dstBuffers: *const *mut core::ffi::c_void,
-    pub dstCapacities: *const size_t,
-    pub blockResults: *mut size_t,
+    pub dstCapacities: *const usize,
+    pub blockResults: *mut usize,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -72,13 +72,13 @@ pub unsafe fn BMK_extract_runTime(outcome: BMK_runOutcome_t) -> BMK_runTime_t {
     }
     outcome.internal_never_ever_use_directly
 }
-pub unsafe fn BMK_extract_errorResult(outcome: BMK_runOutcome_t) -> size_t {
+pub unsafe fn BMK_extract_errorResult(outcome: BMK_runOutcome_t) -> usize {
     if outcome.error_tag_never_ever_use_directly == 0 {
         abort();
     }
     outcome.error_result_never_ever_use_directly
 }
-unsafe fn BMK_runOutcome_error(errorResult: size_t) -> BMK_runOutcome_t {
+unsafe fn BMK_runOutcome_error(errorResult: usize) -> BMK_runOutcome_t {
     let mut b = BMK_runOutcome_t {
         internal_never_ever_use_directly: BMK_runTime_t {
             nanoSecPerRun: 0.,
@@ -114,13 +114,13 @@ pub unsafe fn BMK_benchFunction(
     mut nbLoops: core::ffi::c_uint,
 ) -> BMK_runOutcome_t {
     nbLoops = nbLoops.wrapping_add(core::ffi::c_uint::from(nbLoops == 0));
-    let mut i: size_t = 0;
+    let mut i: usize = 0;
     i = 0;
     while i < p.blockCount {
         core::ptr::write_bytes(*(p.dstBuffers).add(i), 0xe5, *(p.dstCapacities).add(i));
         i = i.wrapping_add(1);
     }
-    let mut dstSize = 0 as size_t;
+    let mut dstSize = 0usize;
     let clockStart = UTIL_getTime();
     let mut loopNb: core::ffi::c_uint = 0;
     let mut blockNb: core::ffi::c_uint = 0;
@@ -130,7 +130,7 @@ pub unsafe fn BMK_benchFunction(
     loopNb = 0;
     while loopNb < nbLoops {
         blockNb = 0;
-        while (blockNb as size_t) < p.blockCount {
+        while (blockNb as usize) < p.blockCount {
             let res = (p.benchFn).unwrap_unchecked()(
                 *(p.srcBuffers).offset(blockNb as isize),
                 *(p.srcSizes).offset(blockNb as isize),
@@ -176,7 +176,7 @@ pub unsafe fn BMK_freeTimedFnState(state: *mut BMK_timedFnState_t) {
 }
 pub unsafe fn BMK_initStatic_timedFnState(
     buffer: *mut core::ffi::c_void,
-    size: size_t,
+    size: usize,
     total_ms: core::ffi::c_uint,
     run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
@@ -188,7 +188,7 @@ pub unsafe fn BMK_initStatic_timedFnState(
     if size < size_of::<BMK_timedFnState_t>() {
         return core::ptr::null_mut();
     }
-    if !(buffer as size_t).is_multiple_of(tfs_alignment) {
+    if !(buffer as usize).is_multiple_of(tfs_alignment) {
         return core::ptr::null_mut();
     }
     BMK_resetTimedFnState(r, total_ms, run_ms);
@@ -215,7 +215,7 @@ pub unsafe fn BMK_resetTimedFnState(
         .wrapping_div(1000) as PTime;
     (*timedFnState).fastestRun.nanoSecPerRun =
         TIMELOOP_NANOSEC as core::ffi::c_double * 2000000000.0;
-    (*timedFnState).fastestRun.sumOfReturn = -(1 as core::ffi::c_longlong) as size_t;
+    (*timedFnState).fastestRun.sumOfReturn = -(1 as core::ffi::c_longlong) as usize;
     (*timedFnState).nbLoops = 1;
     (*timedFnState).coolTime = UTIL_getTime();
 }

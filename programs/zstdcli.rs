@@ -1,7 +1,7 @@
 use core::ptr;
 use std::ffi::CStr;
 
-use libc::{exit, fprintf, getchar, getenv, size_t, strcmp, strlen, strncmp, strrchr, FILE};
+use libc::{exit, fprintf, getchar, getenv, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
 use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
@@ -52,13 +52,13 @@ extern "C" {
 pub struct FileNamesTable {
     pub fileNames: *mut *const core::ffi::c_char,
     pub buf: *mut core::ffi::c_char,
-    pub tableSize: size_t,
-    pub tableCapacity: size_t,
+    pub tableSize: usize,
+    pub tableCapacity: usize,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_bounds {
-    pub error: size_t,
+    pub error: usize,
     pub lowerBound: core::ffi::c_int,
     pub upperBound: core::ffi::c_int,
 }
@@ -81,8 +81,8 @@ pub const BMK_both: BMK_mode_t = 0;
 pub struct BMK_advancedParams_t {
     pub mode: BMK_mode_t,
     pub nbSeconds: core::ffi::c_uint,
-    pub chunkSizeMax: size_t,
-    pub targetCBlockSize: size_t,
+    pub chunkSizeMax: usize,
+    pub targetCBlockSize: usize,
     pub nbWorkers: core::ffi::c_int,
     pub realTime: core::ffi::c_uint,
     pub additionalParam: core::ffi::c_int,
@@ -267,7 +267,7 @@ unsafe fn usageAdvanced(programName: *const core::ffi::c_char) {
         stdout,
         c"*** %s (%i-bit) %s, by %s ***\n".as_ptr(),
         c"Zstandard CLI".as_ptr(),
-        size_t::BITS as core::ffi::c_int,
+        usize::BITS as core::ffi::c_int,
         c"v1.5.8".as_ptr(),
         c"Yann Collet".as_ptr(),
     );
@@ -657,19 +657,19 @@ unsafe fn readIntFromChar(stringPtr: *mut *const core::ffi::c_char) -> core::ffi
 }
 unsafe fn readSizeTFromCharChecked(
     stringPtr: *mut *const core::ffi::c_char,
-    value: *mut size_t,
+    value: *mut usize,
 ) -> core::ffi::c_int {
     let mut result = 0;
     while **stringPtr as core::ffi::c_int >= '0' as i32
         && **stringPtr as core::ffi::c_int <= '9' as i32
     {
-        let max = -(1 as core::ffi::c_int) as size_t / 10;
+        let max = -(1 as core::ffi::c_int) as usize / 10;
         let last = result;
         if result > max {
             return 1;
         }
         result *= 10;
-        result = result.wrapping_add((**stringPtr as core::ffi::c_int - '0' as i32) as size_t);
+        result = result.wrapping_add((**stringPtr as core::ffi::c_int - '0' as i32) as usize);
         if result < last {
             return 1;
         }
@@ -678,7 +678,7 @@ unsafe fn readSizeTFromCharChecked(
     if **stringPtr as core::ffi::c_int == 'K' as i32
         || **stringPtr as core::ffi::c_int == 'M' as i32
     {
-        let maxK = -(1 as core::ffi::c_int) as size_t >> 10;
+        let maxK = -(1 as core::ffi::c_int) as usize >> 10;
         if result > maxK {
             return 1;
         }
@@ -700,10 +700,10 @@ unsafe fn readSizeTFromCharChecked(
     *value = result;
     0
 }
-unsafe fn readSizeTFromChar(stringPtr: *mut *const core::ffi::c_char) -> size_t {
-    let mut result: size_t = 0;
+unsafe fn readSizeTFromChar(stringPtr: *mut *const core::ffi::c_char) -> usize {
+    let mut result: usize = 0;
     if readSizeTFromCharChecked(stringPtr, &mut result) != 0 {
-        errorOut(c"error: numeric value overflows size_t".as_ptr());
+        errorOut(c"error: numeric value overflows usize".as_ptr());
     }
     result
 }
@@ -1072,7 +1072,7 @@ unsafe fn printVersion() {
         stdout,
         c"*** %s (%i-bit) %s, by %s ***\n".as_ptr(),
         c"Zstandard CLI".as_ptr(),
-        size_t::BITS as core::ffi::c_int,
+        usize::BITS as core::ffi::c_int,
         c"v1.5.8".as_ptr(),
         c"Yann Collet".as_ptr(),
     );
@@ -1120,7 +1120,7 @@ unsafe fn printDefaultCParams(
 ) {
     let fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
-        UTIL_getFileSize(dictFileName) as size_t
+        UTIL_getFileSize(dictFileName) as usize
     } else {
         0
     };
@@ -1174,7 +1174,7 @@ unsafe fn printActualCParams(
 ) {
     let fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
-        UTIL_getFileSize(dictFileName) as size_t
+        UTIL_getFileSize(dictFileName) as usize
     } else {
         0
     };
@@ -1377,8 +1377,8 @@ unsafe fn main_0(
     };
     let mut recursive = 0;
     let mut memLimit = 0;
-    let mut filenames = UTIL_allocateFileNamesTable(argCount as size_t);
-    let file_of_names = UTIL_allocateFileNamesTable(argCount as size_t);
+    let mut filenames = UTIL_allocateFileNamesTable(argCount as usize);
+    let file_of_names = UTIL_allocateFileNamesTable(argCount as usize);
     let mut programName = *argv.offset(0);
     let mut outFileName = core::ptr::null();
     let mut outDirName = core::ptr::null();
@@ -2030,7 +2030,7 @@ unsafe fn main_0(
                                     }
                                     66 => {
                                         argument = argument.offset(1);
-                                        chunkSize = readU32FromChar(&mut argument) as size_t;
+                                        chunkSize = readU32FromChar(&mut argument) as usize;
                                     }
                                     83 => {
                                         argument = argument.offset(1);
@@ -2086,7 +2086,7 @@ unsafe fn main_0(
                 stderr,
                 c"*** %s (%i-bit) %s, by %s ***\n".as_ptr(),
                 c"Zstandard CLI".as_ptr(),
-                size_t::BITS as core::ffi::c_int,
+                usize::BITS as core::ffi::c_int,
                 c"v1.5.8".as_ptr(),
                 c"Yann Collet".as_ptr(),
             );
@@ -2155,12 +2155,12 @@ unsafe fn main_0(
                 operationResult = 1;
                 break 'end;
             } else {
-                (*filenames).tableSize = fileNamesNb as size_t;
+                (*filenames).tableSize = fileNamesNb as usize;
             }
         }
         if (*file_of_names).tableSize != 0 {
             let nbFileLists = (*file_of_names).tableSize;
-            let mut flNb: size_t = 0;
+            let mut flNb: usize = 0;
             flNb = 0;
             loop {
                 if flNb >= nbFileLists {
@@ -2252,7 +2252,7 @@ unsafe fn main_0(
                     if separateFiles != 0 {
                         let mut i: core::ffi::c_uint = 0;
                         i = 0;
-                        while (i as size_t) < (*filenames).tableSize {
+                        while (i as usize) < (*filenames).tableSize {
                             operationResult = BMK_benchFilesAdvanced(
                                 &*((*filenames).fileNames).offset(i as isize),
                                 1,
@@ -2300,7 +2300,7 @@ unsafe fn main_0(
                 coverParams.zParams = zParams;
                 operationResult = DiB_trainFromFiles(
                     outFileName,
-                    maxDictSize as size_t,
+                    maxDictSize as usize,
                     (*filenames).fileNames,
                     (*filenames).tableSize as core::ffi::c_int,
                     chunkSize,
@@ -2317,7 +2317,7 @@ unsafe fn main_0(
                 fastCoverParams.zParams = zParams;
                 operationResult = DiB_trainFromFiles(
                     outFileName,
-                    maxDictSize as size_t,
+                    maxDictSize as usize,
                     (*filenames).fileNames,
                     (*filenames).tableSize as core::ffi::c_int,
                     chunkSize,
@@ -2334,7 +2334,7 @@ unsafe fn main_0(
                 };
                 operationResult = DiB_trainFromFiles(
                     outFileName,
-                    maxDictSize as size_t,
+                    maxDictSize as usize,
                     (*filenames).fileNames,
                     (*filenames).tableSize as core::ffi::c_int,
                     chunkSize,
@@ -2512,7 +2512,7 @@ unsafe fn main_0(
                             strategyBounds.upperBound
                         );
                         if showDefaultCParams != 0 || g_displayLevel >= 4 {
-                            let mut fileNb: size_t = 0;
+                            let mut fileNb: usize = 0;
                             fileNb = 0;
                             while fileNb < (*filenames).tableSize {
                                 if showDefaultCParams != 0 {

@@ -4,7 +4,7 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::ops::Div as _;
 
-use libc::{exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t, FILE};
+use libc::{exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, FILE};
 use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
     ZDICT_optimizeTrainFromBuffer_cover, ZDICT_optimizeTrainFromBuffer_fastCover,
@@ -32,10 +32,10 @@ pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * (1 << 10);
 pub const MEMMULT: core::ffi::c_int = 11;
 pub const COVER_MEMMULT: core::ffi::c_int = 9;
 pub const FASTCOVER_MEMMULT: core::ffi::c_int = 1;
-static g_maxMemory: usize = if size_of::<size_t>() == 4 {
+static g_maxMemory: usize = if size_of::<usize>() == 4 {
     2usize * (1 << 30) - 64 * (1 << 20)
 } else {
-    (512usize * (1 << 20)) << size_of::<size_t>()
+    (512usize * (1 << 20)) << size_of::<usize>()
 };
 pub const NOISELENGTH: core::ffi::c_int = 32;
 static g_refreshRate: u64 = SEC_TO_MICRO as PTime / 6;
@@ -51,21 +51,21 @@ unsafe fn DiB_getFileSize(fileName: *const core::ffi::c_char) -> i64 {
 }
 unsafe fn DiB_loadFiles(
     buffer: *mut core::ffi::c_void,
-    bufferSizePtr: *mut size_t,
-    sampleSizes: *mut size_t,
+    bufferSizePtr: *mut usize,
+    sampleSizes: *mut usize,
     sstSize: core::ffi::c_int,
     fileNamesTable: *mut *const core::ffi::c_char,
     nbFiles: core::ffi::c_int,
-    targetChunkSize: size_t,
+    targetChunkSize: usize,
     displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let buff = buffer as *mut core::ffi::c_char;
-    let mut totalDataLoaded = 0 as size_t;
+    let mut totalDataLoaded = 0usize;
     let mut nbSamplesLoaded = 0 as core::ffi::c_int;
     let mut fileIndex = 0 as core::ffi::c_int;
     let mut f = core::ptr::null_mut();
     while nbSamplesLoaded < sstSize && fileIndex < nbFiles {
-        let mut fileDataLoaded: size_t = 0;
+        let mut fileDataLoaded: usize = 0;
         let fileSize = DiB_getFileSize(*fileNamesTable.offset(fileIndex as isize));
         if fileSize <= 0 {
             fileIndex += 1;
@@ -99,13 +99,13 @@ unsafe fn DiB_loadFiles(
                     fileSize
                 } else {
                     targetChunkSize as i64
-                }) as size_t
+                }) as usize
             } else {
                 (if fileSize < (128 * (1 << 10)) as i64 {
                     fileSize
                 } else {
                     (128 * (1 << 10)) as i64
-                }) as size_t
+                }) as usize
             };
             if totalDataLoaded.wrapping_add(fileDataLoaded) > *bufferSizePtr {
                 break;
@@ -133,8 +133,8 @@ unsafe fn DiB_loadFiles(
             if targetChunkSize > 0 {
                 while (fileDataLoaded as i64) < fileSize && nbSamplesLoaded < sstSize {
                     let chunkSize =
-                        if (fileSize as size_t).wrapping_sub(fileDataLoaded) < targetChunkSize {
-                            (fileSize as size_t).wrapping_sub(fileDataLoaded)
+                        if (fileSize as usize).wrapping_sub(fileDataLoaded) < targetChunkSize {
+                            (fileSize as usize).wrapping_sub(fileDataLoaded)
                         } else {
                             targetChunkSize
                         };
@@ -179,7 +179,7 @@ unsafe fn DiB_loadFiles(
         fprintf(
             stderr,
             c"Loaded %d KB total training data, %d nb samples \n".as_ptr(),
-            (totalDataLoaded / (1 << 10) as size_t) as core::ffi::c_int,
+            (totalDataLoaded / (1 << 10) as usize) as core::ffi::c_int,
             nbSamplesLoaded,
         );
     }
@@ -213,20 +213,20 @@ unsafe fn DiB_shuffle(fileNamesTable: *mut *const core::ffi::c_char, nbFiles: co
         i = i.wrapping_sub(1);
     }
 }
-unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
-    let step = (8 * (1 << 20)) as size_t;
+unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> usize {
+    let step = (8 * (1 << 20)) as usize;
     let mut testmem = core::ptr::null_mut::<core::ffi::c_void>();
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
     requiredMem = requiredMem.wrapping_add(step as core::ffi::c_ulonglong);
     requiredMem = Ord::min(requiredMem, g_maxMemory as core::ffi::c_ulonglong);
     while testmem.is_null() {
-        testmem = malloc(requiredMem as size_t);
+        testmem = malloc(requiredMem as usize);
         requiredMem = requiredMem.wrapping_sub(step as core::ffi::c_ulonglong);
     }
     free(testmem);
-    requiredMem as size_t
+    requiredMem as usize
 }
-unsafe fn DiB_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
+unsafe fn DiB_fillNoise(buffer: *mut core::ffi::c_void, length: usize) {
     let prime1 = 2654435761 as core::ffi::c_uint;
     let prime2 = 2246822519 as core::ffi::c_uint;
     let mut acc = prime1;
@@ -241,7 +241,7 @@ unsafe fn DiB_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
 unsafe fn DiB_saveDict(
     dictFileName: *const core::ffi::c_char,
     buff: *const core::ffi::c_void,
-    buffSize: size_t,
+    buffSize: usize,
 ) {
     let f = fopen(dictFileName, c"wb".as_ptr());
     if f.is_null() {
@@ -257,7 +257,7 @@ unsafe fn DiB_saveDict(
         fprintf(stderr, c"\n".as_ptr());
         exit(4);
     }
-    let n_0 = fclose(f) as size_t;
+    let n_0 = fclose(f) as usize;
     if n_0 != 0 {
         fprintf(stderr, c"Error %i : ".as_ptr(), 5);
         fprintf(stderr, c"%s : flush error".as_ptr(), dictFileName);
@@ -268,7 +268,7 @@ unsafe fn DiB_saveDict(
 unsafe fn DiB_fileStats(
     fileNamesTable: *mut *const core::ffi::c_char,
     nbFiles: core::ffi::c_int,
-    chunkSize: size_t,
+    chunkSize: usize,
     displayLevel: core::ffi::c_int,
 ) -> fileStats {
     let mut fs = fileStats {
@@ -294,7 +294,7 @@ unsafe fn DiB_fileStats(
                 );
             }
         } else if let Some(chunkSize) = NonZeroUsize::new(chunkSize) {
-            fs.nbSamples += (fileSize as size_t)
+            fs.nbSamples += (fileSize as usize)
                 .wrapping_add(chunkSize.get())
                 .wrapping_sub(1)
                 .div(chunkSize) as core::ffi::c_int;
@@ -334,10 +334,10 @@ unsafe fn DiB_fileStats(
 }
 pub unsafe fn DiB_trainFromFiles(
     dictFileName: *const core::ffi::c_char,
-    maxDictSize: size_t,
+    maxDictSize: usize,
     fileNamesTable: *mut *const core::ffi::c_char,
     nbFiles: core::ffi::c_int,
-    chunkSize: size_t,
+    chunkSize: usize,
     params: *mut ZDICT_legacy_params_t,
     coverParams: *mut ZDICT_cover_params_t,
     fastCoverParams: *mut ZDICT_fastCover_params_t,
@@ -349,9 +349,9 @@ pub unsafe fn DiB_trainFromFiles(
         nbSamples: 0,
         oneSampleTooLarge: 0,
     };
-    let mut sampleSizes = core::ptr::null_mut::<size_t>();
+    let mut sampleSizes = core::ptr::null_mut::<usize>();
     let mut nbSamplesLoaded: core::ffi::c_int = 0;
-    let mut loadedSize: size_t = 0;
+    let mut loadedSize: usize = 0;
     let mut srcBuffer = core::ptr::null_mut::<core::ffi::c_void>();
     let dictBuffer = malloc(maxDictSize);
     let mut result = 0;
@@ -377,7 +377,7 @@ pub unsafe fn DiB_trainFromFiles(
         FASTCOVER_MEMMULT
     };
     let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as i64) as core::ffi::c_ulonglong)
-        / memMult as size_t;
+        / memMult as usize;
     loadedSize = (if (if (maxMem as i64) < fs.totalSizeToLoad {
         maxMem as i64
     } else {
@@ -392,7 +392,7 @@ pub unsafe fn DiB_trainFromFiles(
         }
     } else {
         (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30) as i64
-    }) as size_t;
+    }) as usize;
     if memLimit != 0 {
         if displayLevel >= 2 {
             fprintf(
@@ -401,14 +401,14 @@ pub unsafe fn DiB_trainFromFiles(
                 memLimit.wrapping_div(1 << 20),
             );
         }
-        loadedSize = if loadedSize < memLimit as size_t {
+        loadedSize = if loadedSize < memLimit as usize {
             loadedSize
         } else {
-            memLimit as size_t
+            memLimit as usize
         };
     }
-    srcBuffer = malloc(loadedSize.wrapping_add(NOISELENGTH as size_t));
-    sampleSizes = malloc((fs.nbSamples as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
+    srcBuffer = malloc(loadedSize.wrapping_add(NOISELENGTH as usize));
+    sampleSizes = malloc((fs.nbSamples as usize).wrapping_mul(size_of::<usize>())) as *mut usize;
     if fs.nbSamples != 0 && sampleSizes.is_null() || srcBuffer.is_null() || dictBuffer.is_null() {
         fprintf(stderr, c"Error %i : ".as_ptr(), 12);
         fprintf(stderr, c"not enough memory for DiB_trainFiles".as_ptr());
@@ -482,7 +482,7 @@ pub unsafe fn DiB_trainFromFiles(
             stderr,
             c"Training samples set too large (%u MB); training on %u MB only...\n".as_ptr(),
             (fs.totalSizeToLoad / (1 << 20) as i64) as core::ffi::c_uint,
-            (loadedSize / (1 << 20) as size_t) as core::ffi::c_uint,
+            (loadedSize / (1 << 20) as usize) as core::ffi::c_uint,
         );
     }
     nbSamplesLoaded = DiB_loadFiles(
@@ -495,11 +495,11 @@ pub unsafe fn DiB_trainFromFiles(
         chunkSize,
         displayLevel,
     );
-    let mut dictSize = ZSTD_error_GENERIC as size_t;
+    let mut dictSize = ZSTD_error_GENERIC as usize;
     if !params.is_null() {
         DiB_fillNoise(
             (srcBuffer as *mut core::ffi::c_char).add(loadedSize) as *mut core::ffi::c_void,
-            NOISELENGTH as size_t,
+            NOISELENGTH as usize,
         );
         dictSize = ZDICT_trainFromBuffer_legacy(
             dictBuffer,
