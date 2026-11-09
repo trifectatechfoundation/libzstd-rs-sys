@@ -96,13 +96,13 @@ impl<const N: usize> Fingerprint<N> {
             p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
         deviation >= threshold
     }
-}
 
-fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
-    for n in 0..HASHTABLESIZE {
-        acc.events[n] += newfp.events[n];
+    fn merge_events(&mut self, newfp: &Self) {
+        for n in 0..N {
+            self.events[n] += newfp.events[n];
+        }
+        self.nbEvents += newfp.nbEvents;
     }
-    acc.nbEvents += newfp.nbEvents;
 }
 
 pub const CHUNKSIZE: c_int = 8 << 10;
@@ -136,7 +136,7 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
         {
             return pos;
         } else {
-            mergeEvents(&mut fpstats.pastEvents, &fpstats.newEvents);
+            fpstats.pastEvents.merge_events(&fpstats.newEvents);
             if penalty > 0 {
                 penalty -= 1;
             }
