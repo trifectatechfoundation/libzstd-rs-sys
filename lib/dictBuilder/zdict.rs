@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
-use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::common::xxhash::{ZSTD_XXH64_slice, ZSTD_XXH64};
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
 };
@@ -1079,7 +1079,12 @@ pub(super) unsafe fn finalize_dictionary(
 
     // dictionary header
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
-    let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
+    let dict = if customDictContent.is_null() || dictContentSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(customDictContent.cast::<u8>(), dictContentSize)
+    };
+    let randomID = ZSTD_XXH64_slice(dict, 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
