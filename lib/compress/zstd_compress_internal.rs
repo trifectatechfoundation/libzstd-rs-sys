@@ -999,8 +999,7 @@ impl ZSTD_window_t {
         loadedDictEndPtr: &mut u32,
         dictMatchStatePtr: Option<&mut *const ZSTD_MatchState_t>,
     ) {
-        let blockEndIdx =
-            (blockEnd as *const u8).wrapping_offset_from(self.base) as core::ffi::c_long as u32;
+        let blockEndIdx = (blockEnd as *const u8).wrapping_offset_from(self.base) as u32;
         let loadedDictEnd = *loadedDictEndPtr;
 
         // - When there is no dictionary: loadedDictEnd == 0.

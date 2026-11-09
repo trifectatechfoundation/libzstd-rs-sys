@@ -69,7 +69,7 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
     let btMask = ((1 << btLog) - 1) as u32;
 
     let base = ms.window.base;
-    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as u32;
     assert!(ip.wrapping_add(8) <= iend); // condition for ZSTD_hashPtr
 
     for idx in ms.nextToUpdate..target {
@@ -238,11 +238,10 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
 
     let base = ms.window.base;
     let prefixStart = base.wrapping_offset(ms.window.dictLimit as isize);
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let dictBase = (*dms).window.base;
     let dictEnd = (*dms).window.nextSrc;
-    let dictHighLimit =
-        ((*dms).window.nextSrc).offset_from((*dms).window.base) as core::ffi::c_long as u32;
+    let dictHighLimit = ((*dms).window.nextSrc).offset_from((*dms).window.base) as u32;
     let dictLowLimit = (*dms).window.lowLimit;
     let dictIndexDelta = ms.window.lowLimit.wrapping_sub(dictHighLimit);
 
@@ -332,7 +331,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     let mut matchIndex = *hashTable.add(h);
 
     let base = ms.window.base;
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let windowLow = ms.get_lowest_match_index(curr, cParams.windowLog);
 
     let bt = ms.chainTable;
@@ -512,7 +511,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     ip: *const u8,
 ) {
     let base = ms.window.base;
-    let target = ip.offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.offset_from(base) as u32;
     let hashTable = ms.hashTable;
     let chainTable = ms.chainTable;
     let chainSize = (1 << ms.cParams.chainLog) as u32;
@@ -653,7 +652,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsLowestIndex = (*dms).window.dictLimit;
     let ddsBase = (*dms).window.base;
     let ddsEnd = (*dms).window.nextSrc;
-    let ddsSize = ddsEnd.offset_from(ddsBase) as core::ffi::c_long as u32;
+    let ddsSize = ddsEnd.offset_from(ddsBase) as u32;
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
     let bucketSize = 1u32 << ZSTD_LAZY_DDSS_BUCKET_LOG;
     let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
@@ -768,7 +767,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     let chainTable = ms.chainTable;
     let chainMask = ((1 << ms.cParams.chainLog) - 1) as u32;
     let base = ms.window.base;
-    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as u32;
 
     for idx in ms.nextToUpdate..target {
         let h = ZSTD_hashPtr(
@@ -809,7 +808,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
     let dictLimit = ms.window.dictLimit;
     let prefixStart = base.wrapping_offset(dictLimit as isize);
     let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let maxDistance = 1 << cParams.windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
@@ -910,7 +909,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         let dmsLowestIndex = (*dms).window.dictLimit;
         let dmsBase = (*dms).window.base;
         let dmsEnd = (*dms).window.nextSrc;
-        let dmsSize = dmsEnd.offset_from(dmsBase) as core::ffi::c_long as u32;
+        let dmsSize = dmsEnd.offset_from(dmsBase) as u32;
         let dmsIndexDelta = dictLimit.wrapping_sub(dmsSize);
         let dmsMinChain = if dmsSize > dmsChainSize {
             dmsSize.wrapping_sub(dmsChainSize)
@@ -1133,7 +1132,7 @@ unsafe fn ZSTD_row_update_internal(
 ) {
     let mut idx = ms.nextToUpdate;
     let base = ms.window.base;
-    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as u32;
     let kSkipThreshold = 384;
     let kMaxMatchStartPositionsToUpdate = 96;
     let kMaxMatchEndPositionsToUpdate = 32;
@@ -1314,7 +1313,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let dictLimit = ms.window.dictLimit;
     let prefixStart = base.wrapping_offset(dictLimit as isize);
     let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let maxDistance = 1 << cParams.windowLog;
     let lowestValid = ms.window.lowLimit;
     let withinMaxDistance = if curr.wrapping_sub(lowestValid) > maxDistance {
@@ -1497,7 +1496,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let dmsLowestIndex = (*dms).window.dictLimit;
         let dmsBase = (*dms).window.base;
         let dmsEnd = (*dms).window.nextSrc;
-        let dmsSize = dmsEnd.offset_from(dmsBase) as core::ffi::c_long as u32;
+        let dmsSize = dmsEnd.offset_from(dmsBase) as u32;
         let dmsIndexDelta = dictLimit.wrapping_sub(dmsSize);
 
         let headGrouped_0 = (*dmsTagRow as u32 & rowMask) * groupWidth;
@@ -1673,7 +1672,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         core::ptr::null()
     };
     let dictIndexDelta = if isDxS {
-        prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32)
+        prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as u32)
     } else {
         0
     };
@@ -1682,7 +1681,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
     ip = ip.add(usize::from(dictAndPrefixLength == 0));
     if dictMode == DictMode::NoDict {
-        let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+        let curr = ip.wrapping_offset_from(base) as u32;
         let windowLow = ms.get_lowest_prefix_index(curr, ms.cParams.windowLog);
         let maxRep = curr.wrapping_sub(windowLow);
         if offset_2 > maxRep {
@@ -1721,7 +1720,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
         // check repCode
         if isDxS {
-            let repIndex = (ip.wrapping_offset_from(base) as core::ffi::c_long as u32)
+            let repIndex = (ip.wrapping_offset_from(base) as u32)
                 .wrapping_add(1)
                 .wrapping_sub(offset_1);
             let repMatch = if (dictMode == DictMode::DictMatchState
@@ -2075,7 +2074,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         // check immediate repcode
         if isDxS {
             while ip <= ilimit {
-                let current2 = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+                let current2 = ip.wrapping_offset_from(base) as u32;
                 let repIndex_2 = current2.wrapping_sub(offset_2);
                 let repMatch_2 = if repIndex_2 < prefixLowestIndex {
                     dictBase
@@ -2420,7 +2419,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         let mut matchLength = 0;
         let mut offBase = REPCODE1_TO_OFFBASE;
         let mut start = ip.add(1);
-        let mut curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+        let mut curr = ip.wrapping_offset_from(base) as u32;
 
         // check repCode
         let windowLow = ms.get_lowest_match_index(curr.wrapping_add(1), windowLog);
@@ -2674,7 +2673,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
 
         // check immediate repcode
         while ip <= ilimit {
-            let repCurrent = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+            let repCurrent = ip.wrapping_offset_from(base) as u32;
             let windowLow_2 = ms.get_lowest_match_index(repCurrent, windowLog);
             let repIndex_2 = repCurrent.wrapping_sub(offset_2);
             let repBase_2 = if repIndex_2 < dictLimit {

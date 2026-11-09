@@ -641,7 +641,7 @@ unsafe fn ZSTDMT_serialState_reset(
             serialState.ldmState.loadedDictEnd = if params.forceWindow != 0 {
                 0
             } else {
-                dictEnd.offset_from(serialState.ldmState.window.base) as core::ffi::c_long as u32
+                dictEnd.offset_from(serialState.ldmState.window.base) as u32
             };
         }
 

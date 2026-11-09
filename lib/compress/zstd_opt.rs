@@ -420,7 +420,7 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     let hashTable3 = ms.hashTable3;
     let hashLog3 = ms.hashLog3;
     let base = ms.window.base;
-    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as u32;
     let hash3 = ZSTD_hash32Ptr::<3>(ip as *const core::ffi::c_void, hashLog3);
 
     for idx in *nextToUpdate3..target {
@@ -465,7 +465,7 @@ unsafe fn ZSTD_insertBt1(
     let dictLimit = ms.window.dictLimit;
     let dictEnd = dictBase.wrapping_offset(dictLimit as isize);
     let prefixStart = base.wrapping_offset(dictLimit as isize);
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let btLow = if btMask >= curr {
         0
     } else {
@@ -571,7 +571,7 @@ unsafe fn ZSTD_updateTree_internal(
     dictMode: DictMode,
 ) {
     let base = ms.window.base;
-    let target = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let target = ip.wrapping_offset_from(base) as u32;
     let mut idx = ms.nextToUpdate;
 
     while idx < target {
@@ -609,7 +609,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let cParams = &ms.cParams;
     let sufficient_len = cParams.targetLength.min((1 << 12) - 1);
     let base = ms.window.base;
-    let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = ip.wrapping_offset_from(base) as u32;
     let hashLog = cParams.hashLog;
     let minMatch = (if mls == 3 { 3 } else { 4 }) as u32;
     let hashTable = ms.hashTable;
@@ -659,7 +659,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         core::ptr::null()
     };
     let dmsHighLimit = if dictMode == DictMode::DictMatchState {
-        dmsEnd.offset_from(dmsBase) as core::ffi::c_long as u32
+        dmsEnd.offset_from(dmsBase) as u32
     } else {
         0
     };
@@ -1571,7 +1571,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
-    let curr = (src as *const u8).wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
+    let curr = (src as *const u8).wrapping_offset_from(ms.window.base) as u32;
 
     // 2-passes strategy:
     // this strategy makes a first pass over first block to collect statistics

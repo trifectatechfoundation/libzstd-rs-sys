@@ -676,8 +676,7 @@ fn ZSTD_checkDictValidity(
     loadedDictEndPtr: &mut u32,
     dictMatchStatePtr: &mut *const ZSTD_MatchState_t,
 ) {
-    let blockEndIdx =
-        (blockEnd as *const u8).wrapping_offset_from(window.base) as core::ffi::c_long as u32;
+    let blockEndIdx = (blockEnd as *const u8).wrapping_offset_from(window.base) as u32;
     let loadedDictEnd = *loadedDictEndPtr;
     if blockEndIdx > loadedDictEnd.wrapping_add(maxDist) || loadedDictEnd != window.dictLimit {
         *loadedDictEndPtr = 0;
@@ -3440,8 +3439,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     )?;
 
     let cdictEnd = ((*cdict).matchState.window.nextSrc)
-        .wrapping_offset_from((*cdict).matchState.window.base)
-        as core::ffi::c_long as u32;
+        .wrapping_offset_from((*cdict).matchState.window.base) as u32;
     let cdictLen = cdictEnd.wrapping_sub((*cdict).matchState.window.dictLimit);
     if cdictLen != 0 {
         (*cctx).blockState.matchState.dictMatchState = &(*cdict).matchState;
@@ -4422,7 +4420,7 @@ unsafe fn ZSTD_buildSeqStore(
     // limited update after a very long match
     let base = ms.window.base;
     let istart = src as *const u8;
-    let curr = istart.wrapping_offset_from(base) as core::ffi::c_long as u32;
+    let curr = istart.wrapping_offset_from(base) as u32;
 
     if size_of::<ptrdiff_t>() == 8 {
         assert!(istart.wrapping_offset_from(base) < u32::MAX as ptrdiff_t); /* ensure no overflow */
@@ -6412,11 +6410,11 @@ unsafe fn ZSTD_loadDictionaryContent(
         srcSize = maxDictSize_0 as usize;
     }
 
-    ms.nextToUpdate = ip.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
+    ms.nextToUpdate = ip.wrapping_offset_from(ms.window.base) as u32;
     ms.loadedDictEnd = if params.forceWindow != 0 {
         0
     } else {
-        iend.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32
+        iend.wrapping_offset_from(ms.window.base) as u32
     };
     ms.forceNonContiguous = params.deterministicRefPrefix;
 
@@ -6456,7 +6454,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         _ => {}
     }
 
-    ms.nextToUpdate = iend.wrapping_offset_from(ms.window.base) as core::ffi::c_long as u32;
+    ms.nextToUpdate = iend.wrapping_offset_from(ms.window.base) as u32;
 }
 
 /// Dictionaries that assign zero probability to symbols that show up causes problems when FSE
