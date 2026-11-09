@@ -184,18 +184,16 @@ pub unsafe fn ZSTD_selectEncodingType(
         }
         return SymbolEncodingType::Rle;
     }
-    if (strategy as core::ffi::c_uint) < ZSTD_lazy {
+    if strategy < ZSTD_lazy {
         if isDefaultAllowed == DefaultPolicy::Allowed {
             let staticFse_nbSeq_max = 1000;
-            let mult = 10u32.wrapping_sub(strategy as core::ffi::c_uint) as usize;
+            let mult = 10 - strategy as usize;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = ((1 << defaultNormLog) * mult) >> baseLog;
             if *repeatMode == FSE_repeat::Valid && nbSeq < staticFse_nbSeq_max {
                 return SymbolEncodingType::Repeat;
             }
-            if nbSeq < dynamicFse_nbSeq_min
-                || mostFrequent < nbSeq >> defaultNormLog.wrapping_sub(1)
-            {
+            if nbSeq < dynamicFse_nbSeq_min || mostFrequent < nbSeq >> (defaultNormLog - 1) {
                 // The format allows default tables to be repeated, but it isn't useful.
                 // When using simple heuristics to select encoding type, we don't want
                 // to confuse these tables with dictionaries. When running more careful
@@ -225,7 +223,7 @@ pub unsafe fn ZSTD_selectEncodingType(
             Ok(nCountCost) => nCountCost,
             Err(_) => unreachable!(),
         };
-        let compressedCost = (nCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
+        let compressedCost = (nCountCost << 3) + ZSTD_entropyCost(count, max, nbSeq);
 
         if isDefaultAllowed == DefaultPolicy::Allowed {
             assert!(basicCost.is_ok());
