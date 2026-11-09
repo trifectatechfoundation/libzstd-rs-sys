@@ -106,7 +106,7 @@ unsafe fn RDG_genBlock(
             } else {
                 buffSize
             }) as u32;
-            let repeatOffset = (RDG_rand(seedPtr) & 15 == 2) as core::ffi::c_int as u32;
+            let repeatOffset = u32::from(RDG_rand(seedPtr) & 15 == 2);
             let randOffset = (RDG_rand15Bits(seedPtr)).wrapping_add(1);
             let offset = if repeatOffset != 0 {
                 prevOffset

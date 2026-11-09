@@ -1631,9 +1631,9 @@ fn ZSTDv07_frameHeaderSize(src: Reader<'_>) -> Result<usize, Error> {
         .wrapping_add((directMode == 0) as usize)
         .wrapping_add(ZSTDv07_did_fieldSize[dictID])
         .wrapping_add(ZSTDv07_fcs_fieldSize[fcsId])
-        .wrapping_add(
-            (directMode != 0 && ZSTDv07_fcs_fieldSize[fcsId] == 0) as core::ffi::c_int as usize,
-        ))
+        .wrapping_add(usize::from(
+            directMode != 0 && ZSTDv07_fcs_fieldSize[fcsId] == 0,
+        )))
 }
 pub(crate) fn ZSTDv07_getFrameParams(
     fparamsPtr: &mut ZSTDv07_frameParams,
