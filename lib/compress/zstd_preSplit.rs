@@ -105,7 +105,7 @@ impl<const N: usize> Fingerprint<N> {
     }
 }
 
-pub const CHUNKSIZE: c_int = 8 << 10;
+pub const CHUNKSIZE: usize = 8 << 10;
 
 /// `fpstats` must be zeroed before each call.
 fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut FPStats) -> usize {
@@ -124,11 +124,11 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
     let record_f = records_fs[level as usize];
     let mut penalty = THRESHOLD_PENALTY;
 
-    let chunk = CHUNKSIZE as usize;
+    let chunk = CHUNKSIZE;
 
     record_f(&mut fpstats.pastEvents, &block[..chunk]);
-    let mut pos = CHUNKSIZE as usize;
-    while pos <= blockSize.wrapping_sub(CHUNKSIZE as usize) {
+    let mut pos = CHUNKSIZE;
+    while pos <= blockSize.wrapping_sub(CHUNKSIZE) {
         record_f(&mut fpstats.newEvents, &block[pos..][..chunk]);
         if fpstats
             .pastEvents
@@ -141,7 +141,7 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
                 penalty -= 1;
             }
         }
-        pos = pos.wrapping_add(CHUNKSIZE as usize);
+        pos = pos.wrapping_add(CHUNKSIZE);
     }
     debug_assert_eq!(pos, blockSize);
     blockSize
