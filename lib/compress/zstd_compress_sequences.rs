@@ -128,13 +128,13 @@ pub fn ZSTD_fseBitCost(
     }
     for s in 0..u32::from(max) + 1 {
         let tableLog = cstate.stateLog;
-        let badCost = tableLog.wrapping_add(1) << kAccuracyLog;
+        let badCost = (tableLog + 1) << kAccuracyLog;
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
         if count[s as usize] != 0 {
             if bitCost >= badCost {
                 return Err(Error::GENERIC);
             }
-            cost = cost.wrapping_add(count[s as usize] as usize * bitCost as usize);
+            cost += count[s as usize] as usize * bitCost as usize;
         }
     }
     Ok(cost >> kAccuracyLog)
