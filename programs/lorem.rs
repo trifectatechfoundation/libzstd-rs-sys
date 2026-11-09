@@ -1,7 +1,7 @@
 use core::sync::atomic::AtomicI32;
 use std::{ffi::CStr, sync::atomic::Ordering};
 
-use libc::{memcpy, size_t, strlen};
+use libc::{memcpy, strlen};
 
 static kWords: [&CStr; 255] = [
     c"lorem",
@@ -268,12 +268,12 @@ static g_distrib: [AtomicI32; DISTRIB_MAX_SIZE as usize] = [const { AtomicI32::n
 static mut g_distribCount: core::ffi::c_uint = 0;
 unsafe fn countFreqs(
     words: *const &CStr,
-    nbWords: size_t,
+    nbWords: usize,
     weights: *const core::ffi::c_int,
-    nbWeights: size_t,
+    nbWeights: usize,
 ) {
     let mut total = 0 as core::ffi::c_uint;
-    let mut w: size_t = 0;
+    let mut w: usize = 0;
     w = 0;
     while w < nbWords {
         let mut len = (*words.add(w)).to_bytes().len();
@@ -290,12 +290,12 @@ unsafe fn countFreqs(
 }
 unsafe fn init_word_distrib(
     words: *const &CStr,
-    nbWords: size_t,
+    nbWords: usize,
     weights: *const core::ffi::c_int,
-    nbWeights: size_t,
+    nbWeights: usize,
 ) {
-    let mut w: size_t = 0;
-    let mut d = 0 as size_t;
+    let mut w: usize = 0;
+    let mut d = 0usize;
     countFreqs(words, nbWords, weights, nbWeights);
     w = 0;
     while w < nbWords {
@@ -317,8 +317,8 @@ unsafe fn init_word_distrib(
     }
 }
 static mut g_ptr: *mut core::ffi::c_char = core::ptr::null_mut();
-static mut g_nbChars: size_t = 0;
-static mut g_maxChars: size_t = 10000000;
+static mut g_nbChars: usize = 0;
+static mut g_maxChars: usize = 10000000;
 static mut g_randRoot: core::ffi::c_uint = 0;
 unsafe fn LOREM_rand(range: core::ffi::c_uint) -> core::ffi::c_uint {
     static prime1: core::ffi::c_uint = 2654435761;
@@ -446,13 +446,13 @@ unsafe fn generateFirstSentence() {
 }
 pub unsafe fn LOREM_genBlock(
     buffer: *mut core::ffi::c_void,
-    size: size_t,
+    size: usize,
     seed: core::ffi::c_uint,
     first: core::ffi::c_int,
     fill: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     g_ptr = buffer as *mut core::ffi::c_char;
-    assert!(size < core::ffi::c_int::MAX as size_t);
+    assert!(size < core::ffi::c_int::MAX as usize);
     g_maxChars = size;
     g_nbChars = 0;
     g_randRoot = seed;
@@ -474,7 +474,7 @@ pub unsafe fn LOREM_genBlock(
 }
 pub unsafe fn LOREM_genBuffer(
     buffer: *mut core::ffi::c_void,
-    size: size_t,
+    size: usize,
     seed: core::ffi::c_uint,
 ) {
     LOREM_genBlock(buffer, size, seed, 1, 1);

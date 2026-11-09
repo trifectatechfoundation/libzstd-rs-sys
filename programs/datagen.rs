@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{exit, free, fwrite, malloc, memcpy, perror, size_t, FILE};
+use libc::{exit, free, fwrite, malloc, memcpy, perror, FILE};
 
 extern "C" {
     static mut stdout: *mut FILE;
@@ -70,8 +70,8 @@ unsafe fn RDG_randLength(seedPtr: *mut u32) -> u32 {
 }
 unsafe fn RDG_genBlock(
     buffer: *mut core::ffi::c_void,
-    buffSize: size_t,
-    prefixSize: size_t,
+    buffSize: usize,
+    prefixSize: usize,
     matchProba: core::ffi::c_double,
     ldt: *const u8,
     seedPtr: *mut u32,
@@ -82,9 +82,9 @@ unsafe fn RDG_genBlock(
     let mut prevOffset = 1;
     if matchProba >= 1.0f64 {
         loop {
-            let mut size0 = (RDG_rand(seedPtr) & 3u32) as size_t;
-            size0 = (1 as size_t) << (16 as size_t).wrapping_add(size0 * 2);
-            size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
+            let mut size0 = (RDG_rand(seedPtr) & 3u32) as usize;
+            size0 = 1usize << 16usize.wrapping_add(size0 * 2);
+            size0 = size0.wrapping_add(RDG_rand(seedPtr) as usize & size0.wrapping_sub(1));
             if buffSize < pos.wrapping_add(size0) {
                 core::ptr::write_bytes(buffPtr.add(pos), 0, buffSize.wrapping_sub(pos));
                 return;
@@ -101,8 +101,8 @@ unsafe fn RDG_genBlock(
     while pos < buffSize {
         if RDG_rand15Bits(seedPtr) < matchProba32 {
             let length = (RDG_randLength(seedPtr)).wrapping_add(4);
-            let d = (if pos.wrapping_add(length as size_t) < buffSize {
-                pos.wrapping_add(length as size_t)
+            let d = (if pos.wrapping_add(length as usize) < buffSize {
+                pos.wrapping_add(length as usize)
             } else {
                 buffSize
             }) as u32;
@@ -111,14 +111,14 @@ unsafe fn RDG_genBlock(
             let offset = if repeatOffset != 0 {
                 prevOffset
             } else {
-                (if (randOffset as size_t) < pos {
-                    randOffset as size_t
+                (if (randOffset as usize) < pos {
+                    randOffset as usize
                 } else {
                     pos
                 }) as u32
             };
-            let mut match_0 = pos.wrapping_sub(offset as size_t);
-            while pos < d as size_t {
+            let mut match_0 = pos.wrapping_sub(offset as usize);
+            while pos < d as usize {
                 let fresh1 = match_0;
                 match_0 = match_0.wrapping_add(1);
                 let fresh2 = pos;
@@ -128,12 +128,12 @@ unsafe fn RDG_genBlock(
             prevOffset = offset;
         } else {
             let length_0 = RDG_randLength(seedPtr);
-            let d_0 = (if pos.wrapping_add(length_0 as size_t) < buffSize {
-                pos.wrapping_add(length_0 as size_t)
+            let d_0 = (if pos.wrapping_add(length_0 as usize) < buffSize {
+                pos.wrapping_add(length_0 as usize)
             } else {
                 buffSize
             }) as u32;
-            while pos < d_0 as size_t {
+            while pos < d_0 as usize {
                 let fresh3 = pos;
                 pos = pos.wrapping_add(1);
                 *buffPtr.add(fresh3) = RDG_genChar(seedPtr, ldt);
@@ -143,7 +143,7 @@ unsafe fn RDG_genBlock(
 }
 pub unsafe fn RDG_genBuffer(
     buffer: *mut core::ffi::c_void,
-    size: size_t,
+    size: usize,
     matchProba: core::ffi::c_double,
     mut litProba: core::ffi::c_double,
     seed: core::ffi::c_uint,
@@ -167,8 +167,8 @@ pub unsafe fn RDG_genStdout(
     seed: core::ffi::c_uint,
 ) {
     let mut seed32 = seed;
-    let stdBlockSize = (128 * (1 << 10)) as size_t;
-    let stdDictSize = (32 * (1 << 10)) as size_t;
+    let stdBlockSize = (128 * (1 << 10)) as usize;
+    let stdDictSize = (32 * (1 << 10)) as usize;
     let buff = malloc(stdDictSize.wrapping_add(stdBlockSize)) as *mut u8;
     let mut total = 0u64;
     let mut ldt: [u8; 8192] = [0; 8192];
@@ -199,7 +199,7 @@ pub unsafe fn RDG_genStdout(
             stdBlockSize as core::ffi::c_ulonglong
         } else {
             size.wrapping_sub(total as core::ffi::c_ulonglong)
-        }) as size_t;
+        }) as usize;
         RDG_genBlock(
             buff as *mut core::ffi::c_void,
             stdDictSize.wrapping_add(stdBlockSize),

@@ -5,9 +5,9 @@ use std::time::Instant;
 
 use libc::{
     calloc, close, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, fread, free, fseek,
-    ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove, sighandler_t, signal, size_t,
-    strcmp, strcpy, strlen, strrchr, timespec, FILE, O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY, SIGINT,
-    SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR,
+    ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove, sighandler_t, signal, strcmp,
+    strcpy, strlen, strrchr, timespec, FILE, O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY, SIGINT, SIG_DFL,
+    SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR,
 };
 use libzstd_rs_sys::internal::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs_sys::lib::common::zstd_common::{
@@ -66,12 +66,12 @@ extern "C" {
         __stream: *mut FILE,
         __buf: *mut core::ffi::c_char,
         __modes: core::ffi::c_int,
-        __n: size_t,
+        __n: usize,
     ) -> core::ffi::c_int;
     fn qsort(
         __base: *mut core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
+        __nmemb: usize,
+        __size: usize,
         __compar: __compar_fn_t,
     );
     fn zlibVersion() -> *const core::ffi::c_char;
@@ -138,7 +138,7 @@ pub const FIO_mallocDict: FIO_dictBufferType_t = 0;
 #[repr(C)]
 pub struct FIO_Dict_t {
     pub dictBuffer: *mut core::ffi::c_void,
-    pub dictBufferSize: size_t,
+    pub dictBufferSize: usize,
     pub dictBufferType: FIO_dictBufferType_t,
 }
 #[derive(Copy, Clone)]
@@ -149,8 +149,8 @@ pub struct FIO_ctx_t {
     pub hasStdoutOutput: core::ffi::c_int,
     pub currFileIdx: core::ffi::c_int,
     pub nbFilesProcessed: core::ffi::c_int,
-    pub totalBytesInput: size_t,
-    pub totalBytesOutput: size_t,
+    pub totalBytesInput: usize,
+    pub totalBytesOutput: usize,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -166,10 +166,10 @@ pub struct cRess_t {
 #[repr(C)]
 struct lzma_stream {
     next_in: *const u8,
-    avail_in: size_t,
+    avail_in: usize,
     total_in: u64,
     next_out: *mut u8,
-    avail_out: size_t,
+    avail_out: usize,
     total_out: u64,
     allocator: *const lzma_allocator,
     internal: *mut lzma_internal,
@@ -179,8 +179,8 @@ struct lzma_stream {
     reserved_ptr4: *mut core::ffi::c_void,
     seek_pos: u64,
     reserved_int2: u64,
-    reserved_int3: size_t,
-    reserved_int4: size_t,
+    reserved_int3: usize,
+    reserved_int4: usize,
     reserved_enum1: lzma_reserved_enum,
     reserved_enum2: lzma_reserved_enum,
 }
@@ -190,7 +190,7 @@ const LZMA_RESERVED_ENUM: lzma_reserved_enum = 0;
 #[repr(C)]
 struct lzma_allocator {
     alloc: Option<
-        unsafe extern "C" fn(*mut core::ffi::c_void, size_t, size_t) -> *mut core::ffi::c_void,
+        unsafe extern "C" fn(*mut core::ffi::c_void, usize, usize) -> *mut core::ffi::c_void,
     >,
     free: Option<unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>,
     opaque: *mut core::ffi::c_void,
@@ -605,13 +605,13 @@ pub unsafe fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, rsyncable: core::ffi::c_
     }
     (*prefs).rsyncable = rsyncable;
 }
-pub unsafe fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, streamSrcSize: size_t) {
+pub unsafe fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, streamSrcSize: usize) {
     (*prefs).streamSrcSize = streamSrcSize;
 }
-pub unsafe fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, targetCBlockSize: size_t) {
+pub unsafe fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, targetCBlockSize: usize) {
     (*prefs).targetCBlockSize = targetCBlockSize;
 }
-pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: size_t) {
+pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: usize) {
     (*prefs).srcSizeHint = (if (2147483647) < srcSizeHint {
         2147483647
     } else {
@@ -902,7 +902,7 @@ unsafe fn FIO_openDstFile(
                 io::Error::last_os_error(),
             );
         }
-    } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, (1 << 20) as size_t) != 0
+    } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, (1 << 20) as usize) != 0
         && g_display_prefs.displayLevel >= 2
     {
         fprintf(
@@ -975,9 +975,9 @@ unsafe fn FIO_setDictBufferMalloc(
     fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
     dictFileStat: *mut Stat,
-) -> size_t {
+) -> usize {
     let mut fileHandle = core::ptr::null_mut::<FILE>();
-    let mut fileSize: size_t = 0;
+    let mut fileSize: usize = 0;
     let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
     assert!(!bufferPtr.is_null());
     assert!(!dictFileStat.is_null());
@@ -1013,12 +1013,12 @@ unsafe fn FIO_setDictBufferMalloc(
         }
         exit(33);
     }
-    fileSize = UTIL_getFileSizeStat(dictFileStat) as size_t;
+    fileSize = UTIL_getFileSizeStat(dictFileStat) as usize;
     let dictSizeMax = (if (*prefs).patchFromMode != 0 {
         (*prefs).memLimit
     } else {
         DICTSIZE_MAX as core::ffi::c_uint
-    }) as size_t;
+    }) as usize;
     if fileSize > dictSizeMax {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, c"zstd: ".as_ptr());
@@ -1108,7 +1108,7 @@ unsafe fn FIO_setDictBufferMMap(
     fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
     dictFileStat: *mut Stat,
-) -> size_t {
+) -> usize {
     let mut fileHandle: core::ffi::c_int = 0;
     let mut fileSize: u64 = 0;
     let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
@@ -1151,8 +1151,8 @@ unsafe fn FIO_setDictBufferMMap(
         (*prefs).memLimit
     } else {
         DICTSIZE_MAX as core::ffi::c_uint
-    }) as size_t;
-    if fileSize as size_t > dictSizeMax {
+    }) as usize;
+    if fileSize as usize > dictSizeMax {
         if g_display_prefs.displayLevel >= 1 as core::ffi::c_int {
             fprintf(stderr, c"zstd: ".as_ptr());
         }
@@ -1182,7 +1182,7 @@ unsafe fn FIO_setDictBufferMMap(
     }
     *bufferPtr = mmap(
         core::ptr::null_mut(),
-        fileSize as size_t,
+        fileSize as usize,
         PROT_READ,
         MAP_PRIVATE,
         fileHandle,
@@ -1212,7 +1212,7 @@ unsafe fn FIO_setDictBufferMMap(
         exit(34);
     }
     close(fileHandle);
-    fileSize as size_t
+    fileSize as usize
 }
 unsafe fn FIO_freeDict(dict: *mut FIO_Dict_t) {
     if (*dict).dictBufferType == FIO_mallocDict {
@@ -1249,9 +1249,8 @@ pub unsafe fn FIO_checkFilenameCollisions(
     let mut prevElem = core::ptr::null::<core::ffi::c_char>();
     let mut filename = core::ptr::null::<core::ffi::c_char>();
     let mut u: core::ffi::c_uint = 0;
-    filenameTableSorted =
-        malloc(size_of::<*mut core::ffi::c_char>().wrapping_mul(nbFiles as size_t))
-            as *mut *const core::ffi::c_char;
+    filenameTableSorted = malloc(size_of::<*mut core::ffi::c_char>().wrapping_mul(nbFiles as usize))
+        as *mut *const core::ffi::c_char;
     if filenameTableSorted.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -1275,7 +1274,7 @@ pub unsafe fn FIO_checkFilenameCollisions(
     }
     qsort(
         filenameTableSorted as *mut core::ffi::c_void,
-        nbFiles as size_t,
+        nbFiles as usize,
         size_of::<*mut core::ffi::c_char>(),
         Some(
             UTIL_compareStr
@@ -1316,7 +1315,7 @@ unsafe fn extractFilename(
 unsafe fn FIO_createFilename_fromOutDir(
     path: *const core::ffi::c_char,
     outDirName: *const core::ffi::c_char,
-    suffixLen: size_t,
+    suffixLen: usize,
 ) -> *mut core::ffi::c_char {
     let mut filenameStart = core::ptr::null::<core::ffi::c_char>();
     let mut separator: core::ffi::c_char = 0;
@@ -1589,14 +1588,14 @@ unsafe fn FIO_multiFilesConcatWarning(
         (*fCtx).hasStdinInput,
     )
 }
-unsafe fn setInBuffer(buf: *const core::ffi::c_void, size: size_t, pos: size_t) -> ZSTD_inBuffer {
+unsafe fn setInBuffer(buf: *const core::ffi::c_void, size: usize, pos: usize) -> ZSTD_inBuffer {
     ZSTD_inBuffer {
         src: buf,
         size,
         pos,
     }
 }
-unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: size_t, pos: size_t) -> ZSTD_outBuffer {
+unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: usize, pos: usize) -> ZSTD_outBuffer {
     ZSTD_outBuffer {
         dst: buf,
         size,
@@ -1618,8 +1617,8 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
     let fileWindowLog = (FIO_highbit64(maxSrcFileSize)).wrapping_add(1);
     let cParams = ZSTD_getCParams(
         cLevel,
-        maxSrcFileSize as size_t as core::ffi::c_ulonglong,
-        dictSize as size_t,
+        maxSrcFileSize as usize as core::ffi::c_ulonglong,
+        dictSize as usize,
     );
     FIO_adjustMemLimitForPatchFromMode(prefs, dictSize, maxSrcFileSize);
     if fileWindowLog > ZSTD_WINDOWLOG_MAX as core::ffi::c_uint && g_display_prefs.displayLevel >= 1
@@ -1820,7 +1819,7 @@ unsafe fn FIO_createCResources(
     if (*prefs).adaptiveMode != 0 && (*prefs).ldmFlag == 0 && comprParams.windowLog == 0 {
         comprParams.windowLog = ADAPT_WINDOWLOG_DEFAULT as core::ffi::c_uint;
     }
-    let mut err: size_t = 0;
+    let mut err: usize = 0;
     err = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_contentSizeFlag,
@@ -1856,7 +1855,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_0: size_t = 0;
+    let mut err_0: usize = 0;
     err_0 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_dictIDFlag,
@@ -1892,7 +1891,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_1: size_t = 0;
+    let mut err_1: usize = 0;
     err_1 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_checksumFlag,
@@ -1928,7 +1927,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_2: size_t = 0;
+    let mut err_2: usize = 0;
     err_2 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel);
     if ZSTD_isError(err_2) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -1960,7 +1959,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_3: size_t = 0;
+    let mut err_3: usize = 0;
     err_3 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_targetCBlockSize,
@@ -1996,7 +1995,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_4: size_t = 0;
+    let mut err_4: usize = 0;
     err_4 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam7,
@@ -2032,7 +2031,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_5: size_t = 0;
+    let mut err_5: usize = 0;
     err_5 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching,
@@ -2068,7 +2067,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_6: size_t = 0;
+    let mut err_6: usize = 0;
     err_6 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_ldmHashLog,
@@ -2104,7 +2103,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_7: size_t = 0;
+    let mut err_7: usize = 0;
     err_7 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_ldmMinMatch,
@@ -2141,7 +2140,7 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     if (*prefs).ldmBucketSizeLog != FIO_LDM_PARAM_NOTSET {
-        let mut err_8: size_t = 0;
+        let mut err_8: usize = 0;
         err_8 = ZSTD_CCtx_setParameter(
             ress.cctx,
             ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog,
@@ -2179,7 +2178,7 @@ unsafe fn FIO_createCResources(
         }
     }
     if (*prefs).ldmHashRateLog != FIO_LDM_PARAM_NOTSET {
-        let mut err_9: size_t = 0;
+        let mut err_9: usize = 0;
         err_9 = ZSTD_CCtx_setParameter(
             ress.cctx,
             ZSTD_cParameter::ZSTD_c_ldmHashRateLog,
@@ -2216,7 +2215,7 @@ unsafe fn FIO_createCResources(
             exit(11);
         }
     }
-    let mut err_10: size_t = 0;
+    let mut err_10: usize = 0;
     err_10 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam14,
@@ -2252,7 +2251,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_11: size_t = 0;
+    let mut err_11: usize = 0;
     err_11 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_windowLog,
@@ -2288,7 +2287,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_12: size_t = 0;
+    let mut err_12: usize = 0;
     err_12 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_chainLog,
@@ -2324,7 +2323,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_13: size_t = 0;
+    let mut err_13: usize = 0;
     err_13 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_hashLog,
@@ -2360,7 +2359,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_14: size_t = 0;
+    let mut err_14: usize = 0;
     err_14 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_searchLog,
@@ -2396,7 +2395,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_15: size_t = 0;
+    let mut err_15: usize = 0;
     err_15 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_minMatch,
@@ -2432,7 +2431,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_16: size_t = 0;
+    let mut err_16: usize = 0;
     err_16 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_targetLength,
@@ -2468,7 +2467,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_17: size_t = 0;
+    let mut err_17: usize = 0;
     err_17 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_strategy,
@@ -2504,7 +2503,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_18: size_t = 0;
+    let mut err_18: usize = 0;
     err_18 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam5,
@@ -2540,7 +2539,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_19: size_t = 0;
+    let mut err_19: usize = 0;
     err_19 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam8, 1);
     if ZSTD_isError(err_19) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -2580,7 +2579,7 @@ unsafe fn FIO_createCResources(
             (*prefs).nbWorkers,
         );
     }
-    let mut err_20: size_t = 0;
+    let mut err_20: usize = 0;
     err_20 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_nbWorkers,
@@ -2616,7 +2615,7 @@ unsafe fn FIO_createCResources(
         }
         exit(11);
     }
-    let mut err_21: size_t = 0;
+    let mut err_21: usize = 0;
     err_21 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_jobSize, (*prefs).jobSize);
     if ZSTD_isError(err_21) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -2656,7 +2655,7 @@ unsafe fn FIO_createCResources(
                 (*prefs).overlapLog,
             );
         }
-        let mut err_22: size_t = 0;
+        let mut err_22: usize = 0;
         err_22 = ZSTD_CCtx_setParameter(
             ress.cctx,
             ZSTD_cParameter::ZSTD_c_overlapLog,
@@ -2693,7 +2692,7 @@ unsafe fn FIO_createCResources(
             exit(11);
         }
     }
-    let mut err_23: size_t = 0;
+    let mut err_23: usize = 0;
     err_23 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam1,
@@ -2730,7 +2729,7 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     if (*prefs).patchFromMode != 0 {
-        let mut err_24: size_t = 0;
+        let mut err_24: usize = 0;
         err_24 = ZSTD_CCtx_refPrefix(ress.cctx, ress.dict.dictBuffer, ress.dict.dictBufferSize);
         if ZSTD_isError(err_24) != 0 {
             if g_display_prefs.displayLevel >= 5 {
@@ -2763,7 +2762,7 @@ unsafe fn FIO_createCResources(
             exit(11);
         }
     } else {
-        let mut err_25: size_t = 0;
+        let mut err_25: usize = 0;
         err_25 = ZSTD_CCtx_loadDictionary_byReference(
             ress.cctx,
             ress.dict.dictBuffer,
@@ -2893,11 +2892,11 @@ unsafe fn FIO_compressGzFrame(
             strm.next_in = (*(*ress).readCtx).srcBuffer as *mut core::ffi::c_uchar;
             strm.avail_in = (*(*ress).readCtx).srcBufferLoaded as uInt;
         }
-        let availBefore = strm.avail_in as size_t;
+        let availBefore = strm.avail_in as usize;
         ret_0 = deflate(&mut strm, Z_NO_FLUSH);
         AIO_ReadPool_consumeBytes(
             (*ress).readCtx,
-            availBefore.wrapping_sub(strm.avail_in as size_t),
+            availBefore.wrapping_sub(strm.avail_in as usize),
         );
         if ret_0 != Z_OK {
             if g_display_prefs.displayLevel >= 1 {
@@ -2927,7 +2926,7 @@ unsafe fn FIO_compressGzFrame(
             }
             exit(72);
         }
-        let cSize = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as size_t);
+        let cSize = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as usize);
         if cSize != 0 {
             (*writeJob).usedBufferSize = cSize;
             AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
@@ -2978,7 +2977,7 @@ unsafe fn FIO_compressGzFrame(
     }
     loop {
         let ret_1 = deflate(&mut strm, Z_FINISH);
-        let cSize_0 = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as size_t);
+        let cSize_0 = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as usize);
         if cSize_0 != 0 {
             (*writeJob).usedBufferSize = cSize_0;
             AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
@@ -3353,7 +3352,7 @@ unsafe fn FIO_compressZstdFrame(
     }
     if fileSize != UTIL_FILESIZE_UNKNOWN as u64 {
         pledgedSrcSize = fileSize;
-        let mut err: size_t = 0;
+        let mut err: usize = 0;
         err = ZSTD_CCtx_setPledgedSrcSize(ress.cctx, fileSize as core::ffi::c_ulonglong);
         if ZSTD_isError(err) != 0 {
             if g_display_prefs.displayLevel >= 5 {
@@ -3387,7 +3386,7 @@ unsafe fn FIO_compressZstdFrame(
         }
     } else if (*prefs).streamSrcSize > 0 {
         pledgedSrcSize = (*prefs).streamSrcSize as u64;
-        let mut err_0: size_t = 0;
+        let mut err_0: usize = 0;
         err_0 = ZSTD_CCtx_setPledgedSrcSize(
             ress.cctx,
             (*prefs).streamSrcSize as core::ffi::c_ulonglong,
@@ -3429,7 +3428,7 @@ unsafe fn FIO_compressZstdFrame(
         precision: 0,
         suffix: core::ptr::null::<core::ffi::c_char>(),
     };
-    let mut err_1: size_t = 0;
+    let mut err_1: usize = 0;
     err_1 = ZSTD_CCtx_getParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_windowLog, &mut windowLog);
     if ZSTD_isError(err_1) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -3495,7 +3494,7 @@ unsafe fn FIO_compressZstdFrame(
         );
     }
     loop {
-        let mut stillToFlush: size_t = 0;
+        let mut stillToFlush: usize = 0;
         let inSize = AIO_ReadPool_fillBuffer(ress.readCtx, ZSTD_CStreamInSize());
         let mut inBuff = setInBuffer(
             (*ress.readCtx).srcBuffer as *const core::ffi::c_void,
@@ -3773,7 +3772,7 @@ unsafe fn FIO_compressZstdFrame(
                                 c"Compress: %u/%u files. Current: %*s ".as_ptr(),
                                 (*fCtx).currFileIdx + 1,
                                 (*fCtx).nbFilesTotal,
-                                (18 as size_t).wrapping_sub(srcFileNameSize) as core::ffi::c_int,
+                                18usize.wrapping_sub(srcFileNameSize) as core::ffi::c_int,
                                 srcFileName,
                             );
                         }
@@ -3931,9 +3930,8 @@ unsafe fn FIO_compressFilename_internal(
             ) as u64;
         }
     }
-    (*fCtx).totalBytesInput = ((*fCtx).totalBytesInput).wrapping_add(readsize as size_t);
-    (*fCtx).totalBytesOutput =
-        ((*fCtx).totalBytesOutput).wrapping_add(compressedfilesize as size_t);
+    (*fCtx).totalBytesInput = ((*fCtx).totalBytesInput).wrapping_add(readsize as usize);
+    (*fCtx).totalBytesOutput = ((*fCtx).totalBytesOutput).wrapping_add(compressedfilesize as usize);
     if g_display_prefs.progressSetting != FIO_ps_never
         && (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
         && g_display_prefs.displayLevel >= 1
@@ -4480,7 +4478,7 @@ unsafe fn FIO_determineCompressedName(
     outDirName: *const core::ffi::c_char,
     suffix: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
-    static mut dfnbCapacity: size_t = 0;
+    static mut dfnbCapacity: usize = 0;
     static mut dstFileNameBuffer: *mut core::ffi::c_char = core::ptr::null_mut();
     let mut outDirFilename = core::ptr::null_mut();
     let mut sfnSize = strlen(srcFileName);
@@ -4544,11 +4542,11 @@ unsafe fn FIO_getLargestFileSize(
     inFileNames: *mut *const core::ffi::c_char,
     nbFiles: core::ffi::c_uint,
 ) -> core::ffi::c_ulonglong {
-    let mut i: size_t = 0;
+    let mut i: usize = 0;
     let mut fileSize: core::ffi::c_ulonglong = 0;
     let mut maxFileSize = 0;
     i = 0;
-    while i < nbFiles as size_t {
+    while i < nbFiles as usize {
         fileSize = UTIL_getFileSize(*inFileNames.add(i)) as core::ffi::c_ulonglong;
         maxFileSize = if fileSize > maxFileSize {
             fileSize
@@ -4830,8 +4828,8 @@ unsafe fn FIO_createDResources(
         }
         exit(60);
     }
-    let mut err: size_t = 0;
-    err = ZSTD_DCtx_setMaxWindowSize(ress.dctx, (*prefs).memLimit as size_t);
+    let mut err: usize = 0;
+    err = ZSTD_DCtx_setMaxWindowSize(ress.dctx, (*prefs).memLimit as usize);
     if ZSTD_isError(err) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
@@ -4862,7 +4860,7 @@ unsafe fn FIO_createDResources(
         }
         exit(11);
     }
-    let mut err_0: size_t = 0;
+    let mut err_0: usize = 0;
     err_0 = ZSTD_DCtx_setParameter(
         ress.dctx,
         ZSTD_dParameter::ZSTD_d_experimentalParam3,
@@ -4910,7 +4908,7 @@ unsafe fn FIO_createDResources(
         &mut statbuf,
         dictBufferType,
     );
-    let mut err_1: size_t = 0;
+    let mut err_1: usize = 0;
     err_1 = ZSTD_DCtx_reset(ress.dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ZSTD_isError(err_1) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -4944,7 +4942,7 @@ unsafe fn FIO_createDResources(
         exit(11);
     }
     if (*prefs).patchFromMode != 0 {
-        let mut err_2: size_t = 0;
+        let mut err_2: usize = 0;
         err_2 = ZSTD_DCtx_refPrefix(ress.dctx, ress.dict.dictBuffer, ress.dict.dictBufferSize);
         if ZSTD_isError(err_2) != 0 {
             if g_display_prefs.displayLevel >= 5 {
@@ -4977,7 +4975,7 @@ unsafe fn FIO_createDResources(
             exit(11);
         }
     } else {
-        let mut err_3: size_t = 0;
+        let mut err_3: usize = 0;
         err_3 = ZSTD_DCtx_loadDictionary_byReference(
             ress.dctx,
             ress.dict.dictBuffer,
@@ -5020,7 +5018,7 @@ unsafe fn FIO_createDResources(
 }
 unsafe fn FIO_freeDResources(mut ress: dRess_t) {
     FIO_freeDict(&mut ress.dict);
-    let mut err: size_t = 0;
+    let mut err: usize = 0;
     err = ZSTD_freeDStream(ress.dctx);
     if ZSTD_isError(err) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -5056,14 +5054,14 @@ unsafe fn FIO_freeDResources(mut ress: dRess_t) {
     AIO_ReadPool_free(ress.readCtx);
 }
 unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
-    let blockSize = if (if ((64 * (1 << 10)) as size_t) < ZSTD_DStreamInSize() {
-        (64 * (1 << 10)) as size_t
+    let blockSize = if (if ((64 * (1 << 10)) as usize) < ZSTD_DStreamInSize() {
+        (64 * (1 << 10)) as usize
     } else {
         ZSTD_DStreamInSize()
     }) < ZSTD_DStreamOutSize()
     {
-        if ((64 * (1 << 10)) as size_t) < ZSTD_DStreamInSize() {
-            (64 * (1 << 10)) as size_t
+        if ((64 * (1 << 10)) as usize) < ZSTD_DStreamInSize() {
+            (64 * (1 << 10)) as usize
         } else {
             ZSTD_DStreamInSize()
         }
@@ -5074,7 +5072,7 @@ unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
     AIO_ReadPool_fillBuffer((*ress).readCtx, blockSize);
     #[expect(clippy::while_immutable_condition)]
     while (*(*ress).readCtx).srcBufferLoaded != 0 {
-        let mut writeSize: size_t = 0;
+        let mut writeSize: usize = 0;
         writeSize = if blockSize < (*(*ress).readCtx).srcBufferLoaded {
             blockSize
         } else {
@@ -5099,7 +5097,7 @@ unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
 unsafe fn FIO_zstdErrorHelp(
     prefs: *const FIO_prefs_t,
     ress: *const dRess_t,
-    mut err: size_t,
+    mut err: usize,
     srcFileName: *const core::ffi::c_char,
 ) {
     let mut header = ZSTD_FrameHeader {
@@ -5180,7 +5178,7 @@ unsafe fn FIO_decompressZstdFrame(
         srcFName20 = srcFName20.add(srcFileLength.wrapping_sub(20));
     }
     ZSTD_DCtx_reset((*ress).dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
-    AIO_ReadPool_fillBuffer((*ress).readCtx, ZSTD_FRAMEHEADERSIZE_MAX as size_t);
+    AIO_ReadPool_fillBuffer((*ress).readCtx, ZSTD_FRAMEHEADERSIZE_MAX as usize);
     loop {
         let mut inBuff = setInBuffer(
             (*(*ress).readCtx).srcBuffer as *const core::ffi::c_void,
@@ -5355,7 +5353,7 @@ unsafe fn FIO_decompressGzFrame(
             decodingError = 1;
             break;
         } else {
-            let decompBytes = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as size_t);
+            let decompBytes = ((*writeJob).bufferSize).wrapping_sub(strm.avail_out as usize);
             if decompBytes != 0 {
                 (*writeJob).usedBufferSize = decompBytes;
                 AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
@@ -5370,7 +5368,7 @@ unsafe fn FIO_decompressGzFrame(
     }
     AIO_ReadPool_consumeBytes(
         (*ress).readCtx,
-        ((*(*ress).readCtx).srcBufferLoaded).wrapping_sub(strm.avail_in as size_t),
+        ((*(*ress).readCtx).srcBufferLoaded).wrapping_sub(strm.avail_in as usize),
     );
     if inflateEnd(&mut strm) != Z_OK && decodingError == 0 {
         if g_display_prefs.displayLevel >= 1 {
@@ -5609,7 +5607,7 @@ unsafe fn FIO_decompressFrames(
             }
         }
     }
-    (*fCtx).totalBytesOutput = ((*fCtx).totalBytesOutput).wrapping_add(filesize as size_t);
+    (*fCtx).totalBytesOutput = ((*fCtx).totalBytesOutput).wrapping_add(filesize as usize);
     if g_display_prefs.progressSetting != FIO_ps_never
         && (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
         && g_display_prefs.displayLevel >= 1
@@ -5800,14 +5798,14 @@ unsafe fn FIO_determineDstName(
     srcFileName: *const core::ffi::c_char,
     outDirName: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
-    static mut dfnbCapacity: size_t = 0;
+    static mut dfnbCapacity: usize = 0;
     static mut dstFileNameBuffer: *mut core::ffi::c_char = core::ptr::null_mut();
-    let mut dstFileNameEndPos: size_t = 0;
+    let mut dstFileNameEndPos: usize = 0;
     let mut outDirFilename = core::ptr::null_mut();
     let mut dstSuffix = c"".as_ptr();
     let mut dstSuffixLen = 0;
     let mut sfnSize = strlen(srcFileName);
-    let mut srcSuffixLen: size_t = 0;
+    let mut srcSuffixLen: usize = 0;
     let srcSuffix: *const core::ffi::c_char = strrchr(srcFileName, '.' as i32);
     if strcmp(srcFileName, stdinmark.as_ptr()) == 0 {
         return stdoutmark.as_ptr();
@@ -6262,7 +6260,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
             } else if (magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK) == ZSTD_MAGIC_SKIPPABLE_START {
                 let frameSize =
                     MEM_readLE32(headerBuffer.as_mut_ptr().offset(4) as *const core::ffi::c_void);
-                let seek = (8u32.wrapping_add(frameSize) as size_t).wrapping_sub(numBytesRead)
+                let seek = (8u32.wrapping_add(frameSize) as usize).wrapping_sub(numBytesRead)
                     as core::ffi::c_long;
                 if fseek(srcFile, seek, 1) != 0 {
                     if g_display_prefs.displayLevel >= 1 {
