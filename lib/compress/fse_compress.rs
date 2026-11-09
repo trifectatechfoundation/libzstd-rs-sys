@@ -41,8 +41,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
 
     // CTable header
-    *tableU16.sub(2) = tableLog as u16;
-    *tableU16.sub(1) = u16::from(maxSymbolValue);
+    ct[0] = FSE_writeU16Pair(tableLog as u16, u16::from(maxSymbolValue));
 
     // For explanations on how to distribute symbol values over the table :
     // https://fastcompression.blogspot.fr/2014/02/fse-distributing-symbol-values.html
