@@ -5,7 +5,7 @@ use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{
     CTable, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
 };
-use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
+use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::ZSTD_XXH64_slice;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -728,8 +728,7 @@ const ENTROPY_TABLES_BOUND: usize = HUF_CTABLEBOUND
     + FSE_NCountWriteBound(MaxLL, LLFSELog)
     + 3 * size_of::<u32>();
 unsafe fn ZDICT_analyzeEntropy(
-    dstBuffer: *mut core::ffi::c_void,
-    maxDstSize: usize,
+    dst: &mut [u8],
     compressionLevel: core::ffi::c_int,
     src: &[u8],
     fileSizes: &[usize],
@@ -747,8 +746,7 @@ unsafe fn ZDICT_analyzeEntropy(
     };
 
     let eSize = analyze_entropy_internal(
-        dstBuffer as *mut u8,
-        maxDstSize,
+        dst,
         compressionLevel,
         src,
         fileSizes,
@@ -765,8 +763,7 @@ unsafe fn ZDICT_analyzeEntropy(
 }
 
 unsafe fn analyze_entropy_internal(
-    mut dstPtr: *mut u8,
-    mut maxDstSize: usize,
+    dst: &mut [u8],
     mut compressionLevel: core::ffi::c_int,
     src: &[u8],
     fileSizes: &[usize],
@@ -943,8 +940,8 @@ unsafe fn analyze_entropy_internal(
 
     // write result to buffer
     let hhSize = HUF_writeCTable_wksp(
-        dstPtr as *mut core::ffi::c_void,
-        maxDstSize,
+        dst.as_mut_ptr().cast(),
+        dst.len(),
         &hufTable,
         255,
         huffLog,
@@ -956,13 +953,11 @@ unsafe fn analyze_entropy_internal(
             eprintln!("HUF_writeCTable error");
         }
     })?;
-    dstPtr = dstPtr.add(hhSize);
-    maxDstSize = maxDstSize.wrapping_sub(hhSize);
     let mut eSize = hhSize;
 
     let ohSize = FSE_writeNCount(
-        dstPtr as *mut core::ffi::c_void,
-        maxDstSize,
+        dst[eSize..].as_mut_ptr().cast(),
+        dst.len() - eSize,
         &offcodeNCount,
         OFFCODE_MAX,
         offLog,
@@ -972,13 +967,11 @@ unsafe fn analyze_entropy_internal(
             eprintln!("FSE_writeNCount error with offcodeNCount");
         }
     })?;
-    dstPtr = dstPtr.add(ohSize);
-    maxDstSize = maxDstSize.wrapping_sub(ohSize);
     eSize = eSize.wrapping_add(ohSize);
 
     let mhSize = FSE_writeNCount(
-        dstPtr as *mut core::ffi::c_void,
-        maxDstSize,
+        dst[eSize..].as_mut_ptr().cast(),
+        dst.len() - eSize,
         &matchLengthNCount,
         MaxML,
         mlLog,
@@ -988,13 +981,11 @@ unsafe fn analyze_entropy_internal(
             eprintln!("FSE_writeNCount error with matchLengthNCount ");
         }
     })?;
-    dstPtr = dstPtr.add(mhSize);
-    maxDstSize = maxDstSize.wrapping_sub(mhSize);
     eSize = eSize.wrapping_add(mhSize);
 
     let lhSize = FSE_writeNCount(
-        dstPtr as *mut core::ffi::c_void,
-        maxDstSize,
+        dst[eSize..].as_mut_ptr().cast(),
+        dst.len() - eSize,
         &litLengthNCount,
         MaxLL,
         llLog,
@@ -1004,22 +995,20 @@ unsafe fn analyze_entropy_internal(
             eprintln!("FSE_writeNCount error with litlengthNCount ");
         }
     })?;
-    dstPtr = dstPtr.add(lhSize);
-    maxDstSize = maxDstSize.wrapping_sub(lhSize);
     eSize = eSize.wrapping_add(lhSize);
 
-    if maxDstSize < 12 {
+    let ([code0, code1, code2, ..], _) = dst[eSize..].as_chunks_mut() else {
         if notificationLevel >= 1 {
             eprintln!("not enough space to write RepOffsets ");
         }
         return Err(Error::dstSize_tooSmall);
-    }
+    };
 
-    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, repStartValue[0]);
-    MEM_writeLE32(dstPtr.add(4) as *mut core::ffi::c_void, repStartValue[1]);
-    MEM_writeLE32(dstPtr.add(8) as *mut core::ffi::c_void, repStartValue[2]);
+    *code0 = repStartValue[0].to_le_bytes();
+    *code1 = repStartValue[1].to_le_bytes();
+    *code2 = repStartValue[2].to_le_bytes();
 
-    Ok(eSize.wrapping_add(12))
+    Ok(eSize + 12)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_finalizeDictionary))]
@@ -1069,7 +1058,7 @@ pub(super) unsafe fn finalize_dictionary(
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> Result<usize, Error> {
-    let mut header: [u8; 256] = [0; 256];
+    let mut header = [0u8; HBUFFSIZE];
     let compressionLevel = if params.compressionLevel == 0 {
         ZSTD_CLEVEL_DEFAULT
     } else {
@@ -1111,8 +1100,7 @@ pub(super) unsafe fn finalize_dictionary(
     }
     let hSize = 8;
     let eSize = ZDICT_analyzeEntropy(
-        header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
-        HBUFFSIZE.wrapping_sub(hSize),
+        &mut header[hSize..],
         compressionLevel,
         samples,
         samplesSizes,
@@ -1192,8 +1180,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBufferCapacity.saturating_sub(hSize),
     )];
     let res = ZDICT_analyzeEntropy(
-        header.as_mut_ptr().cast(),
-        header.len(),
+        header,
         compressionLevel,
         samples,
         samplesSizes,
