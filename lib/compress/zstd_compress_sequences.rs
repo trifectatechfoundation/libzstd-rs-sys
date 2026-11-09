@@ -156,7 +156,7 @@ pub fn ZSTD_crossEntropyCost(
     for (&n, &c) in norm.iter().zip(count) {
         let normAcc = if n != -1 { n as u8 } else { 1 };
         let norm256 = normAcc << shift;
-        cost += c.wrapping_mul(kInverseProbabilityLog256[usize::from(norm256)]) as usize;
+        cost += c as usize * kInverseProbabilityLog256[usize::from(norm256)] as usize;
     }
     cost >> 8
 }
