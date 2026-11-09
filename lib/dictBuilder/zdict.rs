@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
-use crate::lib::common::xxhash::{ZSTD_XXH64_slice, ZSTD_XXH64};
+use crate::lib::common::xxhash::ZSTD_XXH64_slice;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
 };
@@ -1196,11 +1196,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
 
     // add dictionary header (after entropy tables)
     dictBuffer[..4].write_copy_of_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
-    let randomID = ZSTD_XXH64(
-        dictBuffer[contentStart..].as_ptr().cast(),
-        dictContentSize,
-        0,
-    );
+    let randomID = ZSTD_XXH64_slice(dictBuffer[contentStart..].assume_init_ref(), 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
