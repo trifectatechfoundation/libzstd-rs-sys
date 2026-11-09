@@ -500,8 +500,7 @@ unsafe fn FSEv05_readNCount(
         return Err(Error::srcSize_wrong);
     }
     let mut bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
-    let mut nbBits = (bitStream & 0xf as core::ffi::c_int as u32)
-        .wrapping_add(FSEv05_MIN_TABLELOG as u32) as core::ffi::c_int;
+    let mut nbBits = (bitStream & 0xf).wrapping_add(FSEv05_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSEv05_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
     }
@@ -514,8 +513,7 @@ unsafe fn FSEv05_readNCount(
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 {
             let mut n0 = charnum;
-            while bitStream & 0xffff as core::ffi::c_int as u32 == 0xffff as core::ffi::c_int as u32
-            {
+            while bitStream & 0xffff == 0xffff {
                 n0 = n0.wrapping_add(24);
                 if ip < iend.sub(5) {
                     ip = ip.add(2);

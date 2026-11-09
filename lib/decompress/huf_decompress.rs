@@ -998,7 +998,7 @@ fn HUF_fillDTableX2(
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut start = rankVal[w] as core::ffi::c_int;
-            let length = 1 << (targetLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
+            let length = 1 << (targetLog.wrapping_sub(nbBits) & 0x1f);
             let minWeight = Ord::max(nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int, 1);
 
             for s in range {
@@ -1014,7 +1014,7 @@ fn HUF_fillDTableX2(
                     nbBitsBaseline,
                     u16::from(sortedList[s].symbol),
                 );
-                start = (start as u32).wrapping_add(length) as core::ffi::c_int as core::ffi::c_int;
+                start = (start as u32).wrapping_add(length) as core::ffi::c_int;
             }
         } else {
             HUF_fillDTableX2ForWeight(

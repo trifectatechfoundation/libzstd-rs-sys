@@ -441,8 +441,7 @@ unsafe fn FSEv06_readNCount(
         return Error::srcSize_wrong.to_error_code();
     }
     bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
-    nbBits = (bitStream & 0xf as core::ffi::c_int as u32).wrapping_add(FSEv06_MIN_TABLELOG as u32)
-        as core::ffi::c_int;
+    nbBits = (bitStream & 0xf).wrapping_add(FSEv06_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSEv06_TABLELOG_ABSOLUTE_MAX {
         return Error::tableLog_tooLarge.to_error_code();
     }
@@ -455,8 +454,7 @@ unsafe fn FSEv06_readNCount(
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 {
             let mut n0 = charnum;
-            while bitStream & 0xffff as core::ffi::c_int as u32 == 0xffff as core::ffi::c_int as u32
-            {
+            while bitStream & 0xffff == 0xffff {
                 n0 = n0.wrapping_add(24);
                 if ip < iend.sub(5) {
                     ip = ip.add(2);
@@ -2651,128 +2649,18 @@ unsafe fn ZSTDv06_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
     let ofBits = ofCode;
     let totalBits = llBits.wrapping_add(mlBits).wrapping_add(ofBits);
     static LL_base: [u32; 36] = [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        18,
-        20,
-        22,
-        24,
-        28,
-        32,
-        40,
-        48,
-        64,
-        0x80 as core::ffi::c_int as u32,
-        0x100 as core::ffi::c_int as u32,
-        0x200 as core::ffi::c_int as u32,
-        0x400 as core::ffi::c_int as u32,
-        0x800 as core::ffi::c_int as u32,
-        0x1000 as core::ffi::c_int as u32,
-        0x2000 as core::ffi::c_int as u32,
-        0x4000 as core::ffi::c_int as u32,
-        0x8000 as core::ffi::c_int as u32,
-        0x10000 as core::ffi::c_int as u32,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 40, 48,
+        64, 0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000,
     ];
     static ML_base: [u32; 53] = [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        34,
-        36,
-        38,
-        40,
-        44,
-        48,
-        56,
-        64,
-        80,
-        96,
-        0x80 as core::ffi::c_int as u32,
-        0x100 as core::ffi::c_int as u32,
-        0x200 as core::ffi::c_int as u32,
-        0x400 as core::ffi::c_int as u32,
-        0x800 as core::ffi::c_int as u32,
-        0x1000 as core::ffi::c_int as u32,
-        0x2000 as core::ffi::c_int as u32,
-        0x4000 as core::ffi::c_int as u32,
-        0x8000 as core::ffi::c_int as u32,
-        0x10000 as core::ffi::c_int as u32,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 34, 36, 38, 40, 44, 48, 56, 64, 80, 96, 0x80, 0x100, 0x200,
+        0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000,
     ];
     static OF_base: [u32; 29] = [
-        0,
-        1,
-        3,
-        7,
-        0xf as core::ffi::c_int as u32,
-        0x1f as core::ffi::c_int as u32,
-        0x3f as core::ffi::c_int as u32,
-        0x7f as core::ffi::c_int as u32,
-        0xff as core::ffi::c_int as u32,
-        0x1ff as core::ffi::c_int as u32,
-        0x3ff as core::ffi::c_int as u32,
-        0x7ff as core::ffi::c_int as u32,
-        0xfff as core::ffi::c_int as u32,
-        0x1fff as core::ffi::c_int as u32,
-        0x3fff as core::ffi::c_int as u32,
-        0x7fff as core::ffi::c_int as u32,
-        0xffff as core::ffi::c_int as u32,
-        0x1ffff as core::ffi::c_int as u32,
-        0x3ffff as core::ffi::c_int as u32,
-        0x7ffff as core::ffi::c_int as u32,
-        0xfffff as core::ffi::c_int as u32,
-        0x1fffff as core::ffi::c_int as u32,
-        0x3fffff as core::ffi::c_int as u32,
-        0x7fffff as core::ffi::c_int as u32,
-        0xffffff as core::ffi::c_int as u32,
-        0x1ffffff as core::ffi::c_int as u32,
-        0x3ffffff as core::ffi::c_int as u32,
-        1,
-        1,
+        0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff,
+        0x7fff, 0xffff, 0x1ffff, 0x3ffff, 0x7ffff, 0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff,
+        0x1ffffff, 0x3ffffff, 1, 1,
     ];
     let mut offset: usize = 0;
     if ofCode == 0 {
