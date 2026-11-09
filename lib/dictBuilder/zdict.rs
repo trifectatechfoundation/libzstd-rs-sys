@@ -2,13 +2,17 @@ use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
-use crate::lib::common::huf::{CTable, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
+use crate::lib::common::huf::{
+    CTable, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
+};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64_slice;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
 };
-use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
+use crate::lib::compress::fse_compress::{
+    FSE_NCountWriteBound, FSE_normalizeCount, FSE_writeNCount,
+};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
 #[expect(deprecated)] // We still use deprecated functions internally
 use crate::lib::compress::zstd_compress::{
@@ -717,6 +721,12 @@ fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
 }
 
 const OFFCODE_MAX: u8 = 30; // only applicable to first block
+/// The most that [`ZDICT_analyzeEntropy`] will ever write to `dst`.
+const ENTROPY_TABLES_BOUND: usize = HUF_CTABLEBOUND
+    + FSE_NCountWriteBound(OFFCODE_MAX, OffFSELog)
+    + FSE_NCountWriteBound(MaxML, MLFSELog)
+    + FSE_NCountWriteBound(MaxLL, LLFSELog)
+    + 3 * size_of::<u32>();
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     maxDstSize: usize,
@@ -1162,7 +1172,6 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
 ) -> usize {
     let dictBufferCapacity = dictBuffer.len();
     let contentStart = dictBufferCapacity - dictContentSize;
-    let dictPtr = dictBuffer.as_mut_ptr().cast::<core::ffi::c_void>();
 
     let compressionLevel = if params.compressionLevel == 0 {
         ZSTD_CLEVEL_DEFAULT
@@ -1177,20 +1186,26 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         eprintln!("\r{:70 }\r", ""); // clean display line
         eprintln!("statistics ...");
     }
+    let mut header = [0u8; ENTROPY_TABLES_BOUND];
+    let header = &mut header[..Ord::min(
+        ENTROPY_TABLES_BOUND,
+        dictBufferCapacity.saturating_sub(hSize),
+    )];
     let res = ZDICT_analyzeEntropy(
-        dictPtr.byte_add(hSize),
-        dictBufferCapacity.wrapping_sub(hSize),
+        header.as_mut_ptr().cast(),
+        header.len(),
         compressionLevel,
         samples,
         samplesSizes,
-        dictPtr
-            .byte_add(dictBufferCapacity)
-            .byte_sub(dictContentSize),
+        dictBuffer[contentStart..].as_ptr().cast(),
         dictContentSize,
         notificationLevel,
     );
     match res {
-        Ok(eSize) => hSize = hSize.wrapping_add(eSize),
+        Ok(eSize) => {
+            dictBuffer[hSize..][..eSize].write_copy_of_slice(&header[..eSize]);
+            hSize = hSize.wrapping_add(eSize);
+        }
         Err(err) => return err.to_error_code(),
     }
 
