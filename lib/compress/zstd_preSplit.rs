@@ -48,7 +48,7 @@ pub struct BorderStats {
     pub middleEvents: Fingerprint<256>,
 }
 
-impl Fingerprint {
+impl<const N: usize> Fingerprint<N> {
     #[inline(always)]
     fn add_events(&mut self, src: &[u8], samplingRate: usize, hashLog: c_uint) {
         debug_assert!(src.len() >= HASHLENGTH);
@@ -68,20 +68,20 @@ impl Fingerprint {
         self.nbEvents = 0;
         self.add_events(src, SAMPLING_RATE, HASH_LOG);
     }
-}
 
-fn fpDistance<const N: usize>(fp1: &Fingerprint<N>, fp2: &Fingerprint<N>, hashLog: c_uint) -> u64 {
-    let mut distance = 0u64;
+    fn distance(&self, other: &Self, hashLog: c_uint) -> u64 {
+        let mut distance = 0u64;
 
-    debug_assert!(1usize << hashLog <= N);
+        debug_assert!(1usize << hashLog <= N);
 
-    for n in 0..(1 << hashLog) {
-        let dst1 = fp1.events[n] as i64 * fp2.nbEvents as i64;
-        let dst2 = fp2.events[n] as i64 * fp1.nbEvents as i64;
-        distance = distance.wrapping_add(dst1.abs_diff(dst2));
+        for n in 0..(1 << hashLog) {
+            let dst1 = self.events[n] as i64 * other.nbEvents as i64;
+            let dst2 = other.events[n] as i64 * self.nbEvents as i64;
+            distance += dst1.abs_diff(dst2);
+        }
+
+        distance
     }
-
-    distance
 }
 
 /// Compares new events with past events.
@@ -97,7 +97,7 @@ fn compareFingerprints<const N: usize>(
     debug_assert!(newfp.nbEvents > 0);
 
     let p50 = ref_0.nbEvents * newfp.nbEvents;
-    let deviation = fpDistance(ref_0, newfp, hashLog);
+    let deviation = ref_0.distance(newfp, hashLog);
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
     deviation >= threshold
 }
@@ -182,8 +182,8 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats)
     let middle = blockSize / 2 - segment / 2;
     HIST_add(&mut stats.middleEvents.events, &block[middle..][..segment]);
     stats.middleEvents.nbEvents = SEGMENT_SIZE as usize;
-    let distFromBegin = fpDistance(&stats.pastEvents, &stats.middleEvents, 8);
-    let distFromEnd = fpDistance(&stats.newEvents, &stats.middleEvents, 8);
+    let distFromBegin = stats.pastEvents.distance(&stats.middleEvents, 8);
+    let distFromEnd = stats.newEvents.distance(&stats.middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if distFromBegin.abs_diff(distFromEnd) < minDistance {
         return 64 * (1 << 10);
