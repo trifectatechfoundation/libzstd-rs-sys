@@ -161,21 +161,21 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
 ///
 /// `stats` must be zeroed before each call.
 fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats) -> usize {
-    const SEGMENT_SIZE: c_int = 512;
+    const SEGMENT_SIZE: usize = 512;
     let blockSize = block.len();
 
-    let segment = SEGMENT_SIZE as usize;
+    let segment = SEGMENT_SIZE;
 
     HIST_add(&mut stats.pastEvents.events, &block[..segment]);
     HIST_add(&mut stats.newEvents.events, &block[blockSize - segment..]);
-    stats.newEvents.nbEvents = SEGMENT_SIZE as usize;
+    stats.newEvents.nbEvents = SEGMENT_SIZE;
     stats.pastEvents.nbEvents = stats.newEvents.nbEvents;
     if !stats.pastEvents.compare(&stats.newEvents, 0, 8) {
         return blockSize;
     }
     let middle = blockSize / 2 - segment / 2;
     HIST_add(&mut stats.middleEvents.events, &block[middle..][..segment]);
-    stats.middleEvents.nbEvents = SEGMENT_SIZE as usize;
+    stats.middleEvents.nbEvents = SEGMENT_SIZE;
     let distFromBegin = stats.pastEvents.distance(&stats.middleEvents, 8);
     let distFromEnd = stats.newEvents.distance(&stats.middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
