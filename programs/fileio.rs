@@ -1604,7 +1604,7 @@ unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: size_t, pos: size_t) -
     }
 }
 unsafe fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
-    let btScale = (strat >= ZSTD_btlazy2) as core::ffi::c_int as u32;
+    let btScale = u32::from(strat >= ZSTD_btlazy2);
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
@@ -3705,9 +3705,9 @@ unsafe fn FIO_compressZstdFrame(
             {
                 let zfp_0 = ZSTD_getFrameProgression(ress.cctx);
                 let cShare = zfp_0.produced as core::ffi::c_double
-                    / (zfp_0.consumed).wrapping_add(
-                        (zfp_0.consumed == 0) as core::ffi::c_int as core::ffi::c_ulonglong,
-                    ) as core::ffi::c_double
+                    / (zfp_0.consumed)
+                        .wrapping_add(core::ffi::c_ulonglong::from(zfp_0.consumed == 0))
+                        as core::ffi::c_double
                     * 100.0;
                 let buffered_hrs = UTIL_makeHumanReadableSize(
                     (zfp_0.ingested).wrapping_sub(zfp_0.consumed) as u64,
@@ -3889,7 +3889,7 @@ unsafe fn FIO_compressFilename_internal(
                 fileSize,
                 compressionLevel,
                 &mut readsize,
-                ((*prefs).compressionType == FIO_lzmaCompression) as core::ffi::c_int,
+                core::ffi::c_int::from((*prefs).compressionType == FIO_lzmaCompression),
             ) as u64;
         }
         4 => {
@@ -5123,9 +5123,9 @@ unsafe fn FIO_zstdErrorHelp(
     );
     if err == 0 {
         let windowSize = header.windowSize;
-        let windowLog = (FIO_highbit64(windowSize)).wrapping_add(
-            (windowSize & windowSize.wrapping_sub(1) != 0) as core::ffi::c_int as core::ffi::c_uint,
-        );
+        let windowLog = (FIO_highbit64(windowSize)).wrapping_add(core::ffi::c_uint::from(
+            windowSize & windowSize.wrapping_sub(1) != 0,
+        ));
         assert!((*prefs).memLimit > 0);
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -6208,8 +6208,8 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     let blockHeader =
                         MEM_readLE24(blockHeaderBuffer.as_mut_ptr() as *const core::ffi::c_void);
                     let blockTypeID = blockHeader >> 1 & 3;
-                    let isRLE = (blockTypeID == 1) as core::ffi::c_int as u32;
-                    let isWrongBlock = (blockTypeID == 3) as core::ffi::c_int as u32;
+                    let isRLE = u32::from(blockTypeID == 1);
+                    let isWrongBlock = u32::from(blockTypeID == 3);
                     let blockSize = if isRLE != 0 {
                         1
                     } else {

@@ -237,7 +237,7 @@ pub unsafe fn ZSTD_compressLiterals(
             }
 
             let lhc = (hType as core::ffi::c_uint)
-                .wrapping_add(((!singleStream) as core::ffi::c_int as u32) << 2)
+                .wrapping_add((u32::from(!singleStream)) << 2)
                 .wrapping_add((src.len() as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);

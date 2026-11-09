@@ -712,7 +712,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
+    .wrapping_add(size_t::from(srcSize == 0));
     let mut benchResult = BMK_benchResult_t {
         cSize: 0,
         cSpeed: 0,
@@ -960,8 +960,8 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         c" \\".as_ptr(),
     ];
     let mut markNb = 0u32;
-    let mut compressionCompleted = ((*adv).mode == BMK_decodeOnly) as core::ffi::c_int;
-    let mut decompressionCompleted = ((*adv).mode == BMK_compressOnly) as core::ffi::c_int;
+    let mut compressionCompleted = core::ffi::c_int::from((*adv).mode == BMK_decodeOnly);
+    let mut decompressionCompleted = core::ffi::c_int::from((*adv).mode == BMK_compressOnly);
     let mut cbp = BMK_benchParams_t {
         benchFn: None,
         benchPayload: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -1378,7 +1378,7 @@ pub unsafe fn BMK_benchMemAdvanced(
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
+    .wrapping_add(size_t::from(srcSize == 0));
     let nbChunksMax = ((srcSize.wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize) as u32)
         .wrapping_add(nbFiles);
     let srcPtrs = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<*mut core::ffi::c_void>()))

@@ -113,7 +113,7 @@ pub unsafe fn BMK_benchFunction(
     p: BMK_benchParams_t,
     mut nbLoops: core::ffi::c_uint,
 ) -> BMK_runOutcome_t {
-    nbLoops = nbLoops.wrapping_add((nbLoops == 0) as core::ffi::c_int as core::ffi::c_uint);
+    nbLoops = nbLoops.wrapping_add(core::ffi::c_uint::from(nbLoops == 0));
     let mut i: size_t = 0;
     i = 0;
     while i < p.blockCount {
