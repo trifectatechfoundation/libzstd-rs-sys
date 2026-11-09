@@ -1095,7 +1095,7 @@ mod pre_split {
             [usize; ZSTD_SLIPBLOCK_WORKSPACESIZE.div_ceil(size_of::<usize>())],
         >::uninit();
         for boundary in [1, 8, 15, 16] {
-            let split = boundary * CHUNKSIZE as usize;
+            let split = boundary * CHUNKSIZE;
             block.fill(0);
             block[split..].fill(255);
             for level in 1..=4 {
