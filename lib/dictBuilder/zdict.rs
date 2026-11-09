@@ -1156,6 +1156,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     params: ZDICT_params_t,
 ) -> usize {
     let dictBufferCapacity = dictBuffer.len();
+    let contentStart = dictBufferCapacity - dictContentSize;
     let dictPtr = dictBuffer.as_mut_ptr().cast::<core::ffi::c_void>();
 
     let compressionLevel = if params.compressionLevel == 0 {
@@ -1189,11 +1190,9 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     }
 
     // add dictionary header (after entropy tables)
-    MEM_writeLE32(dictPtr, ZSTD_MAGIC_DICTIONARY);
+    dictBuffer[..4].write_copy_of_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
     let randomID = ZSTD_XXH64(
-        dictPtr
-            .byte_add(dictBufferCapacity)
-            .byte_sub(dictContentSize),
+        dictBuffer[contentStart..].as_ptr().cast(),
         dictContentSize,
         0,
     );
@@ -1204,10 +1203,10 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     } else {
         compliantID
     };
-    MEM_writeLE32(dictPtr.byte_add(4), dictID);
+    dictBuffer[4..8].write_copy_of_slice(&dictID.to_le_bytes());
 
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
-        dictBuffer.copy_within(dictBufferCapacity - dictContentSize.., hSize);
+        dictBuffer.copy_within(contentStart.., hSize);
     }
     Ord::min(dictBufferCapacity, hSize.wrapping_add(dictContentSize))
 }
