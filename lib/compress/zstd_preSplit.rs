@@ -48,17 +48,19 @@ pub struct BorderStats {
     pub middleEvents: Fingerprint<256>,
 }
 
-#[inline(always)]
-fn addEvents_generic(fp: &mut Fingerprint, src: &[u8], samplingRate: usize, hashLog: c_uint) {
-    let limit = src.len().wrapping_sub(HASHLENGTH).wrapping_add(1);
+impl Fingerprint {
+    #[inline(always)]
+    fn add_events(&mut self, src: &[u8], samplingRate: usize, hashLog: c_uint) {
+        debug_assert!(src.len() >= HASHLENGTH);
+        let limit = src.len() - HASHLENGTH + 1;
 
-    debug_assert!(src.len() >= HASHLENGTH);
-    for i in 0..limit.div_ceil(samplingRate) {
-        let n = i * samplingRate;
-        fp.events[hash2([src[n], src[n + 1]], hashLog) as usize] += 1;
+        for i in 0..limit.div_ceil(samplingRate) {
+            let n = i * samplingRate;
+            self.events[hash2([src[n], src[n + 1]], hashLog) as usize] += 1;
+        }
+
+        self.nbEvents += limit / samplingRate;
     }
-
-    fp.nbEvents += limit / samplingRate;
 }
 
 #[inline(always)]
@@ -68,7 +70,7 @@ fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>
 ) {
     fp.events[..1usize << HASH_LOG].fill(0);
     fp.nbEvents = 0;
-    addEvents_generic(fp, src, SAMPLING_RATE, HASH_LOG);
+    fp.add_events(src, SAMPLING_RATE, HASH_LOG);
 }
 
 fn fpDistance<const N: usize>(fp1: &Fingerprint<N>, fp2: &Fingerprint<N>, hashLog: c_uint) -> u64 {
