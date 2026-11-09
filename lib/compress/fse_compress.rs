@@ -116,25 +116,28 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     let symbolTT: &mut [FSE_symbolCompressionTransform] =
         core::slice::from_raw_parts_mut(pairs.as_mut_ptr().cast(), pairs.len());
     let mut total = 0u32;
-    for (s, &count) in normalizedCounter[..maxSV1].iter().enumerate() {
+    for (tt, &count) in symbolTT[..maxSV1]
+        .iter_mut()
+        .zip(&normalizedCounter[..maxSV1])
+    {
         match count {
             0 => {
                 // filling nonetheless, for compatibility with FSE_getMaxNbBits()
-                symbolTT[s].deltaNbBits = (tableLog.wrapping_add(1) << 16)
+                tt.deltaNbBits = (tableLog.wrapping_add(1) << 16)
                     .wrapping_sub((1 << tableLog) as core::ffi::c_uint);
             }
             -1 | 1 => {
-                symbolTT[s].deltaNbBits =
+                tt.deltaNbBits =
                     (tableLog << 16).wrapping_sub((1 << tableLog) as core::ffi::c_uint);
-                symbolTT[s].deltaFindState = total.wrapping_sub(1) as core::ffi::c_int;
+                tt.deltaFindState = total.wrapping_sub(1) as core::ffi::c_int;
                 total = total.wrapping_add(1);
             }
             _ => {
                 let maxBitsOut =
                     tableLog.wrapping_sub(ZSTD_highbit32((count as u32).wrapping_sub(1)));
                 let minStatePlus = (count as u32) << maxBitsOut;
-                symbolTT[s].deltaNbBits = (maxBitsOut << 16).wrapping_sub(minStatePlus);
-                symbolTT[s].deltaFindState =
+                tt.deltaNbBits = (maxBitsOut << 16).wrapping_sub(minStatePlus);
+                tt.deltaFindState =
                     total.wrapping_sub(count as core::ffi::c_uint) as core::ffi::c_int;
                 total = total.wrapping_add(count as core::ffi::c_uint);
             }
