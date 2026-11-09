@@ -61,16 +61,13 @@ impl Fingerprint {
 
         self.nbEvents += limit / samplingRate;
     }
-}
 
-#[inline(always)]
-fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>(
-    fp: &mut Fingerprint,
-    src: &[u8],
-) {
-    fp.events[..1usize << HASH_LOG].fill(0);
-    fp.nbEvents = 0;
-    fp.add_events(src, SAMPLING_RATE, HASH_LOG);
+    #[inline(always)]
+    fn record<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>(&mut self, src: &[u8]) {
+        self.events[..1usize << HASH_LOG].fill(0);
+        self.nbEvents = 0;
+        self.add_events(src, SAMPLING_RATE, HASH_LOG);
+    }
 }
 
 fn fpDistance<const N: usize>(fp1: &Fingerprint<N>, fp2: &Fingerprint<N>, hashLog: c_uint) -> u64 {
@@ -120,10 +117,10 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
     static records_fs: [fn(&mut Fingerprint, &[u8]) -> (); 4] = [
-        recordFingerprint_generic::<43, 8>,
-        recordFingerprint_generic::<11, 9>,
-        recordFingerprint_generic::<5, 10>,
-        recordFingerprint_generic::<1, 10>,
+        Fingerprint::record::<43, 8>,
+        Fingerprint::record::<11, 9>,
+        Fingerprint::record::<5, 10>,
+        Fingerprint::record::<1, 10>,
     ];
 
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
