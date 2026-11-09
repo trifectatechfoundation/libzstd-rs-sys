@@ -60,14 +60,13 @@ unsafe fn RDG_genChar(seed: *mut u32, ldt: *const u8) -> u8 {
     *ldt.offset(id as isize)
 }
 unsafe fn RDG_rand15Bits(seedPtr: *mut u32) -> u32 {
-    RDG_rand(seedPtr) & 0x7fff as core::ffi::c_int as u32
+    RDG_rand(seedPtr) & 0x7fff
 }
 unsafe fn RDG_randLength(seedPtr: *mut u32) -> u32 {
     if RDG_rand(seedPtr) & 7 != 0 {
-        return RDG_rand(seedPtr) & 0xf as core::ffi::c_int as u32;
+        return RDG_rand(seedPtr) & 0xf;
     }
-    (RDG_rand(seedPtr) & 0x1ff as core::ffi::c_int as u32)
-        .wrapping_add(0xf as core::ffi::c_int as u32)
+    (RDG_rand(seedPtr) & 0x1ff).wrapping_add(0xf)
 }
 unsafe fn RDG_genBlock(
     buffer: *mut core::ffi::c_void,

@@ -237,9 +237,8 @@ pub unsafe fn UTIL_isRegularFile(infilename: *const core::ffi::c_char) -> core::
     ret
 }
 pub unsafe fn UTIL_isRegularFileStat(statbuf: *const Stat) -> core::ffi::c_int {
-    (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as core::ffi::c_int as __mode_t)
+    (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as __mode_t) as core::ffi::c_int != 0)
         as core::ffi::c_int
-        != 0) as core::ffi::c_int
 }
 pub unsafe fn UTIL_chmod(
     filename: *const core::ffi::c_char,
@@ -579,8 +578,7 @@ pub unsafe fn UTIL_isDirectoryStat(statbuf: *const Stat) -> core::ffi::c_int {
         fprintf(stderr, c"\n".as_ptr());
         g_traceDepth += 1;
     }
-    ret = (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as core::ffi::c_int as __mode_t)
-        as core::ffi::c_int
+    ret = (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as __mode_t) as core::ffi::c_int
         != 0) as core::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -792,7 +790,7 @@ pub unsafe fn UTIL_isFIFO(infilename: *const core::ffi::c_char) -> core::ffi::c_
     0
 }
 pub unsafe fn UTIL_isFIFOStat(statbuf: *const Stat) -> core::ffi::c_int {
-    if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o10000 as core::ffi::c_int as __mode_t {
+    if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o10000 as __mode_t {
         return 1;
     }
     0
@@ -852,7 +850,7 @@ pub unsafe fn UTIL_isFileDescriptorPipe(filename: *const core::ffi::c_char) -> c
     0
 }
 pub unsafe fn UTIL_isBlockDevStat(statbuf: *const Stat) -> core::ffi::c_int {
-    if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o60000 as core::ffi::c_int as __mode_t {
+    if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o60000 as __mode_t {
         return 1;
     }
     0
@@ -896,8 +894,7 @@ pub unsafe fn UTIL_isLink(infilename: *const core::ffi::c_char) -> core::ffi::c_
         __glibc_reserved: [0; 3],
     };
     let r = lstat(infilename, &mut statbuf);
-    if r == 0 && statbuf.st_mode & __S_IFMT as __mode_t == 0o120000 as core::ffi::c_int as __mode_t
-    {
+    if r == 0 && statbuf.st_mode & __S_IFMT as __mode_t == 0o120000 as __mode_t {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
             fprintf(
@@ -1035,7 +1032,7 @@ pub unsafe fn UTIL_getFileSizeStat(statbuf: *const Stat) -> u64 {
     if UTIL_isRegularFileStat(statbuf) == 0 {
         return UTIL_FILESIZE_UNKNOWN as u64;
     }
-    if (*statbuf).st_mode & __S_IFMT as __mode_t != 0o100000 as core::ffi::c_int as __mode_t {
+    if (*statbuf).st_mode & __S_IFMT as __mode_t != 0o100000 as __mode_t {
         return UTIL_FILESIZE_UNKNOWN as u64;
     }
     (*statbuf).st_size as u64

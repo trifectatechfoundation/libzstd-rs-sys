@@ -37,8 +37,7 @@ fn FSE_readNCount_body(
     let read_u32_le = |offset| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
 
     let mut bitStream = read_u32_le(ip);
-    let mut nbBits = (bitStream & 0xf as core::ffi::c_int as u32)
-        .wrapping_add(FSE_MIN_TABLELOG as u32) as core::ffi::c_int;
+    let mut nbBits = (bitStream & 0xf).wrapping_add(FSE_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
     }
