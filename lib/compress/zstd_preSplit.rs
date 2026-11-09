@@ -123,26 +123,23 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
     let record_f = records_fs[level as usize];
     let mut penalty = THRESHOLD_PENALTY;
 
-    let chunk = CHUNKSIZE;
-
-    record_f(&mut fpstats.pastEvents, &block[..chunk]);
-    let mut pos = CHUNKSIZE;
-    while pos <= blockSize.wrapping_sub(CHUNKSIZE) {
-        record_f(&mut fpstats.newEvents, &block[pos..][..chunk]);
+    debug_assert!(blockSize.is_multiple_of(CHUNKSIZE));
+    let (chunks, _) = block.as_chunks::<CHUNKSIZE>();
+    record_f(&mut fpstats.pastEvents, &chunks[0]);
+    for (i, chunk) in chunks[1..].iter().enumerate() {
+        record_f(&mut fpstats.newEvents, chunk);
         if fpstats
             .pastEvents
             .compare(&fpstats.newEvents, penalty, hashParams[level as usize])
         {
-            return pos;
+            return (i + 1) * CHUNKSIZE;
         } else {
             fpstats.pastEvents.merge_events(&fpstats.newEvents);
             if penalty > 0 {
                 penalty -= 1;
             }
         }
-        pos = pos.wrapping_add(CHUNKSIZE);
     }
-    debug_assert_eq!(pos, blockSize);
     blockSize
 }
 
