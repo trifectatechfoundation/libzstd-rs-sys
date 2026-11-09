@@ -145,8 +145,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     Ok(())
 }
 
-fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> usize {
-    let maxHeaderSize = (u32::from(maxSymbolValue) + 1)
+pub(crate) const fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi::c_uint) -> usize {
+    let maxHeaderSize = (maxSymbolValue as u32 + 1)
         .wrapping_mul(tableLog)
         .wrapping_add(4) // bitCount initialized at 4
         .wrapping_add(2) // first two symbols may use one additional bit each
