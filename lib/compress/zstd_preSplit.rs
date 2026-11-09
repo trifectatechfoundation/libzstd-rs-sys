@@ -111,7 +111,7 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
     let blockSize = block.len();
     // NOTE: the sampling rates go from coarse to fine, so that the hash log of each
     // entry matches the corresponding entry of `hashParams` below.
-    static records_fs: [fn(&mut Fingerprint, &[u8]) -> (); 4] = [
+    static records_fs: [fn(&mut Fingerprint, &[u8]); 4] = [
         Fingerprint::record::<43, 8>,
         Fingerprint::record::<11, 9>,
         Fingerprint::record::<5, 10>,
@@ -133,11 +133,10 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
             .compare(&fpstats.newEvents, penalty, hashParams[level as usize])
         {
             return (i + 1) * CHUNKSIZE;
-        } else {
-            fpstats.pastEvents.merge_events(&fpstats.newEvents);
-            if penalty > 0 {
-                penalty -= 1;
-            }
+        }
+        fpstats.pastEvents.merge_events(&fpstats.newEvents);
+        if penalty > 0 {
+            penalty -= 1;
         }
     }
     blockSize
@@ -160,29 +159,32 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats)
     const SEGMENT_SIZE: usize = 512;
     let blockSize = block.len();
 
-    let segment = SEGMENT_SIZE;
-
-    HIST_add(&mut stats.pastEvents.events, &block[..segment]);
-    HIST_add(&mut stats.newEvents.events, &block[blockSize - segment..]);
+    HIST_add(&mut stats.pastEvents.events, &block[..SEGMENT_SIZE]);
+    HIST_add(
+        &mut stats.newEvents.events,
+        &block[blockSize - SEGMENT_SIZE..],
+    );
     stats.newEvents.nbEvents = SEGMENT_SIZE;
     stats.pastEvents.nbEvents = stats.newEvents.nbEvents;
     if !stats.pastEvents.compare(&stats.newEvents, 0, 8) {
         return blockSize;
     }
-    let middle = blockSize / 2 - segment / 2;
-    HIST_add(&mut stats.middleEvents.events, &block[middle..][..segment]);
+    let middle = blockSize / 2 - SEGMENT_SIZE / 2;
+    HIST_add(
+        &mut stats.middleEvents.events,
+        &block[middle..][..SEGMENT_SIZE],
+    );
     stats.middleEvents.nbEvents = SEGMENT_SIZE;
     let distFromBegin = stats.pastEvents.distance(&stats.middleEvents, 8);
     let distFromEnd = stats.newEvents.distance(&stats.middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if distFromBegin.abs_diff(distFromEnd) < minDistance {
-        return 64 * (1 << 10);
-    }
-    (if distFromBegin > distFromEnd {
+        64 * (1 << 10)
+    } else if distFromBegin > distFromEnd {
         32 * (1 << 10)
     } else {
         96 * (1 << 10)
-    }) as usize
+    }
 }
 
 /// Splits a block to find the optimal boundary for compression.
