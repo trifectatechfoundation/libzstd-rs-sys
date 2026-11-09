@@ -707,10 +707,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     mut displayName: *const core::ffi::c_char,
     adv: *const BMK_advancedParams_t,
 ) -> BMK_benchOutcome_t {
-    let chunkSizeMax = (if (*adv).chunkSizeMax >= 32
-        && (*adv).mode as core::ffi::c_uint
-            != BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-    {
+    let chunkSizeMax = (if (*adv).chunkSizeMax >= 32 && (*adv).mode != BMK_decodeOnly {
         (*adv).chunkSizeMax
     } else {
         srcSize
@@ -736,7 +733,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     if strlen(displayName) > 17 {
         displayName = displayName.add((strlen(displayName)).wrapping_sub(17));
     }
-    if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
+    if (*adv).mode == BMK_decodeOnly {
         let mut srcPtr = srcBuffer as *const core::ffi::c_char;
         let mut totalDSize64 = 0u64;
         let mut fileNb: u32 = 0;
@@ -897,9 +894,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     fileNb_0 = 0;
     while fileNb_0 < nbFiles {
         let mut reing = *fileSizes.offset(fileNb_0 as isize);
-        let nbChunksforThisFile = if (*adv).mode as core::ffi::c_uint
-            == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-        {
+        let nbChunksforThisFile = if (*adv).mode == BMK_decodeOnly {
             1
         } else {
             (reing.wrapping_add(chunkSizeMax.wrapping_sub(1)) / chunkSizeMax) as u32
@@ -916,18 +911,14 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             *srcSizes.offset(chunkID as isize) = chunkSize;
             let fresh5 = &mut (*cPtrs.offset(chunkID as isize));
             *fresh5 = cPtr as *mut core::ffi::c_void;
-            *cCapacities.offset(chunkID as isize) = if (*adv).mode as core::ffi::c_uint
-                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-            {
+            *cCapacities.offset(chunkID as isize) = if (*adv).mode == BMK_decodeOnly {
                 chunkSize
             } else {
                 ZSTD_compressBound(chunkSize)
             };
             let fresh6 = &mut (*resPtrs.offset(chunkID as isize));
             *fresh6 = resPtr as *mut core::ffi::c_void;
-            *resSizes.offset(chunkID as isize) = if (*adv).mode as core::ffi::c_uint
-                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-            {
+            *resSizes.offset(chunkID as isize) = if (*adv).mode == BMK_decodeOnly {
                 ZSTD_findDecompressedSize(srcPtr_0 as *const core::ffi::c_void, chunkSize) as size_t
             } else {
                 chunkSize
@@ -936,9 +927,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             cPtr = cPtr.add(*cCapacities.offset(chunkID as isize));
             resPtr = resPtr.add(chunkSize);
             reing = reing.wrapping_sub(chunkSize);
-            if (*adv).mode as core::ffi::c_uint
-                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-            {
+            if (*adv).mode == BMK_decodeOnly {
                 *cSizes.offset(chunkID as isize) = chunkSize;
                 benchResult.cSize = chunkSize;
             }
@@ -947,7 +936,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         fileNb_0 = fileNb_0.wrapping_add(1);
     }
     nbChunks = chunkID;
-    if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
+    if (*adv).mode == BMK_decodeOnly {
         memcpy(compressedBuffer, srcBuffer, loadedCompressedSize);
     } else {
         RDG_genBuffer(compressedBuffer, maxCompressedSize, 0.10f64, 0.50f64, 1);
@@ -959,9 +948,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         );
         fflush(core::ptr::null_mut());
     }
-    let crcOrig = if (*adv).mode as core::ffi::c_uint
-        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-    {
+    let crcOrig = if (*adv).mode == BMK_decodeOnly {
         0
     } else {
         ZSTD_XXH64(srcBuffer, srcSize, 0)
@@ -973,12 +960,8 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         c" \\".as_ptr(),
     ];
     let mut markNb = 0u32;
-    let mut compressionCompleted = ((*adv).mode as core::ffi::c_uint
-        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let mut decompressionCompleted = ((*adv).mode as core::ffi::c_uint
-        == BMK_compressOnly as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let mut compressionCompleted = ((*adv).mode == BMK_decodeOnly) as core::ffi::c_int;
+    let mut decompressionCompleted = ((*adv).mode == BMK_compressOnly) as core::ffi::c_int;
     let mut cbp = BMK_benchParams_t {
         benchFn: None,
         benchPayload: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -1218,9 +1201,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     }
     let resultBuffer = *resultBufferPtr as *const u8;
     let crcCheck = ZSTD_XXH64(resultBuffer as *const core::ffi::c_void, srcSize, 0);
-    if (*adv).mode as core::ffi::c_uint == BMK_both as core::ffi::c_int as core::ffi::c_uint
-        && crcOrig != crcCheck
-    {
+    if (*adv).mode == BMK_both && crcOrig != crcCheck {
         let mut u: size_t = 0;
         fprintf(
             stderr,
@@ -1392,10 +1373,7 @@ pub unsafe fn BMK_benchMemAdvanced(
 ) -> BMK_benchOutcome_t {
     let dstParamsError =
         dstBuffer.is_null() as core::ffi::c_int ^ (dstCapacity == 0) as core::ffi::c_int;
-    let chunkSize = (if (*adv).chunkSizeMax >= 32
-        && (*adv).mode as core::ffi::c_uint
-            != BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-    {
+    let chunkSize = (if (*adv).chunkSizeMax >= 32 && (*adv).mode != BMK_decodeOnly {
         (*adv).chunkSizeMax
     } else {
         srcSize

@@ -1215,15 +1215,11 @@ unsafe fn FIO_setDictBufferMMap(
     fileSize as size_t
 }
 unsafe fn FIO_freeDict(dict: *mut FIO_Dict_t) {
-    if (*dict).dictBufferType as core::ffi::c_uint
-        == FIO_mallocDict as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*dict).dictBufferType == FIO_mallocDict {
         free((*dict).dictBuffer);
         (*dict).dictBuffer = core::ptr::null_mut();
         (*dict).dictBufferSize = 0;
-    } else if (*dict).dictBufferType as core::ffi::c_uint
-        == FIO_mmapDict as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if (*dict).dictBufferType == FIO_mmapDict {
         FIO_munmap(dict);
     } else {
         unreachable!();
@@ -1237,13 +1233,9 @@ unsafe fn FIO_initDict(
     dictBufferType: FIO_dictBufferType_t,
 ) {
     (*dict).dictBufferType = dictBufferType;
-    if (*dict).dictBufferType as core::ffi::c_uint
-        == FIO_mallocDict as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*dict).dictBufferType == FIO_mallocDict {
         (*dict).dictBufferSize = FIO_setDictBufferMalloc(dict, fileName, prefs, dictFileStat);
-    } else if (*dict).dictBufferType as core::ffi::c_uint
-        == FIO_mmapDict as core::ffi::c_int as core::ffi::c_uint
-    {
+    } else if (*dict).dictBufferType == FIO_mmapDict {
         (*dict).dictBufferSize = FIO_setDictBufferMMap(dict, fileName, prefs, dictFileStat);
     } else {
         unreachable!();
@@ -1612,7 +1604,7 @@ unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, size: size_t, pos: size_t) -
     }
 }
 unsafe fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
-    let btScale = (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
+    let btScale = (strat >= ZSTD_btlazy2) as core::ffi::c_int as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
@@ -1647,8 +1639,7 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
         }
         FIO_setLdmFlag(prefs, 1);
     }
-    if cParams.strategy as core::ffi::c_uint >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
-    {
+    if cParams.strategy >= ZSTD_btopt {
         if g_display_prefs.displayLevel >= 4 {
             fprintf(
                 stderr,
@@ -2945,14 +2936,11 @@ unsafe fn FIO_compressGzFrame(
             strm.avail_out = (*writeJob).bufferSize as uInt;
         }
         if srcFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
-            if g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            if g_display_prefs.progressSetting != FIO_ps_never
                 && (g_display_prefs.displayLevel >= 2
-                    || g_display_prefs.progressSetting as core::ffi::c_uint
-                        == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                    || g_display_prefs.progressSetting == FIO_ps_always)
                 && g_display_prefs.displayLevel >= 1
-                && g_display_prefs.progressSetting as core::ffi::c_uint
-                    != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                && g_display_prefs.progressSetting != FIO_ps_never
                 && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                     || g_display_prefs.displayLevel >= 4)
             {
@@ -2967,14 +2955,11 @@ unsafe fn FIO_compressGzFrame(
                     fflush(stderr);
                 }
             }
-        } else if g_display_prefs.progressSetting as core::ffi::c_uint
-            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+        } else if g_display_prefs.progressSetting != FIO_ps_never
             && (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
-            && g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            && g_display_prefs.progressSetting != FIO_ps_never
             && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                 || g_display_prefs.displayLevel >= 4)
         {
@@ -3158,7 +3143,7 @@ unsafe fn FIO_compressLzmaFrame(
             exit(81);
         }
         ret = lzma_alone_encoder(&mut strm, &opt_lzma);
-        if ret as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint {
+        if ret != LZMA_OK {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(stderr, c"zstd: ".as_ptr());
             }
@@ -3188,7 +3173,7 @@ unsafe fn FIO_compressLzmaFrame(
         }
     } else {
         ret = lzma_easy_encoder(&mut strm, compressionLevel as u32, LZMA_CHECK_CRC64);
-        if ret as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint {
+        if ret != LZMA_OK {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(stderr, c"zstd: ".as_ptr());
             }
@@ -3235,9 +3220,7 @@ unsafe fn FIO_compressLzmaFrame(
         let availBefore = strm.avail_in;
         ret = lzma_code(&mut strm, action);
         AIO_ReadPool_consumeBytes((*ress).readCtx, availBefore.wrapping_sub(strm.avail_in));
-        if ret as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint
-            && ret as core::ffi::c_uint != LZMA_STREAM_END as core::ffi::c_int as core::ffi::c_uint
-        {
+        if ret != LZMA_OK && ret != LZMA_STREAM_END {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(stderr, c"zstd: ".as_ptr());
             }
@@ -3274,14 +3257,11 @@ unsafe fn FIO_compressLzmaFrame(
             strm.avail_out = (*writeJob).bufferSize;
         }
         if srcFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
-            if g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            if g_display_prefs.progressSetting != FIO_ps_never
                 && (g_display_prefs.displayLevel >= 2
-                    || g_display_prefs.progressSetting as core::ffi::c_uint
-                        == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                    || g_display_prefs.progressSetting == FIO_ps_always)
                 && g_display_prefs.displayLevel >= 1
-                && g_display_prefs.progressSetting as core::ffi::c_uint
-                    != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                && g_display_prefs.progressSetting != FIO_ps_never
                 && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                     || g_display_prefs.displayLevel >= 4)
             {
@@ -3296,14 +3276,11 @@ unsafe fn FIO_compressLzmaFrame(
                     fflush(stderr);
                 }
             }
-        } else if g_display_prefs.progressSetting as core::ffi::c_uint
-            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+        } else if g_display_prefs.progressSetting != FIO_ps_never
             && (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
-            && g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            && g_display_prefs.progressSetting != FIO_ps_never
             && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                 || g_display_prefs.displayLevel >= 4)
         {
@@ -3319,7 +3296,7 @@ unsafe fn FIO_compressLzmaFrame(
                 fflush(stderr);
             }
         }
-        if ret as core::ffi::c_uint == LZMA_STREAM_END as core::ffi::c_int as core::ffi::c_uint {
+        if ret == LZMA_STREAM_END {
             break;
         }
     }
@@ -3537,10 +3514,7 @@ unsafe fn FIO_compressZstdFrame(
             directive = ZSTD_e_end;
         }
         stillToFlush = 1;
-        while inBuff.pos != inBuff.size
-            || directive as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint
-                && stillToFlush != 0
-        {
+        while inBuff.pos != inBuff.size || directive == ZSTD_e_end && stillToFlush != 0 {
             let oldIPos = inBuff.pos;
             let mut outBuff = setOutBuffer((*writeJob).buffer, (*writeJob).bufferSize, 0);
             let toFlushNow = ZSTD_toFlushNow(ress.cctx);
@@ -3645,9 +3619,7 @@ unsafe fn FIO_compressZstdFrame(
                                 );
                             }
                             speedChange = slower;
-                        } else if speedChange as core::ffi::c_uint
-                            == noChange as core::ffi::c_int as core::ffi::c_uint
-                        {
+                        } else if speedChange == noChange {
                             let newlyIngested =
                                 (zfp.ingested).wrapping_sub(previous_zfp_correction.ingested);
                             let newlyConsumed =
@@ -3694,9 +3666,7 @@ unsafe fn FIO_compressZstdFrame(
                         inputBlocked = 0;
                         inputPresented = 0;
                     }
-                    if speedChange as core::ffi::c_uint
-                        == slower as core::ffi::c_int as core::ffi::c_uint
-                    {
+                    if speedChange == slower {
                         if g_display_prefs.displayLevel >= 6 {
                             fprintf(stderr, c"slower speed , higher compression \n".as_ptr());
                         }
@@ -3710,9 +3680,7 @@ unsafe fn FIO_compressZstdFrame(
                             compressionLevel,
                         );
                     }
-                    if speedChange as core::ffi::c_uint
-                        == faster as core::ffi::c_int as core::ffi::c_uint
-                    {
+                    if speedChange == faster {
                         if g_display_prefs.displayLevel >= 6 {
                             fprintf(stderr, c"faster speed , lighter compression \n".as_ptr());
                         }
@@ -3729,11 +3697,9 @@ unsafe fn FIO_compressZstdFrame(
                     lastJobID = zfp.currentJobID;
                 }
             }
-            if g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            if g_display_prefs.progressSetting != FIO_ps_never
                 && (g_display_prefs.displayLevel >= 2
-                    || g_display_prefs.progressSetting as core::ffi::c_uint
-                        == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                    || g_display_prefs.progressSetting == FIO_ps_always)
                 && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                     || g_display_prefs.displayLevel >= 4)
             {
@@ -3749,21 +3715,17 @@ unsafe fn FIO_compressZstdFrame(
                 let consumed_hrs = UTIL_makeHumanReadableSize(zfp_0.consumed as u64);
                 let produced_hrs = UTIL_makeHumanReadableSize(zfp_0.produced as u64);
                 g_displayClock = UTIL_getTime();
-                if g_display_prefs.progressSetting as core::ffi::c_uint
-                    != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                if g_display_prefs.progressSetting != FIO_ps_never
                     && (g_display_prefs.displayLevel >= 2
-                        || g_display_prefs.progressSetting as core::ffi::c_uint
-                            == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                        || g_display_prefs.progressSetting == FIO_ps_always)
                     && g_display_prefs.displayLevel >= 1
                 {
                     fprintf(stderr, c"\r%79s\r".as_ptr(), c"".as_ptr());
                 }
                 if g_display_prefs.displayLevel >= 3 {
-                    if g_display_prefs.progressSetting as core::ffi::c_uint
-                        != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                    if g_display_prefs.progressSetting != FIO_ps_never
                         && (g_display_prefs.displayLevel >= 2
-                            || g_display_prefs.progressSetting as core::ffi::c_uint
-                                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                            || g_display_prefs.progressSetting == FIO_ps_always)
                         && g_display_prefs.displayLevel >= 1
                     {
                         fprintf(
@@ -3788,11 +3750,9 @@ unsafe fn FIO_compressZstdFrame(
                         if srcFileNameSize > 18 {
                             let truncatedSrcFileName =
                                 srcFileName.add(srcFileNameSize).offset(-(15));
-                            if g_display_prefs.progressSetting as core::ffi::c_uint
-                                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                            if g_display_prefs.progressSetting != FIO_ps_never
                                 && (g_display_prefs.displayLevel >= 2
-                                    || g_display_prefs.progressSetting as core::ffi::c_uint
-                                        == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                                    || g_display_prefs.progressSetting == FIO_ps_always)
                                 && g_display_prefs.displayLevel >= 1
                             {
                                 fprintf(
@@ -3803,11 +3763,9 @@ unsafe fn FIO_compressZstdFrame(
                                     truncatedSrcFileName,
                                 );
                             }
-                        } else if g_display_prefs.progressSetting as core::ffi::c_uint
-                            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                        } else if g_display_prefs.progressSetting != FIO_ps_never
                             && (g_display_prefs.displayLevel >= 2
-                                || g_display_prefs.progressSetting as core::ffi::c_uint
-                                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                                || g_display_prefs.progressSetting == FIO_ps_always)
                             && g_display_prefs.displayLevel >= 1
                         {
                             fprintf(
@@ -3820,11 +3778,9 @@ unsafe fn FIO_compressZstdFrame(
                             );
                         }
                     }
-                    if g_display_prefs.progressSetting as core::ffi::c_uint
-                        != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                    if g_display_prefs.progressSetting != FIO_ps_never
                         && (g_display_prefs.displayLevel >= 2
-                            || g_display_prefs.progressSetting as core::ffi::c_uint
-                                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                            || g_display_prefs.progressSetting == FIO_ps_always)
                         && g_display_prefs.displayLevel >= 1
                     {
                         fprintf(
@@ -3836,11 +3792,9 @@ unsafe fn FIO_compressZstdFrame(
                         );
                     }
                     if fileSize != UTIL_FILESIZE_UNKNOWN as u64
-                        && g_display_prefs.progressSetting as core::ffi::c_uint
-                            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                        && g_display_prefs.progressSetting != FIO_ps_never
                         && (g_display_prefs.displayLevel >= 2
-                            || g_display_prefs.progressSetting as core::ffi::c_uint
-                                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                            || g_display_prefs.progressSetting == FIO_ps_always)
                         && g_display_prefs.displayLevel >= 1
                     {
                         fprintf(
@@ -3851,11 +3805,9 @@ unsafe fn FIO_compressZstdFrame(
                             file_hrs.suffix,
                         );
                     }
-                    if g_display_prefs.progressSetting as core::ffi::c_uint
-                        != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                    if g_display_prefs.progressSetting != FIO_ps_never
                         && (g_display_prefs.displayLevel >= 2
-                            || g_display_prefs.progressSetting as core::ffi::c_uint
-                                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                            || g_display_prefs.progressSetting == FIO_ps_always)
                         && g_display_prefs.displayLevel >= 1
                     {
                         fprintf(stderr, c" ==> %2.f%%".as_ptr(), cShare);
@@ -3863,7 +3815,7 @@ unsafe fn FIO_compressZstdFrame(
                 }
             }
         }
-        if directive as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint {
+        if directive == ZSTD_e_end {
             break;
         }
     }
@@ -3937,9 +3889,7 @@ unsafe fn FIO_compressFilename_internal(
                 fileSize,
                 compressionLevel,
                 &mut readsize,
-                ((*prefs).compressionType as core::ffi::c_uint
-                    == FIO_lzmaCompression as core::ffi::c_int as core::ffi::c_uint)
-                    as core::ffi::c_int,
+                ((*prefs).compressionType == FIO_lzmaCompression) as core::ffi::c_int,
             ) as u64;
         }
         4 => {
@@ -3984,11 +3934,8 @@ unsafe fn FIO_compressFilename_internal(
     (*fCtx).totalBytesInput = ((*fCtx).totalBytesInput).wrapping_add(readsize as size_t);
     (*fCtx).totalBytesOutput =
         ((*fCtx).totalBytesOutput).wrapping_add(compressedfilesize as size_t);
-    if g_display_prefs.progressSetting as core::ffi::c_uint
-        != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
-        && (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+    if g_display_prefs.progressSetting != FIO_ps_never
+        && (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
         && g_display_prefs.displayLevel >= 1
     {
         fprintf(stderr, c"\r%79s\r".as_ptr(), c"".as_ptr());
@@ -3998,8 +3945,7 @@ unsafe fn FIO_compressFilename_internal(
         let hr_osize = UTIL_makeHumanReadableSize(compressedfilesize);
         if readsize == 0 {
             if (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
                 && g_display_prefs.displayLevel >= 1
             {
                 fprintf(
@@ -4016,8 +3962,7 @@ unsafe fn FIO_compressFilename_internal(
                 );
             }
         } else if (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+            || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
         {
             fprintf(
@@ -5168,9 +5113,7 @@ unsafe fn FIO_zstdErrorHelp(
         _reserved1: 0,
         _reserved2: 0,
     };
-    if ZSTD_getErrorCode(err) as core::ffi::c_uint
-        != ZSTD_error_frameParameter_windowTooLarge as core::ffi::c_int as core::ffi::c_uint
-    {
+    if ZSTD_getErrorCode(err) != ZSTD_error_frameParameter_windowTooLarge {
         return;
     }
     err = ZSTD_getFrameHeader(
@@ -5264,14 +5207,11 @@ unsafe fn FIO_decompressZstdFrame(
         AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
         frameSize = frameSize.wrapping_add(outBuff.pos as u64);
         if (*fCtx).nbFilesTotal > 1 {
-            if g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            if g_display_prefs.progressSetting != FIO_ps_never
                 && (g_display_prefs.displayLevel >= 2
-                    || g_display_prefs.progressSetting as core::ffi::c_uint
-                        == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                    || g_display_prefs.progressSetting == FIO_ps_always)
                 && g_display_prefs.displayLevel >= 1
-                && g_display_prefs.progressSetting as core::ffi::c_uint
-                    != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+                && g_display_prefs.progressSetting != FIO_ps_never
                 && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                     || g_display_prefs.displayLevel >= 4)
             {
@@ -5290,14 +5230,11 @@ unsafe fn FIO_decompressZstdFrame(
                     fflush(stderr);
                 }
             }
-        } else if g_display_prefs.progressSetting as core::ffi::c_uint
-            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+        } else if g_display_prefs.progressSetting != FIO_ps_never
             && (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
-            && g_display_prefs.progressSetting as core::ffi::c_uint
-                != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+            && g_display_prefs.progressSetting != FIO_ps_never
             && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
                 || g_display_prefs.displayLevel >= 4)
         {
@@ -5492,7 +5429,7 @@ unsafe fn FIO_decompressLzmaFrame(
     } else {
         initRet = lzma_stream_decoder(&mut strm, UINT64_MAX, 0);
     }
-    if initRet as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint {
+    if initRet != LZMA_OK {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
                 stderr,
@@ -5524,7 +5461,7 @@ unsafe fn FIO_decompressLzmaFrame(
             strm.avail_in = (*(*ress).readCtx).srcBufferLoaded;
         }
         ret = lzma_code(&mut strm, action);
-        if ret as core::ffi::c_uint == LZMA_BUF_ERROR as core::ffi::c_int as core::ffi::c_uint {
+        if ret == LZMA_BUF_ERROR {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
                     stderr,
@@ -5534,9 +5471,7 @@ unsafe fn FIO_decompressLzmaFrame(
             }
             decodingError = 1;
             break;
-        } else if ret as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint
-            && ret as core::ffi::c_uint != LZMA_STREAM_END as core::ffi::c_int as core::ffi::c_uint
-        {
+        } else if ret != LZMA_OK && ret != LZMA_STREAM_END {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
                     stderr,
@@ -5556,8 +5491,7 @@ unsafe fn FIO_decompressLzmaFrame(
                 strm.next_out = (*writeJob).buffer as *mut u8;
                 strm.avail_out = (*writeJob).bufferSize;
             }
-            if ret as core::ffi::c_uint == LZMA_STREAM_END as core::ffi::c_int as core::ffi::c_uint
-            {
+            if ret == LZMA_STREAM_END {
                 break;
             }
         }
@@ -5676,19 +5610,14 @@ unsafe fn FIO_decompressFrames(
         }
     }
     (*fCtx).totalBytesOutput = ((*fCtx).totalBytesOutput).wrapping_add(filesize as size_t);
-    if g_display_prefs.progressSetting as core::ffi::c_uint
-        != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
-        && (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+    if g_display_prefs.progressSetting != FIO_ps_never
+        && (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
         && g_display_prefs.displayLevel >= 1
     {
         fprintf(stderr, c"\r%79s\r".as_ptr(), c"".as_ptr());
     }
     if FIO_shouldDisplayFileSummary(fCtx) != 0
-        && (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+        && (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
         && g_display_prefs.displayLevel >= 1
     {
         fprintf(
@@ -6097,18 +6026,14 @@ pub unsafe fn FIO_decompressMultipleFilenames(
         }
     }
     if FIO_shouldDisplayMultipleFileSummary(fCtx) != 0 {
-        if g_display_prefs.progressSetting as core::ffi::c_uint
-            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+        if g_display_prefs.progressSetting != FIO_ps_never
             && (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
         {
             fprintf(stderr, c"\r%79s\r".as_ptr(), c"".as_ptr());
         }
-        if (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+        if (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
         {
             fprintf(
@@ -6615,11 +6540,7 @@ unsafe fn FIO_listFile(
     }
     displayInfo(inFileName, &info, displayLevel);
     *total = FIO_addFInfo(*total, info);
-    assert!(
-        error as core::ffi::c_uint == info_success as core::ffi::c_int as core::ffi::c_uint
-            || error as core::ffi::c_uint
-                == info_frame_error as core::ffi::c_int as core::ffi::c_uint
-    );
+    assert!(error == info_success || error == info_frame_error);
     error as core::ffi::c_int
 }
 pub unsafe fn FIO_listMultipleFiles(
