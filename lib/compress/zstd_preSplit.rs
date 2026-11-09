@@ -6,7 +6,6 @@ use crate::lib::compress::hist::HIST_add;
 
 pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
 
-pub const BLOCKSIZE_MIN: c_int = 3500;
 pub const THRESHOLD_PENALTY_RATE: c_int = 16;
 pub const THRESHOLD_BASE: c_int = THRESHOLD_PENALTY_RATE - 2;
 pub const THRESHOLD_PENALTY: c_int = 3;
