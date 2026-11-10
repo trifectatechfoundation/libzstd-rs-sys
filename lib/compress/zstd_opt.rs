@@ -1155,13 +1155,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
 
     let opt = &mut *ms.opt.priceTable;
     let matches = &mut *ms.opt.matchTable;
-    let mut lastStretch = ZSTD_optimal_t {
-        price: 0,
-        off: 0,
-        mlen: 0,
-        litlen: 0,
-        rep: [0; 3],
-    };
+    let mut lastStretch = ZSTD_optimal_t::default();
     let mut optLdm = ZSTD_optLdm_t {
         seqStore: if !ms.ldmSeqStore.is_null() {
             *ms.ldmSeqStore
