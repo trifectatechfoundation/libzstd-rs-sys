@@ -96,15 +96,15 @@ impl OptState {
     fn compress_literals(&self) -> bool {
         self.literalCompressionMode != ParamSwitch::Disable
     }
-}
 
-fn ZSTD_setBasePrices(opt_state: &mut OptState, optLevel: u32) {
-    if opt_state.compress_literals() {
-        opt_state.litSumBasePrice = WEIGHT(opt_state.litSum, optLevel);
+    fn set_base_prices(&mut self, optLevel: u32) {
+        if self.compress_literals() {
+            self.litSumBasePrice = WEIGHT(self.litSum, optLevel);
+        }
+        self.litLengthSumBasePrice = WEIGHT(self.litLengthSum, optLevel);
+        self.matchLengthSumBasePrice = WEIGHT(self.matchLengthSum, optLevel);
+        self.offCodeSumBasePrice = WEIGHT(self.offCodeSum, optLevel);
     }
-    opt_state.litLengthSumBasePrice = WEIGHT(opt_state.litLengthSum, optLevel);
-    opt_state.matchLengthSumBasePrice = WEIGHT(opt_state.matchLengthSum, optLevel);
-    opt_state.offCodeSumBasePrice = WEIGHT(opt_state.offCodeSum, optLevel);
 }
 
 fn ZSTD_downscaleStats(
@@ -265,7 +265,7 @@ unsafe fn ZSTD_rescaleFreqs(
         opt_state.offCodeSum = ZSTD_scaleStats(opt_state.offCodeFreq_mut(), 11);
     }
 
-    ZSTD_setBasePrices(opt_state, optLevel);
+    opt_state.set_base_prices(optLevel);
 }
 
 /// price of a single literal.
@@ -1514,7 +1514,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                 }
 
                 // update all costs
-                ZSTD_setBasePrices(&mut ms.opt, OPT_LEVEL);
+                ms.opt.set_base_prices(OPT_LEVEL);
             }
         }
     }
