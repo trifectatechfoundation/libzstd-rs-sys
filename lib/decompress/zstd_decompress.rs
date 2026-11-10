@@ -2234,12 +2234,19 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Re
             >= align_of::<HUF_ReadDTableX2_Workspace>()
     );
 
+    let bmi2 = ZSTD_cpuSupportsBmi2();
+
     // use fse tables as temporary workspace; implies fse tables are grouped together
     let workspace = &mut entropy.LLTable;
     let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
 
-    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, HUF_flags::empty())
-        .map_err(|_| Error::dictionary_corrupted)?;
+    let hSize = HUF_readDTableX2_wksp(
+        &mut entropy.hufTable,
+        dictPtr,
+        wksp,
+        HUF_flags::empty().with(HUF_flags::BMI2, bmi2),
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
 
     dictPtr = &dictPtr[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
@@ -2265,7 +2272,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Re
         &OF_bits,
         offcodeLog,
         &mut entropy.workspace,
-        false,
+        bmi2,
     );
     dictPtr = &dictPtr[offcodeHeaderSize..];
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
@@ -2291,7 +2298,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Re
         &ML_bits,
         matchlengthLog,
         &mut entropy.workspace,
-        false,
+        bmi2,
     );
     dictPtr = &dictPtr[matchlengthHeaderSize..];
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
@@ -2317,7 +2324,7 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Re
         &LL_bits,
         litlengthLog,
         &mut entropy.workspace,
-        false,
+        bmi2,
     );
     dictPtr = &dictPtr[litlengthHeaderSize..];
     let Some((chunk, dict_content)) = dictPtr.split_first_chunk::<12>() else {
