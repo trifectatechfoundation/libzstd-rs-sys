@@ -208,7 +208,7 @@ pub struct ZSTD_MatchState_t {
     pub chainTable: *mut u32,
     pub forceNonContiguous: core::ffi::c_int,
     pub dedicatedDictSearch: core::ffi::c_int,
-    pub opt: optState_t,
+    pub opt: OptState,
     pub dictMatchState: *const ZSTD_MatchState_t,
     pub cParams: ZSTD_compressionParameters,
     pub ldmSeqStore: *const RawSeqStore_t,
@@ -724,7 +724,7 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
+    OptState, BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod,
     LongLengthType, SeqCollector, StreamStage, TableFillPurpose, ZSTD_BlockCompressor_f,
     ZSTD_LLcode, ZSTD_MLcode, ZSTD_blockSplitCtx, ZSTD_blockState_t, ZSTD_entropyCTables_t,
     ZSTD_fseCTables_t, ZSTD_getSequenceLength, ZSTD_hufCTables_t, ZSTD_localDict, ZSTD_match_t,

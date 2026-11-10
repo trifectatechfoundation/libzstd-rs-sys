@@ -302,7 +302,7 @@ pub enum OptPrice {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct optState_t {
+pub struct OptState {
     pub litFreq: *mut [core::ffi::c_uint; MaxLit as usize + 1],
     pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
     pub matchLengthFreq: *mut [core::ffi::c_uint; MaxML as usize + 1],
@@ -324,7 +324,7 @@ pub struct optState_t {
 
 /// The statistics tables are reserved in the workspace by `ZSTD_reset_matchState`, and so
 /// are only valid when the strategy is at least `ZSTD_btopt`.
-impl optState_t {
+impl OptState {
     pub(crate) unsafe fn litFreq(&self) -> &[core::ffi::c_uint; MaxLit as usize + 1] {
         &*self.litFreq
     }
