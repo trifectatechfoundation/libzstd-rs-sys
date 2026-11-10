@@ -92,12 +92,14 @@ const fn WEIGHT(stat: u32, optLevel: u32) -> u32 {
     }
 }
 
-fn ZSTD_compressedLiterals(opt_state: &OptState) -> bool {
-    opt_state.literalCompressionMode != ParamSwitch::Disable
+impl OptState {
+    fn compress_literals(&self) -> bool {
+        self.literalCompressionMode != ParamSwitch::Disable
+    }
 }
 
 fn ZSTD_setBasePrices(opt_state: &mut OptState, optLevel: u32) {
-    if ZSTD_compressedLiterals(opt_state) {
+    if opt_state.compress_literals() {
         opt_state.litSumBasePrice = WEIGHT(opt_state.litSum, optLevel);
     }
     opt_state.litLengthSumBasePrice = WEIGHT(opt_state.litLengthSum, optLevel);
@@ -147,7 +149,7 @@ unsafe fn ZSTD_rescaleFreqs(
     srcSize: usize,
     optLevel: u32,
 ) {
-    let compressedLiterals = ZSTD_compressedLiterals(opt_state);
+    let compressedLiterals = opt_state.compress_literals();
     opt_state.priceType = OptPrice::Dynamic;
 
     if opt_state.litLengthSum == 0 {
@@ -269,7 +271,7 @@ unsafe fn ZSTD_rescaleFreqs(
 /// price of a single literal.
 /// does not include price of literalLength symbol
 unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &OptState, optLevel: u32) -> u32 {
-    if !ZSTD_compressedLiterals(opt_state) {
+    if !opt_state.compress_literals() {
         return 8 * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
 
@@ -365,7 +367,7 @@ unsafe fn ZSTD_updateStats(
     matchLength: u32,
 ) {
     // literals
-    if ZSTD_compressedLiterals(opt_state) {
+    if opt_state.compress_literals() {
         let litFreq = opt_state.litFreq_mut();
         for u in 0..litLength {
             let freq = &mut litFreq[usize::from(*literals.add(u as usize))];
