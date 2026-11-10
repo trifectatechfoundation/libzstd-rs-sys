@@ -38,7 +38,7 @@ use crate::lib::compress::zstd_compress::{
     RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    optState_t, DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, ZSTD_LLcode,
+    DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, OptState, ZSTD_LLcode,
     ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_hash32Ptr, ZSTD_hashPtr,
     ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
 };
@@ -92,11 +92,11 @@ const fn WEIGHT(stat: u32, optLevel: u32) -> u32 {
     }
 }
 
-fn ZSTD_compressedLiterals(opt_state: &optState_t) -> bool {
+fn ZSTD_compressedLiterals(opt_state: &OptState) -> bool {
     opt_state.literalCompressionMode != ParamSwitch::Disable
 }
 
-fn ZSTD_setBasePrices(opt_state: &mut optState_t, optLevel: u32) {
+fn ZSTD_setBasePrices(opt_state: &mut OptState, optLevel: u32) {
     if ZSTD_compressedLiterals(opt_state) {
         opt_state.litSumBasePrice = WEIGHT(opt_state.litSum, optLevel);
     }
@@ -142,7 +142,7 @@ fn ZSTD_scaleStats(table: &mut [core::ffi::c_uint], logTarget: u32) -> u32 {
 ///    using src for literals stats, and baseline stats for sequence symbols
 /// otherwise downscale existing stats, to be used as seed for next block.
 unsafe fn ZSTD_rescaleFreqs(
-    opt_state: &mut optState_t,
+    opt_state: &mut OptState,
     src: *const u8,
     srcSize: usize,
     optLevel: u32,
@@ -268,7 +268,7 @@ unsafe fn ZSTD_rescaleFreqs(
 
 /// price of a single literal.
 /// does not include price of literalLength symbol
-unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &optState_t, optLevel: u32) -> u32 {
+unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &OptState, optLevel: u32) -> u32 {
     if !ZSTD_compressedLiterals(opt_state) {
         return 8 * BITCOST_MULTIPLIER; // Uncompressed - 8 bytes per literal.
     }
@@ -287,7 +287,7 @@ unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &optState_t, optLevel: u32
 }
 
 /// Cost of literalLength symbol
-unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &optState_t, optLevel: u32) -> u32 {
+unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &OptState, optLevel: u32) -> u32 {
     if opt_state.priceType == OptPrice::Predef {
         return WEIGHT(litLength, optLevel);
     }
@@ -320,7 +320,7 @@ unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &optState_t, optLevel: 
 unsafe fn ZSTD_getMatchPrice(
     offBase: u32,
     matchLength: u32,
-    opt_state: &optState_t,
+    opt_state: &OptState,
     optLevel: u32,
 ) -> u32 {
     let offCode = ZSTD_highbit32(offBase);
@@ -358,7 +358,7 @@ unsafe fn ZSTD_getMatchPrice(
 
 /// assumption: literals + litLength <= iend
 unsafe fn ZSTD_updateStats(
-    opt_state: &mut optState_t,
+    opt_state: &mut OptState,
     litLength: u32,
     literals: *const u8,
     offBase: u32,
