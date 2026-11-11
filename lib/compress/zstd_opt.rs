@@ -1076,7 +1076,7 @@ impl OptLdm {
 /// Adds a match if it's long enough,
 /// based on it's 'matchStartPosInBlock' and 'matchEndPosInBlock',
 /// into 'matches'. Maintains the correct ordering of 'matches'.
-unsafe fn ZSTD_optLdm_maybeAddMatch(
+fn ZSTD_optLdm_maybeAddMatch(
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
     optLdm: &OptLdm,
