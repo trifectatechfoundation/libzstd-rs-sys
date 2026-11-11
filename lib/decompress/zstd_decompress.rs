@@ -328,7 +328,7 @@ unsafe fn ZSTD_initLegacyStream(
     if dict.is_null() {
         dict = &raw mut x as *const core::ffi::c_void;
     }
-    if prevVersion != newVersion {
+    if prevVersion != newVersion && newVersion != 7 {
         ZSTD_freeLegacyStreamContext(*legacyContext, prevVersion);
     }
     match newVersion {
@@ -370,26 +370,24 @@ unsafe fn ZSTD_initLegacyStream(
             *legacyContext = dctx as *mut core::ffi::c_void;
         }
         7 => {
-            let dctx = if prevVersion != newVersion {
-                match ZBUFFv07_createDCtx() {
-                    Ok(dctx) => Box::into_raw(dctx),
-                    Err(_) => return Err(Error::memory_allocation),
-                }
-            } else {
-                *legacyContext as *mut ZBUFFv07_DCtx
-            };
-            if dctx.is_null() {
-                return Err(Error::memory_allocation);
-            }
-
             let dict = if dict.is_null() || dictSize == 0 {
                 &[]
             } else {
                 unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) }
             };
-
-            let _ = ZBUFFv07_decompressInitDictionary(&mut *dctx, dict);
-            *legacyContext = dctx as *mut core::ffi::c_void;
+            if prevVersion != newVersion {
+                // Dictionary ownership makes initialization fallible. Keep the old
+                // context/version pair intact until its replacement is ready.
+                let mut dctx = ZBUFFv07_createDCtx().map_err(|_| Error::memory_allocation)?;
+                ZBUFFv07_decompressInitDictionary(&mut dctx, dict)?;
+                ZSTD_freeLegacyStreamContext(*legacyContext, prevVersion);
+                *legacyContext = Box::into_raw(dctx).cast();
+            } else {
+                let dctx = (*legacyContext as *mut ZBUFFv07_DCtx)
+                    .as_mut()
+                    .ok_or(Error::memory_allocation)?;
+                ZBUFFv07_decompressInitDictionary(dctx, dict)?;
+            }
         }
         _ => {}
     }
@@ -3908,6 +3906,32 @@ pub unsafe extern "C" fn ZSTD_decompressStream_simpleArgs(
 mod tests {
     use super::*;
     use quickcheck::quickcheck;
+
+    #[test]
+    fn v07_initialization_failure_preserves_context() {
+        let malformed = [0x37u8, 0xa4, 0x30, 0xec, 0, 0, 0, 0];
+        for previous in [0, 6, 7] {
+            unsafe {
+                let mut context = core::ptr::null_mut();
+                ZSTD_initLegacyStream(&mut context, 0, previous, core::ptr::null(), 0).unwrap();
+                let original = context;
+                assert_eq!(
+                    ZSTD_initLegacyStream(
+                        &mut context,
+                        previous,
+                        7,
+                        malformed.as_ptr().cast(),
+                        malformed.len()
+                    ),
+                    Err(Error::dictionary_corrupted),
+                );
+                assert_eq!(context, original);
+                // The same version/context pair remains valid for retry and destruction.
+                ZSTD_initLegacyStream(&mut context, previous, 7, core::ptr::null(), 0).unwrap();
+                ZSTD_freeLegacyStreamContext(context, 7);
+            }
+        }
+    }
 
     #[test]
     fn decompress_bound_null() {

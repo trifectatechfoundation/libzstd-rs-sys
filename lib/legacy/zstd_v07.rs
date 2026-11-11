@@ -1,4 +1,5 @@
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use core::ptr;
 use std::alloc::AllocError;
 
@@ -9,7 +10,7 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
-use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice, PointerExt};
+use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[derive(Copy, Clone, Default)]
@@ -27,10 +28,6 @@ pub(crate) struct ZSTDv07_DCtx {
     OffTable: FSEv07_DTable<256>,
     MLTable: FSEv07_DTable<512>,
     hufTable: HUFv07_DTable,
-    previousDstEnd: *const u8,
-    base: *const u8,
-    vBase: *const u8,
-    dictEnd: *const u8,
     expected: usize,
     rep: [u32; ZSTDv07_REP_INIT],
     fParams: ZSTDv07_frameParams,
@@ -174,6 +171,9 @@ pub(crate) struct ZBUFFv07_DCtx {
     inBuff: Box<[u8]>,
     inPos: usize,
     outBuff: Box<[u8]>,
+    dictionary: Box<[u8]>,
+    // After wrapping, outBuff[..historyEnd] is the previous prefix segment.
+    historyEnd: Option<usize>,
     outStart: usize,
     outEnd: usize,
     blockSize: usize,
@@ -1539,7 +1539,6 @@ static ZSTDv07_blockHeaderSize: usize = ZSTDv07_BLOCKHEADERSIZE as usize;
 const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
 const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const LONGNBSEQ: core::ffi::c_int = 0x7f00;
-const MINMATCH: usize = 3;
 const MaxML: core::ffi::c_int = 52;
 const MaxLL: core::ffi::c_int = 35;
 const MaxOff: core::ffi::c_int = 28;
@@ -1569,27 +1568,9 @@ static OF_defaultNorm: [i16; 29] = [
 ];
 static OF_defaultNormLog: u32 = 5;
 const WILDCOPY_OVERLENGTH: usize = 8;
-#[inline]
-unsafe fn ZSTDv07_wildcopy(dst: *mut u8, src: *const u8, length: isize) {
-    let mut ip = src;
-    let mut op = dst;
-    let oend = op.offset(length);
-    loop {
-        core::ptr::copy_nonoverlapping(ip, op, 8);
-        op = op.add(8);
-        ip = ip.add(8);
-        if op >= oend {
-            break;
-        }
-    }
-}
 fn ZSTDv07_decompressBegin(dctx: &mut ZSTDv07_DCtx) {
     dctx.expected = ZSTDv07_frameHeaderSize_min;
     dctx.stage = ZSTDds_getFrameHeaderSize;
-    dctx.previousDstEnd = core::ptr::null();
-    dctx.base = core::ptr::null();
-    dctx.vBase = core::ptr::null();
-    dctx.dictEnd = core::ptr::null();
     dctx.hufTable.description = DTableDesc::default();
     dctx.fseEntropy = 0;
     dctx.litEntropy = dctx.fseEntropy;
@@ -2153,102 +2134,120 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
     FSEv07_updateState(&mut seqState.stateOffb, &mut seqState.DStream);
     seq
 }
-unsafe fn ZSTDv07_execSequence(
-    dst: Writer<'_>,
-    mut sequence: seq_t,
+#[derive(Clone, Copy)]
+enum History<'a> {
+    Dictionary(&'a [u8]),
+    Buffer { end: usize },
+}
+
+// The prefix dst[..start] and the selected history contain previously decoded bytes.
+// MaybeUninit lets the same copy operations write into caller-provided, uninitialized
+// output. No byte is read as a u8, and every successful sequence initializes its output.
+fn ZSTDv07_execSequence(
+    dst: &mut [MaybeUninit<u8>],
+    start: usize,
+    sequence: seq_t,
     litPtr: &mut &[u8],
-    base: *const u8,
-    vBase: *const u8,
-    dictEnd: *const u8,
+    history: History<'_>,
 ) -> Result<usize, Error> {
-    let mut op = dst;
-    if sequence.litLength.wrapping_add(WILDCOPY_OVERLENGTH) > op.capacity() {
+    let capacity = dst
+        .len()
+        .checked_sub(start)
+        .ok_or(Error::dstSize_tooSmall)?;
+    // Retain the legacy decoder's destination padding requirement, even though
+    // bounded copies no longer write past the end of a sequence.
+    if sequence
+        .litLength
+        .checked_add(WILDCOPY_OVERLENGTH)
+        .is_none_or(|n| n > capacity)
+    {
         return Err(Error::dstSize_tooSmall);
     }
-    let mut oLitEnd = op.subslice(sequence.litLength..);
-    let sequenceLength = sequence.litLength + sequence.matchLength;
-    if sequenceLength > op.capacity() {
-        return Err(Error::dstSize_tooSmall);
+    let sequenceLength = sequence
+        .litLength
+        .checked_add(sequence.matchLength)
+        .filter(|&n| n <= capacity)
+        .ok_or(Error::dstSize_tooSmall)?;
+    if litPtr
+        .len()
+        .checked_sub(sequence.litLength)
+        .is_none_or(|n| n < WILDCOPY_OVERLENGTH)
+    {
+        return Err(Error::corruption_detected);
     }
-    let mut oMatchEnd = op.subslice(sequenceLength..);
-    let mut match_0: *const u8 = oLitEnd.as_ptr().wrapping_sub(sequence.offset);
-    match litPtr.len().checked_sub(sequence.litLength) {
-        Some(n) if n >= WILDCOPY_OVERLENGTH => {}
-        _ => return Err(Error::corruption_detected),
+    if sequence.offset == 0 {
+        return Err(Error::corruption_detected);
     }
-    ZSTDv07_wildcopy(
-        op.as_mut_ptr(),
-        (*litPtr).as_ptr(),
-        sequence.litLength as isize,
-    );
-    op = oLitEnd.subslice(..);
+    let mut pos = start + sequence.litLength;
+    let end = start + sequenceLength;
+    dst[start..pos].write_copy_of_slice(&litPtr[..sequence.litLength]);
     *litPtr = &litPtr[sequence.litLength..];
-    if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(base) {
-        if sequence.offset > oLitEnd.as_ptr().addr().wrapping_sub(vBase.addr()) {
-            return Err(Error::corruption_detected);
-        }
-        match_0 = dictEnd.wrapping_sub(base.addr() - match_0.addr());
-        if sequence.matchLength <= dictEnd.addr() - match_0.addr() {
-            core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), sequence.matchLength);
-            return Ok(sequenceLength);
-        }
-        let length1 = dictEnd.offset_from_unsigned(match_0);
-        core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), length1);
-        op = oLitEnd.subslice(length1..);
-        sequence.matchLength = sequence.matchLength.wrapping_sub(length1);
-        match_0 = base;
-        if op.capacity() < WILDCOPY_OVERLENGTH || sequence.matchLength < MINMATCH {
-            while op.as_mut_ptr() < oMatchEnd.as_mut_ptr() {
-                op.write_u8(*match_0);
-                match_0 = match_0.add(1);
+
+    if sequence.offset > pos {
+        let distance = sequence.offset - pos;
+        let length = distance.min(sequence.matchLength);
+        match history {
+            History::Dictionary(dict) => {
+                let begin = dict
+                    .len()
+                    .checked_sub(distance)
+                    .ok_or(Error::corruption_detected)?;
+                dst[pos..pos + length].write_copy_of_slice(&dict[begin..begin + length]);
             }
+            History::Buffer { end: history_end } => {
+                if history_end > dst.len() {
+                    return Err(Error::corruption_detected);
+                }
+                let begin = history_end
+                    .checked_sub(distance)
+                    .ok_or(Error::corruption_detected)?;
+                // The previous ring segment can overlap the destination, just as
+                // the reference decoder's external-dictionary memmove can.
+                dst.copy_within(begin..begin + length, pos);
+            }
+        }
+        pos += length;
+        if pos == end {
             return Ok(sequenceLength);
         }
+        // A match spanning history and prefix continues at dst[0].
+        debug_assert_eq!(pos, sequence.offset);
     }
-    if sequence.offset < 8 {
-        static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static dec64table: [u32; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
-        op.write_u8(*match_0);
-        op.write_u8(*match_0.add(1));
-        op.write_u8(*match_0.add(2));
-        op.write_u8(*match_0.add(3));
-        match_0 = match_0.add(dec32table[sequence.offset] as usize);
-        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 4);
-        match_0 = match_0.sub(dec64table[sequence.offset] as usize);
-        op = op.subslice(4..);
-    } else {
-        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 8);
-        op = op.subslice(8..);
-    }
-    match_0 = match_0.add(8);
-    if oMatchEnd.capacity() < 16 - MINMATCH {
-        if op.capacity() > WILDCOPY_OVERLENGTH {
-            ZSTDv07_wildcopy(
-                op.as_mut_ptr(),
-                match_0,
-                (op.capacity() - WILDCOPY_OVERLENGTH) as isize,
-            );
-            match_0 = match_0.add(op.capacity() - WILDCOPY_OVERLENGTH);
-            op = op.subslice(op.capacity() - WILDCOPY_OVERLENGTH..);
-        }
-        while op.as_ptr() < oMatchEnd.as_ptr() {
-            op.write_u8(*match_0);
-            match_0 = match_0.add(1);
-        }
-    } else {
-        ZSTDv07_wildcopy(op.as_mut_ptr(), match_0, sequence.matchLength as isize - 8);
+
+    // Each copy uses only bytes produced before it. Grow the available pattern
+    // after each copy, so even offset-one matches take logarithmically many copies.
+    let source = pos - sequence.offset;
+    while pos < end {
+        let length = (pos - source).min(end - pos);
+        dst.copy_within(source..source + length, pos);
+        pos += length;
     }
     Ok(sequenceLength)
 }
 fn ZSTDv07_decompressSequences(
     dctx: &mut ZSTDv07_DCtx,
-    dst: Writer<'_>,
+    mut dst: Writer<'_>,
+    start: usize,
+    history: History<'_>,
     seqStart: &[u8],
     literals: Literals<'_>,
 ) -> Result<usize, Error> {
     let mut ip = seqStart;
-    let dst_capacity = dst.capacity();
-    let mut op = dst;
+    // SAFETY: Writer owns this writable allocation for the duration of the call.
+    // One-shot decoding separates overlapping compressed input before reaching
+    // here; streaming uses separate input/literal buffers. MaybeUninit imposes
+    // no initialization requirement on the unwritten output tail.
+    let dst = if dst.capacity() == 0 {
+        &mut [][..]
+    } else {
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                dst.as_mut_ptr().cast::<MaybeUninit<u8>>(),
+                dst.capacity(),
+            )
+        }
+    };
+    let mut pos = start;
     let mut litPtr = match literals {
         Literals::Buffer { len } => &dctx.litBuffer[..len + WILDCOPY_OVERLENGTH],
         Literals::Src(literals) => literals,
@@ -2256,9 +2255,6 @@ fn ZSTDv07_decompressSequences(
     let DTableLL = &mut dctx.LLTable;
     let DTableML = &mut dctx.MLTable;
     let DTableOffb = &mut dctx.OffTable;
-    let base = dctx.base;
-    let vBase = dctx.vBase;
-    let dictEnd = dctx.dictEnd;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTDv07_decodeSeqHeaders(
         &mut nbSeq,
@@ -2288,10 +2284,8 @@ fn ZSTDv07_decompressSequences(
         while seqState.DStream.reload() <= StreamStatus::Completed && nbSeq != 0 {
             nbSeq -= 1;
             let sequence = ZSTDv07_decodeSequence(&mut seqState);
-            let oneSeqSize = unsafe {
-                ZSTDv07_execSequence(op.subslice(..), sequence, &mut litPtr, base, vBase, dictEnd)?
-            };
-            op = op.subslice(oneSeqSize..);
+            let oneSeqSize = ZSTDv07_execSequence(dst, pos, sequence, &mut litPtr, history)?;
+            pos += oneSeqSize;
         }
         if nbSeq != 0 {
             return Err(Error::corruption_detected);
@@ -2299,28 +2293,21 @@ fn ZSTDv07_decompressSequences(
         dctx.rep = core::array::from_fn(|i| seqState.prevOffset[i] as u32);
     }
     let lastLLSize = litPtr.len() - WILDCOPY_OVERLENGTH;
-    if lastLLSize > op.capacity() {
+    if lastLLSize > dst.len() - pos {
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
-        unsafe { ptr::copy_nonoverlapping(litPtr.as_ptr(), op.as_mut_ptr(), lastLLSize) };
-        op = op.subslice(lastLLSize..);
+        dst[pos..pos + lastLLSize].write_copy_of_slice(&litPtr[..lastLLSize]);
+        pos += lastLLSize;
     }
-    Ok(dst_capacity - op.capacity())
-}
-
-fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
-    if dst != dctx.previousDstEnd {
-        dctx.dictEnd = dctx.previousDstEnd;
-        dctx.vBase = dst.wrapping_offset(-dctx.previousDstEnd.wrapping_offset_from(dctx.base));
-        dctx.base = dst;
-        dctx.previousDstEnd = dst;
-    }
+    Ok(pos - start)
 }
 
 fn ZSTDv07_decompressBlock_internal(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
+    start: usize,
+    history: History<'_>,
     src: &[u8],
 ) -> Result<usize, Error> {
     let mut ip = src;
@@ -2329,7 +2316,7 @@ fn ZSTDv07_decompressBlock_internal(
     }
     let (litCSize, literals) = ZSTDv07_decodeLiteralsBlock(dctx, src)?;
     ip = &ip[litCSize..];
-    ZSTDv07_decompressSequences(dctx, dst, ip, literals)
+    ZSTDv07_decompressSequences(dctx, dst, start, history, ip, literals)
 }
 
 fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Result<usize, Error> {
@@ -2343,12 +2330,12 @@ fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Resu
 }
 fn ZSTDv07_decompressFrame(
     dctx: &mut ZSTDv07_DCtx,
-    dst: Writer<'_>,
+    mut dst: Writer<'_>,
     src: Reader<'_>,
+    dict: &[u8],
 ) -> Result<usize, Error> {
     let mut ip = src;
-    let dstCapacity = dst.capacity();
-    let mut op = dst;
+    let mut pos = 0;
     if ip.len() < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
@@ -2373,12 +2360,16 @@ fn ZSTDv07_decompressFrame(
         let decodedSize = match blockProperties.blockType {
             bt_compressed => ZSTDv07_decompressBlock_internal(
                 dctx,
-                op.subslice(..),
+                dst.subslice(..),
+                pos,
+                History::Dictionary(dict),
                 ip.subslice(..cBlockSize).as_slice(),
             )?,
-            bt_raw => ZSTDv07_copyRawBlock(op.subslice(..), ip.subslice(..cBlockSize).as_slice())?,
+            bt_raw => {
+                ZSTDv07_copyRawBlock(dst.subslice(pos..), ip.subslice(..cBlockSize).as_slice())?
+            }
             bt_rle => ZSTDv07_generateNxBytes(
-                op.subslice(..),
+                dst.subslice(pos..),
                 ip.subslice(..1).as_slice()[0],
                 blockProperties.origSize as usize,
             )?,
@@ -2392,13 +2383,13 @@ fn ZSTDv07_decompressFrame(
         };
         if dctx.fParams.checksumFlag != 0 {
             ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
-                op.subslice(..decodedSize).as_slice()
+                dst.subslice(pos..pos + decodedSize).as_slice()
             });
         }
-        op = op.subslice(decodedSize..);
+        pos += decodedSize;
         ip = ip.subslice(cBlockSize..);
     }
-    Ok(dstCapacity - op.capacity())
+    Ok(pos)
 }
 
 pub(crate) fn ZSTDv07_decompress_usingDict(
@@ -2407,10 +2398,16 @@ pub(crate) fn ZSTDv07_decompress_usingDict(
     src: Reader<'_>,
     dict: &[u8],
 ) -> Result<usize, Error> {
-    let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict);
-
-    ZSTDv07_checkContinuity(dctx, dst.as_ptr());
-    ZSTDv07_decompressFrame(dctx, dst, src)
+    let dict = ZSTDv07_decompressBegin_usingDict(dctx, dict)?;
+    let input = src.as_ptr_range();
+    let output = dst.as_ptr_range();
+    if input.start.addr() < output.end.addr() && output.start.addr() < input.end.addr() {
+        let mut copy = box_try_new_zeroed_slice(src.len()).map_err(|_| Error::memory_allocation)?;
+        let input = copy.write_copy_of_slice(src.as_slice());
+        ZSTDv07_decompressFrame(dctx, dst, Reader::from_slice(input), dict)
+    } else {
+        ZSTDv07_decompressFrame(dctx, dst, src, dict)
+    }
 }
 
 fn ZSTD_errorFrameSizeInfoLegacy(
@@ -2484,13 +2481,12 @@ fn ZSTDv07_isSkipFrame(dctx: &ZSTDv07_DCtx) -> bool {
 fn ZSTDv07_decompressContinue(
     dctx: &mut ZSTDv07_DCtx,
     mut dst: Writer<'_>,
+    start: usize,
+    history: History<'_>,
     src: Reader<'_>,
 ) -> Result<usize, Error> {
     if src.len() != dctx.expected {
         return Err(Error::srcSize_wrong);
-    }
-    if dst.capacity() != 0 {
-        ZSTDv07_checkContinuity(dctx, dst.as_ptr());
     }
     match dctx.stage as core::ffi::c_uint {
         0 => {
@@ -2546,8 +2542,14 @@ fn ZSTDv07_decompressContinue(
         }
         3 => {
             let rSize = match dctx.bType {
-                0 => ZSTDv07_decompressBlock_internal(dctx, dst.subslice(..), src.as_slice()),
-                1 => ZSTDv07_copyRawBlock(dst.subslice(..), src.as_slice()),
+                0 => ZSTDv07_decompressBlock_internal(
+                    dctx,
+                    dst.subslice(..),
+                    start,
+                    history,
+                    src.as_slice(),
+                ),
+                1 => ZSTDv07_copyRawBlock(dst.subslice(start..), src.as_slice()),
                 2 => return Err(Error::GENERIC),
                 3 => Ok(0),
                 _ => return Err(Error::GENERIC),
@@ -2555,10 +2557,9 @@ fn ZSTDv07_decompressContinue(
             dctx.stage = ZSTDds_decodeBlockHeader;
             dctx.expected = ZSTDv07_blockHeaderSize;
             let rSize = rSize?;
-            dctx.previousDstEnd = dst.as_ptr().wrapping_add(rSize);
             if dctx.fParams.checksumFlag != 0 {
                 ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
-                    dst.subslice(..rSize).as_slice()
+                    dst.subslice(start..start + rSize).as_slice()
                 });
             }
             return Ok(rSize);
@@ -2584,14 +2585,6 @@ fn ZSTDv07_decompressContinue(
     dctx.expected = ZSTDv07_blockHeaderSize;
     dctx.stage = ZSTDds_decodeBlockHeader;
     Ok(0)
-}
-fn ZSTDv07_refDictContent(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) {
-    dctx.dictEnd = dctx.previousDstEnd;
-    dctx.vBase = dict
-        .as_ptr()
-        .wrapping_offset(-dctx.previousDstEnd.wrapping_offset_from(dctx.base));
-    dctx.base = dict.as_ptr();
-    dctx.previousDstEnd = dict.as_ptr_range().end;
 }
 fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize, Error> {
     let dictSize = dict.len();
@@ -2681,43 +2674,41 @@ fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize
     dctx.litEntropy = dctx.fseEntropy;
     Ok(dictSize - dict.len())
 }
-fn ZSTDv07_decompress_insertDictionary(
+fn ZSTDv07_decompress_insertDictionary<'a>(
     dctx: &mut ZSTDv07_DCtx,
-    mut dict: &[u8],
-) -> Result<(), Error> {
+    mut dict: &'a [u8],
+) -> Result<&'a [u8], Error> {
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
-        ZSTDv07_refDictContent(dctx, dict);
-        return Ok(());
+        return Ok(dict);
     };
     if u32::from_le_bytes(*magic) != ZSTDv07_DICT_MAGIC {
-        ZSTDv07_refDictContent(dctx, dict);
-        return Ok(());
+        return Ok(dict);
     }
     dctx.dictID = u32::from_le_bytes(*dict_id);
     dict = &dict[8..];
     let eSize = ZSTDv07_loadEntropy(dctx, dict).map_err(|_| Error::dictionary_corrupted)?;
     dict = &dict[eSize..];
-    ZSTDv07_refDictContent(dctx, dict);
-    Ok(())
+    Ok(dict)
 }
 
-fn ZSTDv07_decompressBegin_usingDict(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) -> Result<(), Error> {
+fn ZSTDv07_decompressBegin_usingDict<'a>(
+    dctx: &mut ZSTDv07_DCtx,
+    dict: &'a [u8],
+) -> Result<&'a [u8], Error> {
     ZSTDv07_decompressBegin(dctx);
-    if !dict.is_empty() {
-        ZSTDv07_decompress_insertDictionary(&mut *dctx, dict)
-            .map_err(|_| Error::dictionary_corrupted)?;
-    }
-    Ok(())
+    ZSTDv07_decompress_insertDictionary(dctx, dict)
 }
 
 pub(crate) fn ZBUFFv07_createDCtx() -> Result<Box<ZBUFFv07_DCtx>, AllocError> {
     let mut zbd = box_try_new_zeroed::<ZBUFFv07_DCtx>()?;
 
-    // SAFETY: a zeroed ZBUFFv07_DCtx with the zd field set is correctly initialized.
+    // SAFETY: initialize the boxes and Option explicitly; all remaining fields admit zero.
     let mut zbd = unsafe {
         (&raw mut (*zbd.as_mut_ptr()).zd).write(ZSTDv07_createDCtx()?);
         (&raw mut (*zbd.as_mut_ptr()).inBuff).write(Box::default());
         (&raw mut (*zbd.as_mut_ptr()).outBuff).write(Box::default());
+        (&raw mut (*zbd.as_mut_ptr()).dictionary).write(Box::default());
+        (&raw mut (*zbd.as_mut_ptr()).historyEnd).write(None);
         zbd.assume_init()
     };
 
@@ -2740,13 +2731,21 @@ pub(crate) fn ZBUFFv07_decompressInitDictionary(
     zbd: &mut ZBUFFv07_DCtx,
     dict: &[u8],
 ) -> Result<(), Error> {
-    zbd.stage = ZBUFFds_loadHeader;
+    zbd.stage = ZBUFFds_init;
     zbd.outEnd = 0;
     zbd.outStart = zbd.outEnd;
     zbd.inPos = zbd.outStart;
     zbd.lhSize = zbd.inPos;
 
-    ZSTDv07_decompressBegin_usingDict(&mut zbd.zd, dict)
+    zbd.historyEnd = None;
+    let content = ZSTDv07_decompressBegin_usingDict(&mut zbd.zd, dict)?;
+    let mut dictionary =
+        box_try_new_zeroed_slice(content.len()).map_err(|_| Error::memory_allocation)?;
+    dictionary.write_copy_of_slice(content);
+    // SAFETY: every element was initialized by write_copy_of_slice.
+    zbd.dictionary = unsafe { dictionary.assume_init() };
+    zbd.stage = ZBUFFds_loadHeader;
+    Ok(())
 }
 
 #[inline]
@@ -2822,6 +2821,8 @@ fn ZBUFFv07_decompressContinue_internal(
                 ZSTDv07_decompressContinue(
                     &mut zbd.zd,
                     Writer::from_slice(&mut []),
+                    0,
+                    History::Dictionary(&[]),
                     Reader::from_slice(&zbd.headerBuffer[..h1Size]),
                 )?;
                 if h1Size < zbd.lhSize {
@@ -2830,6 +2831,8 @@ fn ZBUFFv07_decompressContinue_internal(
                     ZSTDv07_decompressContinue(
                         &mut zbd.zd,
                         Writer::from_slice(&mut []),
+                        0,
+                        History::Dictionary(&[]),
                         Reader::from_slice(&zbd.headerBuffer[h1Size..][..h2Size]),
                     )?;
                 }
@@ -2885,8 +2888,13 @@ fn ZBUFFv07_decompressContinue_internal(
                     if isSkipFrame {
                         Writer::from_slice(&mut [])
                     } else {
-                        Writer::from_slice(&mut zbd.outBuff[zbd.outStart..])
+                        Writer::from_slice(&mut zbd.outBuff)
                     },
+                    if isSkipFrame { 0 } else { zbd.outStart },
+                    zbd.historyEnd
+                        .map_or(History::Dictionary(&zbd.dictionary), |end| {
+                            History::Buffer { end }
+                        }),
                     src.subslice(ip..ip + neededInSize),
                 )?;
                 ip += neededInSize;
@@ -2931,7 +2939,12 @@ fn ZBUFFv07_decompressContinue_internal(
             let isSkipFrame_0 = ZSTDv07_isSkipFrame(&zbd.zd);
             let decodedSize_0 = ZSTDv07_decompressContinue(
                 &mut zbd.zd,
-                Writer::from_slice(&mut zbd.outBuff[zbd.outStart..]),
+                Writer::from_slice(&mut zbd.outBuff),
+                zbd.outStart,
+                zbd.historyEnd
+                    .map_or(History::Dictionary(&zbd.dictionary), |end| {
+                        History::Buffer { end }
+                    }),
                 Reader::from_slice(&zbd.inBuff[..neededInSize_0]),
             )?;
             zbd.inPos = 0; // input is consumed
@@ -2957,6 +2970,7 @@ fn ZBUFFv07_decompressContinue_internal(
             if flushedSize == toFlushSize {
                 zbd.stage = ZBUFFds_read;
                 if zbd.outStart.wrapping_add(zbd.blockSize) > zbd.outBuff.len() {
+                    zbd.historyEnd = Some(zbd.outEnd);
                     zbd.outEnd = 0;
                     zbd.outStart = zbd.outEnd;
                 }
@@ -2973,3 +2987,6 @@ fn ZBUFFv07_decompressContinue_internal(
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub(zbd.inPos); // already loaded
     Ok(nextSrcSizeHint)
 }
+
+#[cfg(test)]
+mod tests;
