@@ -466,12 +466,10 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
 
 unsafe fn ZSTD_ldm_generateSequences_internal(
     ldmState: &mut LdmState,
-    rawSeqStore: &mut RawSeqStore_t,
+    sequences: &mut RawSeqStoreMut<'_>,
     params: &LdmParams,
     src: &[u8],
 ) -> Result<usize, Error> {
-    let mut sequences = unsafe { RawSeqStoreMut::new(rawSeqStore) };
-
     // LDM parameters
     let extDict = ldmState.window.has_ext_dict();
     let minMatchLength = params.minMatchLength as usize;
@@ -657,17 +655,18 @@ impl LdmState {
         params: &LdmParams,
         src: &[u8],
     ) -> Result<(), Error> {
+        let mut sequences = unsafe { RawSeqStoreMut::new(sequences) };
         let maxDist = 1 << params.windowLog;
         let kMaxChunkSize = 1 << 20;
         let mut leftoverSize = 0;
 
         for chunk in src.chunks(kMaxChunkSize) {
-            if sequences.size >= sequences.capacity {
+            if sequences.len() >= sequences.capacity() {
                 break;
             }
             let chunkStart = chunk.as_ptr_range().start;
             let chunkEnd = chunk.as_ptr_range().end;
-            let prevSize = sequences.size;
+            let prevSize = sequences.len();
 
             // 1. Perform overflow correction if necessary.
             if self.window.needs_overflow_correction(
@@ -709,15 +708,15 @@ impl LdmState {
 
             // 3. Generate the sequences for the chunk, and get newLeftoverSize.
             let newLeftoverSize =
-                ZSTD_ldm_generateSequences_internal(self, sequences, params, chunk)?;
+                ZSTD_ldm_generateSequences_internal(self, &mut sequences, params, chunk)?;
 
             // 4. We add the leftover literals from previous iterations to the first
             //    newly generated sequence, or add the `newLeftoverSize` if none are
             //    generated.
             // Prepend the leftover literals from the last call
-            if prevSize < sequences.size {
-                let fresh5 = &mut (*sequences.seq.add(prevSize)).litLength;
-                *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
+            if prevSize < sequences.len() {
+                let first = &mut sequences.get_sequences()[prevSize];
+                first.litLength = first.litLength.wrapping_add(leftoverSize as u32);
                 leftoverSize = newLeftoverSize;
             } else {
                 leftoverSize = leftoverSize.wrapping_add(chunk.len());
@@ -754,6 +753,14 @@ impl<'a> RawSeqStoreMut<'a> {
             size: &mut store.size,
             pos: &mut store.pos,
         }
+    }
+
+    fn len(&self) -> usize {
+        *self.size
+    }
+
+    fn capacity(&self) -> usize {
+        self.sequences.len()
     }
 
     fn push(&mut self, sequence: rawSeq) -> Result<(), Error> {
