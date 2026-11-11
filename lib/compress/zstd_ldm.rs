@@ -614,16 +614,16 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
             let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
-            let seq = rawSeqStore.seq.add(rawSeqStore.size);
-
             // Out of sequence storage
-            if rawSeqStore.size == rawSeqStore.capacity {
+            if rawSeqStore.size >= rawSeqStore.capacity {
                 return Err(Error::dstSize_tooSmall);
             }
-            (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
-            (*seq).matchLength = mLength as u32;
-            (*seq).offset = offset;
-            rawSeqStore.size = rawSeqStore.size.wrapping_add(1);
+            rawSeqStore.seq.add(rawSeqStore.size).write(rawSeq {
+                litLength: (split - backwardMatchLength - anchor) as u32,
+                matchLength: mLength as u32,
+                offset,
+            });
+            rawSeqStore.size += 1;
 
             // Insert the current entry into the hash table --- it must be
             // done after the previous block to avoid clobbering bestEntry
