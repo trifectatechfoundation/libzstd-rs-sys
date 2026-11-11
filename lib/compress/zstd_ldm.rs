@@ -770,40 +770,35 @@ impl<'a> RawSeqStoreMut<'a> {
             *self.pos += 1;
         }
     }
-}
 
-/// If the sequence length is longer than remaining then the sequence is split
-/// between this block and the next.
-///
-/// Returns the current sequence to handle, or if the rest of the block should
-/// be literals, it returns a sequence with offset == 0.
-fn maybeSplitSequence(
-    seqs: &mut [rawSeq],
-    pos: &mut usize,
-    remaining: u32,
-    minMatch: u32,
-) -> rawSeq {
-    let mut sequence = seqs[*pos];
+    /// If the sequence length is longer than remaining then the sequence is split
+    /// between this block and the next.
+    ///
+    /// Returns the current sequence to handle, or if the rest of the block should
+    /// be literals, it returns a sequence with offset == 0.
+    fn maybe_split_sequence(&mut self, remaining: u32, minMatch: u32) -> rawSeq {
+        let mut sequence = self.sequences[*self.pos];
 
-    // Likely: No partial sequence
-    if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
-        *pos += 1;
-        return sequence;
-    }
-
-    // Cut the sequence short (offset == 0 ==> rest is literals).
-    if remaining <= sequence.litLength {
-        sequence.offset = 0;
-    } else if remaining < sequence.litLength.wrapping_add(sequence.matchLength) {
-        sequence.matchLength = remaining.wrapping_sub(sequence.litLength);
-        if sequence.matchLength < minMatch {
-            sequence.offset = 0;
+        // Likely: No partial sequence
+        if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
+            *self.pos += 1;
+            return sequence;
         }
-    }
 
-    // Skip past `remaining` bytes for the future sequences.
-    RawSeqStoreMut::new(seqs, pos).skip_sequences(remaining as usize, minMatch);
-    sequence
+        // Cut the sequence short (offset == 0 ==> rest is literals).
+        if remaining <= sequence.litLength {
+            sequence.offset = 0;
+        } else if remaining < sequence.litLength.wrapping_add(sequence.matchLength) {
+            sequence.matchLength = remaining.wrapping_sub(sequence.litLength);
+            if sequence.matchLength < minMatch {
+                sequence.offset = 0;
+            }
+        }
+
+        // Skip past `remaining` bytes for the future sequences.
+        self.skip_sequences(remaining as usize, minMatch);
+        sequence
+    }
 }
 
 /// A cursor over borrowed, initialized [`RawSeqStore_t`] sequences.
@@ -902,14 +897,10 @@ pub unsafe fn ZSTD_ldm_blockCompress(
 
     // Loop through each sequence and apply the block compressor to the literals
     while rawSeqStore.pos < rawSeqStore.size && ip < iend {
-        // maybeSplitSequence updates rawSeqStore.pos
+        // maybe_split_sequence updates rawSeqStore.pos
         let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
-        let sequence = maybeSplitSequence(
-            seqs,
-            &mut rawSeqStore.pos,
-            iend.offset_from_unsigned(ip) as u32,
-            minMatch,
-        );
+        let sequence = RawSeqStoreMut::new(seqs, &mut rawSeqStore.pos)
+            .maybe_split_sequence(iend.offset_from_unsigned(ip) as u32, minMatch);
 
         // End signal
         if sequence.offset == 0 {
