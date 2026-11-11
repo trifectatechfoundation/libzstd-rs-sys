@@ -1106,30 +1106,32 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
     }
 }
 
-/// Wrapper function to update ldm seq store and call ldm functions as necessary.
-unsafe fn ZSTD_optLdm_processMatchCandidate(
-    optLdm: &mut OptLdm,
-    matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
-    nbMatches: &mut usize,
-    currPosInBlock: u32,
-    remainingBytes: u32,
-    minMatch: u32,
-) {
-    if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
-        return;
-    }
-
-    if currPosInBlock >= optLdm.endPosInBlock {
-        if currPosInBlock > optLdm.endPosInBlock {
-            // The position at which ZSTD_optLdm_processMatchCandidate() is called is not necessarily
-            // at the end of a match from the ldm seq store, and will often be some bytes
-            // over beyond matchEndPosInBlock. As such, we need to correct for these "overshoots"
-            let posOvershoot = currPosInBlock.wrapping_sub(optLdm.endPosInBlock);
-            ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, posOvershoot as usize);
+impl OptLdm {
+    /// Wrapper function to update ldm seq store and call ldm functions as necessary.
+    unsafe fn process_match_candidate(
+        &mut self,
+        matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
+        nbMatches: &mut usize,
+        currPosInBlock: u32,
+        remainingBytes: u32,
+        minMatch: u32,
+    ) {
+        if self.seqStore.size == 0 || self.seqStore.pos >= self.seqStore.size {
+            return;
         }
-        optLdm.get_next_match_and_update_seq_store(currPosInBlock, remainingBytes);
+
+        if currPosInBlock >= self.endPosInBlock {
+            if currPosInBlock > self.endPosInBlock {
+                // The position at which ZSTD_optLdm_processMatchCandidate() is called is not necessarily
+                // at the end of a match from the ldm seq store, and will often be some bytes
+                // over beyond matchEndPosInBlock. As such, we need to correct for these "overshoots"
+                let posOvershoot = currPosInBlock.wrapping_sub(self.endPosInBlock);
+                ZSTD_ldm_skipRawSeqStoreBytes(&mut self.seqStore, posOvershoot as usize);
+            }
+            self.get_next_match_and_update_seq_store(currPosInBlock, remainingBytes);
+        }
+        ZSTD_optLdm_maybeAddMatch(matches, nbMatches, self, currPosInBlock, minMatch);
     }
-    ZSTD_optLdm_maybeAddMatch(matches, nbMatches, optLdm, currPosInBlock, minMatch);
 }
 
 unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
@@ -1192,8 +1194,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
             litlen == 0,
             minMatch,
         );
-        ZSTD_optLdm_processMatchCandidate(
-            &mut optLdm,
+        optLdm.process_match_candidate(
             matches,
             &mut nbMatches,
             ip.offset_from_unsigned(istart) as u32,
@@ -1363,8 +1364,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                                 minMatch,
                             );
 
-                            ZSTD_optLdm_processMatchCandidate(
-                                &mut optLdm,
+                            optLdm.process_match_candidate(
                                 matches,
                                 &mut nbMatches,
                                 inr.offset_from_unsigned(istart) as u32,
