@@ -61,7 +61,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::xxhash::ZSTD_XXH64_slice;
 use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
+    rawSeq, RawSeqStore, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
@@ -651,7 +651,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 impl LdmState {
     pub unsafe fn generate_sequences(
         &mut self,
-        sequences: &mut RawSeqStore_t,
+        sequences: &mut RawSeqStore,
         params: &LdmParams,
         src: &[u8],
     ) -> Result<(), Error> {
@@ -742,7 +742,7 @@ impl<'a> RawSeqStoreMut<'a> {
     /// - The first `store.size` entries must be initialized.
     /// - The sequences must remain alive and exclusively accessible through
     ///   the returned view for the duration of `'a`.
-    pub(crate) unsafe fn new(store: &'a mut RawSeqStore_t) -> Self {
+    pub(crate) unsafe fn new(store: &'a mut RawSeqStore) -> Self {
         debug_assert!(store.size <= store.capacity);
         Self {
             sequences: if store.seq.is_null() || store.capacity == 0 {
@@ -864,7 +864,7 @@ impl<'a> RawSeqCursor<'a> {
     /// - If `store.size > 0`, `store.seq` must be aligned and valid for reads of
     ///   `store.size` initialized entries in a single allocation.
     /// - The sequences must remain alive and unmodified for the duration of `'a`.
-    pub(crate) unsafe fn new(store: &'a RawSeqStore_t) -> Self {
+    pub(crate) unsafe fn new(store: &'a RawSeqStore) -> Self {
         let sequences = if store.size == 0 {
             &[]
         } else {
@@ -907,14 +907,14 @@ impl<'a> RawSeqCursor<'a> {
 
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: usize) {
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore, nbBytes: usize) {
     let mut cursor = unsafe { RawSeqCursor::new(rawSeqStore) };
     cursor.skip_bytes(nbBytes);
     (rawSeqStore.pos, rawSeqStore.posInSequence) = (cursor.pos, cursor.posInSequence);
 }
 
 pub unsafe fn ZSTD_ldm_blockCompress(
-    rawSeqStore: &mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,

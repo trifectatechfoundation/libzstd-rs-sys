@@ -30,7 +30,7 @@ pub struct ZSTD_CCtx {
     pub(super) ldmState: LdmState,
     pub(super) ldmSequences: *mut rawSeq,
     pub(super) maxNbLdmSequences: usize,
-    pub(super) externSeqStore: RawSeqStore_t,
+    pub(super) externSeqStore: RawSeqStore,
     pub(super) blockState: ZSTD_blockState_t,
     pub(super) tmpWorkspace: *mut core::ffi::c_void,
     pub(super) tmpWkspSize: usize,
@@ -211,14 +211,14 @@ pub struct ZSTD_MatchState_t {
     pub opt: OptState,
     pub dictMatchState: *const ZSTD_MatchState_t,
     pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
+    pub ldmSeqStore: *const RawSeqStore,
     pub prefetchCDictTables: core::ffi::c_int,
     pub lazySkipping: core::ffi::c_int,
 }
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct RawSeqStore_t {
+pub struct RawSeqStore {
     pub seq: *mut rawSeq,
     pub pos: usize,
     pub posInSequence: usize,
@@ -4444,7 +4444,7 @@ unsafe fn ZSTD_buildSeqStore(
             srcSize,
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        let mut ldmSeqStore = RawSeqStore_t::default();
+        let mut ldmSeqStore = RawSeqStore::default();
         if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
