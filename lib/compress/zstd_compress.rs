@@ -765,8 +765,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    LdmEntry, LdmParams, LdmState, ZSTD_ldm_blockCompress, ZSTD_ldm_skipRawSeqStoreBytes,
-    ZSTD_ldm_skipSequences,
+    LdmEntry, LdmParams, LdmState, RawSeqStoreMut, ZSTD_ldm_blockCompress,
+    ZSTD_ldm_skipRawSeqStoreBytes,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -4401,12 +4401,8 @@ unsafe fn ZSTD_buildSeqStore(
             } else {
                 core::slice::from_raw_parts_mut(externSeqStore.seq, externSeqStore.size)
             };
-            ZSTD_ldm_skipSequences(
-                seqs,
-                &mut externSeqStore.pos,
-                srcSize,
-                (*zc).appliedParams.cParams.minMatch,
-            );
+            RawSeqStoreMut::new(seqs, &mut externSeqStore.pos)
+                .skip_sequences(srcSize, (*zc).appliedParams.cParams.minMatch);
         }
         // don't even attempt compression below a certain srcSize
         return Ok(BuildSeqStore::NoCompress);
