@@ -806,7 +806,27 @@ pub(crate) struct RawSeqCursor<'a> {
     posInSequence: usize,
 }
 
-impl RawSeqCursor<'_> {
+impl<'a> RawSeqCursor<'a> {
+    /// Borrows the sequences and copies the store's current position.
+    ///
+    /// # Safety
+    ///
+    /// - If `store.size > 0`, `store.seq` must be aligned and valid for reads of
+    ///   `store.size` initialized entries in a single allocation.
+    /// - The sequences must remain alive and unmodified for the duration of `'a`.
+    pub(crate) unsafe fn new(store: &'a RawSeqStore_t) -> Self {
+        let sequences = if store.size == 0 {
+            &[]
+        } else {
+            unsafe { core::slice::from_raw_parts(store.seq, store.size) }
+        };
+        Self {
+            sequences,
+            pos: store.pos,
+            posInSequence: store.posInSequence,
+        }
+    }
+
     pub(crate) fn skip_bytes(&mut self, nbBytes: usize) {
         let mut currPos = self.posInSequence.wrapping_add(nbBytes) as u32;
         while currPos != 0 && self.pos < self.sequences.len() {
@@ -830,19 +850,9 @@ impl RawSeqCursor<'_> {
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
 pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: usize) {
-    let sequences = if rawSeqStore.size == 0 {
-        &[]
-    } else {
-        unsafe { core::slice::from_raw_parts(rawSeqStore.seq, rawSeqStore.size) }
-    };
-    let mut cursor = RawSeqCursor {
-        sequences,
-        pos: rawSeqStore.pos,
-        posInSequence: rawSeqStore.posInSequence,
-    };
+    let mut cursor = unsafe { RawSeqCursor::new(rawSeqStore) };
     cursor.skip_bytes(nbBytes);
-    rawSeqStore.pos = cursor.pos;
-    rawSeqStore.posInSequence = cursor.posInSequence;
+    (rawSeqStore.pos, rawSeqStore.posInSequence) = (cursor.pos, cursor.posInSequence);
 }
 
 pub unsafe fn ZSTD_ldm_blockCompress(
