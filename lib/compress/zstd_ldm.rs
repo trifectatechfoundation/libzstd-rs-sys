@@ -737,8 +737,23 @@ pub(crate) struct RawSeqStoreMut<'a> {
 }
 
 impl<'a> RawSeqStoreMut<'a> {
-    pub(crate) fn new(sequences: &'a mut [rawSeq], pos: &'a mut usize) -> Self {
-        Self { sequences, pos }
+    /// Borrows the initialized sequences and the store's current position.
+    ///
+    /// # Safety
+    ///
+    /// - If `store.size > 0`, `store.seq` must be aligned and valid for reads and
+    ///   writes of `store.size` initialized entries in a single allocation.
+    /// - The sequences must remain alive and exclusively accessible through
+    ///   the returned view for the duration of `'a`.
+    pub(crate) unsafe fn new(store: &'a mut RawSeqStore_t) -> Self {
+        Self {
+            sequences: if store.seq.is_null() || store.capacity == 0 {
+                &mut []
+            } else {
+                unsafe { core::slice::from_raw_parts_mut(store.seq, store.size) }
+            },
+            pos: &mut store.pos,
+        }
     }
 
     /// Skips source bytes by shortening or consuming sequences and advancing the position.
@@ -898,8 +913,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     // Loop through each sequence and apply the block compressor to the literals
     while rawSeqStore.pos < rawSeqStore.size && ip < iend {
         // maybe_split_sequence updates rawSeqStore.pos
-        let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
-        let sequence = RawSeqStoreMut::new(seqs, &mut rawSeqStore.pos)
+        let sequence = RawSeqStoreMut::new(rawSeqStore)
             .maybe_split_sequence(iend.offset_from_unsigned(ip) as u32, minMatch);
 
         // End signal
