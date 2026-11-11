@@ -4395,13 +4395,7 @@ unsafe fn ZSTD_buildSeqStore(
         if (*zc).appliedParams.cParams.strategy >= ZSTD_btopt {
             ZSTD_ldm_skipRawSeqStoreBytes(&mut (*zc).externSeqStore, srcSize);
         } else {
-            let externSeqStore = &mut (*zc).externSeqStore;
-            let seqs: &mut [rawSeq] = if externSeqStore.seq.is_null() {
-                &mut []
-            } else {
-                core::slice::from_raw_parts_mut(externSeqStore.seq, externSeqStore.size)
-            };
-            RawSeqStoreMut::new(seqs, &mut externSeqStore.pos)
+            RawSeqStoreMut::new(&mut (*zc).externSeqStore)
                 .skip_sequences(srcSize, (*zc).appliedParams.cParams.minMatch);
         }
         // don't even attempt compression below a certain srcSize
