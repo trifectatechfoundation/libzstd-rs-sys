@@ -756,9 +756,13 @@ impl<'a> RawSeqStoreMut<'a> {
         }
     }
 
+    fn has_remaining(&self) -> bool {
+        *self.pos < self.sequences.len()
+    }
+
     /// Skips source bytes by shortening or consuming sequences and advancing the position.
     pub(crate) fn skip_sequences(&mut self, mut srcSize: usize, minMatch: u32) {
-        while srcSize > 0 && *self.pos < self.sequences.len() {
+        while srcSize > 0 && self.has_remaining() {
             let seq = &mut self.sequences[*self.pos];
             if srcSize <= seq.litLength as usize {
                 // Skip past srcSize literals
@@ -911,10 +915,10 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     }
 
     // Loop through each sequence and apply the block compressor to the literals
-    while rawSeqStore.pos < rawSeqStore.size && ip < iend {
-        // maybe_split_sequence updates rawSeqStore.pos
-        let sequence = RawSeqStoreMut::new(rawSeqStore)
-            .maybe_split_sequence(iend.offset_from_unsigned(ip) as u32, minMatch);
+    let mut sequences = unsafe { RawSeqStoreMut::new(rawSeqStore) };
+    while sequences.has_remaining() && ip < iend {
+        let sequence =
+            sequences.maybe_split_sequence(iend.offset_from_unsigned(ip) as u32, minMatch);
 
         // End signal
         if sequence.offset == 0 {
