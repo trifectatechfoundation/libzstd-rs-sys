@@ -8,14 +8,14 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
+    SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
 };
 use crate::lib::compress::zstd_compress_internal::{
     DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, OptState, ZSTD_LLcode,
     ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_hash32Ptr, ZSTD_hashPtr,
     ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
 };
-use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
+use crate::lib::compress::zstd_ldm::RawSeqCursor;
 use crate::lib::polyfill::PointerExt;
 use crate::lib::zstd::{ParamSwitch, ZSTD_BLOCKSIZE_MAX};
 use core::mem::MaybeUninit;
@@ -32,8 +32,8 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
 ) -> usize;
 
 #[repr(C)]
-pub struct OptLdm {
-    pub seqStore: RawSeqStore_t,
+pub struct OptLdm<'a> {
+    seqStore: RawSeqCursor<'a>,
     pub startPosInBlock: u32,
     pub endPosInBlock: u32,
     pub offset: u32,
@@ -1012,32 +1012,32 @@ fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZST
     getAllMatchesFns[dictMode as usize][mls.wrapping_sub(3) as usize]
 }
 
-impl OptLdm {
+impl OptLdm<'_> {
     /// Calculates the beginning and end of the next match in the current block.
     /// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
-    unsafe fn get_next_match_and_update_seq_store(
+    fn get_next_match_and_update_seq_store(
         &mut self,
         currPosInBlock: u32,
         blockBytesRemaining: u32,
     ) {
         // Setting match end position to MAX to ensure we never use an LDM during this block
-        if self.seqStore.size == 0 || self.seqStore.pos >= self.seqStore.size {
+        let Some(&currSeq) = self.seqStore.current() else {
             self.startPosInBlock = u32::MAX;
             self.endPosInBlock = u32::MAX;
             return;
-        }
+        };
         // Calculate appropriate bytes left in matchLength and litLength
         // after adjusting based on ldmSeqStore->posInSequence
-        let currSeq = *self.seqStore.seq.add(self.seqStore.pos);
         let currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
-        let literalsBytesRemaining = if self.seqStore.posInSequence < currSeq.litLength as usize {
-            (currSeq.litLength).wrapping_sub(self.seqStore.posInSequence as u32)
+        let posInSequence = self.seqStore.pos_in_sequence();
+        let literalsBytesRemaining = if posInSequence < currSeq.litLength as usize {
+            (currSeq.litLength).wrapping_sub(posInSequence as u32)
         } else {
             0
         };
         let matchBytesRemaining = if literalsBytesRemaining == 0 {
             (currSeq.matchLength)
-                .wrapping_sub((self.seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
+                .wrapping_sub((posInSequence as u32).wrapping_sub(currSeq.litLength))
         } else {
             currSeq.matchLength
         };
@@ -1046,7 +1046,7 @@ impl OptLdm {
         if literalsBytesRemaining >= blockBytesRemaining {
             self.startPosInBlock = u32::MAX;
             self.endPosInBlock = u32::MAX;
-            ZSTD_ldm_skipRawSeqStoreBytes(&mut self.seqStore, blockBytesRemaining as usize);
+            self.seqStore.skip_bytes(blockBytesRemaining as usize);
             return;
         }
 
@@ -1059,16 +1059,12 @@ impl OptLdm {
         if self.endPosInBlock > currBlockEndPos {
             // Match ends after the block ends, we can't use the whole match
             self.endPosInBlock = currBlockEndPos;
-            ZSTD_ldm_skipRawSeqStoreBytes(
-                &mut self.seqStore,
-                currBlockEndPos.wrapping_sub(currPosInBlock) as usize,
-            );
+            self.seqStore
+                .skip_bytes(currBlockEndPos.wrapping_sub(currPosInBlock) as usize);
         } else {
             // Consume number of bytes equal to size of sequence left
-            ZSTD_ldm_skipRawSeqStoreBytes(
-                &mut self.seqStore,
-                literalsBytesRemaining.wrapping_add(matchBytesRemaining) as usize,
-            );
+            self.seqStore
+                .skip_bytes(literalsBytesRemaining.wrapping_add(matchBytesRemaining) as usize);
         }
     }
 }
@@ -1079,7 +1075,7 @@ impl OptLdm {
 fn ZSTD_optLdm_maybeAddMatch(
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
-    optLdm: &OptLdm,
+    optLdm: &OptLdm<'_>,
     currPosInBlock: u32,
     minMatch: u32,
 ) {
@@ -1106,9 +1102,9 @@ fn ZSTD_optLdm_maybeAddMatch(
     }
 }
 
-impl OptLdm {
+impl OptLdm<'_> {
     /// Wrapper function to update ldm seq store and call ldm functions as necessary.
-    unsafe fn process_match_candidate(
+    fn process_match_candidate(
         &mut self,
         matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
         nbMatches: &mut usize,
@@ -1116,7 +1112,7 @@ impl OptLdm {
         remainingBytes: u32,
         minMatch: u32,
     ) {
-        if self.seqStore.size == 0 || self.seqStore.pos >= self.seqStore.size {
+        if self.seqStore.current().is_none() {
             return;
         }
 
@@ -1126,7 +1122,7 @@ impl OptLdm {
                 // at the end of a match from the ldm seq store, and will often be some bytes
                 // over beyond matchEndPosInBlock. As such, we need to correct for these "overshoots"
                 let posOvershoot = currPosInBlock.wrapping_sub(self.endPosInBlock);
-                ZSTD_ldm_skipRawSeqStoreBytes(&mut self.seqStore, posOvershoot as usize);
+                self.seqStore.skip_bytes(posOvershoot as usize);
             }
             self.get_next_match_and_update_seq_store(currPosInBlock, remainingBytes);
         }
@@ -1162,9 +1158,9 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     let mut lastStretch = ZSTD_optimal_t::default();
     let mut optLdm = OptLdm {
         seqStore: if !ms.ldmSeqStore.is_null() {
-            *ms.ldmSeqStore
+            RawSeqCursor::new(&*ms.ldmSeqStore)
         } else {
-            RawSeqStore_t::default()
+            RawSeqCursor::default()
         },
         startPosInBlock: 0,
         endPosInBlock: 0,

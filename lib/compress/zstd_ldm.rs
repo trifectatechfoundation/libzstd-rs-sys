@@ -827,6 +827,14 @@ impl<'a> RawSeqCursor<'a> {
         }
     }
 
+    pub(crate) fn current(&self) -> Option<&rawSeq> {
+        self.sequences.get(self.pos)
+    }
+
+    pub(crate) fn pos_in_sequence(&self) -> usize {
+        self.posInSequence
+    }
+
     pub(crate) fn skip_bytes(&mut self, nbBytes: usize) {
         let mut currPos = self.posInSequence.wrapping_add(nbBytes) as u32;
         while currPos != 0 && self.pos < self.sequences.len() {
