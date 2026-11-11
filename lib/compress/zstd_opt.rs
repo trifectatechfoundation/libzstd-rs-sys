@@ -1012,62 +1012,64 @@ fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZST
     getAllMatchesFns[dictMode as usize][mls.wrapping_sub(3) as usize]
 }
 
-/// Calculates the beginning and end of the next match in the current block.
-/// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
-unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
-    optLdm: &mut OptLdm,
-    currPosInBlock: u32,
-    blockBytesRemaining: u32,
-) {
-    // Setting match end position to MAX to ensure we never use an LDM during this block
-    if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
-        optLdm.startPosInBlock = u32::MAX;
-        optLdm.endPosInBlock = u32::MAX;
-        return;
-    }
-    // Calculate appropriate bytes left in matchLength and litLength
-    // after adjusting based on ldmSeqStore->posInSequence
-    let currSeq = *optLdm.seqStore.seq.add(optLdm.seqStore.pos);
-    let currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
-    let literalsBytesRemaining = if optLdm.seqStore.posInSequence < currSeq.litLength as usize {
-        (currSeq.litLength).wrapping_sub(optLdm.seqStore.posInSequence as u32)
-    } else {
-        0
-    };
-    let matchBytesRemaining = if literalsBytesRemaining == 0 {
-        (currSeq.matchLength)
-            .wrapping_sub((optLdm.seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
-    } else {
-        currSeq.matchLength
-    };
+impl OptLdm {
+    /// Calculates the beginning and end of the next match in the current block.
+    /// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
+    unsafe fn get_next_match_and_update_seq_store(
+        &mut self,
+        currPosInBlock: u32,
+        blockBytesRemaining: u32,
+    ) {
+        // Setting match end position to MAX to ensure we never use an LDM during this block
+        if self.seqStore.size == 0 || self.seqStore.pos >= self.seqStore.size {
+            self.startPosInBlock = u32::MAX;
+            self.endPosInBlock = u32::MAX;
+            return;
+        }
+        // Calculate appropriate bytes left in matchLength and litLength
+        // after adjusting based on ldmSeqStore->posInSequence
+        let currSeq = *self.seqStore.seq.add(self.seqStore.pos);
+        let currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
+        let literalsBytesRemaining = if self.seqStore.posInSequence < currSeq.litLength as usize {
+            (currSeq.litLength).wrapping_sub(self.seqStore.posInSequence as u32)
+        } else {
+            0
+        };
+        let matchBytesRemaining = if literalsBytesRemaining == 0 {
+            (currSeq.matchLength)
+                .wrapping_sub((self.seqStore.posInSequence as u32).wrapping_sub(currSeq.litLength))
+        } else {
+            currSeq.matchLength
+        };
 
-    // If there are more literal bytes than bytes remaining in block, no ldm is possible
-    if literalsBytesRemaining >= blockBytesRemaining {
-        optLdm.startPosInBlock = u32::MAX;
-        optLdm.endPosInBlock = u32::MAX;
-        ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, blockBytesRemaining as usize);
-        return;
-    }
+        // If there are more literal bytes than bytes remaining in block, no ldm is possible
+        if literalsBytesRemaining >= blockBytesRemaining {
+            self.startPosInBlock = u32::MAX;
+            self.endPosInBlock = u32::MAX;
+            ZSTD_ldm_skipRawSeqStoreBytes(&mut self.seqStore, blockBytesRemaining as usize);
+            return;
+        }
 
-    // Matches may be < minMatch by this process. In that case, we will reject them
-    // when we are deciding whether or not to add the ldm
-    optLdm.startPosInBlock = currPosInBlock.wrapping_add(literalsBytesRemaining);
-    optLdm.endPosInBlock = optLdm.startPosInBlock.wrapping_add(matchBytesRemaining);
-    optLdm.offset = currSeq.offset;
+        // Matches may be < minMatch by this process. In that case, we will reject them
+        // when we are deciding whether or not to add the ldm
+        self.startPosInBlock = currPosInBlock.wrapping_add(literalsBytesRemaining);
+        self.endPosInBlock = self.startPosInBlock.wrapping_add(matchBytesRemaining);
+        self.offset = currSeq.offset;
 
-    if optLdm.endPosInBlock > currBlockEndPos {
-        // Match ends after the block ends, we can't use the whole match
-        optLdm.endPosInBlock = currBlockEndPos;
-        ZSTD_ldm_skipRawSeqStoreBytes(
-            &mut optLdm.seqStore,
-            currBlockEndPos.wrapping_sub(currPosInBlock) as usize,
-        );
-    } else {
-        // Consume number of bytes equal to size of sequence left
-        ZSTD_ldm_skipRawSeqStoreBytes(
-            &mut optLdm.seqStore,
-            literalsBytesRemaining.wrapping_add(matchBytesRemaining) as usize,
-        );
+        if self.endPosInBlock > currBlockEndPos {
+            // Match ends after the block ends, we can't use the whole match
+            self.endPosInBlock = currBlockEndPos;
+            ZSTD_ldm_skipRawSeqStoreBytes(
+                &mut self.seqStore,
+                currBlockEndPos.wrapping_sub(currPosInBlock) as usize,
+            );
+        } else {
+            // Consume number of bytes equal to size of sequence left
+            ZSTD_ldm_skipRawSeqStoreBytes(
+                &mut self.seqStore,
+                literalsBytesRemaining.wrapping_add(matchBytesRemaining) as usize,
+            );
+        }
     }
 }
 
@@ -1125,7 +1127,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
             let posOvershoot = currPosInBlock.wrapping_sub(optLdm.endPosInBlock);
             ZSTD_ldm_skipRawSeqStoreBytes(&mut optLdm.seqStore, posOvershoot as usize);
         }
-        ZSTD_opt_getNextMatchAndUpdateSeqStore(optLdm, currPosInBlock, remainingBytes);
+        optLdm.get_next_match_and_update_seq_store(currPosInBlock, remainingBytes);
     }
     ZSTD_optLdm_maybeAddMatch(matches, nbMatches, optLdm, currPosInBlock, minMatch);
 }
@@ -1167,8 +1169,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
         offset: 0,
     };
 
-    ZSTD_opt_getNextMatchAndUpdateSeqStore(
-        &mut optLdm,
+    optLdm.get_next_match_and_update_seq_store(
         ip.offset_from_unsigned(istart) as u32,
         iend.offset_from_unsigned(ip) as u32,
     );
