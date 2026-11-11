@@ -12,7 +12,7 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
+    rawSeq, RawSeqStore, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
     ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
     ZSTD_compressContinue_internal, ZSTD_compressContinue_public, ZSTD_compressEnd_internal,
     ZSTD_createCCtx_advanced, ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx,
@@ -411,29 +411,29 @@ unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> usize {
     ZSTDMT_sizeof_bufferPool(seqPool)
 }
 
-fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
-    RawSeqStore_t {
+fn bufferToSeq(buffer: Buffer) -> RawSeqStore {
+    RawSeqStore {
         seq: buffer.start as *mut rawSeq,
         capacity: buffer.capacity.wrapping_div(size_of::<rawSeq>()),
         ..Default::default()
     }
 }
 
-fn seqToBuffer(seq: RawSeqStore_t) -> Buffer {
+fn seqToBuffer(seq: RawSeqStore) -> Buffer {
     Buffer {
         start: seq.seq as *mut core::ffi::c_void,
         capacity: seq.capacity.wrapping_mul(size_of::<rawSeq>()),
     }
 }
 
-unsafe fn ZSTDMT_getSeq(seqPool: *mut ZSTDMT_seqPool) -> RawSeqStore_t {
+unsafe fn ZSTDMT_getSeq(seqPool: *mut ZSTDMT_seqPool) -> RawSeqStore {
     if (*seqPool).bufferSize == 0 {
-        return RawSeqStore_t::default();
+        return RawSeqStore::default();
     }
     bufferToSeq(ZSTDMT_getBuffer(seqPool))
 }
 
-unsafe fn ZSTDMT_releaseSeq(seqPool: *mut ZSTDMT_seqPool, seq: RawSeqStore_t) {
+unsafe fn ZSTDMT_releaseSeq(seqPool: *mut ZSTDMT_seqPool, seq: RawSeqStore) {
     ZSTDMT_releaseBuffer(seqPool, seqToBuffer(seq));
 }
 
@@ -680,7 +680,7 @@ unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
 
 unsafe fn ZSTDMT_serialState_genSequences(
     serialState: *mut SerialState,
-    seqStore: &mut RawSeqStore_t,
+    seqStore: &mut RawSeqStore,
     src: Range,
     jobID: core::ffi::c_uint,
 ) {
@@ -734,7 +734,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
 unsafe fn ZSTDMT_serialState_applySequences(
     _serialState: *const SerialState,
     jobCCtx: *mut ZSTD_CCtx,
-    seqStore: &RawSeqStore_t,
+    seqStore: &RawSeqStore,
 ) {
     if seqStore.size > 0 {
         ZSTD_referenceExternalSequences(jobCCtx, seqStore.seq, seqStore.size);
