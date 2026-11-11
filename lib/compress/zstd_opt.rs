@@ -10,7 +10,7 @@ pub type ZSTD_getAllMatchesFn = unsafe fn(
 ) -> usize;
 
 #[repr(C)]
-pub struct ZSTD_optLdm_t {
+pub struct OptLdm {
     pub seqStore: RawSeqStore_t,
     pub startPosInBlock: u32,
     pub endPosInBlock: u32,
@@ -1015,7 +1015,7 @@ fn ZSTD_selectBtGetAllMatches(ms: &ZSTD_MatchState_t, dictMode: DictMode) -> ZST
 /// Calculates the beginning and end of the next match in the current block.
 /// Updates 'pos' and 'posInSequence' of the ldmSeqStore.
 unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
-    optLdm: &mut ZSTD_optLdm_t,
+    optLdm: &mut OptLdm,
     currPosInBlock: u32,
     blockBytesRemaining: u32,
 ) {
@@ -1077,7 +1077,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 unsafe fn ZSTD_optLdm_maybeAddMatch(
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
-    optLdm: &ZSTD_optLdm_t,
+    optLdm: &OptLdm,
     currPosInBlock: u32,
     minMatch: u32,
 ) {
@@ -1106,7 +1106,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
 
 /// Wrapper function to update ldm seq store and call ldm functions as necessary.
 unsafe fn ZSTD_optLdm_processMatchCandidate(
-    optLdm: &mut ZSTD_optLdm_t,
+    optLdm: &mut OptLdm,
     matches: &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     nbMatches: &mut usize,
     currPosInBlock: u32,
@@ -1156,7 +1156,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     let opt = &mut *ms.opt.priceTable;
     let matches = &mut *ms.opt.matchTable;
     let mut lastStretch = ZSTD_optimal_t::default();
-    let mut optLdm = ZSTD_optLdm_t {
+    let mut optLdm = OptLdm {
         seqStore: if !ms.ldmSeqStore.is_null() {
             *ms.ldmSeqStore
         } else {
