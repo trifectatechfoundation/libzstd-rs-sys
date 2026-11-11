@@ -170,7 +170,7 @@ fn FSE_readNCount_body_default(
 ) -> Result<usize, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 fn FSE_readNCount_body_bmi2(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut u8,
