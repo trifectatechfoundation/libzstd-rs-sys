@@ -730,37 +730,45 @@ impl LdmState {
     }
 }
 
-pub fn ZSTD_ldm_skipSequences(
-    seqs: &mut [rawSeq],
-    pos: &mut usize,
-    mut srcSize: usize,
-    minMatch: u32,
-) {
-    while srcSize > 0 && *pos < seqs.len() {
-        let seq = &mut seqs[*pos];
-        if srcSize <= seq.litLength as usize {
-            // Skip past srcSize literals
-            seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
-            return;
-        }
-        srcSize = srcSize.wrapping_sub(seq.litLength as usize);
-        seq.litLength = 0;
-        if srcSize < seq.matchLength as usize {
-            // Skip past the first srcSize of the match
-            seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
-            if seq.matchLength < minMatch {
-                // The match is too short, omit it
-                let matchLength = seq.matchLength;
-                if let Some(next) = seqs.get_mut(*pos + 1) {
-                    next.litLength = next.litLength.wrapping_add(matchLength);
-                }
-                *pos += 1;
+/// A mutable view of initialized sequences and their position in the store.
+pub(crate) struct RawSeqStoreMut<'a> {
+    sequences: &'a mut [rawSeq],
+    pos: &'a mut usize,
+}
+
+impl<'a> RawSeqStoreMut<'a> {
+    pub(crate) fn new(sequences: &'a mut [rawSeq], pos: &'a mut usize) -> Self {
+        Self { sequences, pos }
+    }
+
+    /// Skips source bytes by shortening or consuming sequences and advancing the position.
+    pub(crate) fn skip_sequences(&mut self, mut srcSize: usize, minMatch: u32) {
+        while srcSize > 0 && *self.pos < self.sequences.len() {
+            let seq = &mut self.sequences[*self.pos];
+            if srcSize <= seq.litLength as usize {
+                // Skip past srcSize literals
+                seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
+                return;
             }
-            return;
+            srcSize = srcSize.wrapping_sub(seq.litLength as usize);
+            seq.litLength = 0;
+            if srcSize < seq.matchLength as usize {
+                // Skip past the first srcSize of the match
+                seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
+                if seq.matchLength < minMatch {
+                    // The match is too short, omit it
+                    let matchLength = seq.matchLength;
+                    if let Some(next) = self.sequences.get_mut(*self.pos + 1) {
+                        next.litLength = next.litLength.wrapping_add(matchLength);
+                    }
+                    *self.pos += 1;
+                }
+                return;
+            }
+            srcSize = srcSize.wrapping_sub(seq.matchLength as usize);
+            seq.matchLength = 0;
+            *self.pos += 1;
         }
-        srcSize = srcSize.wrapping_sub(seq.matchLength as usize);
-        seq.matchLength = 0;
-        *pos += 1;
     }
 }
 
@@ -794,7 +802,7 @@ fn maybeSplitSequence(
     }
 
     // Skip past `remaining` bytes for the future sequences.
-    ZSTD_ldm_skipSequences(seqs, pos, remaining as usize, minMatch);
+    RawSeqStoreMut::new(seqs, pos).skip_sequences(remaining as usize, minMatch);
     sequence
 }
 
