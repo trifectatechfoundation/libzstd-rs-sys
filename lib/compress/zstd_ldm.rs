@@ -798,24 +798,51 @@ fn maybeSplitSequence(
     sequence
 }
 
+/// A cursor over borrowed, initialized [`RawSeqStore_t`] sequences.
+#[derive(Default)]
+pub(crate) struct RawSeqCursor<'a> {
+    sequences: &'a [rawSeq],
+    pos: usize,
+    posInSequence: usize,
+}
+
+impl RawSeqCursor<'_> {
+    pub(crate) fn skip_bytes(&mut self, nbBytes: usize) {
+        let mut currPos = self.posInSequence.wrapping_add(nbBytes) as u32;
+        while currPos != 0 && self.pos < self.sequences.len() {
+            let sequence = self.sequences[self.pos];
+            if currPos >= sequence.litLength.wrapping_add(sequence.matchLength) {
+                currPos =
+                    currPos.wrapping_sub(sequence.litLength.wrapping_add(sequence.matchLength));
+                self.pos = self.pos.wrapping_add(1);
+            } else {
+                self.posInSequence = currPos as usize;
+                break;
+            }
+        }
+
+        if currPos == 0 || self.pos == self.sequences.len() {
+            self.posInSequence = 0;
+        }
+    }
+}
+
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
 pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: usize) {
-    let mut currPos = rawSeqStore.posInSequence.wrapping_add(nbBytes) as u32;
-    while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
-        let currSeq = *rawSeqStore.seq.add(rawSeqStore.pos);
-        if currPos >= currSeq.litLength.wrapping_add(currSeq.matchLength) {
-            currPos = currPos.wrapping_sub(currSeq.litLength.wrapping_add(currSeq.matchLength));
-            rawSeqStore.pos = rawSeqStore.pos.wrapping_add(1);
-        } else {
-            rawSeqStore.posInSequence = currPos as usize;
-            break;
-        }
-    }
-
-    if currPos == 0 || rawSeqStore.pos == rawSeqStore.size {
-        rawSeqStore.posInSequence = 0;
-    }
+    let sequences = if rawSeqStore.size == 0 {
+        &[]
+    } else {
+        unsafe { core::slice::from_raw_parts(rawSeqStore.seq, rawSeqStore.size) }
+    };
+    let mut cursor = RawSeqCursor {
+        sequences,
+        pos: rawSeqStore.pos,
+        posInSequence: rawSeqStore.posInSequence,
+    };
+    cursor.skip_bytes(nbBytes);
+    rawSeqStore.pos = cursor.pos;
+    rawSeqStore.posInSequence = cursor.posInSequence;
 }
 
 pub unsafe fn ZSTD_ldm_blockCompress(
