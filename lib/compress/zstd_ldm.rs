@@ -1,4 +1,21 @@
+use crate::lib::common::error_private::Error;
+use crate::lib::common::xxhash::ZSTD_XXH64_slice;
+use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
+use crate::lib::compress::zstd_compress::{
+    rawSeq, RawSeqStore, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
+    ZSTD_selectBlockCompressor, ZSTD_window_t,
+};
+use crate::lib::compress::zstd_compress_internal::{
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments_safe, ZSTD_count_safe,
+    ZSTD_storeSeq, HASH_READ_SIZE,
+};
+use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
+use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::polyfill::{unlikely, PointerExt};
+use crate::lib::zstd::{
+    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_dfast, ZSTD_fast,
+    ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN,
+};
 use core::mem::MaybeUninit;
 
 #[derive(Copy, Clone)]
@@ -56,24 +73,6 @@ pub struct LdmRollingHashState {
     pub rolling: u64,
     pub stopMask: u64,
 }
-
-use crate::lib::common::error_private::Error;
-use crate::lib::common::xxhash::ZSTD_XXH64_slice;
-use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
-use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
-    ZSTD_selectBlockCompressor, ZSTD_window_t,
-};
-use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments_safe, ZSTD_count_safe,
-    ZSTD_storeSeq, HASH_READ_SIZE,
-};
-use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
-use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
-use crate::lib::zstd::{
-    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_dfast, ZSTD_fast,
-    ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN,
-};
 
 pub const LDM_BATCH_SIZE: usize = 64;
 
