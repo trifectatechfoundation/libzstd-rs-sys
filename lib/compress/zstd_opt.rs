@@ -1,3 +1,25 @@
+use crate::lib::common::bits::ZSTD_highbit32;
+use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits};
+use crate::lib::common::huf::HUF_repeat;
+use crate::lib::common::mem::MEM_read32;
+use crate::lib::common::zstd_internal::{
+    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, RepCodes, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
+};
+use crate::lib::compress::hist::HIST_count_simple;
+use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
+use crate::lib::compress::zstd_compress::{
+    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
+};
+use crate::lib::compress::zstd_compress_internal::{
+    DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, OptState, ZSTD_LLcode,
+    ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_hash32Ptr, ZSTD_hashPtr,
+    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
+};
+use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
+use crate::lib::polyfill::PointerExt;
+use crate::lib::zstd::{ParamSwitch, ZSTD_BLOCKSIZE_MAX};
+use core::mem::MaybeUninit;
+
 pub type ZSTD_getAllMatchesFn = unsafe fn(
     &mut [ZSTD_match_t; ZSTD_OPT_SIZE],
     &mut ZSTD_MatchState_t,
@@ -24,28 +46,6 @@ pub enum BaseDirective {
     Possible = 0,
     Guaranteed = 1,
 }
-
-use crate::lib::common::bits::ZSTD_highbit32;
-use crate::lib::common::fse::{FSE_CState_t, FSE_getMaxNbBits};
-use crate::lib::common::huf::HUF_repeat;
-use crate::lib::common::mem::MEM_read32;
-use crate::lib::common::zstd_internal::{
-    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, RepCodes, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
-};
-use crate::lib::compress::hist::HIST_count_simple;
-use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
-use crate::lib::compress::zstd_compress::{
-    RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t, ZSTD_resetSeqStore, ZSTD_OPT_SIZE,
-};
-use crate::lib::compress::zstd_compress_internal::{
-    DictMatchState, DictMode, DictModeMarker, ExtDict, NoDict, OptPrice, OptState, ZSTD_LLcode,
-    ZSTD_MLcode, ZSTD_count, ZSTD_count_2segments, ZSTD_hash32Ptr, ZSTD_hashPtr,
-    ZSTD_index_overlap_check, ZSTD_match_t, ZSTD_storeSeq, ZSTD_updateRep,
-};
-use crate::lib::compress::zstd_ldm::ZSTD_ldm_skipRawSeqStoreBytes;
-use crate::lib::polyfill::PointerExt;
-use crate::lib::zstd::{ParamSwitch, ZSTD_BLOCKSIZE_MAX};
-use core::mem::MaybeUninit;
 
 #[inline]
 fn ZSTD_newRep(rep: &RepCodes, offBase: u32, ll0: bool) -> RepCodes {
