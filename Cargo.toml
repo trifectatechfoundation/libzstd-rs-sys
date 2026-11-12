@@ -6,10 +6,11 @@ exclude = [ "fuzz" ]
 [workspace.package]
 edition = "2021"
 rust-version = "1.95" # MSRV
+version = "0.0.1-prerelease.2"
 
 [package]
 name = "libzstd-rs-sys"
-version = "0.0.1-prerelease.2"
+version.workspace = true
 repository = "https://github.com/trifectatechfoundation/libzstd-rs-sys"
 description = "a rust implementation of zstd compression and decompression"
 license = "BSD-3-Clause"
