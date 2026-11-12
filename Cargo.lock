@@ -304,7 +304,7 @@ dependencies = [
 
 [[package]]
 name = "test-libzstd-rs-sys"
-version = "0.0.0"
+version = "0.0.1-prerelease.2"
 dependencies = [
  "libzstd-rs-sys",
  "zstd-sys",
