@@ -1,12 +1,29 @@
 #![allow(deprecated)]
-use core::ffi::c_void;
+use core::ffi::{c_void, CStr};
 use std::borrow::Cow;
 
 fn main() {
     let mut it = std::env::args();
 
     let _ = it.next().unwrap();
-    let variant = it.next().unwrap();
+    let maybe_variant = it.next().unwrap();
+    let variant = match maybe_variant.as_str() {
+        "version-rs" => {
+            println!(env!("CARGO_PKG_VERSION"));
+            return;
+        }
+        "version-c" => {
+            println!(
+                "{}",
+                unsafe { CStr::from_ptr(zstd_sys::ZSTD_versionString()) }
+                    .to_str()
+                    .unwrap()
+            );
+            return;
+        }
+        variant => variant,
+    };
+
     let file = it.next();
 
     let silesia_small_tar_zst = include_bytes!("../../silesia-small.tar.zst");
@@ -18,7 +35,7 @@ fn main() {
 
     const N: usize = 20; // do multiple runs for benchmarking
 
-    match variant.as_str() {
+    match variant {
         "c" => {
             for _ in 0..N {
                 c(&input);

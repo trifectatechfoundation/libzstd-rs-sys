@@ -1,11 +1,28 @@
-use core::ffi::c_void;
+use core::ffi::{c_void, CStr};
 use std::borrow::Cow;
 
 fn main() {
     let mut it = std::env::args();
 
     let _ = it.next().unwrap(); // exe
-    let variant = it.next().unwrap();
+    let maybe_variant = it.next().unwrap();
+    let variant = match maybe_variant.as_str() {
+        "version-rs" => {
+            println!(env!("CARGO_PKG_VERSION"));
+            return;
+        }
+        "version-c" => {
+            println!(
+                "{}",
+                unsafe { CStr::from_ptr(zstd_sys::ZSTD_versionString()) }
+                    .to_str()
+                    .unwrap()
+            );
+            return;
+        }
+        variant => variant,
+    };
+
     let level: i32 = it
         .next()
         .unwrap_or_else(|| panic!("missing compression level"))
@@ -22,7 +39,7 @@ fn main() {
 
     const N: usize = 1;
 
-    match variant.as_str() {
+    match variant {
         "c" => {
             for _ in 0..N {
                 let err = c(&input, level);
