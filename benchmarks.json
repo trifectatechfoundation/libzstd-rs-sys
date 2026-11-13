@@ -1,68 +1,118 @@
 {
-    "commands": {
-        "decompress-rs": [
-            "./decompress rs silesia-small.tar.zst",
-            "./decompress rs re2-exhaustive.txt.zst",
-            "./decompress rs zip64support.tar.zst"
-        ],
-        "decompress-c": [
-            "./decompress c silesia-small.tar.zst",
-            "./decompress c re2-exhaustive.txt.zst",
-            "./decompress c zip64support.tar.zst"
-        ],
-        "compress-rs": [
-            "./compress rs 1 silesia-small.tar.zst",
-            "./compress rs 3 silesia-small.tar.zst",
-            "./compress rs 19 silesia-small.tar.zst",
-            "./compress rs 1 re2-exhaustive.txt.zst",
-            "./compress rs 3 re2-exhaustive.txt.zst",
-            "./compress rs 19 re2-exhaustive.txt.zst",
-            "./compress rs 1 zip64support.tar.zst",
-            "./compress rs 3 zip64support.tar.zst",
-            "./compress rs 19 zip64support.tar.zst"
-        ],
-        "compress-c": [
-            "./compress c 1 silesia-small.tar.zst",
-            "./compress c 3 silesia-small.tar.zst",
-            "./compress c 19 silesia-small.tar.zst",
-            "./compress c 1 re2-exhaustive.txt.zst",
-            "./compress c 3 re2-exhaustive.txt.zst",
-            "./compress c 19 re2-exhaustive.txt.zst",
-            "./compress c 1 zip64support.tar.zst",
-            "./compress c 3 zip64support.tar.zst",
-            "./compress c 19 zip64support.tar.zst"
-        ]
-    },
-    "render-versus-self": {
-        "decompression (c vs rs)": {
-            "silesia-small.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 1 }, "after": { "command": "decompress-rs", "index": 1 } },
-            "re2-exhaustive.txt.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 4 }, "after": { "command": "decompress-rs", "index": 4 } },
-            "zip64support.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 7 }, "after": { "command": "decompress-rs", "index": 7 } }
+    "toolchains": {
+        "rustc": {
+            "version": "rustc -vV | awk 'NR == 1 { first = $0 } /LLVM version:/ { llvm = $3 } END { print first \" (LLVM \" llvm \")\" }'",
+            "label": "🦀 Rust"
         },
-        "compression (c vs rs)": {
-            "silesia-small.tar.zst": { "measure": "cycles", "before": { "command": "compress-c", "index": 1 }, "after": { "command": "compress-rs", "index": 1 } },
-            "re2-exhaustive.txt.zst": { "measure": "cycles", "before": { "command": "compress-c", "index": 4 }, "after": { "command": "compress-rs", "index": 4 } },
-            "zip64support.tar.zst": { "measure": "cycles", "before": { "command": "compress-c", "index": 7 }, "after": { "command": "compress-rs", "index": 7 } }
+        "gcc": {
+            "version": "gcc --version | head -n 1",
+            "label": "🐄 GCC"
+        },
+        "clang": {
+            "version": "clang --version | head -n 1",
+            "label": "🐉 Clang"
         }
     },
-    "render-versus-other": {
-        "decompression (rs, other versus self)": {
-            "measure": "cycles",
-            "command": "decompress-rs",
-            "rows": {
-                "silesia-small.tar.zst": 1,
-                "re2-exhaustive.txt.zst": 4,
-                "zip64support.tar.zst": 7
+    "subjects": {
+        "libzstd-rs": {
+            "name": "libzstd-rs",
+            "version": "./compress version-rs",
+            "toolchain": "rustc"
+        },
+        "zstd-gcc": {
+            "name": "zstd (GCC)",
+            "version": "./compress version-c",
+            "toolchain": "gcc"
+        }
+    },
+    "benchmarks": {
+        "decompression": {
+            "commands": {
+                "libzstd-rs": [
+                    "./decompress rs silesia-small.tar.zst",
+                    "./decompress rs re2-exhaustive.txt.zst",
+                    "./decompress rs zip64support.tar.zst"
+                ],
+                "zstd-gcc": [
+                    "./decompress c silesia-small.tar.zst",
+                    "./decompress c re2-exhaustive.txt.zst",
+                    "./decompress c zip64support.tar.zst"
+                ]
             }
         },
-        "compression (rs, other versus self)": {
-            "measure": "cycles",
-            "command": "compress-rs",
-            "rows": {
-                "silesia-small.tar.zst": 1,
-                "re2-exhaustive.txt.zst": 4,
-                "zip64support.tar.zst": 7
+        "compression": {
+            "commands": {
+                "libzstd-rs": [
+                    "./compress rs 1 silesia-small.tar.zst",
+                    "./compress rs 3 silesia-small.tar.zst",
+                    "./compress rs 19 silesia-small.tar.zst",
+                    "./compress rs 1 re2-exhaustive.txt.zst",
+                    "./compress rs 3 re2-exhaustive.txt.zst",
+                    "./compress rs 19 re2-exhaustive.txt.zst",
+                    "./compress rs 1 zip64support.tar.zst",
+                    "./compress rs 3 zip64support.tar.zst",
+                    "./compress rs 19 zip64support.tar.zst"
+                ],
+                "zstd-gcc": [
+                    "./compress c 1 silesia-small.tar.zst",
+                    "./compress c 3 silesia-small.tar.zst",
+                    "./compress c 19 silesia-small.tar.zst",
+                    "./compress c 1 re2-exhaustive.txt.zst",
+                    "./compress c 3 re2-exhaustive.txt.zst",
+                    "./compress c 19 re2-exhaustive.txt.zst",
+                    "./compress c 1 zip64support.tar.zst",
+                    "./compress c 3 zip64support.tar.zst",
+                    "./compress c 19 zip64support.tar.zst"
+                ]
             }
         }
-    }
+    },
+    "render-versus-self": [
+        {
+            "benchmark": "decompression",
+            "measure": "cycles",
+            "before": "zstd-gcc",
+            "after": "libzstd-rs",
+            "runs": [
+                { "label": "silesia-small.tar.zst", "index": 1 },
+                { "label": "re2-exhaustive.txt.zst", "index": 4 },
+                { "label": "zip64support.tar.zst", "index": 7 }
+            ]
+        },
+        {
+            "benchmark": "compression",
+            "measure": "cycles",
+            "before": "zstd-gcc",
+            "after": "libzstd-rs",
+            "runs": [
+                { "label": "silesia-small.tar.zst", "index": 1 },
+                { "label": "re2-exhaustive.txt.zst", "index": 4 },
+                { "label": "zip64support.tar.zst", "index": 7 }
+            ]
+        }
+    ],
+    "render-versus-other": [
+        {
+            "benchmark": "decompression",
+            "measure": "cycles",
+            "before": "libzstd-rs",
+            "after": "libzstd-rs",
+            "runs": [
+                { "label": "silesia-small.tar.zst", "index": 1 },
+                { "label": "re2-exhaustive.txt.zst", "index": 4 },
+                { "label": "zip64support.tar.zst", "index": 7 }
+            ]
+        },
+        {
+            "benchmark": "compression",
+            "measure": "cycles",
+            "before": "libzstd-rs",
+            "after": "libzstd-rs",
+            "runs": [
+                { "label": "silesia-small.tar.zst", "index": 1 },
+                { "label": "re2-exhaustive.txt.zst", "index": 4 },
+                { "label": "zip64support.tar.zst", "index": 7 }
+            ]
+        }
+    ]
 }
