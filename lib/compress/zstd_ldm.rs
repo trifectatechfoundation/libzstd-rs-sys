@@ -713,8 +713,7 @@ impl LdmState {
             //    newly generated sequence, or add the `newLeftoverSize` if none are
             //    generated.
             // Prepend the leftover literals from the last call
-            if prevSize < sequences.len() {
-                let first = &mut sequences.get_sequences()[prevSize];
+            if let Some(first) = sequences.get_sequences().get_mut(prevSize) {
                 first.litLength = first.litLength.wrapping_add(leftoverSize as u32);
                 leftoverSize = newLeftoverSize;
             } else {
@@ -780,16 +779,14 @@ impl<'a> RawSeqStoreMut<'a> {
         unsafe { initialized.assume_init_mut() }
     }
 
-    fn has_remaining(&self) -> bool {
-        *self.pos < *self.size
-    }
-
     /// Skips source bytes by shortening or consuming sequences and advancing the position.
     pub(crate) fn skip_sequences(&mut self, mut srcSize: usize, minMatch: u32) {
-        while srcSize > 0 && self.has_remaining() {
+        while srcSize > 0 {
             let pos = *self.pos;
             let sequences = self.get_sequences();
-            let seq = &mut sequences[pos];
+            let Some(seq) = sequences.get_mut(pos) else {
+                break;
+            };
             if srcSize <= seq.litLength as usize {
                 // Skip past srcSize literals
                 seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
@@ -820,15 +817,16 @@ impl<'a> RawSeqStoreMut<'a> {
     /// between this block and the next.
     ///
     /// Returns the current sequence to handle, or if the rest of the block should
-    /// be literals, it returns a sequence with offset == 0.
-    fn maybe_split_sequence(&mut self, remaining: u32, minMatch: u32) -> rawSeq {
+    /// be literals, it returns a sequence with offset == 0. Returns None when
+    /// there are no sequences left.
+    fn maybe_split_sequence(&mut self, remaining: u32, minMatch: u32) -> Option<rawSeq> {
         let pos = *self.pos;
-        let mut sequence = self.get_sequences()[pos];
+        let mut sequence = self.get_sequences().get(pos).copied()?;
 
         // Likely: No partial sequence
         if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
             *self.pos += 1;
-            return sequence;
+            return Some(sequence);
         }
 
         // Cut the sequence short (offset == 0 ==> rest is literals).
@@ -843,7 +841,7 @@ impl<'a> RawSeqStoreMut<'a> {
 
         // Skip past `remaining` bytes for the future sequences.
         self.skip_sequences(remaining as usize, minMatch);
-        sequence
+        Some(sequence)
     }
 }
 
@@ -943,9 +941,11 @@ pub unsafe fn ZSTD_ldm_blockCompress(
 
     // Loop through each sequence and apply the block compressor to the literals
     let mut sequences = unsafe { RawSeqStoreMut::new(rawSeqStore) };
-    while sequences.has_remaining() && ip < iend {
-        let sequence =
-            sequences.maybe_split_sequence(iend.offset_from_unsigned(ip) as u32, minMatch);
+    while ip < iend {
+        let remaining = iend.offset_from_unsigned(ip) as u32;
+        let Some(sequence) = sequences.maybe_split_sequence(remaining, minMatch) else {
+            break;
+        };
 
         // End signal
         if sequence.offset == 0 {
