@@ -67,3 +67,4 @@ nightly = []
 c-allocator = []
 rust-allocator = []
 unsafe-performance-experimental = []
+pgo = [] # tune inlining for PGO builds on non-x86_64 targets
