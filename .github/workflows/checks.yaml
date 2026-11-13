@@ -291,7 +291,7 @@ jobs:
             os: macos-latest
           - target: "x86_64-pc-windows-gnu"
             os: windows-2022
-            flags: "-lws2_32 -lbcrypt -lntdll -lkernel32 -luserenv -ladvapi32 -lmsvcrt"
+            flags: "-lws2_32 -lbcrypt -lntdll -lkernel32 -luserenv -ladvapi32 -lmsvcrt -lsynchronization"
     steps:
       - name: Checkout sources
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
