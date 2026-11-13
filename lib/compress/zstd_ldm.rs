@@ -1,4 +1,22 @@
+use crate::lib::common::error_private::Error;
+use crate::lib::common::xxhash::ZSTD_XXH64_slice;
+use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
+use crate::lib::compress::zstd_compress::{
+    rawSeq, RawSeqStore, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
+    ZSTD_selectBlockCompressor, ZSTD_window_t,
+};
+use crate::lib::compress::zstd_compress_internal::{
+    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments_safe, ZSTD_count_safe,
+    ZSTD_storeSeq, HASH_READ_SIZE,
+};
+use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
+use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::polyfill::{unlikely, PointerExt};
+use crate::lib::zstd::{
+    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_dfast, ZSTD_fast,
+    ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN,
+};
+use core::mem::MaybeUninit;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -55,24 +73,6 @@ pub struct LdmRollingHashState {
     pub rolling: u64,
     pub stopMask: u64,
 }
-
-use crate::lib::common::error_private::Error;
-use crate::lib::common::xxhash::ZSTD_XXH64_slice;
-use crate::lib::common::zstd_internal::{RepCodes, ZSTD_REP_NUM};
-use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_cwksp_alloc_size,
-    ZSTD_selectBlockCompressor, ZSTD_window_t,
-};
-use crate::lib::compress::zstd_compress_internal::{
-    DictTableLoadMethod, TableFillPurpose, ZSTD_count_2segments_safe, ZSTD_count_safe,
-    ZSTD_storeSeq, HASH_READ_SIZE,
-};
-use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
-use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
-use crate::lib::zstd::{
-    ParamSwitch, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters, ZSTD_dfast, ZSTD_fast,
-    ZSTD_HASHLOG_MAX, ZSTD_HASHLOG_MIN,
-};
 
 pub const LDM_BATCH_SIZE: usize = 64;
 
@@ -465,7 +465,7 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
 
 unsafe fn ZSTD_ldm_generateSequences_internal(
     ldmState: &mut LdmState,
-    rawSeqStore: &mut RawSeqStore_t,
+    sequences: &mut RawSeqStoreMut<'_>,
     params: &LdmParams,
     src: &[u8],
 ) -> Result<usize, Error> {
@@ -614,16 +614,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let offset = newEntry.offset.wrapping_sub(bestEntry.offset);
             let mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
-            let seq = rawSeqStore.seq.add(rawSeqStore.size);
-
-            // Out of sequence storage
-            if rawSeqStore.size == rawSeqStore.capacity {
-                return Err(Error::dstSize_tooSmall);
-            }
-            (*seq).litLength = (split - backwardMatchLength - anchor) as u32;
-            (*seq).matchLength = mLength as u32;
-            (*seq).offset = offset;
-            rawSeqStore.size = rawSeqStore.size.wrapping_add(1);
+            sequences.push(rawSeq {
+                litLength: (split - backwardMatchLength - anchor) as u32,
+                matchLength: mLength as u32,
+                offset,
+            })?;
 
             // Insert the current entry into the hash table --- it must be
             // done after the previous block to avoid clobbering bestEntry
@@ -655,21 +650,22 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 impl LdmState {
     pub unsafe fn generate_sequences(
         &mut self,
-        sequences: &mut RawSeqStore_t,
+        sequences: &mut RawSeqStore,
         params: &LdmParams,
         src: &[u8],
     ) -> Result<(), Error> {
+        let mut sequences = unsafe { RawSeqStoreMut::new(sequences) };
         let maxDist = 1 << params.windowLog;
         let kMaxChunkSize = 1 << 20;
         let mut leftoverSize = 0;
 
         for chunk in src.chunks(kMaxChunkSize) {
-            if sequences.size >= sequences.capacity {
+            if sequences.len() >= sequences.capacity() {
                 break;
             }
             let chunkStart = chunk.as_ptr_range().start;
             let chunkEnd = chunk.as_ptr_range().end;
-            let prevSize = sequences.size;
+            let prevSize = sequences.len();
 
             // 1. Perform overflow correction if necessary.
             if self.window.needs_overflow_correction(
@@ -711,15 +707,14 @@ impl LdmState {
 
             // 3. Generate the sequences for the chunk, and get newLeftoverSize.
             let newLeftoverSize =
-                ZSTD_ldm_generateSequences_internal(self, sequences, params, chunk)?;
+                ZSTD_ldm_generateSequences_internal(self, &mut sequences, params, chunk)?;
 
             // 4. We add the leftover literals from previous iterations to the first
             //    newly generated sequence, or add the `newLeftoverSize` if none are
             //    generated.
             // Prepend the leftover literals from the last call
-            if prevSize < sequences.size {
-                let fresh5 = &mut (*sequences.seq.add(prevSize)).litLength;
-                *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
+            if let Some(first) = sequences.get_sequences().get_mut(prevSize) {
+                first.litLength = first.litLength.wrapping_add(leftoverSize as u32);
                 leftoverSize = newLeftoverSize;
             } else {
                 leftoverSize = leftoverSize.wrapping_add(chunk.len());
@@ -730,96 +725,193 @@ impl LdmState {
     }
 }
 
-pub fn ZSTD_ldm_skipSequences(
-    seqs: &mut [rawSeq],
-    pos: &mut usize,
-    mut srcSize: usize,
-    minMatch: u32,
-) {
-    while srcSize > 0 && *pos < seqs.len() {
-        let seq = &mut seqs[*pos];
-        if srcSize <= seq.litLength as usize {
-            // Skip past srcSize literals
-            seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
-            return;
+/// A mutable view of a sequence store
+pub(crate) struct RawSeqStoreMut<'a> {
+    sequences: &'a mut [MaybeUninit<rawSeq>],
+    size: &'a mut usize,
+    pos: &'a mut usize,
+}
+
+impl<'a> RawSeqStoreMut<'a> {
+    /// # Safety
+    ///
+    /// - If `store.capacity > 0`, `store.seq` must be aligned and valid for reads
+    ///   and writes of `store.capacity` `MaybeUninit<rawSeq>` slots in a single allocation.
+    /// - The first `store.size` entries must be initialized.
+    /// - The sequences must remain alive and exclusively accessible through
+    ///   the returned view for the duration of `'a`.
+    pub(crate) unsafe fn new(store: &'a mut RawSeqStore) -> Self {
+        debug_assert!(store.size <= store.capacity);
+        Self {
+            sequences: if store.seq.is_null() || store.capacity == 0 {
+                &mut []
+            } else {
+                unsafe { core::slice::from_raw_parts_mut(store.seq.cast(), store.capacity) }
+            },
+            size: &mut store.size,
+            pos: &mut store.pos,
         }
-        srcSize = srcSize.wrapping_sub(seq.litLength as usize);
-        seq.litLength = 0;
-        if srcSize < seq.matchLength as usize {
-            // Skip past the first srcSize of the match
-            seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
-            if seq.matchLength < minMatch {
-                // The match is too short, omit it
-                let matchLength = seq.matchLength;
-                if let Some(next) = seqs.get_mut(*pos + 1) {
-                    next.litLength = next.litLength.wrapping_add(matchLength);
-                }
-                *pos += 1;
+    }
+
+    fn len(&self) -> usize {
+        *self.size
+    }
+
+    fn capacity(&self) -> usize {
+        self.sequences.len()
+    }
+
+    fn push(&mut self, sequence: rawSeq) -> Result<(), Error> {
+        let slot = self
+            .sequences
+            .get_mut(*self.size)
+            .ok_or(Error::dstSize_tooSmall)?;
+        slot.write(sequence);
+        *self.size += 1;
+        Ok(())
+    }
+
+    /// Returns a mutable references to the initialized sequences
+    fn get_sequences(&mut self) -> &mut [rawSeq] {
+        let initialized = &mut self.sequences[..*self.size];
+        // SAFETY: new requires an initialized prefix, and push initializes each
+        // entry before extending it. Spare capacity is excluded from the slice.
+        unsafe { initialized.assume_init_mut() }
+    }
+
+    /// Skips source bytes by shortening or consuming sequences and advancing the position.
+    pub(crate) fn skip_sequences(&mut self, mut srcSize: usize, minMatch: u32) {
+        while srcSize > 0 {
+            let pos = *self.pos;
+            let sequences = self.get_sequences();
+            let Some(seq) = sequences.get_mut(pos) else {
+                break;
+            };
+            if srcSize <= seq.litLength as usize {
+                // Skip past srcSize literals
+                seq.litLength = seq.litLength.wrapping_sub(srcSize as u32);
+                return;
             }
-            return;
+            srcSize = srcSize.wrapping_sub(seq.litLength as usize);
+            seq.litLength = 0;
+            if srcSize < seq.matchLength as usize {
+                // Skip past the first srcSize of the match
+                seq.matchLength = seq.matchLength.wrapping_sub(srcSize as u32);
+                if seq.matchLength < minMatch {
+                    // The match is too short, omit it
+                    let matchLength = seq.matchLength;
+                    if let Some(next) = sequences.get_mut(pos + 1) {
+                        next.litLength = next.litLength.wrapping_add(matchLength);
+                    }
+                    *self.pos += 1;
+                }
+                return;
+            }
+            srcSize = srcSize.wrapping_sub(seq.matchLength as usize);
+            seq.matchLength = 0;
+            *self.pos += 1;
         }
-        srcSize = srcSize.wrapping_sub(seq.matchLength as usize);
-        seq.matchLength = 0;
-        *pos += 1;
+    }
+
+    /// If the sequence length is longer than remaining then the sequence is split
+    /// between this block and the next.
+    ///
+    /// Returns the current sequence to handle, or if the rest of the block should
+    /// be literals, it returns a sequence with offset == 0. Returns None when
+    /// there are no sequences left.
+    fn maybe_split_sequence(&mut self, remaining: u32, minMatch: u32) -> Option<rawSeq> {
+        let pos = *self.pos;
+        let mut sequence = self.get_sequences().get(pos).copied()?;
+
+        // Likely: No partial sequence
+        if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
+            *self.pos += 1;
+            return Some(sequence);
+        }
+
+        // Cut the sequence short (offset == 0 ==> rest is literals).
+        if remaining <= sequence.litLength {
+            sequence.offset = 0;
+        } else if remaining < sequence.litLength.wrapping_add(sequence.matchLength) {
+            sequence.matchLength = remaining.wrapping_sub(sequence.litLength);
+            if sequence.matchLength < minMatch {
+                sequence.offset = 0;
+            }
+        }
+
+        // Skip past `remaining` bytes for the future sequences.
+        self.skip_sequences(remaining as usize, minMatch);
+        Some(sequence)
     }
 }
 
-/// If the sequence length is longer than remaining then the sequence is split
-/// between this block and the next.
-///
-/// Returns the current sequence to handle, or if the rest of the block should
-/// be literals, it returns a sequence with offset == 0.
-fn maybeSplitSequence(
-    seqs: &mut [rawSeq],
-    pos: &mut usize,
-    remaining: u32,
-    minMatch: u32,
-) -> rawSeq {
-    let mut sequence = seqs[*pos];
+/// A cursor over borrowed, initialized [`RawSeqStore_t`] sequences.
+#[derive(Default)]
+pub(crate) struct RawSeqCursor<'a> {
+    sequences: &'a [rawSeq],
+    pos: usize,
+    posInSequence: usize,
+}
 
-    // Likely: No partial sequence
-    if remaining >= sequence.litLength.wrapping_add(sequence.matchLength) {
-        *pos += 1;
-        return sequence;
-    }
-
-    // Cut the sequence short (offset == 0 ==> rest is literals).
-    if remaining <= sequence.litLength {
-        sequence.offset = 0;
-    } else if remaining < sequence.litLength.wrapping_add(sequence.matchLength) {
-        sequence.matchLength = remaining.wrapping_sub(sequence.litLength);
-        if sequence.matchLength < minMatch {
-            sequence.offset = 0;
+impl<'a> RawSeqCursor<'a> {
+    /// Borrows the sequences and copies the store's current position.
+    ///
+    /// # Safety
+    ///
+    /// - If `store.size > 0`, `store.seq` must be aligned and valid for reads of
+    ///   `store.size` initialized entries in a single allocation.
+    /// - The sequences must remain alive and unmodified for the duration of `'a`.
+    pub(crate) unsafe fn new(store: &'a RawSeqStore) -> Self {
+        let sequences = if store.size == 0 {
+            &[]
+        } else {
+            unsafe { core::slice::from_raw_parts(store.seq, store.size) }
+        };
+        Self {
+            sequences,
+            pos: store.pos,
+            posInSequence: store.posInSequence,
         }
     }
 
-    // Skip past `remaining` bytes for the future sequences.
-    ZSTD_ldm_skipSequences(seqs, pos, remaining as usize, minMatch);
-    sequence
+    pub(crate) fn current(&self) -> Option<&rawSeq> {
+        self.sequences.get(self.pos)
+    }
+
+    pub(crate) fn pos_in_sequence(&self) -> usize {
+        self.posInSequence
+    }
+
+    pub(crate) fn skip_bytes(&mut self, nbBytes: usize) {
+        let mut currPos = self.posInSequence.wrapping_add(nbBytes) as u32;
+        while currPos != 0 && self.pos < self.sequences.len() {
+            let sequence = self.sequences[self.pos];
+            if currPos >= sequence.litLength.wrapping_add(sequence.matchLength) {
+                currPos =
+                    currPos.wrapping_sub(sequence.litLength.wrapping_add(sequence.matchLength));
+                self.pos = self.pos.wrapping_add(1);
+            } else {
+                self.posInSequence = currPos as usize;
+                break;
+            }
+        }
+
+        if currPos == 0 || self.pos == self.sequences.len() {
+            self.posInSequence = 0;
+        }
+    }
 }
 
 /// Moves forward in @rawSeqStore by @nbBytes,
 /// which will update the fields 'pos' and 'posInSequence'.
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore_t, nbBytes: usize) {
-    let mut currPos = rawSeqStore.posInSequence.wrapping_add(nbBytes) as u32;
-    while currPos != 0 && rawSeqStore.pos < rawSeqStore.size {
-        let currSeq = *rawSeqStore.seq.add(rawSeqStore.pos);
-        if currPos >= currSeq.litLength.wrapping_add(currSeq.matchLength) {
-            currPos = currPos.wrapping_sub(currSeq.litLength.wrapping_add(currSeq.matchLength));
-            rawSeqStore.pos = rawSeqStore.pos.wrapping_add(1);
-        } else {
-            rawSeqStore.posInSequence = currPos as usize;
-            break;
-        }
-    }
-
-    if currPos == 0 || rawSeqStore.pos == rawSeqStore.size {
-        rawSeqStore.posInSequence = 0;
-    }
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: &mut RawSeqStore, nbBytes: usize) {
+    let mut cursor = unsafe { RawSeqCursor::new(rawSeqStore) };
+    cursor.skip_bytes(nbBytes);
+    (rawSeqStore.pos, rawSeqStore.posInSequence) = (cursor.pos, cursor.posInSequence);
 }
 
 pub unsafe fn ZSTD_ldm_blockCompress(
-    rawSeqStore: &mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
@@ -848,15 +940,12 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     }
 
     // Loop through each sequence and apply the block compressor to the literals
-    while rawSeqStore.pos < rawSeqStore.size && ip < iend {
-        // maybeSplitSequence updates rawSeqStore.pos
-        let seqs = core::slice::from_raw_parts_mut(rawSeqStore.seq, rawSeqStore.size);
-        let sequence = maybeSplitSequence(
-            seqs,
-            &mut rawSeqStore.pos,
-            iend.offset_from_unsigned(ip) as u32,
-            minMatch,
-        );
+    let mut sequences = unsafe { RawSeqStoreMut::new(rawSeqStore) };
+    while ip < iend {
+        let remaining = iend.offset_from_unsigned(ip) as u32;
+        let Some(sequence) = sequences.maybe_split_sequence(remaining, minMatch) else {
+            break;
+        };
 
         // End signal
         if sequence.offset == 0 {

@@ -30,7 +30,7 @@ pub struct ZSTD_CCtx {
     pub(super) ldmState: LdmState,
     pub(super) ldmSequences: *mut rawSeq,
     pub(super) maxNbLdmSequences: usize,
-    pub(super) externSeqStore: RawSeqStore_t,
+    pub(super) externSeqStore: RawSeqStore,
     pub(super) blockState: ZSTD_blockState_t,
     pub(super) tmpWorkspace: *mut core::ffi::c_void,
     pub(super) tmpWkspSize: usize,
@@ -211,14 +211,14 @@ pub struct ZSTD_MatchState_t {
     pub opt: OptState,
     pub dictMatchState: *const ZSTD_MatchState_t,
     pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
+    pub ldmSeqStore: *const RawSeqStore,
     pub prefetchCDictTables: core::ffi::c_int,
     pub lazySkipping: core::ffi::c_int,
 }
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct RawSeqStore_t {
+pub struct RawSeqStore {
     pub seq: *mut rawSeq,
     pub pos: usize,
     pub posInSequence: usize,
@@ -765,8 +765,8 @@ use crate::lib::compress::zstd_lazy::{
     ZSTD_ROW_HASH_TAG_BITS,
 };
 use crate::lib::compress::zstd_ldm::{
-    LdmEntry, LdmParams, LdmState, ZSTD_ldm_blockCompress, ZSTD_ldm_skipRawSeqStoreBytes,
-    ZSTD_ldm_skipSequences,
+    LdmEntry, LdmParams, LdmState, RawSeqStoreMut, ZSTD_ldm_blockCompress,
+    ZSTD_ldm_skipRawSeqStoreBytes,
 };
 use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
@@ -4395,18 +4395,8 @@ unsafe fn ZSTD_buildSeqStore(
         if (*zc).appliedParams.cParams.strategy >= ZSTD_btopt {
             ZSTD_ldm_skipRawSeqStoreBytes(&mut (*zc).externSeqStore, srcSize);
         } else {
-            let externSeqStore = &mut (*zc).externSeqStore;
-            let seqs: &mut [rawSeq] = if externSeqStore.seq.is_null() {
-                &mut []
-            } else {
-                core::slice::from_raw_parts_mut(externSeqStore.seq, externSeqStore.size)
-            };
-            ZSTD_ldm_skipSequences(
-                seqs,
-                &mut externSeqStore.pos,
-                srcSize,
-                (*zc).appliedParams.cParams.minMatch,
-            );
+            RawSeqStoreMut::new(&mut (*zc).externSeqStore)
+                .skip_sequences(srcSize, (*zc).appliedParams.cParams.minMatch);
         }
         // don't even attempt compression below a certain srcSize
         return Ok(BuildSeqStore::NoCompress);
@@ -4454,7 +4444,7 @@ unsafe fn ZSTD_buildSeqStore(
             srcSize,
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        let mut ldmSeqStore = RawSeqStore_t::default();
+        let mut ldmSeqStore = RawSeqStore::default();
         if (*zc).appliedParams.has_ext_seq_prod() {
             return Err(Error::parameter_combination_unsupported);
         }
