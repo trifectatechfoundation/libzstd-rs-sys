@@ -477,7 +477,7 @@ unsafe fn ZSTD_encodeSequences_default(
     )
 }
 
-#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1,bmi2,lzcnt"))]
 unsafe fn ZSTD_encodeSequences_bmi2(
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
