@@ -3984,7 +3984,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     Ok(stats)
 }
 
-pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: core::ffi::c_int = 20;
+pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: usize = 20;
 
 /// Compresses both literals and sequences.
 ///
@@ -4022,8 +4022,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         .sequences
         .offset_from_unsigned(seqStorePtr.sequencesStart);
     // Base suspicion of uncompressibility on ratio of literals to sequences
-    let suspectUncompressible = numSequences == 0
-        || literals.len() / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as usize;
+    let suspectUncompressible =
+        numSequences == 0 || literals.len() / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO;
 
     let cSize = ZSTD_compressLiterals(
         op as *mut core::ffi::c_void,
