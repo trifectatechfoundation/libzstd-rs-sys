@@ -85,7 +85,7 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
 
         *hashTable.add(h) = idx; // Update Hash Table
         *nextCandidatePtr = matchIndex; // update BT like a chain
-        *sortMarkPtr = ZSTD_DUBT_UNSORTED_MARK as u32;
+        *sortMarkPtr = ZSTD_DUBT_UNSORTED_MARK;
     }
 
     ms.nextToUpdate = target;
@@ -352,7 +352,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     // reach end of unsorted candidates list
     while matchIndex > unsortLimit
-        && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK as u32
+        && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK
         && nbCandidates > 1
     {
         *unsortedMark = previousCandidate; // the unsortedMark becomes a reversed chain, to move up back to original position
@@ -365,7 +365,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     // nullify last candidate if it's still unsorted
     // simplification, detrimental to compression ratio, beneficial for speed
-    if matchIndex > unsortLimit && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK as u32 {
+    if matchIndex > unsortLimit && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK {
         *unsortedMark = 0;
         *nextCandidate = *unsortedMark;
     }

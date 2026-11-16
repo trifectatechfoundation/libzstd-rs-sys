@@ -3724,8 +3724,8 @@ fn ZSTD_reduceTable_internal(table: &mut [u32], reducerValue: u32, preserveMark:
 
     for row in table.as_chunks_mut::<{ ZSTD_ROWSIZE as usize }>().0 {
         for cell in row {
-            *cell = if preserveMark && *cell == ZSTD_DUBT_UNSORTED_MARK as u32 {
-                ZSTD_DUBT_UNSORTED_MARK as u32
+            *cell = if preserveMark && *cell == ZSTD_DUBT_UNSORTED_MARK {
+                ZSTD_DUBT_UNSORTED_MARK
             } else if *cell < reducerThreshold {
                 0
             } else {
