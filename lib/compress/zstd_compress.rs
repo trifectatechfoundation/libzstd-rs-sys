@@ -6408,7 +6408,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     };
     ms.forceNonContiguous = params.deterministicRefPrefix;
 
-    if srcSize <= HASH_READ_SIZE as usize {
+    if srcSize <= HASH_READ_SIZE {
         return;
     }
 
@@ -6429,17 +6429,17 @@ unsafe fn ZSTD_loadDictionaryContent(
         }
         3..=5 => {
             if ms.dedicatedDictSearch != 0 {
-                ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms, iend.sub(HASH_READ_SIZE as usize));
+                ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms, iend.sub(HASH_READ_SIZE));
             } else if params.useRowMatchFinder == ParamSwitch::Enable {
                 let tagTableSize = 1 << params.cParams.hashLog;
                 ptr::write_bytes(ms.tagTable, 0, tagTableSize as usize);
-                ZSTD_row_update(ms, iend.sub(HASH_READ_SIZE as usize));
+                ZSTD_row_update(ms, iend.sub(HASH_READ_SIZE));
             } else {
-                ZSTD_insertAndFindFirstIndex(ms, iend.sub(HASH_READ_SIZE as usize));
+                ZSTD_insertAndFindFirstIndex(ms, iend.sub(HASH_READ_SIZE));
             }
         }
         6..=9 => {
-            ZSTD_updateTree(ms, iend.sub(HASH_READ_SIZE as usize), iend);
+            ZSTD_updateTree(ms, iend.sub(HASH_READ_SIZE), iend);
         }
         _ => {}
     }

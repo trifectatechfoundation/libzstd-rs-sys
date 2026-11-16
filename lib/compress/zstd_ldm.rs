@@ -496,7 +496,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
 
     // Input bounds
     let srcIndex = src.as_ptr().addr().wrapping_sub(base.addr());
-    let ilimit = src.len().saturating_sub(HASH_READ_SIZE as usize);
+    let ilimit = src.len().saturating_sub(HASH_READ_SIZE);
     let prefix =
         core::slice::from_raw_parts(lowPrefixPtr, srcIndex + src.len() - dictLimit as usize);
 

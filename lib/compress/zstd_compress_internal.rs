@@ -21,7 +21,7 @@ use crate::lib::zstd::{
 };
 
 pub const kSearchStrength: core::ffi::c_int = 8;
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
+pub const HASH_READ_SIZE: usize = 8;
 /// For btlazy2 strategy, index `ZSTD_DUBT_UNSORTED_MARK==1` means "unsorted".
 /// It could be confused for a real successor at index "1", if sorted as larger than its predecessor.
 /// It's not a big deal though: the candidate will just be sorted again.
