@@ -22,7 +22,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).sub(HASH_READ_SIZE);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash table.
@@ -60,7 +60,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
     let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash table.
@@ -213,7 +213,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     let prefixStartIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.wrapping_sub(HASH_READ_SIZE);
 
     let mut anchor = istart;
     let mut ip0 = istart;
@@ -540,7 +540,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
     let prefixStartIndex = ms.window.dictLimit;
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.wrapping_sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.wrapping_sub(HASH_READ_SIZE);
     let mut offset_1 = rep[0];
     let mut offset_2 = rep[1];
 

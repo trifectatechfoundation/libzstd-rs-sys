@@ -23,7 +23,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
@@ -67,7 +67,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     let hBitsS = cParams.chainLog;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
-    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE as usize);
+    let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE);
     let fastHashFillStep = 3;
 
     // Always insert every fastHashFillStep position into the hash tables.
@@ -130,7 +130,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     let prefixLowestIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.sub(HASH_READ_SIZE);
     let mut offset_1 = rep[0];
     let mut offset_2 = rep[1];
     let mut offsetSaved1 = 0;
@@ -482,7 +482,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let prefixLowestIndex = ms.get_lowest_prefix_index(endIndex, cParams.windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
-    let ilimit = iend.sub(HASH_READ_SIZE as usize);
+    let ilimit = iend.sub(HASH_READ_SIZE);
     let mut offset_1 = rep[0];
     let mut offset_2 = rep[1];
 
