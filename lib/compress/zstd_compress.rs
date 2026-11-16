@@ -3720,7 +3720,7 @@ pub const ZSTD_ROWSIZE: core::ffi::c_int = 16;
 #[inline(always)]
 fn ZSTD_reduceTable_internal(table: &mut [u32], reducerValue: u32, preserveMark: bool) {
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
-    let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
+    let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX);
 
     for row in table.as_chunks_mut::<{ ZSTD_ROWSIZE as usize }>().0 {
         for cell in row {

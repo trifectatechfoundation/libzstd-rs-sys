@@ -85,8 +85,8 @@ impl ZSTD_window_t {
     pub(crate) fn init(&mut self) {
         self.base = c" ".as_ptr() as *const u8;
         self.dictBase = c" ".as_ptr() as *const u8;
-        self.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
-        self.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
+        self.dictLimit = ZSTD_WINDOW_START_INDEX; // start from >0, so that 1st position is valid
+        self.lowLimit = ZSTD_WINDOW_START_INDEX; // it ensures first and later CCtx usages compress the same
         self.nextSrc = self.base.wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
         self.nbOverflowCorrections = 0;
     }
@@ -120,7 +120,7 @@ impl ZSTD_window_t {
         let curr = src.addr().wrapping_sub(self.base.addr()) as u32;
         let currentCycle = curr & cycleMask;
         // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
-        let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
+        let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX {
             cycleSize.max(2)
         } else {
             0
@@ -137,13 +137,13 @@ impl ZSTD_window_t {
 
         self.base = self.base.wrapping_add(correction as usize);
         self.dictBase = self.dictBase.wrapping_add(correction as usize);
-        if self.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-            self.lowLimit = ZSTD_WINDOW_START_INDEX as u32;
+        if self.lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX) {
+            self.lowLimit = ZSTD_WINDOW_START_INDEX;
         } else {
             self.lowLimit = self.lowLimit.wrapping_sub(correction);
         }
-        if self.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
-            self.dictLimit = ZSTD_WINDOW_START_INDEX as u32;
+        if self.dictLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX) {
+            self.dictLimit = ZSTD_WINDOW_START_INDEX;
         } else {
             self.dictLimit = self.dictLimit.wrapping_sub(correction);
         }
@@ -912,7 +912,7 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
 /// much more frequently. This is very inefficient, and should only be
 /// used for tests and fuzzers.
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: bool = false;
-pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
+pub const ZSTD_WINDOW_START_INDEX: u32 = 2;
 
 impl ZSTD_window_t {
     /// Returns true if the window has a non-empty extDict.
@@ -1059,7 +1059,7 @@ impl ZSTD_window_t {
         let curr = src.addr().wrapping_sub(self.base.addr()) as u32;
         let minIndexToOverflowCorrect = cycleSize
             .wrapping_add(maxDist.max(cycleSize))
-            .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
+            .wrapping_add(ZSTD_WINDOW_START_INDEX);
         let adjustment = self.nbOverflowCorrections.wrapping_add(1);
         let adjustedIndex = minIndexToOverflowCorrect
             .wrapping_mul(adjustment)
