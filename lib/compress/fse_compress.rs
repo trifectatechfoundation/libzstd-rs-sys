@@ -329,7 +329,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
     let minBits = FSE_minTableLog(srcSize, maxSymbolValue);
 
     if tableLog == 0 {
-        tableLog = FSE_DEFAULT_TABLELOG as u32;
+        tableLog = FSE_DEFAULT_TABLELOG;
     }
     if maxBitsSrc < tableLog {
         tableLog = maxBitsSrc; // Accuracy can be reduced
@@ -337,7 +337,7 @@ pub(crate) fn FSE_optimalTableLog_internal(
     if minBits > tableLog {
         tableLog = minBits; // Need a minimum to safely represent all symbol values
     }
-    tableLog.clamp(FSE_MIN_TABLELOG as u32, FSE_MAX_TABLELOG as u32)
+    tableLog.clamp(FSE_MIN_TABLELOG, FSE_MAX_TABLELOG)
 }
 
 pub(crate) fn FSE_optimalTableLog(
@@ -590,7 +590,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
     };
 
     // join to mod 4
-    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 && rest.len() & 2 != 0 {
+    if BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) && rest.len() & 2 != 0 {
         let [prefix @ .., b, a] = rest else {
             unreachable!()
         };
@@ -602,7 +602,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
 
     // 2 or 4 encoding per loop
     // this test must be static
-    if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) as u32 } {
+    if const { BitContainerType::BITS > (FSE_MAX_TABLELOG * 4 + 7) } {
         let (remainder, chunks) = rest.as_rchunks::<4>();
         debug_assert!(remainder.is_empty());
         for &[d, c, b, a] in chunks.iter().rev() {
@@ -619,7 +619,7 @@ unsafe fn FSE_compress_usingCTable_generic<const FAST: bool>(
             FSE_encodeSymbol(&mut bitC, &mut CState2, u32::from(a));
 
             // this test must be static
-            if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) as u32 } {
+            if const { BitContainerType::BITS < (FSE_MAX_TABLELOG * 2 + 7) } {
                 FSE_flushBits::<FAST>(&mut bitC);
             }
 

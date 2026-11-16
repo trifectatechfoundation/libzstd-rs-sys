@@ -214,22 +214,20 @@ fn FSE_decompress_usingDTable_generic<const FAST: bool>(
     while bitD.reload() == StreamStatus::Unfinished && op < olimit {
         dst[op] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
+        if (FSE_MAX_TABLELOG * 2 + 7) > usize::BITS {
             let _ = bitD.reload();
         }
 
         dst[op + 1] = FSE_getSymbol::<FAST>(&mut state2, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 4 + 7) as u32 > usize::BITS
-            && bitD.reload() != StreamStatus::Unfinished
-        {
+        if (FSE_MAX_TABLELOG * 4 + 7) > usize::BITS && bitD.reload() != StreamStatus::Unfinished {
             op += 2;
             break;
         }
 
         dst[op + 2] = FSE_getSymbol::<FAST>(&mut state1, &mut bitD);
 
-        if (FSE_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
+        if (FSE_MAX_TABLELOG * 2 + 7) > usize::BITS {
             let _ = bitD.reload();
         }
 

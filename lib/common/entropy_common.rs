@@ -37,13 +37,13 @@ fn FSE_readNCount_body(
     let read_u32_le = |offset| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
 
     let mut bitStream = read_u32_le(ip);
-    let mut nbBits = (bitStream & 0xf).wrapping_add(FSE_MIN_TABLELOG as u32) as core::ffi::c_int;
+    let mut nbBits = (bitStream & 0xf).wrapping_add(FSE_MIN_TABLELOG) as core::ffi::c_uint;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
     }
     bitStream >>= 4;
-    let mut bitCount: core::ffi::c_int = 4;
-    *tableLogPtr = nbBits as core::ffi::c_uint;
+    let mut bitCount: usize = 4;
+    *tableLogPtr = nbBits;
     let mut remaining = (1 << nbBits) + 1;
     let mut threshold = 1 << nbBits;
     nbBits += 1;
@@ -56,8 +56,7 @@ fn FSE_readNCount_body(
                 if likely(ip <= iend - 7) {
                     ip += 3;
                 } else {
-                    bitCount =
-                        bitCount.wrapping_sub(8 * iend.wrapping_sub(7).wrapping_sub(ip) as i32);
+                    bitCount += 8 * (ip - (iend - 7));
                     bitCount &= 31;
                     ip = iend - 4;
                 }
@@ -67,7 +66,7 @@ fn FSE_readNCount_body(
 
             charnum = charnum.wrapping_add(3 * repeats);
             bitStream >>= 2 * repeats;
-            bitCount += 2 * repeats as i32;
+            bitCount += 2 * repeats as usize;
 
             /* Add the final repeat which isn't 0b11. */
             debug_assert!((bitStream & 0b11) < 3);
@@ -86,11 +85,11 @@ fn FSE_readNCount_body(
              * because we already memset the whole buffer to 0.
              */
 
-            if (ip <= iend - 7) || (ip + (bitCount as usize >> 3)) <= iend - 4 {
-                ip += bitCount as usize >> 3;
+            if (ip <= iend - 7) || (ip + (bitCount >> 3)) <= iend - 4 {
+                ip += bitCount >> 3;
                 bitCount &= 0b111;
             } else {
-                bitCount -= 8 * ((iend - 4) - ip) as i32;
+                bitCount -= 8 * ((iend - 4) - ip);
                 bitCount &= 31;
                 ip = iend - 4;
             }
@@ -102,13 +101,13 @@ fn FSE_readNCount_body(
         let mut count;
         if (bitStream & (threshold - 1) as u32) < max as u32 {
             count = (bitStream & (threshold - 1) as u32) as core::ffi::c_int;
-            bitCount += nbBits - 1;
+            bitCount += (nbBits - 1) as usize;
         } else {
             count = (bitStream & (2 * threshold - 1) as u32) as core::ffi::c_int;
             if count >= threshold {
                 count -= max;
             }
-            bitCount += nbBits;
+            bitCount += nbBits as usize;
         }
         count -= 1;
 
@@ -125,17 +124,17 @@ fn FSE_readNCount_body(
             if remaining <= 1 {
                 break;
             }
-            nbBits = remaining.ilog2() as i32 + 1;
+            nbBits = remaining.ilog2() + 1;
             threshold = 1 << (nbBits - 1);
         }
         if charnum >= maxSV1 {
             break;
         }
-        if (ip <= iend - 7) || (ip + (bitCount as usize >> 3)) <= iend - 4 {
-            ip += bitCount as usize >> 3;
+        if (ip <= iend - 7) || (ip + (bitCount >> 3)) <= iend - 4 {
+            ip += bitCount >> 3;
             bitCount &= 7;
         } else {
-            bitCount -= 8 * ((iend - 4) - ip) as i32;
+            bitCount -= 8 * ((iend - 4) - ip);
             bitCount &= 31;
             ip = iend - 4;
         }
@@ -157,7 +156,7 @@ fn FSE_readNCount_body(
         Err(_) => return Err(Error::maxSymbolValue_tooSmall),
     }
 
-    ip += ((bitCount + 7) >> 3) as usize;
+    ip += (bitCount + 7) >> 3;
 
     Ok(ip)
 }

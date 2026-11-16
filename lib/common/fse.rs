@@ -222,8 +222,8 @@ pub(crate) struct FSE_decode_t {
     pub(crate) nbBits: u8,
 }
 
-pub const FSE_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
-pub const FSE_DEFAULT_MEMORY_USAGE: core::ffi::c_int = 13;
+pub const FSE_MAX_MEMORY_USAGE: core::ffi::c_uint = 14;
+pub const FSE_DEFAULT_MEMORY_USAGE: core::ffi::c_uint = 13;
 const _: () = assert!(
     FSE_DEFAULT_MEMORY_USAGE <= FSE_MAX_MEMORY_USAGE,
     "FSE_DEFAULT_MEMORY_USAGE must be <= FSE_MAX_MEMORY_USAGE"
@@ -232,11 +232,11 @@ const _: () = assert!(
 /// Maximum symbol value authorized.
 pub(crate) const FSE_MAX_SYMBOL_VALUE: u8 = 255;
 
-pub(crate) const FSE_MAX_TABLELOG: core::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2;
-pub(crate) const FSE_DEFAULT_TABLELOG: core::ffi::c_int = FSE_DEFAULT_MEMORY_USAGE - 2;
-pub(crate) const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
+pub(crate) const FSE_MAX_TABLELOG: core::ffi::c_uint = FSE_MAX_MEMORY_USAGE - 2;
+pub(crate) const FSE_DEFAULT_TABLELOG: core::ffi::c_uint = FSE_DEFAULT_MEMORY_USAGE - 2;
+pub(crate) const FSE_MIN_TABLELOG: core::ffi::c_uint = 5;
 
-pub(crate) const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
+pub(crate) const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_uint = 15;
 const _: () = assert!(
     FSE_MAX_TABLELOG <= FSE_TABLELOG_ABSOLUTE_MAX,
     "FSE_MAX_TABLELOG > FSE_TABLELOG_ABSOLUTE_MAX is not supported"
