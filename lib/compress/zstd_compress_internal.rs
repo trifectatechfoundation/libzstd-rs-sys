@@ -154,7 +154,7 @@ impl ZSTD_window_t {
     }
 }
 
-pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
+pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_uint = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: usize = (1 << ZSTD_SHORT_CACHE_TAG_BITS) - 1;
 
 /// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
