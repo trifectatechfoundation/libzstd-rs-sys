@@ -145,7 +145,7 @@ pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
 }
 
 pub(crate) const WILDCOPY_OVERLENGTH: usize = 32;
-pub(crate) const WILDCOPY_VECLEN: core::ffi::c_int = 16;
+pub(crate) const WILDCOPY_VECLEN: usize = 16;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Overlap {
@@ -184,7 +184,7 @@ pub(crate) unsafe fn ZSTD_wildcopy(
             }
         }
     } else {
-        debug_assert!(diff.abs() >= WILDCOPY_VECLEN as isize);
+        debug_assert!(diff.unsigned_abs() >= WILDCOPY_VECLEN);
 
         // NOTE: ip and op are at least 8 apart, but may be less than 16 apart, so we cannot use
         // `copy_nonoverlapping` when copying more than 8 bytes.

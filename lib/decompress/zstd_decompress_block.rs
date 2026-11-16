@@ -1110,7 +1110,7 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         }
         return;
     }
-    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -WILDCOPY_VECLEN as ptrdiff_t {
+    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -(WILDCOPY_VECLEN as ptrdiff_t) {
         ZSTD_wildcopy(
             op,
             ip,
@@ -1373,7 +1373,7 @@ unsafe fn ZSTD_execSequence(
         ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
         return Ok(sequenceLength);
     }
-    debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
+    debug_assert!(sequence.offset < WILDCOPY_VECLEN);
 
     // Copy 8 bytes and spread the offset to be >= 8.
     ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
@@ -1483,7 +1483,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     debug_assert!(match_0 >= prefixStart);
     debug_assert!(sequence.matchLength >= 1);
 
-    if likely(sequence.offset >= WILDCOPY_VECLEN as usize) {
+    if likely(sequence.offset >= WILDCOPY_VECLEN) {
         // We bet on a full wildcopy for matches, since we expect matches to be
         // longer than literals (in general). In silesia, ~10% of matches are longer
         // than 16 bytes.
@@ -1495,7 +1495,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         );
         return Ok(sequenceLength);
     }
-    debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
+    debug_assert!(sequence.offset < WILDCOPY_VECLEN);
 
     // Copy 8 bytes and spread the offset to be >= 8.
     ZSTD_overlapCopy8(&mut op.as_mut_ptr(), &mut match_0, sequence.offset);
