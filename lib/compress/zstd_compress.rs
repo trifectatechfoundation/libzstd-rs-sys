@@ -802,7 +802,7 @@ use crate::lib::zstd::{
     ZSTD_WINDOWLOG_MIN,
 };
 
-pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
+pub const MIN_CBLOCK_SIZE: usize = 1 + 1;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 
 impl ZSTD_cwksp {
@@ -4386,12 +4386,7 @@ unsafe fn ZSTD_buildSeqStore(
 ) -> Result<BuildSeqStore, Error> {
     let ms: &mut ZSTD_MatchState_t = &mut (*zc).blockState.matchState;
     ZSTD_assertEqualCParams((*zc).appliedParams.cParams, ms.cParams);
-    if srcSize
-        < (MIN_CBLOCK_SIZE as usize)
-            .wrapping_add(ZSTD_BLOCKHEADERSIZE)
-            .wrapping_add(1)
-            .wrapping_add(1)
-    {
+    if srcSize < MIN_CBLOCK_SIZE + ZSTD_BLOCKHEADERSIZE + 1 + 1 {
         if (*zc).appliedParams.cParams.strategy >= ZSTD_btopt {
             ZSTD_ldm_skipRawSeqStoreBytes(&mut (*zc).externSeqStore, srcSize);
         } else {
@@ -9179,12 +9174,7 @@ unsafe fn ZSTD_compressSequences_internal(
         )?;
 
         // If blocks are too small, emit as a nocompress block
-        if blockSize
-            < (MIN_CBLOCK_SIZE as usize)
-                .wrapping_add(ZSTD_BLOCKHEADERSIZE)
-                .wrapping_add(1)
-                .wrapping_add(1)
-        {
+        if blockSize < MIN_CBLOCK_SIZE + ZSTD_BLOCKHEADERSIZE + 1 + 1 {
             let cBlockSize = ZSTD_noCompressBlock(
                 op as *mut core::ffi::c_void,
                 dstCapacity,
