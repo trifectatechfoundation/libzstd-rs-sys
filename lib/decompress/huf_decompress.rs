@@ -147,7 +147,7 @@ pub struct HUF_DecompressFastArgs<'a> {
     pub iend: [*const u8; 4],
 }
 
-pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
+pub const HUF_DECODER_FAST_TABLELOG: u32 = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 
 fn HUF_initFastDStream(ip: [u8; 8]) -> u64 {
@@ -180,7 +180,7 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         // If table log is not correct at this point, fallback to the old decoder.
         // On small inputs we don't have enough data to trigger the fast loop, so use the old decoder.
         let dtLog = DTable.description.tableLog as u32;
-        if dtLog != HUF_DECODER_FAST_TABLELOG as u32 {
+        if dtLog != HUF_DECODER_FAST_TABLELOG {
             return Ok(None);
         }
 
@@ -779,7 +779,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
             Writer::from_raw_parts(op, segmentEnd.addr() - op.addr()),
             &mut bit,
             DTable.data.as_x1(),
-            HUF_DECODER_FAST_TABLELOG as u32,
+            HUF_DECODER_FAST_TABLELOG,
         );
 
         if op.wrapping_add(length) != segmentEnd {
@@ -1064,10 +1064,10 @@ pub fn HUF_readDTableX2_wksp(
     if tableLog > maxTableLog {
         return Err(Error::tableLog_tooLarge);
     }
-    if tableLog <= HUF_DECODER_FAST_TABLELOG as u32
-        && maxTableLog > HUF_DECODER_FAST_TABLELOG as u32
+    if tableLog <= HUF_DECODER_FAST_TABLELOG
+        && maxTableLog > HUF_DECODER_FAST_TABLELOG
     {
-        maxTableLog = HUF_DECODER_FAST_TABLELOG as u32;
+        maxTableLog = HUF_DECODER_FAST_TABLELOG;
     }
 
     /* find maxWeight */
@@ -1594,7 +1594,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
             Writer::from_raw_parts(op, segmentEnd.addr() - op.addr()),
             &mut bit,
             DTable.data.as_x2(),
-            HUF_DECODER_FAST_TABLELOG as u32,
+            HUF_DECODER_FAST_TABLELOG,
         );
 
         if op.add(length) != segmentEnd {
