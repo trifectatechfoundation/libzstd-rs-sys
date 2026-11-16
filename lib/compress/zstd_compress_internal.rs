@@ -29,7 +29,7 @@ pub const HASH_READ_SIZE: usize = 8;
 /// But candidate 1 cannot hide a large tree of candidates, so it's a minimal loss.
 /// The benefit is that `ZSTD_DUBT_UNSORTED_MARK` cannot be mishandled after table reuse with a different strategy.
 /// This constant is required by `ZSTD_compressBlock_btlazy2()` and `ZSTD_reduceTable_internal()`
-pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
+pub const ZSTD_DUBT_UNSORTED_MARK: u32 = 1;
 
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
