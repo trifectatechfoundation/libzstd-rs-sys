@@ -589,7 +589,7 @@ fn countLiterals(seqStore: &SeqStore_t, sp: &[SeqDef]) -> usize {
     total
 }
 
-pub const BYTESCALE: core::ffi::c_int = 256;
+pub const BYTESCALE: usize = 256;
 
 fn sizeBlockSequences(
     seqs: &[SeqDef],
@@ -601,7 +601,7 @@ fn sizeBlockSequences(
     let mut budget = 0usize;
 
     // entropy headers, generous estimate
-    let headerSize = firstSubBlock as usize * 120 * BYTESCALE as usize;
+    let headerSize = usize::from(firstSubBlock) * 120 * BYTESCALE;
     budget = budget.wrapping_add(headerSize);
 
     // first sequence => at least one sequence
@@ -623,7 +623,7 @@ fn sizeBlockSequences(
         );
         // stop when sub-block budget is reached,
         // though continue to expand until the sub-block is deemed compressible
-        if budget > targetBudget && budget < inSize * BYTESCALE as usize {
+        if budget > targetBudget && budget < inSize * BYTESCALE {
             break;
         }
 
@@ -694,17 +694,16 @@ unsafe fn ZSTD_compressSubBlock_multi(
         );
 
         // quick estimation
-        let avgLitCost = (ebs.estLitSize * BYTESCALE as usize)
+        let avgLitCost = (ebs.estLitSize * BYTESCALE)
             .checked_div(nbLiterals)
-            .unwrap_or(BYTESCALE as usize);
+            .unwrap_or(BYTESCALE);
 
-        let avgSeqCost =
-            ebs.estBlockSize.wrapping_sub(ebs.estLitSize) * BYTESCALE as usize / nbSeqs;
+        let avgSeqCost = ebs.estBlockSize.wrapping_sub(ebs.estLitSize) * BYTESCALE / nbSeqs;
 
         let nbSubBlocks =
             (ebs.estBlockSize.wrapping_add(targetCBlockSize / 2) / targetCBlockSize).max(1);
         let mut blockBudgetSupp = 0;
-        let avgBlockBudget = ebs.estBlockSize * BYTESCALE as usize / nbSubBlocks;
+        let avgBlockBudget = ebs.estBlockSize * BYTESCALE / nbSubBlocks;
         // simplification: if estimates states that the full superblock doesn't compress, just bail out immediately
         // this will result in the production of a single uncompressed block covering srcSize.
         if ebs.estBlockSize > srcSize {
