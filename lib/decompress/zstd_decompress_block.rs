@@ -68,8 +68,11 @@ pub struct seqState_t<'a> {
 
 impl ZSTD_DCtx {
     // Inlining this into the sequence loops makes x86-64 ~9% slower (worse register allocation
-    // of the loop state).
+    // of the loop state). With PGO on other targets it is the other way around: out of line, the
+    // state stays in memory, which made decoding up to 10% slower on Apple silicon. Without PGO
+    // forcing it inline is slower there too, so that is only done with the `pgo` feature.
     #[cfg_attr(target_arch = "x86_64", inline(never))]
+    #[cfg_attr(all(feature = "pgo", not(target_arch = "x86_64")), inline(always))]
     fn new_seq_state<'a>(&self, mut bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
         let stateLL = match self.LLTptr {
             None => ZSTD_fseState::new(&mut bit_stream, &LL_defaultDTable),
@@ -93,6 +96,19 @@ impl ZSTD_DCtx {
             DStream: bit_stream,
             prevOffset: self.entropy.rep.map(|v| v as usize),
         }
+    }
+
+    // The long sequence decoder gets worse register allocation when `new_seq_state` is inlined.
+    #[cfg(all(feature = "pgo", not(target_arch = "x86_64")))]
+    #[inline(never)]
+    fn new_seq_state_long<'a>(&self, bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
+        self.new_seq_state(bit_stream)
+    }
+
+    #[cfg(not(all(feature = "pgo", not(target_arch = "x86_64"))))]
+    #[inline(always)]
+    fn new_seq_state_long<'a>(&self, bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
+        self.new_seq_state(bit_stream)
     }
 }
 
@@ -1978,7 +1994,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         let seqAdvance = if nbSeq < 8 { nbSeq } else { 8 };
         let DStream = BIT_DStream_t::new(seq).map_err(|_| Error::corruption_detected)?;
         dctx.fseEntropy = true;
-        let mut seqState = dctx.new_seq_state(DStream);
+        let mut seqState = dctx.new_seq_state_long(DStream);
 
         let mut prefetchPos = op.offset_from_unsigned(prefixStart);
         let mut sequences: [seq_t; 8] = [seq_t::default(); 8];
