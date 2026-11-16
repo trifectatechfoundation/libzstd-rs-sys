@@ -53,11 +53,11 @@ struct FASTCOVER_tryParameters_data_t<'a, 'b> {
 /// addressable space and we allocate a large contiguous buffer, so 1GB is
 /// already a high limit.
 const FASTCOVER_MAX_SAMPLES_SIZE: usize = if MEM_64bits() { u32::MAX as _ } else { 1 << 30 };
-const FASTCOVER_MAX_F: core::ffi::c_int = 31;
-const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
+const FASTCOVER_MAX_F: core::ffi::c_uint = 31;
+const FASTCOVER_MAX_ACCEL: core::ffi::c_uint = 10;
 const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
-const DEFAULT_F: core::ffi::c_int = 20;
-const DEFAULT_ACCEL: core::ffi::c_int = 1;
+const DEFAULT_F: core::ffi::c_uint = 20;
+const DEFAULT_ACCEL: core::ffi::c_uint = 1;
 
 fn FASTCOVER_hashPtrToIndex(p: &[u8; 8], f: u32, d: core::ffi::c_uint) -> usize {
     match d {
@@ -167,7 +167,7 @@ fn FASTCOVER_checkParameters(
     if parameters.d > parameters.k {
         return false;
     }
-    if f > FASTCOVER_MAX_F as core::ffi::c_uint || f == 0 {
+    if f > FASTCOVER_MAX_F || f == 0 {
         return false;
     }
     if parameters.splitPoint <= 0.0 || parameters.splitPoint > 1.0 {
@@ -510,12 +510,12 @@ fn train_from_buffer_fastcover(
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     parameters.f = if parameters.f == 0 {
-        DEFAULT_F as core::ffi::c_uint
+        DEFAULT_F
     } else {
         parameters.f
     };
     parameters.accel = if parameters.accel == 0 {
-        DEFAULT_ACCEL as core::ffi::c_uint
+        DEFAULT_ACCEL
     } else {
         parameters.accel
     };
@@ -702,12 +702,12 @@ fn optimize_train_from_buffer_fastcover(
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
     let f = if parameters.f == 0 {
-        DEFAULT_F as core::ffi::c_uint
+        DEFAULT_F
     } else {
         parameters.f
     };
     let accel = if parameters.accel == 0 {
-        DEFAULT_ACCEL as core::ffi::c_uint
+        DEFAULT_ACCEL
     } else {
         parameters.accel
     };
@@ -722,7 +722,7 @@ fn optimize_train_from_buffer_fastcover(
         }
         return Error::parameter_outOfBound.to_error_code();
     }
-    if accel == 0 || accel > FASTCOVER_MAX_ACCEL as core::ffi::c_uint {
+    if accel == 0 || accel > FASTCOVER_MAX_ACCEL {
         if displayLevel >= 1 {
             eprintln!("Incorrect accel");
         }
