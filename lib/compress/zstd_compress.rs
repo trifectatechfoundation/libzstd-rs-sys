@@ -4829,11 +4829,11 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
 
     // small ? don't even attempt compression (speed opt)
-    let minLitSize = (if prevHuf.repeatMode == HUF_repeat::Valid {
+    let minLitSize = if prevHuf.repeatMode == HUF_repeat::Valid {
         6
     } else {
         COMPRESS_LITERALS_SIZE_MIN
-    }) as usize;
+    };
     if src.len() <= minLitSize {
         hufMetadata.hType = SymbolEncodingType::Basic;
         return Ok(0);
@@ -4915,7 +4915,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     Ok(hSize)
 }
 
-pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
+pub const COMPRESS_LITERALS_SIZE_MIN: usize = 63;
 
 /// Returns a [`ZSTD_symbolEncodingTypeStats_t`] with all encoding types as [`SymbolEncodingType::Basic`],
 /// and updates nextEntropy to the appropriate repeatMode.
