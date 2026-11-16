@@ -803,7 +803,7 @@ use crate::lib::zstd::{
 };
 
 pub const MIN_CBLOCK_SIZE: usize = 1 + 1;
-pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
+pub const ZSTD_CWKSP_ALIGNMENT_BYTES: usize = 64;
 
 impl ZSTD_cwksp {
     #[inline]
@@ -851,14 +851,14 @@ fn ZSTD_cwksp_aligned_alloc_size(size: usize, alignment: usize) -> usize {
 /// Used to determine the number of bytes required for a given "aligned".
 #[inline]
 fn ZSTD_cwksp_aligned64_alloc_size(size: usize) -> usize {
-    ZSTD_cwksp_aligned_alloc_size(size, ZSTD_CWKSP_ALIGNMENT_BYTES as usize)
+    ZSTD_cwksp_aligned_alloc_size(size, ZSTD_CWKSP_ALIGNMENT_BYTES)
 }
 
 /// Returns the amount of additional space the cwksp must allocate for internal purposes
 /// (currently only alignment).
 #[inline]
 fn ZSTD_cwksp_slack_space_required() -> usize {
-    (ZSTD_CWKSP_ALIGNMENT_BYTES * 2) as usize
+    ZSTD_CWKSP_ALIGNMENT_BYTES * 2
 }
 
 /// Return the number of additional bytes required to align a pointer to the given number of bytes.
@@ -875,7 +875,7 @@ fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: usize)
 #[inline]
 fn ZSTD_cwksp_initialAllocStart(ws: &mut ZSTD_cwksp) -> *mut core::ffi::c_void {
     let mut endPtr = ws.workspaceEnd as *mut core::ffi::c_char;
-    endPtr = endPtr.wrapping_sub(endPtr.addr() % ZSTD_CWKSP_ALIGNMENT_BYTES as usize);
+    endPtr = endPtr.wrapping_sub(endPtr.addr() % ZSTD_CWKSP_ALIGNMENT_BYTES);
     endPtr as *mut core::ffi::c_void
 }
 
@@ -916,8 +916,7 @@ fn ZSTD_cwksp_internal_advance_phase(
             ws.tableValidEnd = ws.objectEnd;
             ws.initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
             let alloc = ws.objectEnd;
-            let bytesToAlign =
-                ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as usize);
+            let bytesToAlign = ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES);
             let objectEnd = alloc.wrapping_byte_add(bytesToAlign);
             if objectEnd > ws.workspaceEnd {
                 return Err(Error::memory_allocation);
@@ -970,7 +969,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
     ws: &mut ZSTD_cwksp,
     bytes: usize,
 ) -> *mut core::ffi::c_void {
-    let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as usize);
+    let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES);
     let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, CwkspAllocPhase::AlignedInitOnce);
     if !ptr.is_null() && ptr < ws.initOnceStart {
         let initBytes = (ws.initOnceStart as *mut u8).offset_from_unsigned(ptr as *mut u8);
@@ -985,7 +984,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
 fn ZSTD_cwksp_reserve_aligned64(ws: &mut ZSTD_cwksp, bytes: usize) -> *mut core::ffi::c_void {
     ZSTD_cwksp_reserve_internal(
         ws,
-        ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as usize),
+        ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES),
         CwkspAllocPhase::Aligned,
     )
 }
