@@ -144,7 +144,7 @@ static ZSTD_ldm_gearTab: [u64; 256] = [
     0xeb8d0e25a65e3e58, 0xbbcbd3df14e08580, 0x0cf751f27ecdab2b, 0x2b4da14f2613d8f4,
 ];
 
-pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
+pub const LDM_MIN_MATCH_LENGTH: u32 = 64;
 
 impl LdmRollingHashState {
     /// Initializes the rolling hash state such that it will honor the
@@ -278,7 +278,7 @@ impl LdmParams {
                 .clamp(ZSTD_HASHLOG_MIN as u32, ZSTD_HASHLOG_MAX as u32);
         }
         if self.minMatchLength == 0 {
-            self.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
+            self.minMatchLength = LDM_MIN_MATCH_LENGTH;
             if cParams.strategy >= ZSTD_btultra {
                 self.minMatchLength /= 2;
             }
