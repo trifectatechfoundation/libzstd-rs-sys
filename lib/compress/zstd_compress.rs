@@ -6685,9 +6685,9 @@ unsafe fn ZSTD_compress_insertDictionary(
     ZSTD_loadZstdDictionary(bs, ms, ws, params, dict, dictSize, dtlm, tfp, workspace)
 }
 
-pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: core::ffi::c_int = 128 * (1 << 10);
+pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: u64 = 128 * (1 << 10);
 
-pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: core::ffi::c_ulonglong = 6;
+pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: u64 = 6;
 
 /// Assumption: either @dict OR @cdict (or none) is non-NULL, never both.
 unsafe fn ZSTD_compressBegin_internal(
@@ -6710,7 +6710,7 @@ unsafe fn ZSTD_compressBegin_internal(
 
     if !cdict.is_null()
         && (*cdict).dictContentSize > 0
-        && (pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as u64
+        && (pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF
             || (pledgedSrcSize as core::ffi::c_ulonglong)
                 < ((*cdict).dictContentSize as core::ffi::c_ulonglong)
                     .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
@@ -7599,8 +7599,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     }
 
     // Initialize the cctxParams from the cdict
-    let useCDictParams = pledgedSrcSize
-        < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as core::ffi::c_ulonglong
+    let useCDictParams = pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF
         || pledgedSrcSize
             < ((*cdict).dictContentSize as core::ffi::c_ulonglong)
                 .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
