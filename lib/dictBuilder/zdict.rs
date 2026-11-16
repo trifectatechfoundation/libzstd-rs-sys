@@ -727,13 +727,13 @@ const ENTROPY_TABLES_BOUND: usize = HUF_CTABLEBOUND
     + FSE_NCountWriteBound(MaxML, MLFSELog)
     + FSE_NCountWriteBound(MaxLL, LLFSELog)
     + 3 * size_of::<u32>();
+
 unsafe fn ZDICT_analyzeEntropy(
     dst: &mut [u8],
     compressionLevel: core::ffi::c_int,
     src: &[u8],
     fileSizes: &[usize],
-    dictBuffer: *const core::ffi::c_void,
-    dictBufferSize: usize,
+    dictBuffer: &[u8],
     notificationLevel: core::ffi::c_uint,
 ) -> Result<usize, Error> {
     let mut cctx = Box::new_uninit();
@@ -751,7 +751,6 @@ unsafe fn ZDICT_analyzeEntropy(
         src,
         fileSizes,
         dictBuffer,
-        dictBufferSize,
         notificationLevel,
         &mut esr,
     );
@@ -767,15 +766,14 @@ unsafe fn analyze_entropy_internal(
     mut compressionLevel: core::ffi::c_int,
     src: &[u8],
     fileSizes: &[usize],
-    dictBuffer: *const core::ffi::c_void,
-    dictBufferSize: usize,
+    dictBuffer: &[u8],
     notificationLevel: core::ffi::c_uint,
     esr: &mut EStats_ress_t,
 ) -> Result<usize, Error> {
     let mut hufTable = CTable::default();
 
     const KB: usize = 1 << 10;
-    let offcodeMax = dictBufferSize.wrapping_add(128 * KB).ilog2() as u8;
+    let offcodeMax = dictBuffer.len().wrapping_add(128 * KB).ilog2() as u8;
     if offcodeMax > OFFCODE_MAX {
         return Err(Error::dictionaryCreation_failed); // dictionary too large
     }
@@ -807,11 +805,11 @@ unsafe fn analyze_entropy_internal(
     let params = ZSTD_getParams(
         compressionLevel,
         averageSampleSize as core::ffi::c_ulonglong,
-        dictBufferSize,
+        dictBuffer.len(),
     );
     esr.dict = ZSTD_createCDict_advanced(
-        dictBuffer,
-        dictBufferSize,
+        dictBuffer.as_ptr().cast(),
+        dictBuffer.len(),
         ZSTD_dlm_byRef,
         ZSTD_dct_rawContent,
         params.cParams,
@@ -1104,8 +1102,7 @@ pub(super) unsafe fn finalize_dictionary(
         compressionLevel,
         samples,
         samplesSizes,
-        customDictContent,
-        dictContentSize,
+        dict,
         notificationLevel,
     )?;
     let hSize = hSize.wrapping_add(eSize);
@@ -1184,8 +1181,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         compressionLevel,
         samples,
         samplesSizes,
-        dictBuffer[contentStart..].as_ptr().cast(),
-        dictContentSize,
+        dictBuffer[contentStart..].assume_init_ref(),
         notificationLevel,
     );
     match res {
