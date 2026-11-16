@@ -3711,7 +3711,7 @@ pub unsafe extern "C" fn ZSTD_copyCCtx(
     }
 }
 
-pub const ZSTD_ROWSIZE: core::ffi::c_int = 16;
+pub const ZSTD_ROWSIZE: usize = 16;
 
 /// Reduce table indexes by `reducerValue`, or squash to zero.
 /// PreserveMark preserves "unsorted mark" for btlazy2 strategy.
@@ -3721,7 +3721,7 @@ fn ZSTD_reduceTable_internal(table: &mut [u32], reducerValue: u32, preserveMark:
     // Protect special index values < ZSTD_WINDOW_START_INDEX.
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX);
 
-    for row in table.as_chunks_mut::<{ ZSTD_ROWSIZE as usize }>().0 {
+    for row in table.as_chunks_mut::<{ ZSTD_ROWSIZE }>().0 {
         for cell in row {
             *cell = if preserveMark && *cell == ZSTD_DUBT_UNSORTED_MARK {
                 ZSTD_DUBT_UNSORTED_MARK
