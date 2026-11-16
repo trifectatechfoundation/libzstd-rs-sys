@@ -5331,7 +5331,7 @@ fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: bool) -> u3
     rep[adjustedRepCode as usize]
 }
 
-/// ZSTD_seqStore_resolveOffCodes() reconciles any possible divergences in offset history that
+/// [`ZSTD_seqStore_resolveOffCodes`] reconciles any possible divergences in offset history that
 /// may arise due to emission of RLE/raw blocks that disturb the offset history, and replaces any
 /// repcodes within the seqStore that may be invalid.
 ///
@@ -5340,21 +5340,21 @@ fn ZSTD_resolveRepcodeToRawOffset(rep: &RepCodes, offBase: u32, ll0: bool) -> u3
 ///
 /// Note: this function assumes seq->offBase respects the following numbering scheme:
 /// 0: invalid, 1-3: repcode 1-3, 4+: real_offset+3
-unsafe fn ZSTD_seqStore_resolveOffCodes(
+fn ZSTD_seqStore_resolveOffCodes(
     dRepcodes: &mut RepCodes,
     cRepcodes: &mut RepCodes,
-    seqStore: &SeqStore_t,
-    nbSeq: usize,
+    longLengthType: LongLengthType,
+    longLengthPos: u32,
+    seqs: &mut [SeqDef],
 ) {
-    let longLitLenIdx = match seqStore.longLengthType {
-        LongLengthType::Literal => seqStore.longLengthPos as usize,
-        LongLengthType::None | LongLengthType::Match => nbSeq,
+    let longLitLenIdx = match longLengthType {
+        LongLengthType::Literal => longLengthPos as usize,
+        LongLengthType::None | LongLengthType::Match => seqs.len(),
     };
 
-    for idx in 0..nbSeq {
-        let seq = seqStore.sequencesStart.add(idx);
-        let ll0 = (*seq).litLength == 0 && idx != longLitLenIdx;
-        let offBase = (*seq).offBase;
+    for (idx, seq) in seqs.iter_mut().enumerate() {
+        let ll0 = seq.litLength == 0 && idx != longLitLenIdx;
+        let offBase = seq.offBase;
         if (1..=ZSTD_REP_NUM).contains(&offBase) {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(dRepcodes, offBase, ll0);
             let cRawOffset = ZSTD_resolveRepcodeToRawOffset(cRepcodes, offBase, ll0);
@@ -5362,12 +5362,12 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
             // the repcode with the offset it actually references, determined by the compression
             // repcode history.
             if dRawOffset != cRawOffset {
-                (*seq).offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM);
+                seq.offBase = cRawOffset.wrapping_add(ZSTD_REP_NUM);
             }
         }
         // Compression repcode history is always updated with values directly from the unmodified seqStore.
         // Decompression repcode history may use modified seq->offset value taken from compression repcode history.
-        ZSTD_updateRep(dRepcodes, (*seq).offBase, ll0);
+        ZSTD_updateRep(dRepcodes, seq.offBase, ll0);
         ZSTD_updateRep(cRepcodes, offBase, ll0);
     }
 }
@@ -5397,13 +5397,15 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     // In case of an RLE or raw block, the simulated decompression repcode history must be reset
     let dRepOriginal = *dRep;
     if isPartition {
+        let nbSeq = seqStore
+            .sequences
+            .offset_from_unsigned(seqStore.sequencesStart);
         ZSTD_seqStore_resolveOffCodes(
             dRep,
             cRep,
-            seqStore,
-            seqStore
-                .sequences
-                .offset_from_unsigned(seqStore.sequencesStart),
+            seqStore.longLengthType,
+            seqStore.longLengthPos,
+            core::slice::from_raw_parts_mut(seqStore.sequencesStart, nbSeq),
         );
     }
 
