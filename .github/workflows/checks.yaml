@@ -106,11 +106,15 @@ jobs:
         with:
           packages: "${{ matrix.apt-packages }}"
           version: 2
-      - name: Download wasmtime & wasi-sdk
-        if: matrix.target == 'wasm32-wasip2'
+      - name: Install wasmtime
+        if: startsWith(matrix.target, 'wasm')
+        uses: taiki-e/install-action@d6e286fa45544157a02d45a43742857ebbc25d12 # v2.68.16
+        with:
+          tool: wasmtime
+      - name: Download wasi-sdk
+        if: startsWith(matrix.target, 'wasm')
         run: |
-          curl https://wasmtime.dev/install.sh -sSf | bash
-          echo "$HOME/.wasmtime/bin" >> $GITHUB_PATH
+          set -o pipefail
           curl -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz | tar xz --directory /tmp
       - name: cargo llvm-cov nextest
         if: matrix.codecov
