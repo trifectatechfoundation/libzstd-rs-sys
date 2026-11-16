@@ -148,7 +148,7 @@ pub struct HUF_DecompressFastArgs<'a> {
 }
 
 pub const HUF_DECODER_FAST_TABLELOG: u32 = 11;
-pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
+pub const HUF_ENABLE_FAST_DECODE: bool = true;
 
 fn HUF_initFastDStream(ip: [u8; 8]) -> u64 {
     let lastByte = ip[7];
@@ -840,7 +840,7 @@ fn HUF_decompress4X1_usingDTable_internal(
             _ => HUF_decompress4X1_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
         };
 
-        if HUF_ENABLE_FAST_DECODE != 0 && !flags.contains(HUF_flags::DISABLE_FAST) {
+        if HUF_ENABLE_FAST_DECODE && !flags.contains(HUF_flags::DISABLE_FAST) {
             let ret = unsafe {
                 HUF_decompress4X1_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
             }?;
@@ -1064,9 +1064,7 @@ pub fn HUF_readDTableX2_wksp(
     if tableLog > maxTableLog {
         return Err(Error::tableLog_tooLarge);
     }
-    if tableLog <= HUF_DECODER_FAST_TABLELOG
-        && maxTableLog > HUF_DECODER_FAST_TABLELOG
-    {
+    if tableLog <= HUF_DECODER_FAST_TABLELOG && maxTableLog > HUF_DECODER_FAST_TABLELOG {
         maxTableLog = HUF_DECODER_FAST_TABLELOG;
     }
 
@@ -1625,7 +1623,7 @@ fn HUF_decompress4X2_usingDTable_internal(
             _ => HUF_decompress4X2_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
         };
 
-        if HUF_ENABLE_FAST_DECODE != 0 && !flags.contains(HUF_flags::DISABLE_FAST) {
+        if HUF_ENABLE_FAST_DECODE && !flags.contains(HUF_flags::DISABLE_FAST) {
             let ret = unsafe {
                 HUF_decompress4X2_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
             }?;
