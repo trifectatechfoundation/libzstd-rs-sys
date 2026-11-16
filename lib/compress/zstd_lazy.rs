@@ -57,7 +57,7 @@ pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_uint = 2;
 /// number of bits to use for the tag
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_uint = 8;
 
-pub const kLazySkippingStep: core::ffi::c_int = 8;
+pub const K_LAZY_SKIPPING_STEP: usize = 8;
 
 unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
     let cParams = &ms.cParams;
@@ -351,10 +351,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     let mut previousCandidate = 0;
 
     // reach end of unsorted candidates list
-    while matchIndex > unsortLimit
-        && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK
-        && nbCandidates > 1
-    {
+    while matchIndex > unsortLimit && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK && nbCandidates > 1 {
         *unsortedMark = previousCandidate; // the unsortedMark becomes a reversed chain, to move up back to original position
         previousCandidate = matchIndex;
         matchIndex = *nextCandidate;
@@ -1808,7 +1805,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                         // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
                         // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
                         // triggered once we've gone 2KB without finding any matches.
-                        ms.lazySkipping = core::ffi::c_int::from(step > kLazySkippingStep as usize);
+                        ms.lazySkipping = core::ffi::c_int::from(step > K_LAZY_SKIPPING_STEP);
                         continue;
                     } else {
                         // let's try to find a better solution
@@ -2480,7 +2477,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                 // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
                 // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
                 // triggered once we've gone 2KB without finding any matches.
-                ms.lazySkipping = core::ffi::c_int::from(step > kLazySkippingStep as usize);
+                ms.lazySkipping = core::ffi::c_int::from(step > K_LAZY_SKIPPING_STEP);
                 continue;
             } else {
                 // let's try to find a better solution
