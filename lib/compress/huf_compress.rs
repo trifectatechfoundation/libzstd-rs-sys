@@ -584,26 +584,26 @@ pub struct HUF_buildCTable_wksp_tables {
     pub rankPosition: [rankPos; RANK_POSITION_TABLE_SIZE],
 }
 
-/// [`RANK_POSITION_DISTINCT_COUNT_CUTOFF`] == Cutoff point in `HUF_sort` buckets for which we use log2 bucketing.
+pub const RANK_POSITION_MAX_COUNT_LOG: usize = 32;
+pub const RANK_POSITION_LOG_BUCKETS_BEGIN: usize =
+    (RANK_POSITION_TABLE_SIZE - 1) - RANK_POSITION_MAX_COUNT_LOG - 1; // == 158
+/// `RANK_POSITION_DISTINCT_COUNT_CUTOFF` is the cutoff point in `HUF_sort` buckets for which we use log2 bucketing.
 /// Strategy is to use as many buckets as possible for representing distinct
 /// counts while using the remainder to represent all "large" counts.
 ///
 /// To satisfy this requirement for 192 buckets, we can do the following:
-/// Let buckets 0-166 represent distinct counts of [0, 166]
-/// Let buckets 166 to 192 represent all remaining counts up to [`RANK_POSITION_MAX_COUNT_LOG`] using log2 bucketing.
-pub const RANK_POSITION_MAX_COUNT_LOG: usize = 32;
-pub const RANK_POSITION_LOG_BUCKETS_BEGIN: c_int =
-    ((RANK_POSITION_TABLE_SIZE - 1) - RANK_POSITION_MAX_COUNT_LOG - 1) as c_int; /* == 158 */
-pub const RANK_POSITION_DISTINCT_COUNT_CUTOFF: c_uint = (RANK_POSITION_LOG_BUCKETS_BEGIN as c_uint)
-    + (ZSTD_highbit32(RANK_POSITION_LOG_BUCKETS_BEGIN as u32)/* == 166 */);
+/// Let buckets 0-164 represent distinct counts of [0, 164]
+/// Let buckets 165 to 189 represent all remaining u32 counts using log2 bucketing.
+pub const RANK_POSITION_DISTINCT_COUNT_CUTOFF: usize =
+    RANK_POSITION_LOG_BUCKETS_BEGIN + RANK_POSITION_LOG_BUCKETS_BEGIN.ilog2() as usize; // == 165
 
 /// Return the appropriate bucket index for a given count. See definition of
 /// [`RANK_POSITION_DISTINCT_COUNT_CUTOFF`] for explanation of bucketing strategy.
-fn HUF_getIndex(count: u32) -> u32 {
+fn HUF_getIndex(count: usize) -> usize {
     if count < RANK_POSITION_DISTINCT_COUNT_CUTOFF {
         count
     } else {
-        ZSTD_highbit32(count) + (RANK_POSITION_LOG_BUCKETS_BEGIN as c_uint)
+        count.ilog2() as usize + RANK_POSITION_LOG_BUCKETS_BEGIN
     }
 }
 
@@ -678,7 +678,7 @@ fn HUF_sort(
     maxSymbolValue: u8,
     rankPosition: &mut [rankPos; RANK_POSITION_TABLE_SIZE],
 ) {
-    let maxSymbolValue1 = u32::from(maxSymbolValue) + 1;
+    let maxSymbolValue1 = usize::from(maxSymbolValue) + 1;
     /* Compute base and set curr to base.
      * For symbol s let lowerRank = HUF_getIndex(count[n]) and rank = lowerRank + 1.
      * See HUF_getIndex to see bucketing strategy.
@@ -686,44 +686,43 @@ fn HUF_sort(
      * each rank begins in the output, so for rank R we want to count ranks R+1 and above.
      */
     rankPosition.fill(rankPos::default());
-    for &c in &count[..maxSymbolValue1 as usize] {
-        let lowerRank = HUF_getIndex(c);
-        debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
-        rankPosition[lowerRank as usize].base += 1;
+    for &c in &count[..maxSymbolValue1] {
+        let lowerRank = HUF_getIndex(c as usize);
+        debug_assert!(lowerRank < (RANK_POSITION_TABLE_SIZE - 1));
+        rankPosition[lowerRank].base += 1;
     }
     debug_assert_eq!(rankPosition[RANK_POSITION_TABLE_SIZE - 1].base, 0);
 
     /* Set up the rankPosition table */
-    for n in (1..RANK_POSITION_TABLE_SIZE as u32).rev() {
-        rankPosition[(n - 1) as usize].base = (rankPosition[(n - 1) as usize].base as c_int
-            + rankPosition[n as usize].base as c_int)
-            as u16;
-        rankPosition[(n - 1) as usize].curr = rankPosition[(n - 1) as usize].base;
+    for n in (1..RANK_POSITION_TABLE_SIZE).rev() {
+        rankPosition[n - 1].base += rankPosition[n].base;
+        rankPosition[n - 1].curr = rankPosition[n - 1].base;
     }
 
     /* Insert each symbol into their appropriate bucket, setting up rankPosition table. */
-    for (n, &c) in count[..maxSymbolValue1 as usize].iter().enumerate() {
-        let r = HUF_getIndex(c) + 1;
-        let pos = rankPosition[r as usize].curr as u32;
-        rankPosition[r as usize].curr += 1;
+    for (n, &c) in count[..maxSymbolValue1].iter().enumerate() {
+        let r = HUF_getIndex(c as usize) + 1;
+        let pos = rankPosition[r].curr as usize;
+        rankPosition[r].curr += 1;
         debug_assert!(pos < maxSymbolValue1);
-        huffNode[pos as usize].count = c;
-        huffNode[pos as usize].byte = n as u8;
+        huffNode[pos].count = c;
+        huffNode[pos].byte = n as u8;
     }
 
     /* Sort each bucket. */
-    for n in RANK_POSITION_DISTINCT_COUNT_CUTOFF..(RANK_POSITION_TABLE_SIZE - 1) as u32 {
-        let bucketSize =
-            rankPosition[n as usize].curr as c_int - rankPosition[n as usize].base as c_int;
-        let bucketStartIdx = rankPosition[n as usize].base as u32;
+    for rankPos in
+        &rankPosition[RANK_POSITION_DISTINCT_COUNT_CUTOFF..(RANK_POSITION_TABLE_SIZE - 1)]
+    {
+        let bucketSize = rankPos.curr as c_int - rankPos.base as c_int;
+        let bucketStartIdx = rankPos.base as usize;
         if bucketSize > 1 {
             debug_assert!(bucketStartIdx < maxSymbolValue1);
-            HUF_simpleQuickSort(&mut huffNode[bucketStartIdx as usize..], 0, bucketSize - 1);
+            HUF_simpleQuickSort(&mut huffNode[bucketStartIdx..], 0, bucketSize - 1);
         }
     }
 
     // huffNodes should be sorted
-    debug_assert!((1..maxSymbolValue1 as usize).all(|i| huffNode[i - 1].count >= huffNode[i].count));
+    debug_assert!((1..maxSymbolValue1).all(|i| huffNode[i - 1].count >= huffNode[i].count));
 }
 
 pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
