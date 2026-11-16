@@ -155,15 +155,14 @@ impl ZSTD_window_t {
 }
 
 pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
-pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
-    (1u32 << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
+pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: usize = (1 << ZSTD_SHORT_CACHE_TAG_BITS) - 1;
 
 /// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
 /// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
 #[inline]
 pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: usize, index: u32) {
     let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
-    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
+    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK) as u32;
     *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
 }
 
@@ -171,8 +170,8 @@ pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: usiz
 /// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
 #[inline]
 pub(crate) fn ZSTD_comparePackedTags(packedTag1: usize, packedTag2: usize) -> bool {
-    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
-    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
+    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK) as u32;
+    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK) as u32;
     tag1 == tag2
 }
 
