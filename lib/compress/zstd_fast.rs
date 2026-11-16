@@ -190,7 +190,6 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
-    let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hlog = cParams.hashLog;
@@ -270,7 +269,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
 
         matchIdx = *hashTable.add(hash0);
 
-        loop {
+        let is_repcode = loop {
             // load repcode match for ip[2]
             let rval = MEM_read32(ip2.sub(rep_offset1 as usize).cast());
 
@@ -292,8 +291,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                 // This write is known to be safe because ip1 is before the repcode (ip2).
                 *hashTable.add(hash1) = ip1.wrapping_offset_from(base) as u32;
 
-                current_block = 4391991184774404966;
-                break;
+                break true;
             } else if matchFound(
                 ip0,
                 base.wrapping_offset(matchIdx as isize),
@@ -305,8 +303,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                 // so searching will resume after ip1.
                 *hashTable.add(hash1) = ip1.wrapping_offset_from(base) as u32;
 
-                current_block = 11113405673187116881;
-                break;
+                break false;
             } else {
                 // lookup ip[1]
                 matchIdx = *hashTable.add(hash1);
@@ -336,8 +333,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                         // The minimum possible match has length 4, so search can resume at ip0 + 4.
                         *hashTable.add(hash1) = ip1.wrapping_offset_from(base) as u32;
                     }
-                    current_block = 11113405673187116881;
-                    break;
+                    break false;
                 } else {
                     // lookup ip[1]
                     matchIdx = *hashTable.add(hash1);
@@ -363,10 +359,10 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
                     }
                 }
             }
-        }
+        };
 
         // _offset: Requires ip0, idx
-        if current_block == 11113405673187116881 {
+        if !is_repcode {
             // Compute the offset code.
             match0 = base.wrapping_offset(matchIdx as isize);
             rep_offset2 = rep_offset1;
@@ -798,7 +794,6 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
     srcSize: usize,
     hasStep: bool,
 ) -> usize {
-    let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hlog = cParams.hashLog;
@@ -887,7 +882,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
             base
         };
 
-        loop {
+        let is_repcode = loop {
             // load repcode match for ip[2]
             let current2 = ip2.wrapping_offset_from(base) as u32;
             let repIndex = current2.wrapping_sub(offset_1);
@@ -922,8 +917,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 match0 = match0.sub(mLength);
                 offcode = REPCODE1_TO_OFFBASE;
                 mLength = mLength.wrapping_add(4);
-                current_block = 1352918242886884122;
-                break;
+                break true;
             } else {
                 // load match for ip[0]
                 let mval = if idx >= dictStartIndex {
@@ -935,8 +929,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 // check match at ip[0]
                 if MEM_read32(ip0.cast()) == mval {
                     // found a match!
-                    current_block = 934346911184053177;
-                    break;
+                    break false;
                 } else {
                     // lookup ip[1]
                     idx = *hashTable.add(hash1);
@@ -968,8 +961,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                     // check match at ip[0]
                     if MEM_read32(ip0.cast()) == mval_0 {
                         // found a match!
-                        current_block = 934346911184053177;
-                        break;
+                        break false;
                     }
 
                     // lookup ip[1]
@@ -1000,10 +992,10 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                     }
                 }
             }
-        }
+        };
 
         // _offset: Requires ip0, idx, idxBase
-        if current_block == 934346911184053177 {
+        if !is_repcode {
             // Compute the offset code.
             let offset = current0.wrapping_sub(idx);
             let lowMatchPtr = if idx < prefixStartIndex {
