@@ -1169,7 +1169,7 @@ fn ZSTD_cwksp_bump_oversized_duration(ws: &mut ZSTD_cwksp, additionalNeededSpace
     }
 }
 
-pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
+pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_uint = 27;
 
 /// Maximum size of the hash table dedicated to find 3-bytes matches,
 /// in log format, aka 17 => 1 << 17 == 128Ki positions.
@@ -2630,7 +2630,7 @@ pub fn ZSTD_getCParamsFromCCtxParams_internal(
     let mut cParams =
         ZSTD_compressionParameters::new(CCtxParams.compressionLevel, srcSizeHint, dictSize, mode);
     if CCtxParams.ldmParams.enableLdm == ParamSwitch::Enable {
-        cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG as core::ffi::c_uint;
+        cParams.windowLog = ZSTD_LDM_DEFAULT_WINDOW_LOG;
     }
     cParams.override_cparams(&CCtxParams.cParams);
 
