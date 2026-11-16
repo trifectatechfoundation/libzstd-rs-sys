@@ -17,10 +17,10 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
 ) {
     let cParams = &ms.cParams;
     let hashLarge = ms.hashTable;
-    let hBitsL = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let hBitsL = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let mls = cParams.minMatch;
     let hashSmall = ms.chainTable;
-    let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
     let iend = (end as *const u8).wrapping_sub(HASH_READ_SIZE);
@@ -496,12 +496,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     let dictEnd = (*dms).window.nextSrc;
     let dictIndexDelta =
         prefixLowestIndex.wrapping_sub(dictEnd.wrapping_offset_from(dictBase) as u32);
-    let dictHBitsL = dictCParams
-        .hashLog
-        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
-    let dictHBitsS = dictCParams
-        .chainLog
-        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let dictHBitsL = dictCParams.hashLog.wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
+    let dictHBitsS = dictCParams.chainLog.wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let dictAndPrefixLength =
         ip.offset_from_unsigned(prefixLowest) + dictEnd.offset_from_unsigned(dictStart);
 

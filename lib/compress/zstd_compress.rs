@@ -2505,7 +2505,7 @@ impl ZSTD_compressionParameters {
         // We can't use more than 32 bits of hash in total, so that means that we require:
         // (hashLog + 8) <= 32 && (chainLog + 8) <= 32
         if mode == CParamMode::CreateCDict && self.cdict_indices_are_tagged() {
-            let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
+            let maxShortCacheHashLog = 32 - ZSTD_SHORT_CACHE_TAG_BITS;
             self.hashLog = Ord::min(self.hashLog, maxShortCacheHashLog);
             self.chainLog = Ord::min(self.chainLog, maxShortCacheHashLog);
         }

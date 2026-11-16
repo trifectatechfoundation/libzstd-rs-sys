@@ -18,7 +18,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
 ) {
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
-    let hBits = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let hBits = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let mls = cParams.minMatch;
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
@@ -555,9 +555,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
         prefixStartIndex.wrapping_sub(dictEnd.wrapping_offset_from(dictBase) as u32);
     let dictAndPrefixLength =
         istart.offset_from_unsigned(prefixStart) + dictEnd.offset_from_unsigned(dictStart);
-    let dictHBits = dictCParams
-        .hashLog
-        .wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
+    let dictHBits = dictCParams.hashLog.wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
 
     // if a dictionary is still attached, it necessarily means that
     // it is within window size. So we just check it.
