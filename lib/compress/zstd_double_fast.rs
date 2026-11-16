@@ -127,8 +127,6 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
 
-    let mut mLength: usize = 0;
-    let mut offset: u32 = 0;
     let mut curr: u32;
 
     // how many positions to search before increasing step size
@@ -136,17 +134,6 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     // the position at which to increment the step size if no match is found
     let mut nextStep;
     let mut step: usize; // the current step size
-
-    let mut hl0: usize; // the long hash at ip
-    let mut hl1: usize = 0; // the long hash at ip1
-
-    let mut idxl0: u32; // the long match index for ip
-    let mut idxl1: u32 = 0; // the long match index for ip1
-
-    let mut matchl0; // the long match for ip
-    let mut matchs0; // the short match for ip
-    let mut matchl1 = core::ptr::null::<u8>(); // the long match for ip1
-    let mut matchs0_safe; // matchs0 or safe address
 
     let mut ip = istart; // the current position
     let mut ip1; // the next position
@@ -171,259 +158,231 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
     }
 
     // Outer Loop: one iteration per match found and stored
-    loop {
-        's_428: {
-            let mut current_block_83: u64;
-            step = 1;
-            nextStep = ip.wrapping_add(kStepIncr);
-            ip1 = ip.wrapping_add(step);
-            if ip1 <= ilimit {
-                hl0 = ZSTD_hashPtr(ip.cast(), hBitsL, 8);
-                idxl0 = *hashLong.add(hl0);
-                matchl0 = base.wrapping_offset(idxl0 as isize);
+    'matches: loop {
+        step = 1;
+        nextStep = ip.wrapping_add(kStepIncr);
+        ip1 = ip.wrapping_add(step);
+        if ip1 > ilimit {
+            break;
+        }
 
-                // Inner Loop: one iteration per search / position
-                loop {
-                    let hs0 = ZSTD_hashPtr(ip.cast(), hBitsS, MLS);
-                    let idxs0 = *hashSmall.add(hs0);
-                    curr = ip.wrapping_offset_from(base) as u32;
-                    matchs0 = base.wrapping_offset(idxs0 as isize);
+        let mut hl0 = ZSTD_hashPtr(ip.cast(), hBitsL, 8); // the long hash at ip
+        let mut idxl0 = *hashLong.add(hl0); // the long match index for ip
+        let mut matchl0 = base.wrapping_offset(idxl0 as isize); // the long match for ip
 
-                    // update hash tables
-                    let fresh2 = &mut (*hashSmall.add(hs0));
-                    *fresh2 = curr;
-                    *hashLong.add(hl0) = *fresh2;
+        // Inner Loop: one iteration per search / position
+        let mLength = loop {
+            let hs0 = ZSTD_hashPtr(ip.cast(), hBitsS, MLS);
+            let idxs0 = *hashSmall.add(hs0);
+            curr = ip.wrapping_offset_from(base) as u32;
+            let mut matchs0 = base.wrapping_offset(idxs0 as isize); // the short match for ip
 
-                    // check noDict repcode
-                    if (offset_1 > 0)
-                        & (MEM_read32(ip.add(1).sub(offset_1 as usize).cast())
-                            == MEM_read32(ip.add(1).cast()))
-                    {
-                        mLength = (ZSTD_count(
-                            ip.add(1).add(4),
-                            ip.add(1).add(4).sub(offset_1 as usize),
-                            iend,
-                        ))
-                        .wrapping_add(4);
-                        ip = ip.add(1);
-                        ZSTD_storeSeq(
-                            seqStore,
-                            ip.offset_from_unsigned(anchor),
-                            anchor,
-                            iend,
-                            REPCODE1_TO_OFFBASE,
-                            mLength,
-                        );
-                        current_block_83 = 18341544293284149774;
-                        break;
-                    } else {
-                        hl1 = ZSTD_hashPtr(ip1.cast(), hBitsL, 8);
+            // update hash tables
+            let fresh2 = &mut (*hashSmall.add(hs0));
+            *fresh2 = curr;
+            *hashLong.add(hl0) = *fresh2;
 
-                        // idxl0 > prefixLowestIndex is a (somewhat) unpredictable branch.
-                        // However expression below compiles into conditional move. Since
-                        // match is unlikely and we only *branch* on idxl0 > prefixLowestIndex
-                        // if there is a match, all branches become predictable.
-                        let matchl0_safe = {
-                            core::hint::select_unpredictable(
-                                idxl0 >= prefixLowestIndex,
-                                matchl0,
-                                dummy.as_ptr(),
-                            )
-                        };
-                        // check prefix long match
-                        if MEM_read64(matchl0_safe.cast()) == MEM_read64(ip.cast()) && {
-                            branch_barrier!();
-                            idxl0 >= prefixLowestIndex
-                        } {
-                            mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
-                            offset = ip.offset_from_unsigned(matchl0) as u32;
-                            while (ip > anchor) & (matchl0 > prefixLowest)
-                                && *ip.sub(1) == *matchl0.sub(1)
-                            {
-                                ip = ip.sub(1);
-                                matchl0 = matchl0.sub(1);
-                                mLength = mLength.wrapping_add(1);
-                            }
-                            current_block_83 = 14716613436827065636;
-                            break;
-                        } else {
-                            idxl1 = *hashLong.add(hl1);
-                            matchl1 = base.wrapping_offset(idxl1 as isize);
-
-                            // Same optimization as matchl0 above
-                            matchs0_safe = {
-                                core::hint::select_unpredictable(
-                                    idxs0 >= prefixLowestIndex,
-                                    matchs0,
-                                    dummy.as_ptr(),
-                                )
-                            };
-
-                            // check prefix short match
-                            if MEM_read32(matchs0_safe.cast()) == MEM_read32(ip.cast()) && {
-                                branch_barrier!();
-                                idxs0 >= prefixLowestIndex
-                            } {
-                                current_block_83 = 6142208486753608565;
-                                break;
-                            }
-
-                            if ip1 >= nextStep {
-                                prefetch_read_data(ip1.wrapping_add(64), Locality::L1);
-                                prefetch_read_data(ip1.wrapping_add(128), Locality::L1);
-                                step = step.wrapping_add(1);
-                                nextStep = nextStep.add(kStepIncr);
-                            }
-                            ip = ip1;
-                            ip1 = ip1.add(step);
-
-                            hl0 = hl1;
-                            idxl0 = idxl1;
-                            matchl0 = matchl1;
-
-                            if ip1 > ilimit {
-                                current_block_83 = 14575735148454673654;
-                                break;
-                            }
-                        }
-                    }
-                }
-                match current_block_83 {
-                    14575735148454673654 => {}
-                    _ => {
-                        if current_block_83 == 6142208486753608565 {
-                            // short match found: let's check for a longer one
-                            mLength = (ZSTD_count(ip.add(4), matchs0.add(4), iend)).wrapping_add(4);
-                            offset = ip.offset_from_unsigned(matchs0) as u32;
-
-                            // check long match at +1 position
-                            if idxl1 > prefixLowestIndex
-                                && MEM_read64(matchl1.cast()) == MEM_read64(ip1.cast())
-                            {
-                                let l1len =
-                                    (ZSTD_count(ip1.add(8), matchl1.add(8), iend)).wrapping_add(8);
-                                if l1len > mLength {
-                                    // use the long match instead
-                                    ip = ip1;
-                                    mLength = l1len;
-                                    offset = ip.offset_from_unsigned(matchl1) as u32;
-                                    matchs0 = matchl1;
-                                }
-                            }
-
-                            // complete backward
-                            while (ip > anchor) & (matchs0 > prefixLowest)
-                                && *ip.sub(1) == *matchs0.sub(1)
-                            {
-                                ip = ip.sub(1);
-                                matchs0 = matchs0.sub(1);
-                                mLength = mLength.wrapping_add(1);
-                            }
-                            current_block_83 = 14716613436827065636;
-                        }
-                        // _match_found: requires ip, offset, mLength
-                        if current_block_83 == 14716613436827065636 {
-                            offset_2 = offset_1;
-                            offset_1 = offset;
-
-                            if step < 4 {
-                                // It is unsafe to write this value back to the hashtable when ip1 is
-                                // greater than or equal to the new ip we will have after we're done
-                                // processing this match. Rather than perform that test directly
-                                // (ip1 >= ip + mLength), which costs speed in practice, we do a simpler
-                                // more predictable test. The minmatch even if we take a short match is
-                                // 4 bytes, so as long as step, the distance between ip and ip1
-                                // (initially) is less than 4, we know ip1 < new ip.
-                                *hashLong.add(hl1) = ip1.wrapping_offset_from(base) as u32;
-                            }
-
-                            ZSTD_storeSeq(
-                                seqStore,
-                                ip.offset_from_unsigned(anchor),
-                                anchor,
-                                iend,
-                                offset.wrapping_add(ZSTD_REP_NUM),
-                                mLength,
-                            );
-                        }
-
-                        // match found
-                        ip = ip.add(mLength);
-                        anchor = ip;
-
-                        if ip <= ilimit {
-                            // Complementary insertion
-                            // done after iLimit test, as candidates could be > iend-8
-                            let indexToInsert = curr.wrapping_add(2);
-                            *hashLong.add(ZSTD_hashPtr(
-                                base.wrapping_offset(indexToInsert as isize).cast(),
-                                hBitsL,
-                                8,
-                            )) = indexToInsert;
-                            *hashLong.add(ZSTD_hashPtr(ip.sub(2).cast(), hBitsL, 8)) =
-                                ip.sub(2).wrapping_offset_from(base) as u32;
-                            *hashSmall.add(ZSTD_hashPtr(
-                                base.wrapping_offset(indexToInsert as isize).cast(),
-                                hBitsS,
-                                MLS,
-                            )) = indexToInsert;
-                            *hashSmall.add(ZSTD_hashPtr(ip.sub(1).cast(), hBitsS, MLS)) =
-                                ip.sub(1).wrapping_offset_from(base) as u32;
-
-                            // check immediate repcode
-                            while ip <= ilimit
-                                && (offset_2 > 0)
-                                    & (MEM_read32(ip.cast())
-                                        == MEM_read32(ip.sub(offset_2 as usize).cast()))
-                            {
-                                // store sequence
-                                let rLength =
-                                    (ZSTD_count(ip.add(4), ip.add(4).sub(offset_2 as usize), iend))
-                                        .wrapping_add(4);
-                                core::mem::swap(&mut offset_2, &mut offset_1);
-                                *hashSmall.add(ZSTD_hashPtr(ip.cast(), hBitsS, MLS)) =
-                                    ip.wrapping_offset_from(base) as u32;
-                                *hashLong.add(ZSTD_hashPtr(ip.cast(), hBitsL, 8)) =
-                                    ip.wrapping_offset_from(base) as u32;
-                                ZSTD_storeSeq(
-                                    seqStore,
-                                    0,
-                                    anchor,
-                                    iend,
-                                    REPCODE1_TO_OFFBASE,
-                                    rLength,
-                                );
-                                ip = ip.add(rLength);
-                                anchor = ip;
-                            }
-                        }
-                        break 's_428;
-                    }
-                }
+            // check noDict repcode
+            if (offset_1 > 0)
+                & (MEM_read32(ip.add(1).sub(offset_1 as usize).cast())
+                    == MEM_read32(ip.add(1).cast()))
+            {
+                let mLength = (ZSTD_count(
+                    ip.add(1).add(4),
+                    ip.add(1).add(4).sub(offset_1 as usize),
+                    iend,
+                ))
+                .wrapping_add(4);
+                ip = ip.add(1);
+                ZSTD_storeSeq(
+                    seqStore,
+                    ip.offset_from_unsigned(anchor),
+                    anchor,
+                    iend,
+                    REPCODE1_TO_OFFBASE,
+                    mLength,
+                );
+                break mLength;
             }
 
-            // If offset_1 started invalid (offsetSaved1 != 0) and became valid (offset_1 != 0),
-            // rotate saved offsets. See comment in ZSTD_compressBlock_fast_noDict for more context.
-            offsetSaved2 = if offsetSaved1 != 0 && offset_1 != 0 {
-                offsetSaved1
+            let hl1 = ZSTD_hashPtr(ip1.cast(), hBitsL, 8); // the long hash at ip1
+
+            // idxl0 > prefixLowestIndex is a (somewhat) unpredictable branch.
+            // However expression below compiles into conditional move. Since
+            // match is unlikely and we only *branch* on idxl0 > prefixLowestIndex
+            // if there is a match, all branches become predictable.
+            let matchl0_safe = {
+                core::hint::select_unpredictable(
+                    idxl0 >= prefixLowestIndex,
+                    matchl0,
+                    dummy.as_ptr(),
+                )
+            };
+            // check prefix long match
+            let (mLength, offset) = if MEM_read64(matchl0_safe.cast()) == MEM_read64(ip.cast()) && {
+                branch_barrier!();
+                idxl0 >= prefixLowestIndex
+            } {
+                let mut mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
+                let offset = ip.offset_from_unsigned(matchl0) as u32;
+                while (ip > anchor) & (matchl0 > prefixLowest) && *ip.sub(1) == *matchl0.sub(1) {
+                    ip = ip.sub(1);
+                    matchl0 = matchl0.sub(1);
+                    mLength = mLength.wrapping_add(1);
+                }
+                (mLength, offset)
             } else {
-                offsetSaved2
+                let idxl1 = *hashLong.add(hl1); // the long match index for ip1
+                let matchl1 = base.wrapping_offset(idxl1 as isize); // the long match for ip1
+
+                // Same optimization as matchl0 above
+                let matchs0_safe = {
+                    // matchs0 or safe address
+                    core::hint::select_unpredictable(
+                        idxs0 >= prefixLowestIndex,
+                        matchs0,
+                        dummy.as_ptr(),
+                    )
+                };
+
+                // No match: advance to the next search position
+                if !(MEM_read32(matchs0_safe.cast()) == MEM_read32(ip.cast()) && {
+                    branch_barrier!();
+                    idxs0 >= prefixLowestIndex
+                }) {
+                    if ip1 >= nextStep {
+                        prefetch_read_data(ip1.wrapping_add(64), Locality::L1);
+                        prefetch_read_data(ip1.wrapping_add(128), Locality::L1);
+                        step = step.wrapping_add(1);
+                        nextStep = nextStep.add(kStepIncr);
+                    }
+                    ip = ip1;
+                    ip1 = ip1.add(step);
+
+                    hl0 = hl1;
+                    idxl0 = idxl1;
+                    matchl0 = matchl1;
+
+                    if ip1 > ilimit {
+                        break 'matches;
+                    }
+                    continue;
+                }
+
+                // short match found: let's check for a longer one
+                let mut mLength = (ZSTD_count(ip.add(4), matchs0.add(4), iend)).wrapping_add(4);
+                let mut offset = ip.offset_from_unsigned(matchs0) as u32;
+
+                // check long match at +1 position
+                if idxl1 > prefixLowestIndex && MEM_read64(matchl1.cast()) == MEM_read64(ip1.cast())
+                {
+                    let l1len = (ZSTD_count(ip1.add(8), matchl1.add(8), iend)).wrapping_add(8);
+                    if l1len > mLength {
+                        // use the long match instead
+                        ip = ip1;
+                        mLength = l1len;
+                        offset = ip.offset_from_unsigned(matchl1) as u32;
+                        matchs0 = matchl1;
+                    }
+                }
+
+                // complete backward
+                while (ip > anchor) & (matchs0 > prefixLowest) && *ip.sub(1) == *matchs0.sub(1) {
+                    ip = ip.sub(1);
+                    matchs0 = matchs0.sub(1);
+                    mLength = mLength.wrapping_add(1);
+                }
+                (mLength, offset)
             };
 
-            // save reps for next block
-            rep[0] = match offset_1 {
-                0 => offsetSaved1,
-                _ => offset_1,
-            };
-            rep[1] = match offset_2 {
-                0 => offsetSaved2,
-                _ => offset_2,
-            };
+            offset_2 = offset_1;
+            offset_1 = offset;
 
-            // Return the last literals size
-            return iend.offset_from_unsigned(anchor);
+            if step < 4 {
+                // It is unsafe to write this value back to the hashtable when ip1 is
+                // greater than or equal to the new ip we will have after we're done
+                // processing this match. Rather than perform that test directly
+                // (ip1 >= ip + mLength), which costs speed in practice, we do a simpler
+                // more predictable test. The minmatch even if we take a short match is
+                // 4 bytes, so as long as step, the distance between ip and ip1
+                // (initially) is less than 4, we know ip1 < new ip.
+                *hashLong.add(hl1) = ip1.wrapping_offset_from(base) as u32;
+            }
+
+            ZSTD_storeSeq(
+                seqStore,
+                ip.offset_from_unsigned(anchor),
+                anchor,
+                iend,
+                offset.wrapping_add(ZSTD_REP_NUM),
+                mLength,
+            );
+            break mLength;
+        };
+
+        // match found
+        ip = ip.add(mLength);
+        anchor = ip;
+
+        if ip <= ilimit {
+            // Complementary insertion
+            // done after iLimit test, as candidates could be > iend-8
+            let indexToInsert = curr.wrapping_add(2);
+            *hashLong.add(ZSTD_hashPtr(
+                base.wrapping_offset(indexToInsert as isize).cast(),
+                hBitsL,
+                8,
+            )) = indexToInsert;
+            *hashLong.add(ZSTD_hashPtr(ip.sub(2).cast(), hBitsL, 8)) =
+                ip.sub(2).wrapping_offset_from(base) as u32;
+            *hashSmall.add(ZSTD_hashPtr(
+                base.wrapping_offset(indexToInsert as isize).cast(),
+                hBitsS,
+                MLS,
+            )) = indexToInsert;
+            *hashSmall.add(ZSTD_hashPtr(ip.sub(1).cast(), hBitsS, MLS)) =
+                ip.sub(1).wrapping_offset_from(base) as u32;
+
+            // check immediate repcode
+            while ip <= ilimit
+                && (offset_2 > 0)
+                    & (MEM_read32(ip.cast()) == MEM_read32(ip.sub(offset_2 as usize).cast()))
+            {
+                // store sequence
+                let rLength =
+                    (ZSTD_count(ip.add(4), ip.add(4).sub(offset_2 as usize), iend)).wrapping_add(4);
+                core::mem::swap(&mut offset_2, &mut offset_1);
+                *hashSmall.add(ZSTD_hashPtr(ip.cast(), hBitsS, MLS)) =
+                    ip.wrapping_offset_from(base) as u32;
+                *hashLong.add(ZSTD_hashPtr(ip.cast(), hBitsL, 8)) =
+                    ip.wrapping_offset_from(base) as u32;
+                ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, rLength);
+                ip = ip.add(rLength);
+                anchor = ip;
+            }
         }
     }
+
+    // If offset_1 started invalid (offsetSaved1 != 0) and became valid (offset_1 != 0),
+    // rotate saved offsets. See comment in ZSTD_compressBlock_fast_noDict for more context.
+    offsetSaved2 = if offsetSaved1 != 0 && offset_1 != 0 {
+        offsetSaved1
+    } else {
+        offsetSaved2
+    };
+
+    // save reps for next block
+    rep[0] = match offset_1 {
+        0 => offsetSaved1,
+        _ => offset_1,
+    };
+    rep[1] = match offset_2 {
+        0 => offsetSaved2,
+        _ => offset_2,
+    };
+
+    // Return the last literals size
+    iend.offset_from_unsigned(anchor)
 }
 
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
