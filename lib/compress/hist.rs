@@ -4,7 +4,7 @@ use core::ptr;
 use crate::lib::common::error_private::Error;
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
 pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32.wrapping_mul(size_of::<core::ffi::c_uint>());
-pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
+pub const HIST_FAST_THRESHOLD: usize = 1500;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum CheckInput {
@@ -146,7 +146,7 @@ pub unsafe fn HIST_countFast_wksp(
     workSpaceSize: usize,
 ) -> Result<core::ffi::c_uint, Error> {
     // checked before the workspace, which this path does not touch
-    if source.len() < HIST_FAST_THRESHOLD as usize {
+    if source.len() < HIST_FAST_THRESHOLD {
         // heuristic threshold
         let count = core::slice::from_raw_parts_mut(
             count.cast::<MaybeUninit<core::ffi::c_uint>>(),
@@ -178,7 +178,7 @@ pub unsafe fn HIST_countFast_wksp_array(
     source: &[u8],
     workSpace: &mut [u32; HIST_WKSP_SIZE_U32],
 ) -> Result<core::ffi::c_uint, Error> {
-    if source.len() < HIST_FAST_THRESHOLD as usize {
+    if source.len() < HIST_FAST_THRESHOLD {
         // heuristic threshold
         let count = core::slice::from_raw_parts_mut(
             count.cast::<MaybeUninit<core::ffi::c_uint>>(),
