@@ -43,7 +43,7 @@ impl COVER_map_t {
     }
 }
 
-const MAP_EMPTY_VALUE: core::ffi::c_int = -1;
+const MAP_EMPTY_VALUE: u32 = u32::MAX;
 
 #[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
@@ -54,8 +54,8 @@ struct COVER_map_pair_t {
 
 impl COVER_map_pair_t {
     const EMPTY: Self = Self {
-        key: MAP_EMPTY_VALUE as u32,
-        value: MAP_EMPTY_VALUE as u32,
+        key: MAP_EMPTY_VALUE,
+        value: MAP_EMPTY_VALUE,
     };
 }
 
@@ -160,7 +160,7 @@ fn COVER_map_index(map: &mut COVER_map_t, key: u32) -> u32 {
     let mut i = hash;
     loop {
         let entry = map.data[i as usize];
-        if entry.value == MAP_EMPTY_VALUE as u32 {
+        if entry.value == MAP_EMPTY_VALUE {
             return i;
         }
         if entry.key == key {
@@ -173,7 +173,7 @@ fn COVER_map_index(map: &mut COVER_map_t, key: u32) -> u32 {
 fn COVER_map_at(map: &mut COVER_map_t, key: u32) -> &mut u32 {
     let index = COVER_map_index(map, key) as usize;
     let entry = &mut map.data[index];
-    if entry.value == MAP_EMPTY_VALUE as u32 {
+    if entry.value == MAP_EMPTY_VALUE {
         entry.key = key;
         entry.value = 0;
     }
@@ -184,14 +184,14 @@ fn COVER_map_remove(map: &mut COVER_map_t, key: u32) {
     let mut i = COVER_map_index(map, key);
     let mut del = i as usize;
     let mut shift = 1;
-    if map.data[del].value == MAP_EMPTY_VALUE as u32 {
+    if map.data[del].value == MAP_EMPTY_VALUE {
         return;
     }
     i = (i + 1) & map.sizeMask;
     loop {
         let pos = i as usize;
-        if map.data[pos].value == MAP_EMPTY_VALUE as u32 {
-            map.data[del].value = MAP_EMPTY_VALUE as u32;
+        if map.data[pos].value == MAP_EMPTY_VALUE {
+            map.data[del].value = MAP_EMPTY_VALUE;
             return;
         }
         if i.wrapping_sub(COVER_map_hash(map, map.data[pos].key)) & map.sizeMask >= shift {
