@@ -8,9 +8,9 @@ pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = size_of::<FPStats>();
 #[cfg(target_pointer_width = "64")]
 const _: () = assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE == 8208);
 
-pub const THRESHOLD_PENALTY_RATE: c_int = 16;
-pub const THRESHOLD_BASE: c_int = THRESHOLD_PENALTY_RATE - 2;
-pub const THRESHOLD_PENALTY: c_int = 3;
+pub const THRESHOLD_PENALTY_RATE: usize = 16;
+pub const THRESHOLD_BASE: usize = THRESHOLD_PENALTY_RATE - 2;
+pub const THRESHOLD_PENALTY: usize = 3;
 
 pub const HASHLENGTH: usize = 2;
 pub const HASHLOG_MAX: c_uint = 10;
@@ -87,7 +87,7 @@ impl<const N: usize> Fingerprint<N> {
     /// Compares new events with past events.
     ///
     /// Returns `true` when the fingerprints are considered "too different".
-    fn compare(&self, newfp: &Self, penalty: c_int, hashLog: c_uint) -> bool {
+    fn compare(&self, newfp: &Self, penalty: usize, hashLog: c_uint) -> bool {
         debug_assert!(self.nbEvents > 0);
         debug_assert!(newfp.nbEvents > 0);
 
@@ -137,9 +137,7 @@ fn ZSTD_splitBlock_byChunks(block: &[u8; 128 << 10], level: c_int, fpstats: &mut
             return (i + 1) * CHUNKSIZE;
         }
         fpstats.pastEvents.merge_events(&fpstats.newEvents);
-        if penalty > 0 {
-            penalty -= 1;
-        }
+        penalty = penalty.saturating_sub(1);
     }
     blockSize
 }
