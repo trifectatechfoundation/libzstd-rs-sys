@@ -1085,7 +1085,7 @@ const RSYNC_LENGTH: u8 = 32;
 /// If this is shrunk < ZSTD_BLOCKSIZELOG_MIN then
 /// ZSTD_COMPRESSBOUND() will need to be updated.
 const RSYNC_MIN_BLOCK_LOG: core::ffi::c_int = ZSTD_BLOCKSIZELOG_MAX;
-const RSYNC_MIN_BLOCK_SIZE: core::ffi::c_int = 1 << RSYNC_MIN_BLOCK_LOG;
+const RSYNC_MIN_BLOCK_SIZE: usize = 1 << RSYNC_MIN_BLOCK_LOG;
 
 unsafe fn ZSTDMT_freeJobsTable(
     jobTable: *mut ZSTDMT_jobDescription,
@@ -2025,7 +2025,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     if ((*mtctx).inBuff.filled)
         .wrapping_add(input.size)
         .wrapping_sub(input.pos)
-        < RSYNC_MIN_BLOCK_SIZE as usize
+        < RSYNC_MIN_BLOCK_SIZE
     {
         // We don't emit synchronization points if it would produce too small blocks.
         // We don't have enough input to find a synchronization point, so don't look.
@@ -2045,11 +2045,11 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     let mut hash: u64;
     let prev: *const u8;
     let pos: usize;
-    if (*mtctx).inBuff.filled < RSYNC_MIN_BLOCK_SIZE as usize {
+    if (*mtctx).inBuff.filled < RSYNC_MIN_BLOCK_SIZE {
         // We don't need to scan the first RSYNC_MIN_BLOCK_SIZE positions
         // because they can't possibly be a sync point. So we can start
         // part way through the input buffer.
-        pos = (RSYNC_MIN_BLOCK_SIZE as usize).wrapping_sub((*mtctx).inBuff.filled);
+        pos = RSYNC_MIN_BLOCK_SIZE.wrapping_sub((*mtctx).inBuff.filled);
         if pos >= usize::from(RSYNC_LENGTH) {
             prev = istart.add(pos).sub(usize::from(RSYNC_LENGTH));
             hash = ZSTD_rollingHash_compute(core::slice::from_raw_parts(
