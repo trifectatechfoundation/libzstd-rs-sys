@@ -725,12 +725,10 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         let nextState = wksp.symbols[symbol] as u32;
         wksp.symbols[symbol] += 1;
 
-        // tableLog - highbit(nextState); `| 1` drops the zero check, nextState >= 1 since every
-        // symbol in the table has a count of at least 1.
+        // tableLog - highbit(nextState); nextState >= 1 since every symbol in the table has a
+        // count of at least 1.
         debug_assert!(nextState >= 1);
-        let nbBits = tableLog
-            .wrapping_sub(31)
-            .wrapping_add((nextState | 1).leading_zeros()) as u8;
+        let nbBits = (tableLog + 1).wrapping_sub(nextState.bit_width()) as u8;
 
         *seq_symbol = ZSTD_seqSymbol {
             nbBits,
