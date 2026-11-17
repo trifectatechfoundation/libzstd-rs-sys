@@ -21,39 +21,33 @@ pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
 
 #[inline]
 pub(crate) fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
-    #[cfg(feature = "trace")]
-    unsafe {
-        return statics::ZSTD_trace_compress_begin(_cctx);
+    cfg_select! {
+        feature = "trace" => unsafe { statics::ZSTD_trace_compress_begin(_cctx) }
+        _ => 0,
     }
-
-    #[cfg(not(feature = "trace"))]
-    0
 }
 
 #[inline]
 pub(crate) fn ZSTD_trace_compress_end(_ctx: ZSTD_TraceCtx, _trace: &ZSTD_Trace) {
     #[cfg(feature = "trace")]
     unsafe {
-        return statics::ZSTD_trace_compress_end(_ctx, _trace);
+        statics::ZSTD_trace_compress_end(_ctx, _trace);
     }
 }
 
 #[inline]
 pub(crate) fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
-    #[cfg(feature = "trace")]
-    unsafe {
-        return statics::ZSTD_trace_decompress_begin(_dctx);
+    cfg_select! {
+        feature = "trace" => unsafe { statics::ZSTD_trace_decompress_begin(_dctx) }
+        _ => 0,
     }
-
-    #[cfg(not(feature = "trace"))]
-    0
 }
 
 #[inline]
 pub(crate) fn ZSTD_trace_decompress_end(_ctx: ZSTD_TraceCtx, _trace: &ZSTD_Trace) {
     #[cfg(feature = "trace")]
     unsafe {
-        return statics::ZSTD_trace_decompress_end(_ctx, _trace);
+        statics::ZSTD_trace_decompress_end(_ctx, _trace);
     }
 }
 
