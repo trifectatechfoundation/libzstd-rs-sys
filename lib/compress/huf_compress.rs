@@ -264,7 +264,7 @@ pub unsafe fn HUF_writeCTable_wksp(
             maxDstSize - 1,
             &(*wksp).huffWeight,
             maxSymbolValue,
-            &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
+            &raw mut (*wksp).wksp as *mut c_void,
             size_of::<HUF_CompressWeightsWksp>(),
         )?;
         if (hSize > 1) && (hSize < maxSymbolValue / 2) {
@@ -1628,7 +1628,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         huffLog,
         src.len(),
         maxSymbolValue,
-        &mut (*table).wksps as *mut workspace_union as *mut c_void,
+        &raw mut (*table).wksps as *mut c_void,
         size_of::<workspace_union>(),
         &mut (*table).CTable,
         &(*table).count,
@@ -1639,7 +1639,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         &(*table).count,
         maxSymbolValue,
         huffLog,
-        &mut (*table).wksps.buildCTable_wksp as *mut HUF_buildCTable_wksp_tables as *mut c_void,
+        &raw mut (*table).wksps.buildCTable_wksp as *mut c_void,
         size_of::<HUF_buildCTable_wksp_tables>(),
     )?;
     huffLog = maxBits as u32;
@@ -1652,7 +1652,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
             &(*table).CTable,
             maxSymbolValue,
             huffLog,
-            &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut c_void,
+            &raw mut (*table).wksps.writeCTable_wksp as *mut c_void,
             size_of::<HUF_WriteCTableWksp>(),
         )?;
 

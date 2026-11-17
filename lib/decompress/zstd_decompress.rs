@@ -320,7 +320,7 @@ unsafe fn ZSTD_initLegacyStream(
 ) -> Result<(), Error> {
     let mut x: core::ffi::c_char = 0;
     if dict.is_null() {
-        dict = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
+        dict = &raw mut x as *const core::ffi::c_void;
     }
     if prevVersion != newVersion {
         ZSTD_freeLegacyStreamContext(*legacyContext, prevVersion);

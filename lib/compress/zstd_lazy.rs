@@ -840,7 +840,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
     };
 
     if dictMode == DictMode::DedicatedDictSearch {
-        let entry: *const u32 = &mut *((*dms).hashTable).add(ddsIdx) as *mut u32;
+        let entry: *const u32 = (*dms).hashTable.add(ddsIdx);
         prefetch_read_data(entry, Locality::L1);
     }
 
