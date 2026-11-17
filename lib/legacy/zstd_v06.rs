@@ -857,7 +857,7 @@ unsafe fn HUFv06_readStats(
     if weightTotal == 0 {
         return Error::corruption_detected.to_error_code();
     }
-    let tableLog = BITv06_highbit32(weightTotal).wrapping_add(1);
+    let tableLog = weightTotal.bit_width();
     if tableLog > HUFv06_ABSOLUTEMAX_TABLELOG as u32 {
         return Error::corruption_detected.to_error_code();
     }
@@ -865,7 +865,7 @@ unsafe fn HUFv06_readStats(
     let total = (1 << tableLog) as u32;
     let rest = total.wrapping_sub(weightTotal);
     let verif = (1 << BITv06_highbit32(rest)) as u32;
-    let lastWeight = BITv06_highbit32(rest).wrapping_add(1);
+    let lastWeight = rest.bit_width();
     if verif != rest {
         return Error::corruption_detected.to_error_code();
     }

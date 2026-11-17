@@ -1114,7 +1114,7 @@ unsafe fn ZSTDMT_createJobsTable(
     nbJobsPtr: &mut u32,
     cMem: ZSTD_customMem,
 ) -> *mut ZSTDMT_jobDescription {
-    let nbJobsLog2 = ZSTD_highbit32(*nbJobsPtr).wrapping_add(1);
+    let nbJobsLog2 = nbJobsPtr.bit_width();
     let nbJobs = (1 << nbJobsLog2) as u32;
 
     let jobTable = ZSTD_customCalloc(
