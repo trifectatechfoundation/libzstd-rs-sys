@@ -1593,7 +1593,6 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 ) -> usize {
     let searchMethod = SEARCH_METHOD::SEARCH_METHOD;
     let dictMode = DICT_MODE::DICT_MODE;
-    let mut current_block: u64;
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
@@ -1710,307 +1709,269 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                     prefixLowest,
                 ))
                 .wrapping_add(4);
-                if DEPTH == 0 {
-                    current_block = 9173645608424642017;
-                } else {
-                    current_block = 14136749492126903395;
-                }
-            } else {
-                current_block = 14136749492126903395;
             }
-        } else {
-            current_block = 14136749492126903395;
+        } else if dictMode == DictMode::NoDict
+            && (offset_1 > 0)
+                & (MEM_read32(ip.add(1).sub(offset_1 as usize).cast())
+                    == MEM_read32(ip.add(1).cast()))
+        {
+            matchLength = (ZSTD_count(
+                ip.add(1).add(4),
+                ip.add(1).add(4).sub(offset_1 as usize),
+                iend,
+            ))
+            .wrapping_add(4);
         }
-        if current_block == 14136749492126903395 {
-            if dictMode == DictMode::NoDict
-                && (offset_1 > 0)
-                    & (MEM_read32(ip.add(1).sub(offset_1 as usize).cast())
-                        == MEM_read32(ip.add(1).cast()))
-            {
-                matchLength = (ZSTD_count(
-                    ip.add(1).add(4),
-                    ip.add(1).add(4).sub(offset_1 as usize),
-                    iend,
-                ))
-                .wrapping_add(4);
-                if DEPTH == 0 {
-                    current_block = 9173645608424642017;
-                } else {
-                    current_block = 6450636197030046351;
-                }
-            } else {
-                current_block = 6450636197030046351;
+
+        // Search for a better match
+        if DEPTH != 0 || matchLength == 0 {
+            // first search (depth 0)
+            let mut offbaseFound = 999999999;
+            let ml2 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
+                ms,
+                ip,
+                iend,
+                &mut offbaseFound,
+                mls,
+                rowLog,
+            );
+            if ml2 > matchLength {
+                matchLength = ml2;
+                start = ip;
+                offBase = offbaseFound as u32;
             }
-            match current_block {
-                9173645608424642017 => {}
-                _ => {
-                    // first search (depth 0)
-                    let mut offbaseFound = 999999999;
-                    let ml2 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
+
+            if matchLength < 4 {
+                let step = (ip.offset_from_unsigned(anchor) >> kSearchStrength).wrapping_add(1); // jump faster over incompressible sections
+                ip = ip.wrapping_add(step);
+                // Enter the lazy skipping mode once we are skipping more than 8 bytes at a time.
+                // In this mode we stop inserting every position into our tables, and only insert
+                // positions that we search, which is one in step positions.
+                // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
+                // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
+                // triggered once we've gone 2KB without finding any matches.
+                ms.lazySkipping = core::ffi::c_int::from(step > K_LAZY_SKIPPING_STEP);
+                continue;
+            }
+
+            // let's try to find a better solution
+            if DEPTH >= 1 {
+                while ip < ilimit {
+                    ip = ip.add(1);
+                    if dictMode == DictMode::NoDict
+                        && offBase != 0
+                        && (offset_1 > 0)
+                            & (MEM_read32(ip.cast())
+                                == MEM_read32(ip.sub(offset_1 as usize).cast()))
+                    {
+                        let mlRep = (ZSTD_count(ip.add(4), ip.add(4).sub(offset_1 as usize), iend))
+                            .wrapping_add(4);
+                        let gain2 = (mlRep * 3) as core::ffi::c_int;
+                        let gain1 = (matchLength * 3)
+                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                            .wrapping_add(1)
+                            as core::ffi::c_int;
+                        if mlRep >= 4 && gain2 > gain1 {
+                            matchLength = mlRep;
+                            offBase = REPCODE1_TO_OFFBASE;
+                            start = ip;
+                        }
+                    }
+
+                    if isDxS {
+                        let repIndex_0 =
+                            (ip.wrapping_offset_from(base) as u32).wrapping_sub(offset_1);
+                        let repMatch_0 = if repIndex_0 < prefixLowestIndex {
+                            dictBase
+                                .wrapping_offset(repIndex_0.wrapping_sub(dictIndexDelta) as isize)
+                        } else {
+                            base.wrapping_offset(repIndex_0 as isize)
+                        };
+                        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
+                            && MEM_read32(repMatch_0.cast()) == MEM_read32(ip.cast())
+                        {
+                            let repMatchEnd_0 = if repIndex_0 < prefixLowestIndex {
+                                dictEnd
+                            } else {
+                                iend
+                            };
+                            let mlRep_0 = (ZSTD_count_2segments(
+                                ip.add(4),
+                                repMatch_0.add(4),
+                                iend,
+                                repMatchEnd_0,
+                                prefixLowest,
+                            ))
+                            .wrapping_add(4);
+                            let gain2_0 = (mlRep_0 * 3) as core::ffi::c_int;
+                            let gain1_0 = (matchLength * 3)
+                                .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                                .wrapping_add(1)
+                                as core::ffi::c_int;
+                            if mlRep_0 >= 4 && gain2_0 > gain1_0 {
+                                matchLength = mlRep_0;
+                                offBase = REPCODE1_TO_OFFBASE;
+                                start = ip;
+                            }
+                        }
+                    }
+
+                    let mut ofbCandidate = 999999999;
+                    let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
                         ms,
                         ip,
                         iend,
-                        &mut offbaseFound,
+                        &mut ofbCandidate,
                         mls,
                         rowLog,
                     );
-                    if ml2 > matchLength {
-                        matchLength = ml2;
+                    let gain2_1 = (ml2_0 * 4)
+                        .wrapping_sub(ZSTD_highbit32(ofbCandidate as u32) as usize)
+                        as core::ffi::c_int;
+                    let gain1_1 = (matchLength * 4)
+                        .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                        .wrapping_add(4) as core::ffi::c_int;
+                    if ml2_0 >= 4 && gain2_1 > gain1_1 {
+                        matchLength = ml2_0;
+                        offBase = ofbCandidate as u32;
                         start = ip;
-                        offBase = offbaseFound as u32;
-                    }
-
-                    if matchLength < 4 {
-                        let step =
-                            (ip.offset_from_unsigned(anchor) >> kSearchStrength).wrapping_add(1); // jump faster over incompressible sections
-                        ip = ip.wrapping_add(step);
-                        // Enter the lazy skipping mode once we are skipping more than 8 bytes at a time.
-                        // In this mode we stop inserting every position into our tables, and only insert
-                        // positions that we search, which is one in step positions.
-                        // The exact cutoff is flexible, I've just chosen a number that is reasonably high,
-                        // so we minimize the compression ratio loss in "normal" scenarios. This mode gets
-                        // triggered once we've gone 2KB without finding any matches.
-                        ms.lazySkipping = core::ffi::c_int::from(step > K_LAZY_SKIPPING_STEP);
-                        continue;
+                        // search a better one
                     } else {
-                        // let's try to find a better solution
-                        if DEPTH >= 1 {
-                            while ip < ilimit {
-                                ip = ip.add(1);
-                                if dictMode == DictMode::NoDict
-                                    && offBase != 0
-                                    && (offset_1 > 0)
-                                        & (MEM_read32(ip.cast())
-                                            == MEM_read32(ip.sub(offset_1 as usize).cast()))
-                                {
-                                    let mlRep = (ZSTD_count(
-                                        ip.add(4),
-                                        ip.add(4).sub(offset_1 as usize),
-                                        iend,
-                                    ))
+                        if !(DEPTH == 2 && ip < ilimit) {
+                            break;
+                        }
+                        // let's find an even better one
+                        ip = ip.add(1);
+                        if dictMode == DictMode::NoDict
+                            && offBase != 0
+                            && (offset_1 > 0)
+                                & (MEM_read32(ip.cast())
+                                    == MEM_read32(ip.sub(offset_1 as usize).cast()))
+                        {
+                            let mlRep_1 =
+                                (ZSTD_count(ip.add(4), ip.add(4).sub(offset_1 as usize), iend))
                                     .wrapping_add(4);
-                                    let gain2 = (mlRep * 3) as core::ffi::c_int;
-                                    let gain1 = (matchLength * 3)
-                                        .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                        .wrapping_add(1)
-                                        as core::ffi::c_int;
-                                    if mlRep >= 4 && gain2 > gain1 {
-                                        matchLength = mlRep;
-                                        offBase = REPCODE1_TO_OFFBASE;
-                                        start = ip;
-                                    }
-                                }
+                            let gain2_2 = (mlRep_1 * 4) as core::ffi::c_int;
+                            let gain1_2 = (matchLength * 4)
+                                .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                                .wrapping_add(1)
+                                as core::ffi::c_int;
+                            if mlRep_1 >= 4 && gain2_2 > gain1_2 {
+                                matchLength = mlRep_1;
+                                offBase = REPCODE1_TO_OFFBASE;
+                                start = ip;
+                            }
+                        }
 
-                                if isDxS {
-                                    let repIndex_0 = (ip.wrapping_offset_from(base) as u32)
-                                        .wrapping_sub(offset_1);
-                                    let repMatch_0 = if repIndex_0 < prefixLowestIndex {
-                                        dictBase.wrapping_offset(
-                                            repIndex_0.wrapping_sub(dictIndexDelta) as isize,
-                                        )
-                                    } else {
-                                        base.wrapping_offset(repIndex_0 as isize)
-                                    };
-                                    if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
-                                        && MEM_read32(repMatch_0.cast()) == MEM_read32(ip.cast())
-                                    {
-                                        let repMatchEnd_0 = if repIndex_0 < prefixLowestIndex {
-                                            dictEnd
-                                        } else {
-                                            iend
-                                        };
-                                        let mlRep_0 = (ZSTD_count_2segments(
-                                            ip.add(4),
-                                            repMatch_0.add(4),
-                                            iend,
-                                            repMatchEnd_0,
-                                            prefixLowest,
-                                        ))
-                                        .wrapping_add(4);
-                                        let gain2_0 = (mlRep_0 * 3) as core::ffi::c_int;
-                                        let gain1_0 = (matchLength * 3)
-                                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                            .wrapping_add(1)
-                                            as core::ffi::c_int;
-                                        if mlRep_0 >= 4 && gain2_0 > gain1_0 {
-                                            matchLength = mlRep_0;
-                                            offBase = REPCODE1_TO_OFFBASE;
-                                            start = ip;
-                                        }
-                                    }
-                                }
-
-                                let mut ofbCandidate = 999999999;
-                                let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
-                                    ms,
-                                    ip,
+                        if isDxS {
+                            let repIndex_1 = (ip.wrapping_offset_from(base) as core::ffi::c_long
+                                as u32)
+                                .wrapping_sub(offset_1);
+                            let repMatch_1 = if repIndex_1 < prefixLowestIndex {
+                                dictBase.wrapping_offset(
+                                    repIndex_1.wrapping_sub(dictIndexDelta) as isize
+                                )
+                            } else {
+                                base.wrapping_offset(repIndex_1 as isize)
+                            };
+                            if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
+                                && MEM_read32(repMatch_1.cast()) == MEM_read32(ip.cast())
+                            {
+                                let repMatchEnd_1 = if repIndex_1 < prefixLowestIndex {
+                                    dictEnd
+                                } else {
+                                    iend
+                                };
+                                let mlRep_2 = (ZSTD_count_2segments(
+                                    ip.add(4),
+                                    repMatch_1.add(4),
                                     iend,
-                                    &mut ofbCandidate,
-                                    mls,
-                                    rowLog,
-                                );
-                                let gain2_1 = (ml2_0 * 4)
-                                    .wrapping_sub(ZSTD_highbit32(ofbCandidate as u32) as usize)
-                                    as core::ffi::c_int;
-                                let gain1_1 = (matchLength * 4)
+                                    repMatchEnd_1,
+                                    prefixLowest,
+                                ))
+                                .wrapping_add(4);
+                                let gain2_3 = (mlRep_2 * 4) as core::ffi::c_int;
+                                let gain1_3 = (matchLength * 4)
                                     .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                    .wrapping_add(4)
+                                    .wrapping_add(1)
                                     as core::ffi::c_int;
-                                if ml2_0 >= 4 && gain2_1 > gain1_1 {
-                                    matchLength = ml2_0;
-                                    offBase = ofbCandidate as u32;
-                                    start = ip;
-                                    // search a better one
-                                } else {
-                                    if !(DEPTH == 2 && ip < ilimit) {
-                                        break;
-                                    }
-                                    // let's find an even better one
-                                    ip = ip.add(1);
-                                    if dictMode == DictMode::NoDict
-                                        && offBase != 0
-                                        && (offset_1 > 0)
-                                            & (MEM_read32(ip.cast())
-                                                == MEM_read32(ip.sub(offset_1 as usize).cast()))
-                                    {
-                                        let mlRep_1 = (ZSTD_count(
-                                            ip.add(4),
-                                            ip.add(4).sub(offset_1 as usize),
-                                            iend,
-                                        ))
-                                        .wrapping_add(4);
-                                        let gain2_2 = (mlRep_1 * 4) as core::ffi::c_int;
-                                        let gain1_2 = (matchLength * 4)
-                                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                            .wrapping_add(1)
-                                            as core::ffi::c_int;
-                                        if mlRep_1 >= 4 && gain2_2 > gain1_2 {
-                                            matchLength = mlRep_1;
-                                            offBase = REPCODE1_TO_OFFBASE;
-                                            start = ip;
-                                        }
-                                    }
-
-                                    if isDxS {
-                                        let repIndex_1 = (ip.wrapping_offset_from(base)
-                                            as core::ffi::c_long
-                                            as u32)
-                                            .wrapping_sub(offset_1);
-                                        let repMatch_1 = if repIndex_1 < prefixLowestIndex {
-                                            dictBase.wrapping_offset(
-                                                repIndex_1.wrapping_sub(dictIndexDelta) as isize,
-                                            )
-                                        } else {
-                                            base.wrapping_offset(repIndex_1 as isize)
-                                        };
-                                        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
-                                            && MEM_read32(repMatch_1.cast())
-                                                == MEM_read32(ip.cast())
-                                        {
-                                            let repMatchEnd_1 = if repIndex_1 < prefixLowestIndex {
-                                                dictEnd
-                                            } else {
-                                                iend
-                                            };
-                                            let mlRep_2 = (ZSTD_count_2segments(
-                                                ip.add(4),
-                                                repMatch_1.add(4),
-                                                iend,
-                                                repMatchEnd_1,
-                                                prefixLowest,
-                                            ))
-                                            .wrapping_add(4);
-                                            let gain2_3 = (mlRep_2 * 4) as core::ffi::c_int;
-                                            let gain1_3 = (matchLength * 4)
-                                                .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                                .wrapping_add(1)
-                                                as core::ffi::c_int;
-                                            if mlRep_2 >= 4 && gain2_3 > gain1_3 {
-                                                matchLength = mlRep_2;
-                                                offBase = REPCODE1_TO_OFFBASE;
-                                                start = ip;
-                                            }
-                                        }
-                                    }
-
-                                    let mut ofbCandidate_0 = 999999999;
-                                    let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
-                                        ms,
-                                        ip,
-                                        iend,
-                                        &mut ofbCandidate_0,
-                                        mls,
-                                        rowLog,
-                                    );
-                                    let gain2_4 =
-                                        (ml2_1 * 4)
-                                            .wrapping_sub(
-                                                ZSTD_highbit32(ofbCandidate_0 as u32) as usize
-                                            )
-                                            as core::ffi::c_int;
-                                    let gain1_4 = (matchLength * 4)
-                                        .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                        .wrapping_add(7)
-                                        as core::ffi::c_int;
-                                    if !(ml2_1 >= 4 && gain2_4 > gain1_4) {
-                                        break;
-                                    }
-                                    matchLength = ml2_1;
-                                    offBase = ofbCandidate_0 as u32;
+                                if mlRep_2 >= 4 && gain2_3 > gain1_3 {
+                                    matchLength = mlRep_2;
+                                    offBase = REPCODE1_TO_OFFBASE;
                                     start = ip;
                                 }
                             }
                         }
-                        // NOTE:
-                        // Pay attention that `start[-value]` can lead to strange undefined behavior
-                        // notably if `value` is unsigned, resulting in a large positive `-value`.
-                        // catch up
-                        if offBase > ZSTD_REP_NUM {
-                            if dictMode == DictMode::NoDict {
-                                while (start > anchor)
-                                    & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
-                                        > prefixLowest)
-                                    && *start.sub(1)
-                                        == *start
-                                            .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
-                                            .sub(1)
-                                {
-                                    start = start.sub(1);
-                                    matchLength = matchLength.wrapping_add(1);
-                                }
-                            }
 
-                            if isDxS {
-                                let matchIndex = (start.wrapping_offset_from(base) as usize)
-                                    .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
-                                    as u32;
-                                let mut match_0 = if matchIndex < prefixLowestIndex {
-                                    dictBase
-                                        .wrapping_offset(matchIndex as isize)
-                                        .wrapping_sub(dictIndexDelta as usize)
-                                } else {
-                                    base.wrapping_offset(matchIndex as isize)
-                                };
-                                let mStart = if matchIndex < prefixLowestIndex {
-                                    dictLowest
-                                } else {
-                                    prefixLowest
-                                };
-                                while start > anchor
-                                    && match_0 > mStart
-                                    && *start.sub(1) == *match_0.sub(1)
-                                {
-                                    start = start.sub(1);
-                                    match_0 = match_0.sub(1);
-                                    matchLength = matchLength.wrapping_add(1);
-                                }
-                            }
-
-                            offset_2 = offset_1;
-                            offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
+                        let mut ofbCandidate_0 = 999999999;
+                        let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, DICT_MODE>(
+                            ms,
+                            ip,
+                            iend,
+                            &mut ofbCandidate_0,
+                            mls,
+                            rowLog,
+                        );
+                        let gain2_4 = (ml2_1 * 4)
+                            .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as u32) as usize)
+                            as core::ffi::c_int;
+                        let gain1_4 = (matchLength * 4)
+                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                            .wrapping_add(7)
+                            as core::ffi::c_int;
+                        if !(ml2_1 >= 4 && gain2_4 > gain1_4) {
+                            break;
                         }
+                        matchLength = ml2_1;
+                        offBase = ofbCandidate_0 as u32;
+                        start = ip;
                     }
                 }
+            }
+            // NOTE:
+            // Pay attention that `start[-value]` can lead to strange undefined behavior
+            // notably if `value` is unsigned, resulting in a large positive `-value`.
+            // catch up
+            if offBase > ZSTD_REP_NUM {
+                if dictMode == DictMode::NoDict {
+                    while (start > anchor)
+                        & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
+                            > prefixLowest)
+                        && *start.sub(1)
+                            == *start
+                                .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
+                                .sub(1)
+                    {
+                        start = start.sub(1);
+                        matchLength = matchLength.wrapping_add(1);
+                    }
+                }
+
+                if isDxS {
+                    let matchIndex = (start.wrapping_offset_from(base) as usize)
+                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
+                        as u32;
+                    let mut match_0 = if matchIndex < prefixLowestIndex {
+                        dictBase
+                            .wrapping_offset(matchIndex as isize)
+                            .wrapping_sub(dictIndexDelta as usize)
+                    } else {
+                        base.wrapping_offset(matchIndex as isize)
+                    };
+                    let mStart = if matchIndex < prefixLowestIndex {
+                        dictLowest
+                    } else {
+                        prefixLowest
+                    };
+                    while start > anchor && match_0 > mStart && *start.sub(1) == *match_0.sub(1) {
+                        start = start.sub(1);
+                        match_0 = match_0.sub(1);
+                        matchLength = matchLength.wrapping_add(1);
+                    }
+                }
+
+                offset_2 = offset_1;
+                offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
             }
         }
 
@@ -2369,7 +2330,6 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
     }
 
     // Match Loop
-    let mut current_block_61: u64;
     while ip < ilimit {
         let mut matchLength = 0;
         let mut offBase = REPCODE1_TO_OFFBASE;
@@ -2383,30 +2343,22 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         let repMatch = repBase.wrapping_offset(repIndex as isize);
         if ZSTD_index_overlap_check(dictLimit, repIndex)
             & (offset_1 <= curr.wrapping_add(1).wrapping_sub(windowLow))
+            && MEM_read32(ip.add(1).cast()) == MEM_read32(repMatch.cast())
         {
-            if MEM_read32(ip.add(1).cast()) == MEM_read32(repMatch.cast()) {
-                // repcode detected we should take it
-                let repEnd = if repIndex < dictLimit { dictEnd } else { iend };
-                matchLength = (ZSTD_count_2segments(
-                    ip.add(1).add(4),
-                    repMatch.add(4),
-                    iend,
-                    repEnd,
-                    prefixStart,
-                ))
-                .wrapping_add(4);
-                if DEPTH == 0 {
-                    current_block_61 = 10962704168502628720;
-                } else {
-                    current_block_61 = 12147880666119273379;
-                }
-            } else {
-                current_block_61 = 12147880666119273379;
-            }
-        } else {
-            current_block_61 = 12147880666119273379;
+            // repcode detected we should take it
+            let repEnd = if repIndex < dictLimit { dictEnd } else { iend };
+            matchLength = (ZSTD_count_2segments(
+                ip.add(1).add(4),
+                repMatch.add(4),
+                iend,
+                repEnd,
+                prefixStart,
+            ))
+            .wrapping_add(4);
         }
-        if current_block_61 == 12147880666119273379 {
+
+        // Search for a better match
+        if DEPTH != 0 || matchLength == 0 {
             // first search (depth 0)
             let mut ofbCandidate = 999999999;
             let ml2 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
@@ -2435,173 +2387,172 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                 // triggered once we've gone 2KB without finding any matches.
                 ms.lazySkipping = core::ffi::c_int::from(step > K_LAZY_SKIPPING_STEP);
                 continue;
-            } else {
-                // let's try to find a better solution
-                if DEPTH >= 1 {
-                    while ip < ilimit {
+            }
+
+            // let's try to find a better solution
+            if DEPTH >= 1 {
+                while ip < ilimit {
+                    ip = ip.add(1);
+                    curr = curr.wrapping_add(1);
+                    // check repCode
+                    if offBase != 0 {
+                        let windowLow_0 = ms.get_lowest_match_index(curr, windowLog);
+                        let repIndex_0 = curr.wrapping_sub(offset_1);
+                        let repBase_0 = if repIndex_0 < dictLimit {
+                            dictBase
+                        } else {
+                            base
+                        };
+                        let repMatch_0 = repBase_0.wrapping_offset(repIndex_0 as isize);
+                        if ZSTD_index_overlap_check(dictLimit, repIndex_0)
+                            & (offset_1 <= curr.wrapping_sub(windowLow_0))
+                            && MEM_read32(ip.cast()) == MEM_read32(repMatch_0.cast())
+                        {
+                            // repcode detected
+                            let repEnd_0 = if repIndex_0 < dictLimit {
+                                dictEnd
+                            } else {
+                                iend
+                            };
+                            let repLength = (ZSTD_count_2segments(
+                                ip.add(4),
+                                repMatch_0.add(4),
+                                iend,
+                                repEnd_0,
+                                prefixStart,
+                            ))
+                            .wrapping_add(4);
+                            let gain2 = (repLength * 3) as core::ffi::c_int;
+                            let gain1 = (matchLength * 3)
+                                .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                                .wrapping_add(1)
+                                as core::ffi::c_int;
+                            if repLength >= 4 && gain2 > gain1 {
+                                matchLength = repLength;
+                                offBase = REPCODE1_TO_OFFBASE;
+                                start = ip;
+                            }
+                        }
+                    }
+
+                    // search match, depth 1
+                    let mut ofbCandidate_0 = 999999999;
+                    let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
+                        ms,
+                        ip,
+                        iend,
+                        &mut ofbCandidate_0,
+                        mls,
+                        rowLog,
+                    );
+                    let gain2_0 = (ml2_0 * 4)
+                        .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as u32) as usize)
+                        as core::ffi::c_int; // raw approx
+                    let gain1_0 = (matchLength * 4)
+                        .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                        .wrapping_add(4) as core::ffi::c_int;
+                    if ml2_0 >= 4 && gain2_0 > gain1_0 {
+                        matchLength = ml2_0;
+                        offBase = ofbCandidate_0 as u32;
+                        start = ip;
+                        // search a better one
+                    } else {
+                        // let's find an even better one
+                        if !(DEPTH == 2 && ip < ilimit) {
+                            break;
+                        }
                         ip = ip.add(1);
                         curr = curr.wrapping_add(1);
                         // check repCode
                         if offBase != 0 {
-                            let windowLow_0 = ms.get_lowest_match_index(curr, windowLog);
-                            let repIndex_0 = curr.wrapping_sub(offset_1);
-                            let repBase_0 = if repIndex_0 < dictLimit {
+                            let windowLow_1 = ms.get_lowest_match_index(curr, windowLog);
+                            let repIndex_1 = curr.wrapping_sub(offset_1);
+                            let repBase_1 = if repIndex_1 < dictLimit {
                                 dictBase
                             } else {
                                 base
                             };
-                            let repMatch_0 = repBase_0.wrapping_offset(repIndex_0 as isize);
-                            if ZSTD_index_overlap_check(dictLimit, repIndex_0)
-                                & (offset_1 <= curr.wrapping_sub(windowLow_0))
-                                && MEM_read32(ip.cast()) == MEM_read32(repMatch_0.cast())
+                            let repMatch_1 = repBase_1.wrapping_offset(repIndex_1 as isize);
+                            if ZSTD_index_overlap_check(dictLimit, repIndex_1)
+                                & (offset_1 <= curr.wrapping_sub(windowLow_1))
+                                && MEM_read32(ip.cast()) == MEM_read32(repMatch_1.cast())
                             {
                                 // repcode detected
-                                let repEnd_0 = if repIndex_0 < dictLimit {
+                                let repEnd_1 = if repIndex_1 < dictLimit {
                                     dictEnd
                                 } else {
                                     iend
                                 };
-                                let repLength = (ZSTD_count_2segments(
+                                let repLength_0 = (ZSTD_count_2segments(
                                     ip.add(4),
-                                    repMatch_0.add(4),
+                                    repMatch_1.add(4),
                                     iend,
-                                    repEnd_0,
+                                    repEnd_1,
                                     prefixStart,
                                 ))
                                 .wrapping_add(4);
-                                let gain2 = (repLength * 3) as core::ffi::c_int;
-                                let gain1 = (matchLength * 3)
+                                let gain2_1 = (repLength_0 * 4) as core::ffi::c_int;
+                                let gain1_1 = (matchLength * 4)
                                     .wrapping_sub(ZSTD_highbit32(offBase) as usize)
                                     .wrapping_add(1)
                                     as core::ffi::c_int;
-                                if repLength >= 4 && gain2 > gain1 {
-                                    matchLength = repLength;
+                                if repLength_0 >= 4 && gain2_1 > gain1_1 {
+                                    matchLength = repLength_0;
                                     offBase = REPCODE1_TO_OFFBASE;
                                     start = ip;
                                 }
                             }
                         }
 
-                        // search match, depth 1
-                        let mut ofbCandidate_0 = 999999999;
-                        let ml2_0 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
+                        // search match, depth 2
+                        let mut ofbCandidate_1 = 999999999;
+                        let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
                             ms,
                             ip,
                             iend,
-                            &mut ofbCandidate_0,
+                            &mut ofbCandidate_1,
                             mls,
                             rowLog,
                         );
-                        let gain2_0 = (ml2_0 * 4)
-                            .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as u32) as usize)
-                            as core::ffi::c_int; // raw approx
-                        let gain1_0 = (matchLength * 4)
-                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                            .wrapping_add(4)
+                        let gain2_2 = (ml2_1 * 4)
+                            .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as u32) as usize)
                             as core::ffi::c_int;
-                        if ml2_0 >= 4 && gain2_0 > gain1_0 {
-                            matchLength = ml2_0;
-                            offBase = ofbCandidate_0 as u32;
-                            start = ip;
-                            // search a better one
-                        } else {
-                            // let's find an even better one
-                            if !(DEPTH == 2 && ip < ilimit) {
-                                break;
-                            }
-                            ip = ip.add(1);
-                            curr = curr.wrapping_add(1);
-                            // check repCode
-                            if offBase != 0 {
-                                let windowLow_1 = ms.get_lowest_match_index(curr, windowLog);
-                                let repIndex_1 = curr.wrapping_sub(offset_1);
-                                let repBase_1 = if repIndex_1 < dictLimit {
-                                    dictBase
-                                } else {
-                                    base
-                                };
-                                let repMatch_1 = repBase_1.wrapping_offset(repIndex_1 as isize);
-                                if ZSTD_index_overlap_check(dictLimit, repIndex_1)
-                                    & (offset_1 <= curr.wrapping_sub(windowLow_1))
-                                    && MEM_read32(ip.cast()) == MEM_read32(repMatch_1.cast())
-                                {
-                                    // repcode detected
-                                    let repEnd_1 = if repIndex_1 < dictLimit {
-                                        dictEnd
-                                    } else {
-                                        iend
-                                    };
-                                    let repLength_0 = (ZSTD_count_2segments(
-                                        ip.add(4),
-                                        repMatch_1.add(4),
-                                        iend,
-                                        repEnd_1,
-                                        prefixStart,
-                                    ))
-                                    .wrapping_add(4);
-                                    let gain2_1 = (repLength_0 * 4) as core::ffi::c_int;
-                                    let gain1_1 = (matchLength * 4)
-                                        .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                        .wrapping_add(1)
-                                        as core::ffi::c_int;
-                                    if repLength_0 >= 4 && gain2_1 > gain1_1 {
-                                        matchLength = repLength_0;
-                                        offBase = REPCODE1_TO_OFFBASE;
-                                        start = ip;
-                                    }
-                                }
-                            }
-
-                            // search match, depth 2
-                            let mut ofbCandidate_1 = 999999999;
-                            let ml2_1 = ZSTD_searchMax::<SEARCH_METHOD, ExtDict>(
-                                ms,
-                                ip,
-                                iend,
-                                &mut ofbCandidate_1,
-                                mls,
-                                rowLog,
-                            );
-                            let gain2_2 = (ml2_1 * 4)
-                                .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as u32) as usize)
-                                as core::ffi::c_int;
-                            let gain1_2 = (matchLength * 4)
-                                .wrapping_sub(ZSTD_highbit32(offBase) as usize)
-                                .wrapping_add(7)
-                                as core::ffi::c_int;
-                            if !(ml2_1 >= 4 && gain2_2 > gain1_2) {
-                                break;
-                            }
-                            matchLength = ml2_1;
-                            offBase = ofbCandidate_1 as u32;
-                            start = ip;
+                        let gain1_2 = (matchLength * 4)
+                            .wrapping_sub(ZSTD_highbit32(offBase) as usize)
+                            .wrapping_add(7)
+                            as core::ffi::c_int;
+                        if !(ml2_1 >= 4 && gain2_2 > gain1_2) {
+                            break;
                         }
+                        matchLength = ml2_1;
+                        offBase = ofbCandidate_1 as u32;
+                        start = ip;
                     }
                 }
+            }
 
-                // catch up
-                if offBase > ZSTD_REP_NUM {
-                    let matchIndex = (start.wrapping_offset_from(base) as usize)
-                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
-                        as u32;
-                    let mut match_0 = if matchIndex < dictLimit {
-                        dictBase.offset(matchIndex as isize)
-                    } else {
-                        base.wrapping_offset(matchIndex as isize)
-                    };
-                    let mStart = if matchIndex < dictLimit {
-                        dictStart
-                    } else {
-                        prefixStart
-                    };
-                    while start > anchor && match_0 > mStart && *start.sub(1) == *match_0.sub(1) {
-                        start = start.sub(1);
-                        match_0 = match_0.sub(1);
-                        matchLength = matchLength.wrapping_add(1);
-                    }
-                    offset_2 = offset_1;
-                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
+            // catch up
+            if offBase > ZSTD_REP_NUM {
+                let matchIndex = (start.wrapping_offset_from(base) as usize)
+                    .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM) as usize)
+                    as u32;
+                let mut match_0 = if matchIndex < dictLimit {
+                    dictBase.offset(matchIndex as isize)
+                } else {
+                    base.wrapping_offset(matchIndex as isize)
+                };
+                let mStart = if matchIndex < dictLimit {
+                    dictStart
+                } else {
+                    prefixStart
+                };
+                while start > anchor && match_0 > mStart && *start.sub(1) == *match_0.sub(1) {
+                    start = start.sub(1);
+                    match_0 = match_0.sub(1);
+                    matchLength = matchLength.wrapping_add(1);
                 }
+                offset_2 = offset_1;
+                offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM);
             }
         }
 
