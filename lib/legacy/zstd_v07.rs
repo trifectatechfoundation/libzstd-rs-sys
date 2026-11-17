@@ -660,8 +660,8 @@ fn FSEv07_buildDTable<const N: usize>(
         let symbol = tableDecode[u as usize].symbol;
         let nextState = symbolNext[usize::from(symbol)];
         symbolNext[usize::from(symbol)] += 1;
-        tableDecode[u as usize].nbBits =
-            tableLog.wrapping_sub(BITv07_highbit32(nextState as u32)) as u8;
+        debug_assert!(nextState >= 1);
+        tableDecode[u as usize].nbBits = (tableLog + 1).wrapping_sub(nextState.bit_width()) as u8;
         tableDecode[u as usize].newState = (((nextState as core::ffi::c_int)
             << tableDecode[u as usize].nbBits as core::ffi::c_int)
             as u32)
