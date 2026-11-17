@@ -574,7 +574,7 @@ mod long_distance_matching {
     }
 
     fn periodic() -> Vec<u8> {
-        (0..SIZE).map(|i| (i % 7) as u8).collect()
+        Vec::from_fn(SIZE, |i| (i % 7) as u8)
     }
 
     macro_rules! compress_ldm {
