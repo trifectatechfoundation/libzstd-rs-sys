@@ -74,11 +74,7 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
 
     for idx in ms.nextToUpdate..target {
         // assumption: ip + 8 <= iend
-        let h = ZSTD_hashPtr(
-            base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
-            hashLog,
-            mls,
-        );
+        let h = ZSTD_hashPtr(base.wrapping_offset(idx as isize).cast(), hashLog, mls);
         let matchIndex = *hashTable.add(h);
         let nextCandidatePtr = bt.offset((2 * (idx & btMask)) as isize);
         let sortMarkPtr = nextCandidatePtr.add(1);
@@ -233,7 +229,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     let dmsCParams = &(*dms).cParams;
     let dictHashTable: *const u32 = (*dms).hashTable;
     let hashLog = dmsCParams.hashLog;
-    let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
+    let h = ZSTD_hashPtr(ip.cast(), hashLog, mls);
     let mut dictMatchIndex = *dictHashTable.add(h);
 
     let base = ms.window.base;
@@ -327,7 +323,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     let cParams = &ms.cParams;
     let hashTable = ms.hashTable;
     let hashLog = cParams.hashLog;
-    let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
+    let h = ZSTD_hashPtr(ip.cast(), hashLog, mls);
     let mut matchIndex = *hashTable.add(h);
 
     let base = ms.window.base;
@@ -540,7 +536,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // fill conventional hash table and conventional chain table
     for idx in idx..target {
         let h = ZSTD_hashPtr(
-            base.offset(idx as isize) as *const core::ffi::c_void,
+            base.offset(idx as isize).cast(),
             hashLog,
             ms.cParams.minMatch,
         ) as u32;
@@ -617,7 +613,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     // fill the buckets of the hash table
     for idx in ms.nextToUpdate..target {
         let h = ZSTD_hashPtr(
-            base.offset(idx as isize) as *const core::ffi::c_void,
+            base.offset(idx as isize).cast(),
             hashLog,
             ms.cParams.minMatch,
         ) << ZSTD_LAZY_DDSS_BUCKET_LOG;
@@ -685,9 +681,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         // guaranteed by table construction
         assert!(matchIndex >= ddsLowestIndex);
         assert!(match_0.wrapping_add(4) <= ddsEnd);
-        if MEM_read32(match_0 as *const core::ffi::c_void)
-            == MEM_read32(ip as *const core::ffi::c_void)
-        {
+        if MEM_read32(match_0.cast()) == MEM_read32(ip.cast()) {
             // assumption: matchIndex <= dictLimit-4 (by table construction)
             currentMl =
                 (ZSTD_count_2segments(ip.add(4), match_0.add(4), iLimit, ddsEnd, prefixStart))
@@ -726,9 +720,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         let matchIndex = *((*dms).chainTable).add(chainIndex.wrapping_add(chainAttempt));
         let match_1 = ddsBase.offset(matchIndex as isize);
 
-        if MEM_read32(match_1 as *const core::ffi::c_void)
-            == MEM_read32(ip as *const core::ffi::c_void)
-        {
+        if MEM_read32(match_1.cast()) == MEM_read32(ip.cast()) {
             // assumption: matchIndex <= dictLimit-4 (by table construction)
             currentMl =
                 (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, ddsEnd, prefixStart))
@@ -767,11 +759,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     let target = ip.wrapping_offset_from(base) as u32;
 
     for idx in ms.nextToUpdate..target {
-        let h = ZSTD_hashPtr(
-            base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
-            hashLog,
-            mls,
-        );
+        let h = ZSTD_hashPtr(base.wrapping_offset(idx as isize).cast(), hashLog, mls);
         *chainTable.offset((idx & chainMask) as isize) = *hashTable.add(h);
         *hashTable.add(h) = idx;
         // Stop inserting every position when in the lazy skipping mode
@@ -781,7 +769,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     }
 
     ms.nextToUpdate = target;
-    *hashTable.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls))
+    *hashTable.add(ZSTD_hashPtr(ip.cast(), hashLog, mls))
 }
 
 pub unsafe fn ZSTD_insertAndFindFirstIndex(ms: &mut ZSTD_MatchState_t, ip: *const u8) -> u32 {
@@ -834,7 +822,7 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         0
     };
     let ddsIdx = if dictMode == DictMode::DedicatedDictSearch {
-        ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, MLS) << ZSTD_LAZY_DDSS_BUCKET_LOG
+        ZSTD_hashPtr(ip.cast(), ddsHashLog, MLS) << ZSTD_LAZY_DDSS_BUCKET_LOG
     } else {
         0
     };
@@ -852,17 +840,13 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
         if dictMode != DictMode::ExtDict || matchIndex >= dictLimit {
             let match_0 = base.wrapping_offset(matchIndex as isize);
             // read 4B starting from (match + ml + 1 - sizeof(U32))
-            if MEM_read32(match_0.add(ml).sub(3) as *const core::ffi::c_void)
-                == MEM_read32(ip.add(ml).sub(3) as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_0.add(ml).sub(3).cast()) == MEM_read32(ip.add(ml).sub(3).cast()) {
                 currentMl = ZSTD_count(ip, match_0, iLimit);
             }
         } else {
             let match_1 = dictBase.wrapping_offset(matchIndex as isize);
             // assumption: matchIndex <= dictLimit-4 (by table construction)
-            if MEM_read32(match_1 as *const core::ffi::c_void)
-                == MEM_read32(ip as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_1.cast()) == MEM_read32(ip.cast()) {
                 currentMl =
                     (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, dictEnd, prefixStart))
                         .wrapping_add(4);
@@ -914,20 +898,14 @@ unsafe fn ZSTD_HcFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32>(
             0
         };
 
-        matchIndex = *((*dms).hashTable).add(ZSTD_hashPtr(
-            ip as *const core::ffi::c_void,
-            (*dms).cParams.hashLog,
-            MLS,
-        ));
+        matchIndex = *((*dms).hashTable).add(ZSTD_hashPtr(ip.cast(), (*dms).cParams.hashLog, MLS));
 
         while (matchIndex >= dmsLowestIndex) && (nbAttempts > 0) {
             let mut currentMl_0 = 0;
             let match_2 = dmsBase.offset(matchIndex as isize);
 
             // assumption: matchIndex <= dictLimit-4 (by table construction)
-            if MEM_read32(match_2 as *const core::ffi::c_void)
-                == MEM_read32(ip as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_2.cast()) == MEM_read32(ip.cast()) {
                 currentMl_0 =
                     (ZSTD_count_2segments(ip.add(4), match_2.add(4), iLimit, dmsEnd, prefixStart))
                         .wrapping_add(4);
@@ -1031,7 +1009,7 @@ unsafe fn ZSTD_row_fillHashCache(
 
     for idx in idx..lim {
         let hash = ZSTD_hashPtrSalted(
-            base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
+            base.wrapping_offset(idx as isize).cast(),
             hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             mls,
             ms.hashSalt,
@@ -1058,7 +1036,8 @@ unsafe fn ZSTD_row_nextCachedHash(
 ) -> u32 {
     let newHash = ZSTD_hashPtrSalted(
         base.wrapping_offset(idx as isize)
-            .add(ZSTD_ROW_HASH_CACHE_SIZE) as *const core::ffi::c_void,
+            .add(ZSTD_ROW_HASH_CACHE_SIZE)
+            .cast(),
         hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
         mls,
         hashSalt,
@@ -1100,7 +1079,7 @@ unsafe fn ZSTD_row_update_internalImpl(
             )
         } else {
             ZSTD_hashPtrSalted(
-                base.wrapping_offset(idx as isize) as *const core::ffi::c_void,
+                base.wrapping_offset(idx as isize).cast(),
                 hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
                 mls,
                 ms.hashSalt,
@@ -1346,8 +1325,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let ddsHashLog = ((*dms).cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG);
         {
             /* Prefetch DDS hashtable entry */
-            ddsIdx = ZSTD_hashPtr(ip as *const core::ffi::c_void, ddsHashLog, MLS)
-                << ZSTD_LAZY_DDSS_BUCKET_LOG;
+            ddsIdx = ZSTD_hashPtr(ip.cast(), ddsHashLog, MLS) << ZSTD_LAZY_DDSS_BUCKET_LOG;
             prefetch_read_data(((*dms).hashTable).add(ddsIdx), Locality::L1);
         }
         ddsExtraAttempts = if cParams.searchLog > ROW_LOG {
@@ -1362,7 +1340,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let dmsHashTable = (*dms).hashTable;
         let dmsTagTable = (*dms).tagTable;
         let dmsHash = ZSTD_hashPtr(
-            ip as *const core::ffi::c_void,
+            ip.cast(),
             ((*dms).rowHashLog).wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
         ) as u32;
@@ -1391,7 +1369,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         // Stop inserting every position when in the lazy skipping mode.
         // The hash cache is also not kept up to date in this mode.
         let hash = ZSTD_hashPtrSalted(
-            ip as *const core::ffi::c_void,
+            ip.cast(),
             hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS),
             MLS,
             hashSalt,
@@ -1448,16 +1426,12 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         if dictMode != DictMode::ExtDict || matchIndex >= dictLimit {
             let match_0 = base.wrapping_offset(matchIndex as isize);
             // read 4B starting from (match + ml + 1 - sizeof(U32))
-            if MEM_read32(match_0.add(ml).sub(3) as *const core::ffi::c_void)
-                == MEM_read32(ip.add(ml).sub(3) as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_0.add(ml).sub(3).cast()) == MEM_read32(ip.add(ml).sub(3).cast()) {
                 currentMl = ZSTD_count(ip, match_0, iLimit);
             }
         } else {
             let match_1 = dictBase.wrapping_offset(matchIndex as isize);
-            if MEM_read32(match_1 as *const core::ffi::c_void)
-                == MEM_read32(ip as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_1.cast()) == MEM_read32(ip.cast()) {
                 // assumption: matchIndex <= dictLimit-4 (by table construction)
                 currentMl =
                     (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, dictEnd, prefixStart))
@@ -1523,9 +1497,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
             let mut currentMl_0 = 0;
 
             let match_2 = dmsBase.offset(matchIndex_2 as isize);
-            if MEM_read32(match_2 as *const core::ffi::c_void)
-                == MEM_read32(ip as *const core::ffi::c_void)
-            {
+            if MEM_read32(match_2.cast()) == MEM_read32(ip.cast()) {
                 currentMl_0 =
                     (ZSTD_count_2segments(ip.add(4), match_2.add(4), iLimit, dmsEnd, prefixStart))
                         .wrapping_add(4);
@@ -1729,8 +1701,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                 base.wrapping_offset(repIndex as isize)
             };
             if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
-                && MEM_read32(repMatch as *const core::ffi::c_void)
-                    == MEM_read32(ip.add(1) as *const core::ffi::c_void)
+                && MEM_read32(repMatch.cast()) == MEM_read32(ip.add(1).cast())
             {
                 let repMatchEnd = if repIndex < prefixLowestIndex {
                     dictEnd
@@ -1759,8 +1730,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
         if current_block == 14136749492126903395 {
             if dictMode == DictMode::NoDict
                 && (offset_1 > 0)
-                    & (MEM_read32(ip.add(1).sub(offset_1 as usize) as *const core::ffi::c_void)
-                        == MEM_read32(ip.add(1) as *const core::ffi::c_void))
+                    & (MEM_read32(ip.add(1).sub(offset_1 as usize).cast())
+                        == MEM_read32(ip.add(1).cast()))
             {
                 matchLength = (ZSTD_count(
                     ip.add(1).add(4),
@@ -1815,9 +1786,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 if dictMode == DictMode::NoDict
                                     && offBase != 0
                                     && (offset_1 > 0)
-                                        & (MEM_read32(ip as *const core::ffi::c_void)
-                                            == MEM_read32(ip.sub(offset_1 as usize)
-                                                as *const core::ffi::c_void))
+                                        & (MEM_read32(ip.cast())
+                                            == MEM_read32(ip.sub(offset_1 as usize).cast()))
                                 {
                                     let mlRep = (ZSTD_count(
                                         ip.add(4),
@@ -1848,8 +1818,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                         base.wrapping_offset(repIndex_0 as isize)
                                     };
                                     if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
-                                        && MEM_read32(repMatch_0 as *const core::ffi::c_void)
-                                            == MEM_read32(ip as *const core::ffi::c_void)
+                                        && MEM_read32(repMatch_0.cast()) == MEM_read32(ip.cast())
                                     {
                                         let repMatchEnd_0 = if repIndex_0 < prefixLowestIndex {
                                             dictEnd
@@ -1907,9 +1876,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                     if dictMode == DictMode::NoDict
                                         && offBase != 0
                                         && (offset_1 > 0)
-                                            & (MEM_read32(ip as *const core::ffi::c_void)
-                                                == MEM_read32(ip.sub(offset_1 as usize)
-                                                    as *const core::ffi::c_void))
+                                            & (MEM_read32(ip.cast())
+                                                == MEM_read32(ip.sub(offset_1 as usize).cast()))
                                     {
                                         let mlRep_1 = (ZSTD_count(
                                             ip.add(4),
@@ -1942,8 +1910,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                             base.wrapping_offset(repIndex_1 as isize)
                                         };
                                         if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
-                                            && MEM_read32(repMatch_1 as *const core::ffi::c_void)
-                                                == MEM_read32(ip as *const core::ffi::c_void)
+                                            && MEM_read32(repMatch_1.cast())
+                                                == MEM_read32(ip.cast())
                                         {
                                             let repMatchEnd_1 = if repIndex_1 < prefixLowestIndex {
                                                 dictEnd
@@ -2081,8 +2049,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                     base.wrapping_offset(repIndex_2 as isize)
                 };
                 if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex_2)
-                    && MEM_read32(repMatch_2 as *const core::ffi::c_void)
-                        == MEM_read32(ip as *const core::ffi::c_void))
+                    && MEM_read32(repMatch_2.cast()) == MEM_read32(ip.cast()))
                 {
                     break;
                 }
@@ -2110,8 +2077,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
 
         if dictMode == DictMode::NoDict {
             while (ip <= ilimit) & (offset_2 > 0)
-                && MEM_read32(ip as *const core::ffi::c_void)
-                    == MEM_read32(ip.sub(offset_2 as usize) as *const core::ffi::c_void)
+                && MEM_read32(ip.cast()) == MEM_read32(ip.sub(offset_2 as usize).cast())
             {
                 // store sequence
                 matchLength =
@@ -2426,9 +2392,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
         if ZSTD_index_overlap_check(dictLimit, repIndex)
             & (offset_1 <= curr.wrapping_add(1).wrapping_sub(windowLow))
         {
-            if MEM_read32(ip.add(1) as *const core::ffi::c_void)
-                == MEM_read32(repMatch as *const core::ffi::c_void)
-            {
+            if MEM_read32(ip.add(1).cast()) == MEM_read32(repMatch.cast()) {
                 // repcode detected we should take it
                 let repEnd = if repIndex < dictLimit { dictEnd } else { iend };
                 matchLength = (ZSTD_count_2segments(
@@ -2497,8 +2461,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                             let repMatch_0 = repBase_0.wrapping_offset(repIndex_0 as isize);
                             if ZSTD_index_overlap_check(dictLimit, repIndex_0)
                                 & (offset_1 <= curr.wrapping_sub(windowLow_0))
-                                && MEM_read32(ip as *const core::ffi::c_void)
-                                    == MEM_read32(repMatch_0 as *const core::ffi::c_void)
+                                && MEM_read32(ip.cast()) == MEM_read32(repMatch_0.cast())
                             {
                                 // repcode detected
                                 let repEnd_0 = if repIndex_0 < dictLimit {
@@ -2568,8 +2531,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                                 let repMatch_1 = repBase_1.wrapping_offset(repIndex_1 as isize);
                                 if ZSTD_index_overlap_check(dictLimit, repIndex_1)
                                     & (offset_1 <= curr.wrapping_sub(windowLow_1))
-                                    && MEM_read32(ip as *const core::ffi::c_void)
-                                        == MEM_read32(repMatch_1 as *const core::ffi::c_void)
+                                    && MEM_read32(ip.cast()) == MEM_read32(repMatch_1.cast())
                                 {
                                     // repcode detected
                                     let repEnd_1 = if repIndex_1 < dictLimit {
@@ -2684,9 +2646,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
             {
                 break;
             }
-            if MEM_read32(ip as *const core::ffi::c_void)
-                != MEM_read32(repMatch_2 as *const core::ffi::c_void)
-            {
+            if MEM_read32(ip.cast()) != MEM_read32(repMatch_2.cast()) {
                 break;
             }
             // repcode detected we should take it
