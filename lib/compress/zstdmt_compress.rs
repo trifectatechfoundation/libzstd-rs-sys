@@ -759,7 +759,6 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
 
 /// This is a POOL_function type
 unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
-    let mut current_block: u64;
     let job = jobDescription as *mut ZSTDMT_jobDescription;
     let mut jobParams = (*job).params; // do not modify job->params ! copy it, modify the copy
     let cctx = ZSTDMT_getCCtx((*job).cctxPool);
@@ -767,11 +766,13 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
     let mut dstBuff = (*job).dstBuff;
     let mut lastCBlockSize = 0;
 
-    if cctx.is_null() {
-        let guard = (*job).job_mutex.lock().unwrap();
-        (*job).cSize = Error::memory_allocation.to_error_code();
-        drop(guard);
-    } else {
+    'compress: {
+        if cctx.is_null() {
+            let guard = (*job).job_mutex.lock().unwrap();
+            (*job).cSize = Error::memory_allocation.to_error_code();
+            drop(guard);
+            break 'compress;
+        }
         if dstBuff.start.is_null() {
             // streaming job: doesn't provide a dstBuffer
             dstBuff = ZSTDMT_getBuffer((*job).bufPool);
@@ -779,279 +780,200 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                 let guard = (*job).job_mutex.lock().unwrap();
                 (*job).cSize = Error::memory_allocation.to_error_code();
                 drop(guard);
-                current_block = 17100290475540901977;
-            } else {
-                (*job).dstBuff = dstBuff; // this value can be read in ZSTDMT_flush, when it copies the whole job
-                current_block = 7976072742316086414;
+                break 'compress;
             }
-        } else {
-            current_block = 7976072742316086414;
+            (*job).dstBuff = dstBuff; // this value can be read in ZSTDMT_flush, when it copies the whole job
+        }
+        if jobParams.ldmParams.enableLdm == ParamSwitch::Enable && rawSeqStore.seq.is_null() {
+            let guard = (*job).job_mutex.lock().unwrap();
+            (*job).cSize = Error::memory_allocation.to_error_code();
+            drop(guard);
+            break 'compress;
         }
 
-        match current_block {
-            17100290475540901977 => {}
-            _ => {
-                if jobParams.ldmParams.enableLdm == ParamSwitch::Enable && rawSeqStore.seq.is_null()
-                {
+        // Don't compute the checksum for chunks, since we compute it externally,
+        // but write it in the header.
+        if (*job).jobID != 0 {
+            jobParams.fParams.checksumFlag = 0;
+        }
+
+        // Don't run LDM for the chunks, since we handle it externally
+        jobParams.ldmParams.enableLdm = ParamSwitch::Disable;
+        // Correct nbWorkers to 0.
+        jobParams.nbWorkers = 0;
+
+        // init
+
+        // Perform serial step as early as possible
+        ZSTDMT_serialState_genSequences((*job).serial, &mut rawSeqStore, (*job).src, (*job).jobID);
+
+        if !((*job).cdict).is_null() {
+            if let Err(err) = ZSTD_compressBegin_advanced_internal(
+                cctx,
+                core::ptr::null(),
+                0,
+                ZSTD_dct_auto,
+                DictTableLoadMethod::Fast,
+                (*job).cdict,
+                &jobParams,
+                (*job).fullFrameSize,
+            ) {
+                let guard = (*job).job_mutex.lock().unwrap();
+                (*job).cSize = err.to_error_code();
+                drop(guard);
+                break 'compress;
+            }
+        } else {
+            let pledgedSrcSize = if (*job).firstJob != 0 {
+                (*job).fullFrameSize
+            } else {
+                (*job).src.size as core::ffi::c_ulonglong
+            };
+            let forceWindowError = ZSTD_CCtxParams_setParameter(
+                &mut jobParams,
+                ZSTD_cParameter::ZSTD_c_forceMaxWindow,
+                core::ffi::c_int::from((*job).firstJob == 0),
+            );
+            if ERR_isError(forceWindowError) {
+                let guard = (*job).job_mutex.lock().unwrap();
+                (*job).cSize = forceWindowError;
+                drop(guard);
+                break 'compress;
+            }
+            if (*job).firstJob == 0 {
+                let err = ZSTD_CCtxParams_setParameter(
+                    &mut jobParams,
+                    ZSTD_cParameter::ZSTD_c_deterministicRefPrefix,
+                    0,
+                );
+                if ERR_isError(err) {
                     let guard = (*job).job_mutex.lock().unwrap();
-                    (*job).cSize = Error::memory_allocation.to_error_code();
+                    (*job).cSize = err;
                     drop(guard);
-                } else {
-                    // Don't compute the checksum for chunks, since we compute it externally,
-                    // but write it in the header.
-                    if (*job).jobID != 0 {
-                        jobParams.fParams.checksumFlag = 0;
-                    }
+                    break 'compress;
+                }
+            }
+            if let Err(err) = ZSTD_compressBegin_advanced_internal(
+                cctx,
+                (*job).prefix.start,
+                (*job).prefix.size,
+                ZSTD_dct_rawContent,
+                DictTableLoadMethod::Fast,
+                core::ptr::null(),
+                &jobParams,
+                pledgedSrcSize as core::ffi::c_ulonglong,
+            ) {
+                let guard = (*job).job_mutex.lock().unwrap();
+                (*job).cSize = err.to_error_code();
+                drop(guard);
+                break 'compress;
+            }
+        }
 
-                    // Don't run LDM for the chunks, since we handle it externally
-                    jobParams.ldmParams.enableLdm = ParamSwitch::Disable;
-                    // Correct nbWorkers to 0.
-                    jobParams.nbWorkers = 0;
+        // External Sequences can only be applied after CCtx initialization
+        ZSTDMT_serialState_applySequences((*job).serial, cctx, &rawSeqStore);
 
-                    // init
+        if (*job).firstJob == 0 {
+            // flush and overwrite frame header when it's not first job
+            let hSize = ZSTD_compressContinue_public(
+                cctx,
+                dstBuff.start,
+                dstBuff.capacity,
+                (*job).src.start,
+                0,
+            );
+            if ERR_isError(hSize) {
+                let guard = (*job).job_mutex.lock().unwrap();
+                (*job).cSize = hSize;
+                drop(guard);
+                break 'compress;
+            }
+            ZSTD_invalidateRepCodes(cctx);
+        }
 
-                    // Perform serial step as early as possible
-                    ZSTDMT_serialState_genSequences(
-                        (*job).serial,
-                        &mut rawSeqStore,
-                        (*job).src,
-                        (*job).jobID,
-                    );
+        // compress the entire job by smaller chunks, for better granularity
+        let chunkSize = (4 * ZSTD_BLOCKSIZE_MAX) as usize;
+        let nbChunks = (((*job).src.size).wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize)
+            as core::ffi::c_int;
+        let mut ip = (*job).src.start as *const u8;
+        let ostart = dstBuff.start as *mut u8;
+        let mut op = ostart;
+        let oend = op.add(dstBuff.capacity);
 
-                    if !((*job).cdict).is_null() {
-                        if let Err(err) = ZSTD_compressBegin_advanced_internal(
-                            cctx,
-                            core::ptr::null(),
-                            0,
-                            ZSTD_dct_auto,
-                            DictTableLoadMethod::Fast,
-                            (*job).cdict,
-                            &jobParams,
-                            (*job).fullFrameSize,
-                        ) {
-                            let guard = (*job).job_mutex.lock().unwrap();
-                            (*job).cSize = err.to_error_code();
-                            drop(guard);
-                            current_block = 17100290475540901977;
-                        } else {
-                            current_block = 16738040538446813684;
-                        }
-                    } else {
-                        let pledgedSrcSize = if (*job).firstJob != 0 {
-                            (*job).fullFrameSize
-                        } else {
-                            (*job).src.size as core::ffi::c_ulonglong
-                        };
-                        let forceWindowError = ZSTD_CCtxParams_setParameter(
-                            &mut jobParams,
-                            ZSTD_cParameter::ZSTD_c_forceMaxWindow,
-                            core::ffi::c_int::from((*job).firstJob == 0),
-                        );
-                        if ERR_isError(forceWindowError) {
-                            let guard = (*job).job_mutex.lock().unwrap();
-                            (*job).cSize = forceWindowError;
-                            drop(guard);
-                            current_block = 17100290475540901977;
-                        } else {
-                            if (*job).firstJob == 0 {
-                                let err = ZSTD_CCtxParams_setParameter(
-                                    &mut jobParams,
-                                    ZSTD_cParameter::ZSTD_c_deterministicRefPrefix,
-                                    0,
-                                );
-                                if ERR_isError(err) {
-                                    let guard = (*job).job_mutex.lock().unwrap();
-                                    (*job).cSize = err;
-                                    drop(guard);
-                                    current_block = 17100290475540901977;
-                                } else {
-                                    current_block = 2543120759711851213;
-                                }
-                            } else {
-                                current_block = 2543120759711851213;
-                            }
+        if size_of::<usize>() > size_of::<i32>() {
+            /* check overflow */
+            assert!(((*job).src.size as u64) < i32::MAX as u64 * chunkSize as u64);
+        }
+        assert_eq!((*job).cSize, 0);
 
-                            match current_block {
-                                17100290475540901977 => {}
-                                _ => {
-                                    if let Err(err) = ZSTD_compressBegin_advanced_internal(
-                                        cctx,
-                                        (*job).prefix.start,
-                                        (*job).prefix.size,
-                                        ZSTD_dct_rawContent,
-                                        DictTableLoadMethod::Fast,
-                                        core::ptr::null(),
-                                        &jobParams,
-                                        pledgedSrcSize as core::ffi::c_ulonglong,
-                                    ) {
-                                        let guard = (*job).job_mutex.lock().unwrap();
-                                        (*job).cSize = err.to_error_code();
-                                        drop(guard);
-                                        current_block = 17100290475540901977;
-                                    } else {
-                                        current_block = 16738040538446813684;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    match current_block {
-                        17100290475540901977 => {}
-                        _ => {
-                            // External Sequences can only be applied after CCtx initialization
-                            ZSTDMT_serialState_applySequences((*job).serial, cctx, &rawSeqStore);
+        for chunkNb in 1..nbChunks {
+            let cSize = ZSTD_compressContinue_public(
+                cctx,
+                op as *mut core::ffi::c_void,
+                oend.offset_from_unsigned(op),
+                ip as *const core::ffi::c_void,
+                chunkSize,
+            );
+            if ERR_isError(cSize) {
+                let guard = (*job).job_mutex.lock().unwrap();
+                (*job).cSize = cSize;
+                drop(guard);
+                break 'compress;
+            }
+            ip = ip.add(chunkSize);
+            op = op.add(cSize);
+            // stats
+            let guard = (*job).job_mutex.lock().unwrap();
+            (*job).cSize = ((*job).cSize).wrapping_add(cSize);
+            (*job).consumed = chunkSize * chunkNb as usize;
+            (*job).job_cond.notify_one(); // warns some more data is ready to be flushed
+            drop(guard);
+        }
 
-                            if (*job).firstJob == 0 {
-                                // flush and overwrite frame header when it's not first job
-                                let hSize = ZSTD_compressContinue_public(
-                                    cctx,
-                                    dstBuff.start,
-                                    dstBuff.capacity,
-                                    (*job).src.start,
-                                    0,
-                                );
-                                if ERR_isError(hSize) {
-                                    let guard = (*job).job_mutex.lock().unwrap();
-                                    (*job).cSize = hSize;
-                                    drop(guard);
-                                    current_block = 17100290475540901977;
-                                } else {
-                                    ZSTD_invalidateRepCodes(cctx);
-                                    current_block = 6560072651652764009;
-                                }
-                            } else {
-                                current_block = 6560072651652764009;
-                            }
-
-                            match current_block {
-                                17100290475540901977 => {}
-                                _ => {
-                                    // compress the entire job by smaller chunks, for better granularity
-                                    let chunkSize = (4 * ZSTD_BLOCKSIZE_MAX) as usize;
-                                    let nbChunks = (((*job).src.size)
-                                        .wrapping_add(chunkSize.wrapping_sub(1))
-                                        / chunkSize)
-                                        as core::ffi::c_int;
-                                    let mut ip = (*job).src.start as *const u8;
-                                    let ostart = dstBuff.start as *mut u8;
-                                    let mut op = ostart;
-                                    let oend = op.add(dstBuff.capacity);
-
-                                    if size_of::<usize>() > size_of::<i32>() {
-                                        /* check overflow */
-                                        assert!(
-                                            ((*job).src.size as u64)
-                                                < i32::MAX as u64 * chunkSize as u64
-                                        );
-                                    }
-                                    assert_eq!((*job).cSize, 0);
-
-                                    let mut chunkNb = 1;
-                                    loop {
-                                        if chunkNb >= nbChunks {
-                                            current_block = 851619935621435220;
-                                            break;
-                                        }
-                                        let cSize = ZSTD_compressContinue_public(
-                                            cctx,
-                                            op as *mut core::ffi::c_void,
-                                            oend.offset_from_unsigned(op),
-                                            ip as *const core::ffi::c_void,
-                                            chunkSize,
-                                        );
-                                        if ERR_isError(cSize) {
-                                            let guard = (*job).job_mutex.lock().unwrap();
-                                            (*job).cSize = cSize;
-                                            drop(guard);
-                                            current_block = 17100290475540901977;
-                                            break;
-                                        } else {
-                                            ip = ip.add(chunkSize);
-                                            op = op.add(cSize);
-                                            // stats
-                                            let guard = (*job).job_mutex.lock().unwrap();
-                                            (*job).cSize = ((*job).cSize).wrapping_add(cSize);
-                                            (*job).consumed = chunkSize * chunkNb as usize;
-                                            (*job).job_cond.notify_one(); // warns some more data is ready to be flushed
-                                            drop(guard);
-                                            chunkNb += 1;
-                                        }
-                                    }
-
-                                    match current_block {
-                                        17100290475540901977 => {}
-                                        _ => {
-                                            // last block
-                                            if (nbChunks > 0) || ((*job).lastJob > 0) {
-                                                // must output a "last block" flag
-                                                let lastBlockSize1 =
-                                                    (*job).src.size & chunkSize.wrapping_sub(1);
-                                                let lastBlockSize = if (lastBlockSize1 == 0)
-                                                    & ((*job).src.size >= chunkSize)
-                                                {
-                                                    chunkSize
-                                                } else {
-                                                    lastBlockSize1
-                                                };
-                                                let cSize_0 = if (*job).lastJob != 0 {
-                                                    ZSTD_compressEnd_internal(
-                                                        cctx,
-                                                        op as *mut core::ffi::c_void,
-                                                        oend.offset_from_unsigned(op),
-                                                        ip as *const core::ffi::c_void,
-                                                        lastBlockSize,
-                                                    )
-                                                } else {
-                                                    ZSTD_compressContinue_internal(
-                                                        cctx,
-                                                        op as *mut core::ffi::c_void,
-                                                        oend.offset_from_unsigned(op),
-                                                        ip as *const core::ffi::c_void,
-                                                        lastBlockSize,
-                                                        true,
-                                                        false,
-                                                    )
-                                                };
-                                                match cSize_0 {
-                                                    Ok(cSize) => {
-                                                        lastCBlockSize = cSize;
-                                                        current_block = 200744462051969938;
-                                                    }
-                                                    Err(err) => {
-                                                        let guard =
-                                                            (*job).job_mutex.lock().unwrap();
-                                                        (*job).cSize = err.to_error_code();
-                                                        drop(guard);
-                                                        current_block = 17100290475540901977;
-                                                    }
-                                                }
-                                            } else {
-                                                current_block = 200744462051969938;
-                                            }
-                                            match current_block {
-                                                17100290475540901977 => {}
-                                                _ => {
-                                                    if (*job).firstJob == 0 {
-                                                        // Double check that we don't have an ext-dict, because then our
-                                                        // repcode invalidation doesn't work.
-                                                        assert!(!(*cctx)
-                                                            .blockState
-                                                            .matchState
-                                                            .window
-                                                            .has_ext_dict());
-                                                    }
-                                                    ZSTD_CCtx_trace(cctx, 0);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        // last block
+        if (nbChunks > 0) || ((*job).lastJob > 0) {
+            // must output a "last block" flag
+            let lastBlockSize1 = (*job).src.size & chunkSize.wrapping_sub(1);
+            let lastBlockSize = if (lastBlockSize1 == 0) & ((*job).src.size >= chunkSize) {
+                chunkSize
+            } else {
+                lastBlockSize1
+            };
+            let cSize_0 = if (*job).lastJob != 0 {
+                ZSTD_compressEnd_internal(
+                    cctx,
+                    op as *mut core::ffi::c_void,
+                    oend.offset_from_unsigned(op),
+                    ip as *const core::ffi::c_void,
+                    lastBlockSize,
+                )
+            } else {
+                ZSTD_compressContinue_internal(
+                    cctx,
+                    op as *mut core::ffi::c_void,
+                    oend.offset_from_unsigned(op),
+                    ip as *const core::ffi::c_void,
+                    lastBlockSize,
+                    true,
+                    false,
+                )
+            };
+            match cSize_0 {
+                Ok(cSize) => lastCBlockSize = cSize,
+                Err(err) => {
+                    let guard = (*job).job_mutex.lock().unwrap();
+                    (*job).cSize = err.to_error_code();
+                    drop(guard);
+                    break 'compress;
                 }
             }
         }
+        if (*job).firstJob == 0 {
+            // Double check that we don't have an ext-dict, because then our
+            // repcode invalidation doesn't work.
+            assert!(!(*cctx).blockState.matchState.window.has_ext_dict());
+        }
+        ZSTD_CCtx_trace(cctx, 0);
     }
 
     ZSTDMT_serialState_ensureFinished((*job).serial, (*job).jobID, (*job).cSize);
