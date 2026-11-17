@@ -2556,7 +2556,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
         origSize: 0,
     };
     ptr::write_bytes(
-        &mut blockProperties as *mut blockProperties_t as *mut u8,
+        &raw mut blockProperties as *mut u8,
         0,
         size_of::<blockProperties_t>(),
     );

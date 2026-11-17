@@ -348,7 +348,7 @@ impl<'a> BIT_DStream_t<'a> {
     pub(crate) fn reload(&mut self) -> StreamStatus {
         if unlikely(self.bitsConsumed > BitContainerType::BITS) {
             static zeroFilled: BitContainerType = 0;
-            self.ptr = &zeroFilled as *const BitContainerType as *const core::ffi::c_char;
+            self.ptr = &raw const zeroFilled as *const core::ffi::c_char;
 
             return StreamStatus::Overflow;
         }

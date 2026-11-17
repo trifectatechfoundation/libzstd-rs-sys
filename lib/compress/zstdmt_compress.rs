@@ -1240,7 +1240,7 @@ unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
 
         // Clear the job description, but keep the mutex/cond
         ptr::write_bytes(
-            &mut *((*mtctx).jobs).offset(jobID as isize) as *mut ZSTDMT_jobDescription as *mut u8,
+            (*mtctx).jobs.offset(jobID as isize) as *mut u8,
             0,
             size_of::<ZSTDMT_jobDescription>(),
         );
@@ -1420,8 +1420,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> usize {
 
     // look into oldest non-fully-flushed job
     let wJobID = jobID & (*mtctx).jobIDMask;
-    let jobPtr: *mut ZSTDMT_jobDescription =
-        &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
+    let jobPtr: *mut ZSTDMT_jobDescription = (*mtctx).jobs.offset(wJobID as isize);
     let _guard = (*jobPtr).job_mutex.lock().unwrap();
 
     let cResult = (*jobPtr).cSize;

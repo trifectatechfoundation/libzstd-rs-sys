@@ -567,7 +567,7 @@ unsafe fn FSEv06_buildDTable(
     }
     memcpy(
         dt as *mut core::ffi::c_void,
-        &mut DTableH as *mut FSEv06_DTableHeader as *const core::ffi::c_void,
+        &raw mut DTableH as *const core::ffi::c_void,
         size_of::<FSEv06_DTableHeader>(),
     );
     let tableMask = tableSize.wrapping_sub(1);
@@ -1246,10 +1246,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
     );
     if minWeight > 1 {
         let skipSize = *rankVal.as_mut_ptr().offset(minWeight as isize);
-        MEM_writeLE16(
-            &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-            baseSeq,
-        );
+        MEM_writeLE16(&raw mut DElt.sequence as *mut core::ffi::c_void, baseSeq);
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
         for i in 0..skipSize {
@@ -1264,7 +1261,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
         let end = start.wrapping_add(length);
         MEM_writeLE16(
-            &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
+            &raw mut DElt.sequence as *mut core::ffi::c_void,
             (baseSeq as u32).wrapping_add(symbol << 8) as u16,
         );
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
@@ -1321,10 +1318,7 @@ unsafe fn HUFv06_fillDTableX4(
                 nbBits: 0,
                 length: 0,
             };
-            MEM_writeLE16(
-                &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-                symbol,
-            );
+            MEM_writeLE16(&raw mut DElt.sequence as *mut core::ffi::c_void, symbol);
             DElt.nbBits = nbBits as u8;
             DElt.length = 1;
             let end = start.wrapping_add(length);
@@ -2892,11 +2886,7 @@ unsafe fn ZSTDv06_decompressSequences(
             },
             prevOffset: [0; 3],
         };
-        ptr::write_bytes(
-            &mut sequence as *mut seq_t as *mut u8,
-            0,
-            size_of::<seq_t>(),
-        );
+        ptr::write_bytes(&raw mut sequence as *mut u8, 0, size_of::<seq_t>());
         sequence.offset = REPCODE_STARTVALUE as usize;
         seqState.prevOffset[..ZSTDv06_REP_INIT as usize].fill(REPCODE_STARTVALUE as usize);
         let errorCode = BITv06_initDStream(

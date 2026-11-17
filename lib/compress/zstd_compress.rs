@@ -1294,12 +1294,12 @@ unsafe fn ZSTD_clearAllDicts(cctx: *mut ZSTD_CCtx) {
     );
     ZSTD_freeCDict((*cctx).localDict.cdict);
     ptr::write_bytes(
-        &mut (*cctx).localDict as *mut ZSTD_localDict as *mut u8,
+        &raw mut (*cctx).localDict as *mut u8,
         0,
         size_of::<ZSTD_localDict>(),
     );
     ptr::write_bytes(
-        &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut u8,
+        &raw mut (*cctx).prefixDict as *mut u8,
         0,
         size_of::<ZSTD_prefixDict>(),
     );
@@ -4319,11 +4319,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
     }
 
     if srcSize == 0 {
-        ptr::write_bytes(
-            &mut *outSeqs as *mut ZSTD_Sequence as *mut u8,
-            0,
-            size_of::<ZSTD_Sequence>(),
-        );
+        ptr::write_bytes(outSeqs as *mut u8, 0, size_of::<ZSTD_Sequence>());
         return Ok(1);
     }
 
@@ -4341,7 +4337,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
 
     // lastSeq is not a block delimiter, so we need to append one.
     ptr::write_bytes(
-        &mut *outSeqs.add(nbExternalSeqs) as *mut ZSTD_Sequence as *mut u8,
+        outSeqs.add(nbExternalSeqs) as *mut u8,
         0,
         size_of::<ZSTD_Sequence>(),
     );
