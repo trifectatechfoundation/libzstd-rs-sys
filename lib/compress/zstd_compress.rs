@@ -2482,7 +2482,7 @@ impl ZSTD_compressionParameters {
             let srcLog = if tSize < hashSizeMin {
                 ZSTD_HASHLOG_MIN as core::ffi::c_uint
             } else {
-                (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
+                tSize.wrapping_sub(1).bit_width()
             };
             self.windowLog = Ord::min(self.windowLog, srcLog);
         }
@@ -2588,7 +2588,7 @@ fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
         // Larger than max window log
         ZSTD_WINDOWLOG_MAX as u32
     } else {
-        (ZSTD_highbit32((dictAndWindowSize as u32).wrapping_sub(1))).wrapping_add(1)
+        (dictAndWindowSize as u32).wrapping_sub(1).bit_width()
     }
 }
 
@@ -7625,7 +7625,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     if pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN {
         let limitedSrcSize = pledgedSrcSize.min(1 << 19) as u32;
         let limitedSrcLog = if limitedSrcSize > 1 {
-            (ZSTD_highbit32(limitedSrcSize.wrapping_sub(1))).wrapping_add(1)
+            limitedSrcSize.wrapping_sub(1).bit_width()
         } else {
             1
         };

@@ -53,7 +53,7 @@ impl HufFlags {
 /// Adjust table log based on alphabet size (port of C helper function)
 fn adjust_table_log(table_log: usize, max_symbol: usize) -> usize {
     let alphabet_size: usize = max_symbol + 1;
-    let mut min_table_log: usize = (alphabet_size as u32).ilog2() as usize + 1;
+    let mut min_table_log: usize = (alphabet_size as u32).bit_width() as usize;
 
     // If not a power of 2, need one more bit
     if (alphabet_size & (alphabet_size - 1)) != 0 {

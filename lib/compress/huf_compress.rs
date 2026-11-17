@@ -468,7 +468,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
                 /* Try to reduce the next power of 2 above totalCost because we
                  * gain back half the rank.
                  */
-                let mut nBitsToDecrease = ZSTD_highbit32(totalCost as u32) + 1;
+                let mut nBitsToDecrease = (totalCost as u32).bit_width();
                 debug_assert!(nBitsToDecrease as usize <= (HUF_TABLELOG_MAX + 1));
                 while nBitsToDecrease > 1 {
                     let highPos = rankLast[nBitsToDecrease as usize];
@@ -1420,7 +1420,7 @@ pub fn HUF_cardinality(count: &[c_uint], maxSymbolValue: u8) -> c_uint {
 }
 
 pub fn HUF_minTableLog(symbolCardinality: c_uint) -> c_uint {
-    ZSTD_highbit32(symbolCardinality) + 1
+    symbolCardinality.bit_width()
 }
 
 pub unsafe fn HUF_optimalTableLog(

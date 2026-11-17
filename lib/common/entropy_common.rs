@@ -294,7 +294,7 @@ fn HUF_readStats_body(
     }
 
     // Get last non-null symbol weight (implied, total must be 2^n).
-    let tableLog = weightTotal.ilog2() + 1;
+    let tableLog = weightTotal.bit_width();
     if tableLog > HUF_TABLELOG_MAX as u32 {
         return Err(Error::corruption_detected);
     }
@@ -304,7 +304,7 @@ fn HUF_readStats_body(
     let total = 1u32 << tableLog;
     let rest = total.wrapping_sub(weightTotal);
     let verif = 1u32 << rest.ilog2();
-    let lastWeight = rest.ilog2() + 1;
+    let lastWeight = rest.bit_width();
     if verif != rest {
         return Err(Error::corruption_detected);
     }
