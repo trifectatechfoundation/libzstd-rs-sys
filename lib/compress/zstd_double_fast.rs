@@ -238,8 +238,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
                             mLength = (ZSTD_count(ip.add(8), matchl0.add(8), iend)).wrapping_add(8);
                             offset = ip.offset_from_unsigned(matchl0) as u32;
                             while (ip > anchor) & (matchl0 > prefixLowest)
-                                && *ip.sub(1) as core::ffi::c_int
-                                    == *matchl0.sub(1) as core::ffi::c_int
+                                && *ip.sub(1) == *matchl0.sub(1)
                             {
                                 ip = ip.sub(1);
                                 matchl0 = matchl0.sub(1);
@@ -314,8 +313,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic<const MLS: u32>(
 
                             // complete backward
                             while (ip > anchor) & (matchs0 > prefixLowest)
-                                && *ip.sub(1) as core::ffi::c_int
-                                    == *matchs0.sub(1) as core::ffi::c_int
+                                && *ip.sub(1) == *matchs0.sub(1)
                             {
                                 ip = ip.sub(1);
                                 matchs0 = matchs0.sub(1);
@@ -544,8 +542,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
             {
                 mLength = (ZSTD_count(ip.add(8), matchLong.add(8), iend)).wrapping_add(8);
                 offset = ip.offset_from_unsigned(matchLong) as u32;
-                while (ip > anchor) & (matchLong > prefixLowest)
-                    && *ip.sub(1) as core::ffi::c_int == *matchLong.sub(1) as core::ffi::c_int
+                while (ip > anchor) & (matchLong > prefixLowest) && *ip.sub(1) == *matchLong.sub(1)
                 {
                     ip = ip.sub(1);
                     matchLong = matchLong.sub(1);
@@ -572,8 +569,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                             .wrapping_sub(dictMatchIndexL)
                             .wrapping_sub(dictIndexDelta);
                         while (ip > anchor) & (dictMatchL > dictStart)
-                            && *ip.sub(1) as core::ffi::c_int
-                                == *dictMatchL.sub(1) as core::ffi::c_int
+                            && *ip.sub(1) == *dictMatchL.sub(1)
                         {
                             ip = ip.sub(1);
                             dictMatchL = dictMatchL.sub(1);
@@ -644,8 +640,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                     ip = ip.add(1);
                                     offset = ip.offset_from_unsigned(matchL3) as u32;
                                     while (ip > anchor) & (matchL3 > prefixLowest)
-                                        && *ip.sub(1) as core::ffi::c_int
-                                            == *matchL3.sub(1) as core::ffi::c_int
+                                        && *ip.sub(1) == *matchL3.sub(1)
                                     {
                                         ip = ip.sub(1);
                                         matchL3 = matchL3.sub(1);
@@ -676,8 +671,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                                 .wrapping_sub(dictMatchIndexL3)
                                                 .wrapping_sub(dictIndexDelta);
                                             while (ip > anchor) & (dictMatchL3 > dictStart)
-                                                && *ip.sub(1) as core::ffi::c_int
-                                                    == *dictMatchL3.sub(1) as core::ffi::c_int
+                                                && *ip.sub(1) == *dictMatchL3.sub(1)
                                             {
                                                 ip = ip.sub(1);
                                                 dictMatchL3 = dictMatchL3.sub(1);
@@ -706,8 +700,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                                 .wrapping_add(4);
                                                 offset = curr.wrapping_sub(matchIndexS);
                                                 while (ip > anchor) & (match_0 > dictStart)
-                                                    && *ip.sub(1) as core::ffi::c_int
-                                                        == *match_0.sub(1) as core::ffi::c_int
+                                                    && *ip.sub(1) == *match_0.sub(1)
                                                 {
                                                     ip = ip.sub(1);
                                                     match_0 = match_0.sub(1);
@@ -719,8 +712,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
                                                         .wrapping_add(4);
                                                 offset = ip.offset_from_unsigned(match_0) as u32;
                                                 while (ip > anchor) & (match_0 > prefixLowest)
-                                                    && *ip.sub(1) as core::ffi::c_int
-                                                        == *match_0.sub(1) as core::ffi::c_int
+                                                    && *ip.sub(1) == *match_0.sub(1)
                                                 {
                                                     ip = ip.sub(1);
                                                     match_0 = match_0.sub(1);
@@ -972,9 +964,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 (ZSTD_count_2segments(ip.add(8), matchLong.add(8), iend, matchEnd, prefixStart))
                     .wrapping_add(8);
             let offset = curr.wrapping_sub(matchLongIndex);
-            while (ip > anchor) & (matchLong > lowMatchPtr)
-                && *ip.sub(1) as core::ffi::c_int == *matchLong.sub(1) as core::ffi::c_int
-            {
+            while (ip > anchor) & (matchLong > lowMatchPtr) && *ip.sub(1) == *matchLong.sub(1) {
                 ip = ip.sub(1);
                 matchLong = matchLong.sub(1);
                 mLength = mLength.wrapping_add(1);
@@ -1020,9 +1010,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                         .wrapping_add(8);
                 ip = ip.add(1);
                 offset_0 = curr.wrapping_add(1).wrapping_sub(matchIndex3);
-                while (ip > anchor) & (match3 > lowMatchPtr_0)
-                    && *ip.sub(1) as core::ffi::c_int == *match3.sub(1) as core::ffi::c_int
-                {
+                while (ip > anchor) & (match3 > lowMatchPtr_0) && *ip.sub(1) == *match3.sub(1) {
                     ip = ip.sub(1);
                     match3 = match3.sub(1);
                     mLength = mLength.wrapping_add(1);
@@ -1047,9 +1035,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic<const MLS: u32>(
                 ))
                 .wrapping_add(4);
                 offset_0 = curr.wrapping_sub(matchIndex);
-                while (ip > anchor) & (match_0 > lowMatchPtr_1)
-                    && *ip.sub(1) as core::ffi::c_int == *match_0.sub(1) as core::ffi::c_int
-                {
+                while (ip > anchor) & (match_0 > lowMatchPtr_1) && *ip.sub(1) == *match_0.sub(1) {
                     ip = ip.sub(1);
                     match_0 = match_0.sub(1);
                     mLength = mLength.wrapping_add(1);
