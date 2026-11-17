@@ -392,7 +392,6 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
-    let mut current_block: u64;
     let cParams = &ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = cParams.hashLog;
@@ -437,9 +436,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
     ip = ip.add(usize::from(dictAndPrefixLength == 0));
 
     // Main Search Loop (< instead of <=, because repcode check at ip+1)
-    while ip < ilimit {
-        let mut mLength: usize = 0;
-        let mut offset: u32 = 0;
+    'search: while ip < ilimit {
         let h2 = ZSTD_hashPtr(ip.cast(), hBitsL, 8);
         let h = ZSTD_hashPtr(ip.cast(), hBitsS, MLS);
         let dictHashAndTagL = ZSTD_hashPtr(ip.cast(), dictHBitsL, 8);
@@ -468,228 +465,183 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic<const MLS: u32>(
         *fresh3 = curr;
         *hashLong.add(h2) = *fresh3;
 
-        // check repcode
-        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
-            && MEM_read32(repMatch.cast()) == MEM_read32(ip.add(1).cast())
-        {
-            let repMatchEnd = if repIndex < prefixLowestIndex {
-                dictEnd
-            } else {
-                iend
-            };
-            mLength = (ZSTD_count_2segments(
-                ip.add(1).add(4),
-                repMatch.add(4),
-                iend,
-                repMatchEnd,
-                prefixLowest,
-            ))
-            .wrapping_add(4);
-            ip = ip.add(1);
-            ZSTD_storeSeq(
-                seqStore,
-                ip.offset_from_unsigned(anchor),
-                anchor,
-                iend,
-                REPCODE1_TO_OFFBASE,
-                mLength,
-            );
-        } else {
+        // if new_offset is None, then the match uses the first repeat offset and is already stored
+        let (mLength, new_offset) = 'find_match: {
+            // check repcode
+            if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
+                && MEM_read32(repMatch.cast()) == MEM_read32(ip.add(1).cast())
+            {
+                let repMatchEnd = if repIndex < prefixLowestIndex {
+                    dictEnd
+                } else {
+                    iend
+                };
+                let mLength = (ZSTD_count_2segments(
+                    ip.add(1).add(4),
+                    repMatch.add(4),
+                    iend,
+                    repMatchEnd,
+                    prefixLowest,
+                ))
+                .wrapping_add(4);
+                ip = ip.add(1);
+                ZSTD_storeSeq(
+                    seqStore,
+                    ip.offset_from_unsigned(anchor),
+                    anchor,
+                    iend,
+                    REPCODE1_TO_OFFBASE,
+                    mLength,
+                );
+                break 'find_match (mLength, None);
+            }
+
             // check prefix long match
             if matchIndexL >= prefixLowestIndex
                 && MEM_read64(matchLong.cast()) == MEM_read64(ip.cast())
             {
-                mLength = (ZSTD_count(ip.add(8), matchLong.add(8), iend)).wrapping_add(8);
-                offset = ip.offset_from_unsigned(matchLong) as u32;
+                let mut mLength = (ZSTD_count(ip.add(8), matchLong.add(8), iend)).wrapping_add(8);
+                let offset = ip.offset_from_unsigned(matchLong) as u32;
                 while (ip > anchor) & (matchLong > prefixLowest) && *ip.sub(1) == *matchLong.sub(1)
                 {
                     ip = ip.sub(1);
                     matchLong = matchLong.sub(1);
                     mLength = mLength.wrapping_add(1);
                 }
-            } else {
-                // check dictMatchState long match
-                if dictTagsMatchL {
-                    let dictMatchIndexL = dictMatchIndexAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS;
-                    let mut dictMatchL = dictBase.wrapping_offset(dictMatchIndexL as isize);
+                break 'find_match (mLength, Some(offset));
+            }
 
-                    if dictMatchL > dictStart
-                        && MEM_read64(dictMatchL.cast()) == MEM_read64(ip.cast())
+            // check dictMatchState long match
+            if dictTagsMatchL {
+                let dictMatchIndexL = dictMatchIndexAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS;
+                let mut dictMatchL = dictBase.wrapping_offset(dictMatchIndexL as isize);
+
+                if dictMatchL > dictStart && MEM_read64(dictMatchL.cast()) == MEM_read64(ip.cast())
+                {
+                    let mut mLength = (ZSTD_count_2segments(
+                        ip.add(8),
+                        dictMatchL.add(8),
+                        iend,
+                        dictEnd,
+                        prefixLowest,
+                    ))
+                    .wrapping_add(8);
+                    let offset = curr
+                        .wrapping_sub(dictMatchIndexL)
+                        .wrapping_sub(dictIndexDelta);
+                    while (ip > anchor) & (dictMatchL > dictStart)
+                        && *ip.sub(1) == *dictMatchL.sub(1)
                     {
-                        mLength = (ZSTD_count_2segments(
-                            ip.add(8),
-                            dictMatchL.add(8),
-                            iend,
-                            dictEnd,
-                            prefixLowest,
-                        ))
-                        .wrapping_add(8);
-                        offset = curr
-                            .wrapping_sub(dictMatchIndexL)
-                            .wrapping_sub(dictIndexDelta);
-                        while (ip > anchor) & (dictMatchL > dictStart)
-                            && *ip.sub(1) == *dictMatchL.sub(1)
-                        {
-                            ip = ip.sub(1);
-                            dictMatchL = dictMatchL.sub(1);
-                            mLength = mLength.wrapping_add(1);
-                        }
-                        current_block = 17830677668754335218;
-                    } else {
-                        current_block = 6721012065216013753;
+                        ip = ip.sub(1);
+                        dictMatchL = dictMatchL.sub(1);
+                        mLength = mLength.wrapping_add(1);
                     }
-                } else {
-                    current_block = 6721012065216013753;
-                }
-
-                match current_block {
-                    17830677668754335218 => {}
-                    _ => {
-                        if matchIndexS > prefixLowestIndex {
-                            // short match candidate
-                            if MEM_read32(match_0.cast()) == MEM_read32(ip.cast()) {
-                                current_block = 2631791190359682872;
-                            } else {
-                                current_block = 5372832139739605200;
-                            }
-                        } else if dictTagsMatchS {
-                            // check dictMatchState short match
-                            let dictMatchIndexS =
-                                dictMatchIndexAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS;
-                            match_0 = dictBase.wrapping_offset(dictMatchIndexS as isize);
-                            matchIndexS = dictMatchIndexS.wrapping_add(dictIndexDelta);
-
-                            if match_0 > dictStart
-                                && MEM_read32(match_0.cast()) == MEM_read32(ip.cast())
-                            {
-                                current_block = 2631791190359682872;
-                            } else {
-                                current_block = 5372832139739605200;
-                            }
-                        } else {
-                            current_block = 5372832139739605200;
-                        }
-
-                        match current_block {
-                            5372832139739605200 => {
-                                ip = ip
-                                    .add((ip.offset_from_unsigned(anchor) >> kSearchStrength) + 1);
-                                continue;
-                            }
-                            _ => {
-                                let hl3 = ZSTD_hashPtr(ip.add(1).cast(), hBitsL, 8);
-                                let dictHashAndTagL3 =
-                                    ZSTD_hashPtr(ip.add(1).cast(), dictHBitsL, 8);
-                                let matchIndexL3 = *hashLong.add(hl3);
-                                let dictMatchIndexAndTagL3 = *dictHashLong
-                                    .add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
-                                let dictTagsMatchL3 = ZSTD_comparePackedTags(
-                                    dictMatchIndexAndTagL3 as usize,
-                                    dictHashAndTagL3,
-                                );
-                                let mut matchL3 = base.wrapping_offset(matchIndexL3 as isize);
-                                *hashLong.add(hl3) = curr.wrapping_add(1);
-
-                                // check prefix long +1 match
-                                if matchIndexL3 >= prefixLowestIndex
-                                    && MEM_read64(matchL3.cast()) == MEM_read64(ip.add(1).cast())
-                                {
-                                    mLength = (ZSTD_count(ip.add(9), matchL3.add(8), iend))
-                                        .wrapping_add(8);
-                                    ip = ip.add(1);
-                                    offset = ip.offset_from_unsigned(matchL3) as u32;
-                                    while (ip > anchor) & (matchL3 > prefixLowest)
-                                        && *ip.sub(1) == *matchL3.sub(1)
-                                    {
-                                        ip = ip.sub(1);
-                                        matchL3 = matchL3.sub(1);
-                                        mLength = mLength.wrapping_add(1);
-                                    }
-                                } else {
-                                    // check dict long +1 match
-                                    if dictTagsMatchL3 {
-                                        let dictMatchIndexL3 =
-                                            dictMatchIndexAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS;
-                                        let mut dictMatchL3 =
-                                            dictBase.wrapping_offset(dictMatchIndexL3 as isize);
-                                        if dictMatchL3 > dictStart
-                                            && MEM_read64(dictMatchL3.cast())
-                                                == MEM_read64(ip.add(1).cast())
-                                        {
-                                            mLength = (ZSTD_count_2segments(
-                                                ip.add(1).add(8),
-                                                dictMatchL3.add(8),
-                                                iend,
-                                                dictEnd,
-                                                prefixLowest,
-                                            ))
-                                            .wrapping_add(8);
-                                            ip = ip.add(1);
-                                            offset = curr
-                                                .wrapping_add(1)
-                                                .wrapping_sub(dictMatchIndexL3)
-                                                .wrapping_sub(dictIndexDelta);
-                                            while (ip > anchor) & (dictMatchL3 > dictStart)
-                                                && *ip.sub(1) == *dictMatchL3.sub(1)
-                                            {
-                                                ip = ip.sub(1);
-                                                dictMatchL3 = dictMatchL3.sub(1);
-                                                mLength = mLength.wrapping_add(1);
-                                            }
-                                            current_block = 17830677668754335218;
-                                        } else {
-                                            current_block = 1209030638129645089;
-                                        }
-                                    } else {
-                                        current_block = 1209030638129645089;
-                                    }
-
-                                    // if no long +1 match, explore the short match we found
-                                    match current_block {
-                                        17830677668754335218 => {}
-                                        _ => {
-                                            if matchIndexS < prefixLowestIndex {
-                                                mLength = (ZSTD_count_2segments(
-                                                    ip.add(4),
-                                                    match_0.add(4),
-                                                    iend,
-                                                    dictEnd,
-                                                    prefixLowest,
-                                                ))
-                                                .wrapping_add(4);
-                                                offset = curr.wrapping_sub(matchIndexS);
-                                                while (ip > anchor) & (match_0 > dictStart)
-                                                    && *ip.sub(1) == *match_0.sub(1)
-                                                {
-                                                    ip = ip.sub(1);
-                                                    match_0 = match_0.sub(1);
-                                                    mLength = mLength.wrapping_add(1);
-                                                }
-                                            } else {
-                                                mLength =
-                                                    (ZSTD_count(ip.add(4), match_0.add(4), iend))
-                                                        .wrapping_add(4);
-                                                offset = ip.offset_from_unsigned(match_0) as u32;
-                                                while (ip > anchor) & (match_0 > prefixLowest)
-                                                    && *ip.sub(1) == *match_0.sub(1)
-                                                {
-                                                    ip = ip.sub(1);
-                                                    match_0 = match_0.sub(1);
-                                                    mLength = mLength.wrapping_add(1);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    break 'find_match (mLength, Some(offset));
                 }
             }
 
+            let short_match = if matchIndexS > prefixLowestIndex {
+                // short match candidate
+                MEM_read32(match_0.cast()) == MEM_read32(ip.cast())
+            } else if dictTagsMatchS {
+                // check dictMatchState short match
+                let dictMatchIndexS = dictMatchIndexAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS;
+                match_0 = dictBase.wrapping_offset(dictMatchIndexS as isize);
+                matchIndexS = dictMatchIndexS.wrapping_add(dictIndexDelta);
+
+                match_0 > dictStart && MEM_read32(match_0.cast()) == MEM_read32(ip.cast())
+            } else {
+                false
+            };
+
+            if !short_match {
+                ip = ip.add((ip.offset_from_unsigned(anchor) >> kSearchStrength) + 1);
+                continue 'search;
+            }
+
+            let hl3 = ZSTD_hashPtr(ip.add(1).cast(), hBitsL, 8);
+            let dictHashAndTagL3 = ZSTD_hashPtr(ip.add(1).cast(), dictHBitsL, 8);
+            let matchIndexL3 = *hashLong.add(hl3);
+            let dictMatchIndexAndTagL3 =
+                *dictHashLong.add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
+            let dictTagsMatchL3 =
+                ZSTD_comparePackedTags(dictMatchIndexAndTagL3 as usize, dictHashAndTagL3);
+            let mut matchL3 = base.wrapping_offset(matchIndexL3 as isize);
+            *hashLong.add(hl3) = curr.wrapping_add(1);
+
+            // check prefix long +1 match
+            if matchIndexL3 >= prefixLowestIndex
+                && MEM_read64(matchL3.cast()) == MEM_read64(ip.add(1).cast())
+            {
+                let mut mLength = (ZSTD_count(ip.add(9), matchL3.add(8), iend)).wrapping_add(8);
+                ip = ip.add(1);
+                let offset = ip.offset_from_unsigned(matchL3) as u32;
+                while (ip > anchor) & (matchL3 > prefixLowest) && *ip.sub(1) == *matchL3.sub(1) {
+                    ip = ip.sub(1);
+                    matchL3 = matchL3.sub(1);
+                    mLength = mLength.wrapping_add(1);
+                }
+                break 'find_match (mLength, Some(offset));
+            }
+
+            // check dict long +1 match
+            if dictTagsMatchL3 {
+                let dictMatchIndexL3 = dictMatchIndexAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS;
+                let mut dictMatchL3 = dictBase.wrapping_offset(dictMatchIndexL3 as isize);
+                if dictMatchL3 > dictStart
+                    && MEM_read64(dictMatchL3.cast()) == MEM_read64(ip.add(1).cast())
+                {
+                    let mut mLength = (ZSTD_count_2segments(
+                        ip.add(1).add(8),
+                        dictMatchL3.add(8),
+                        iend,
+                        dictEnd,
+                        prefixLowest,
+                    ))
+                    .wrapping_add(8);
+                    ip = ip.add(1);
+                    let offset = curr
+                        .wrapping_add(1)
+                        .wrapping_sub(dictMatchIndexL3)
+                        .wrapping_sub(dictIndexDelta);
+                    while (ip > anchor) & (dictMatchL3 > dictStart)
+                        && *ip.sub(1) == *dictMatchL3.sub(1)
+                    {
+                        ip = ip.sub(1);
+                        dictMatchL3 = dictMatchL3.sub(1);
+                        mLength = mLength.wrapping_add(1);
+                    }
+                    break 'find_match (mLength, Some(offset));
+                }
+            }
+
+            // if no long +1 match, explore the short match we found
+            if matchIndexS < prefixLowestIndex {
+                let mut mLength =
+                    (ZSTD_count_2segments(ip.add(4), match_0.add(4), iend, dictEnd, prefixLowest))
+                        .wrapping_add(4);
+                let offset = curr.wrapping_sub(matchIndexS);
+                while (ip > anchor) & (match_0 > dictStart) && *ip.sub(1) == *match_0.sub(1) {
+                    ip = ip.sub(1);
+                    match_0 = match_0.sub(1);
+                    mLength = mLength.wrapping_add(1);
+                }
+                (mLength, Some(offset))
+            } else {
+                let mut mLength = (ZSTD_count(ip.add(4), match_0.add(4), iend)).wrapping_add(4);
+                let offset = ip.offset_from_unsigned(match_0) as u32;
+                while (ip > anchor) & (match_0 > prefixLowest) && *ip.sub(1) == *match_0.sub(1) {
+                    ip = ip.sub(1);
+                    match_0 = match_0.sub(1);
+                    mLength = mLength.wrapping_add(1);
+                }
+                (mLength, Some(offset))
+            }
+        };
+
+        if let Some(offset) = new_offset {
             offset_2 = offset_1;
             offset_1 = offset;
-
             ZSTD_storeSeq(
                 seqStore,
                 ip.offset_from_unsigned(anchor),
