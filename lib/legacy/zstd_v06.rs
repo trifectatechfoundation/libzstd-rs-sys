@@ -592,8 +592,9 @@ unsafe fn FSEv06_buildDTable(
         let fresh3 = &mut symbolNext[usize::from(symbol)];
         let nextState = *fresh3;
         *fresh3 = (*fresh3).wrapping_add(1);
+        debug_assert!(nextState >= 1);
         (*tableDecode.offset(u as isize)).nbBits =
-            tableLog.wrapping_sub(BITv06_highbit32(nextState as u32)) as u8;
+            (tableLog + 1).wrapping_sub(nextState.bit_width()) as u8;
         (*tableDecode.offset(u as isize)).newState = (((nextState as core::ffi::c_int)
             << (*tableDecode.offset(u as isize)).nbBits as core::ffi::c_int)
             as u32)
