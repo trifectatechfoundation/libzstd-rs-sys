@@ -1,7 +1,6 @@
 use core::ffi::{c_int, c_uint, c_void};
 use core::mem::MaybeUninit;
 
-use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
