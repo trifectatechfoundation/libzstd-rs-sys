@@ -80,7 +80,7 @@ unsafe fn TRACE_log(method: &str, duration: PTime, trace: &ZSTD_Trace) {
 pub unsafe extern "C" fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
     g_enableTime
         .get()
-        .map_or(0, |&time| UTIL_clockSpanNano(time) as ZSTD_TraceCtx)
+        .map_or_default(|&time| UTIL_clockSpanNano(time) as ZSTD_TraceCtx)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace) {
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *con
 pub unsafe extern "C" fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
     g_enableTime
         .get()
-        .map_or(0, |&time| UTIL_clockSpanNano(time) as ZSTD_TraceCtx)
+        .map_or_default(|&time| UTIL_clockSpanNano(time) as ZSTD_TraceCtx)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace) {
