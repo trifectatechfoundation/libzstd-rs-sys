@@ -179,9 +179,7 @@ unsafe fn ZSTD_insertDUBT1(
             break;
         } else {
             // necessarily within buffer
-            if (*match_0.add(matchLength) as core::ffi::c_int)
-                < *ip.add(matchLength) as core::ffi::c_int
-            {
+            if *match_0.add(matchLength) < *ip.add(matchLength) {
                 // match is smaller than current
                 *smallerPtr = matchIndex; // update smaller idx
                 commonLengthSmaller = matchLength; // all smaller will now have at least this guaranteed common length
@@ -290,9 +288,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
             }
         }
 
-        if (*match_0.add(matchLength) as core::ffi::c_int)
-            < *ip.add(matchLength) as core::ffi::c_int
-        {
+        if *match_0.add(matchLength) < *ip.add(matchLength) {
             if dictMatchIndex <= btLow {
                 break; // beyond tree size, stop the search
             }
@@ -440,9 +436,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
             }
         }
 
-        if (*match_0.add(matchLength) as core::ffi::c_int)
-            < *ip.add(matchLength) as core::ffi::c_int
-        {
+        if *match_0.add(matchLength) < *ip.add(matchLength) {
             // match is smaller than current
             *smallerPtr = matchIndex; // update smaller idx
             commonLengthSmaller = matchLength; // all smaller will now have at least this guaranteed common length
@@ -1976,11 +1970,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 while (start > anchor)
                                     & (start.offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
                                         > prefixLowest)
-                                    && *start.sub(1) as core::ffi::c_int
+                                    && *start.sub(1)
                                         == *start
                                             .offset(-(offBase.wrapping_sub(ZSTD_REP_NUM) as isize))
                                             .sub(1)
-                                            as core::ffi::c_int
                                 {
                                     start = start.sub(1);
                                     matchLength = matchLength.wrapping_add(1);
@@ -2005,8 +1998,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                                 };
                                 while start > anchor
                                     && match_0 > mStart
-                                    && *start.sub(1) as core::ffi::c_int
-                                        == *match_0.sub(1) as core::ffi::c_int
+                                    && *start.sub(1) == *match_0.sub(1)
                                 {
                                     start = start.sub(1);
                                     match_0 = match_0.sub(1);
@@ -2602,10 +2594,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic<
                     } else {
                         prefixStart
                     };
-                    while start > anchor
-                        && match_0 > mStart
-                        && *start.sub(1) as core::ffi::c_int == *match_0.sub(1) as core::ffi::c_int
-                    {
+                    while start > anchor && match_0 > mStart && *start.sub(1) == *match_0.sub(1) {
                         start = start.sub(1);
                         match_0 = match_0.sub(1);
                         matchLength = matchLength.wrapping_add(1);
