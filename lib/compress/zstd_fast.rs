@@ -282,9 +282,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
             if (MEM_read32(ip2.cast()) == rval) & (rep_offset1 > 0) {
                 ip0 = ip2;
                 match0 = ip0.sub(rep_offset1 as usize);
-                mLength = usize::from(
-                    *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
-                );
+                mLength = usize::from(*ip0.sub(1) == *match0.sub(1));
                 ip0 = ip0.sub(mLength);
                 match0 = match0.sub(mLength);
                 offcode = REPCODE1_TO_OFFBASE;
@@ -377,9 +375,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic<const MLS: u32, const USE_CMOV:
             mLength = 4;
 
             // Count the backwards match length.
-            while (ip0 > anchor) & (match0 > prefixStart)
-                && *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int
-            {
+            while (ip0 > anchor) & (match0 > prefixStart) && *ip0.sub(1) == *match0.sub(1) {
                 ip0 = ip0.sub(1);
                 match0 = match0.sub(1);
                 mLength = mLength.wrapping_add(1);
@@ -642,8 +638,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                         ))
                         .wrapping_add(4);
                         while (ip0 > anchor) & (dictMatch > dictStart)
-                            && *ip0.sub(1) as core::ffi::c_int
-                                == *dictMatch.sub(1) as core::ffi::c_int
+                            && *ip0.sub(1) == *dictMatch.sub(1)
                         {
                             ip0 = ip0.sub(1);
                             dictMatch = dictMatch.sub(1);
@@ -667,8 +662,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic<const MLS: u32>(
                     // found a regular match of size >= 4
                     let offset_0 = ip0.offset_from_unsigned(match_0) as u32;
                     mLength = (ZSTD_count(ip0.add(4), match_0.add(4), iend)).wrapping_add(4);
-                    while (ip0 > anchor) & (match_0 > prefixStart)
-                        && *ip0.sub(1) as core::ffi::c_int == *match_0.sub(1) as core::ffi::c_int
+                    while (ip0 > anchor) & (match_0 > prefixStart) && *ip0.sub(1) == *match_0.sub(1)
                     {
                         ip0 = ip0.sub(1);
                         match_0 = match_0.sub(1);
@@ -923,9 +917,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
                 } else {
                     iend
                 };
-                mLength = usize::from(
-                    *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int,
-                );
+                mLength = usize::from(*ip0.sub(1) == *match0.sub(1));
                 ip0 = ip0.sub(mLength);
                 match0 = match0.sub(mLength);
                 offcode = REPCODE1_TO_OFFBASE;
@@ -1031,9 +1023,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic<const MLS: u32>(
             mLength = 4;
 
             // Count the backwards match length.
-            while (ip0 > anchor) & (match0 > lowMatchPtr)
-                && *ip0.sub(1) as core::ffi::c_int == *match0.sub(1) as core::ffi::c_int
-            {
+            while (ip0 > anchor) & (match0 > lowMatchPtr) && *ip0.sub(1) == *match0.sub(1) {
                 ip0 = ip0.sub(1);
                 match0 = match0.sub(1);
                 mLength = mLength.wrapping_add(1);
