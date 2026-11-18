@@ -1,4 +1,5 @@
 use core::{mem, ptr};
+use std::alloc::AllocError;
 use std::marker::PhantomData;
 
 use libc::{free, malloc, ptrdiff_t};
@@ -7,6 +8,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
+use crate::lib::polyfill::box_try_new_zeroed;
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
@@ -1785,28 +1787,26 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<usize, E
     }
     decompress[algoNb](dst, cSrc)
 }
-unsafe fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) {
-    (*dctx).expected = ZSTDv05_frameHeaderSize_min;
-    (*dctx).stage = ZSTDv05ds_getFrameHeaderSize;
-    (*dctx).previousDstEnd = core::ptr::null();
-    (*dctx).base = core::ptr::null();
-    (*dctx).vBase = core::ptr::null();
-    (*dctx).dictEnd = core::ptr::null();
-    *((*dctx).hufTableX4).as_mut_ptr() = ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
-    (*dctx).flagStaticTables = 0;
+fn ZSTDv05_decompressBegin(dctx: &mut ZSTDv05_DCtx) {
+    dctx.expected = ZSTDv05_frameHeaderSize_min;
+    dctx.stage = ZSTDv05ds_getFrameHeaderSize;
+    dctx.previousDstEnd = core::ptr::null();
+    dctx.base = core::ptr::null();
+    dctx.vBase = core::ptr::null();
+    dctx.dictEnd = core::ptr::null();
+    dctx.hufTableX4[0] = ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
+    dctx.flagStaticTables = 0;
 }
-pub(crate) unsafe fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
-    let dctx = malloc(size_of::<ZSTDv05_DCtx>()) as *mut ZSTDv05_DCtx;
-    if dctx.is_null() {
-        return core::ptr::null_mut();
-    }
-    ZSTDv05_decompressBegin(dctx);
-    dctx
+
+pub(crate) fn ZSTDv05_createDCtx() -> Result<Box<ZSTDv05_DCtx>, AllocError> {
+    // SAFETY: a zeroed ZSTDv05_DCtx is correctly initialized.
+    let mut dctx = unsafe { box_try_new_zeroed()?.assume_init() };
+
+    ZSTDv05_decompressBegin(&mut dctx);
+
+    Ok(dctx)
 }
-pub(crate) unsafe fn ZSTDv05_freeDCtx(dctx: *mut ZSTDv05_DCtx) -> usize {
-    free(dctx as *mut core::ffi::c_void);
-    0
-}
+
 fn ZSTDv05_decodeFrameHeader_Part1(zc: &mut ZSTDv05_DCtx, src: Reader<'_>) -> Result<usize, Error> {
     if src.len() != ZSTDv05_frameHeaderSize_min {
         return Err(Error::srcSize_wrong);
@@ -2871,7 +2871,13 @@ pub(crate) unsafe fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
         return core::ptr::null_mut();
     }
     ptr::write_bytes(zbc as *mut u8, 0, size_of::<ZBUFFv05_DCtx>());
-    (*zbc).zc = ZSTDv05_createDCtx();
+    (*zbc).zc = match ZSTDv05_createDCtx() {
+        Ok(zc) => Box::into_raw(zc),
+        Err(_) => {
+            ZBUFFv05_freeDCtx(zbc);
+            return core::ptr::null_mut();
+        }
+    };
     (*zbc).stage = ZBUFFv05ds_init;
     zbc
 }
@@ -2879,7 +2885,9 @@ pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> usize {
     if zbc.is_null() {
         return 0;
     }
-    ZSTDv05_freeDCtx((*zbc).zc);
+    if !(*zbc).zc.is_null() {
+        drop(Box::from_raw((*zbc).zc));
+    }
     free((*zbc).inBuff as *mut core::ffi::c_void);
     free((*zbc).outBuff as *mut core::ffi::c_void);
     free(zbc as *mut core::ffi::c_void);
