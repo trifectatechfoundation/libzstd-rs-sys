@@ -2952,7 +2952,7 @@ unsafe fn ZSTDv06_checkContinuity(dctx: &mut ZSTDv06_DCtx, dst: *const core::ffi
     }
 }
 unsafe fn ZSTDv06_decompressBlock_internal(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
     src: *const core::ffi::c_void,
