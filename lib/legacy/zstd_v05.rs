@@ -2911,7 +2911,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     dst: *mut core::ffi::c_void,
     maxDstSizePtr: &mut usize,
     src: *const u8,
-    srcSizePtr: *mut usize,
+    srcSizePtr: &mut usize,
 ) -> Result<usize, Error> {
     let istart = src;
     let mut ip = istart;
