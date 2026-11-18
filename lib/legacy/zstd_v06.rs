@@ -28,8 +28,6 @@ pub(crate) struct ZSTDv06_DCtx {
     bType: blockType_t,
     stage: ZSTDv06_dStage,
     flagRepeatTable: u32,
-    litPtr: *const u8,
-    litSize: usize,
     litBuffer: [u8; 131080],
     headerBuffer: [u8; 13],
 }
@@ -2288,7 +2286,18 @@ unsafe fn ZSTDv06_copyRawBlock(
     memcpy(dst, src, srcSize);
     srcSize
 }
-unsafe fn ZSTDv06_decodeLiteralsBlock(dctx: &mut ZSTDv06_DCtx, src: &[u8]) -> Result<usize, Error> {
+enum Literals<'a> {
+    Buffer {
+        /// Number of literals, stored at the start of the litBuffer.
+        len: usize,
+    },
+    Src(&'a [u8]),
+}
+
+unsafe fn ZSTDv06_decodeLiteralsBlock<'a>(
+    dctx: &mut ZSTDv06_DCtx,
+    src: &'a [u8],
+) -> Result<(usize, Literals<'a>), Error> {
     if src.len() < MIN_CBLOCK_SIZE as usize {
         return Err(Error::corruption_detected);
     }
@@ -2352,14 +2361,15 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(dctx: &mut ZSTDv06_DCtx, src: &[u8]) -> Re
             }) {
                 return Err(Error::corruption_detected);
             }
-            dctx.litPtr = (&raw mut dctx.litBuffer).cast();
-            dctx.litSize = litSize;
             ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
+                dctx.litBuffer.as_mut_ptr().add(litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
-            Ok(litCSize.wrapping_add(lhSize as usize))
+            Ok((
+                litCSize.wrapping_add(lhSize as usize),
+                Literals::Buffer { len: litSize },
+            ))
         }
         IS_PCH => {
             let mut litSize_0: usize = 0;
@@ -2389,14 +2399,15 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(dctx: &mut ZSTDv06_DCtx, src: &[u8]) -> Re
             if ERR_isError(errorCode) {
                 return Err(Error::corruption_detected);
             }
-            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-            dctx.litSize = litSize_0;
             ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
+                dctx.litBuffer.as_mut_ptr().add(litSize_0),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
-            Ok(litCSize_0.wrapping_add(lhSize_0 as usize))
+            Ok((
+                litCSize_0.wrapping_add(lhSize_0 as usize),
+                Literals::Buffer { len: litSize_0 },
+            ))
         }
         IS_RAW => {
             let mut litSize_1: usize = 0;
@@ -2430,18 +2441,21 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(dctx: &mut ZSTDv06_DCtx, src: &[u8]) -> Re
                     src[lhSize_1 as usize..].as_ptr() as *const core::ffi::c_void,
                     litSize_1,
                 );
-                dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-                dctx.litSize = litSize_1;
                 ptr::write_bytes(
-                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
+                    dctx.litBuffer.as_mut_ptr().add(litSize_1),
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
-                return Ok((lhSize_1 as usize).wrapping_add(litSize_1));
+                return Ok((
+                    (lhSize_1 as usize).wrapping_add(litSize_1),
+                    Literals::Buffer { len: litSize_1 },
+                ));
             }
-            dctx.litPtr = src[lhSize_1 as usize..].as_ptr();
-            dctx.litSize = litSize_1;
-            Ok((lhSize_1 as usize).wrapping_add(litSize_1))
+            let start = lhSize_1 as usize;
+            Ok((
+                start.wrapping_add(litSize_1),
+                Literals::Src(&src[start..start + litSize_1 + WILDCOPY_OVERLENGTH as usize]),
+            ))
         }
         IS_RLE => {
             let mut litSize_2: usize = 0;
@@ -2473,9 +2487,10 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(dctx: &mut ZSTDv06_DCtx, src: &[u8]) -> Re
                 src[lhSize_2 as usize],
                 litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as usize),
             );
-            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-            dctx.litSize = litSize_2;
-            Ok(lhSize_2.wrapping_add(1) as usize)
+            Ok((
+                lhSize_2.wrapping_add(1) as usize,
+                Literals::Buffer { len: litSize_2 },
+            ))
         }
         _ => Err(Error::corruption_detected),
     }
@@ -2720,7 +2735,7 @@ unsafe fn ZSTDv06_execSequence(
     if seqLength > oend.offset_from_unsigned(op) {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if sequence.litLength > litPtr.len() {
+    if sequence.litLength > litPtr.len() - WILDCOPY_OVERLENGTH as usize {
         return Error::corruption_detected.to_error_code();
     }
     if oLitEnd > oend_8 {
@@ -2810,13 +2825,17 @@ unsafe fn ZSTDv06_decompressSequences(
     dst: *mut core::ffi::c_void,
     maxDstSize: usize,
     seqStart: &[u8],
+    literals: Literals<'_>,
 ) -> Result<usize, Error> {
     let mut ip = seqStart.as_ptr();
     let iend = seqStart.as_ptr_range().end;
     let ostart = dst as *mut u8;
     let oend = ostart.add(maxDstSize);
     let mut op = ostart;
-    let mut litPtr = core::slice::from_raw_parts(dctx.litPtr, dctx.litSize);
+    let mut litPtr = match literals {
+        Literals::Buffer { len } => &dctx.litBuffer[..len + WILDCOPY_OVERLENGTH as usize],
+        Literals::Src(src) => src,
+    };
     let DTableLL = dctx.LLTable.as_mut_ptr();
     let DTableML = dctx.MLTable.as_mut_ptr();
     let DTableOffb = dctx.OffTable.as_mut_ptr();
@@ -2894,7 +2913,7 @@ unsafe fn ZSTDv06_decompressSequences(
             return Err(Error::corruption_detected);
         }
     }
-    let lastLLSize = litPtr.len();
+    let lastLLSize = litPtr.len() - WILDCOPY_OVERLENGTH as usize;
     if op.add(lastLLSize) > oend {
         return Err(Error::dstSize_tooSmall);
     }
@@ -2927,8 +2946,14 @@ unsafe fn ZSTDv06_decompressBlock_internal(
     if src.len() >= ZSTDv06_BLOCKSIZE_MAX as usize {
         return Err(Error::srcSize_wrong);
     }
-    let litCSize = ZSTDv06_decodeLiteralsBlock(dctx, src.as_slice())?;
-    ZSTDv06_decompressSequences(dctx, dst, dstCapacity, &src.as_slice()[litCSize..])
+    let (litCSize, literals) = ZSTDv06_decodeLiteralsBlock(dctx, src.as_slice())?;
+    ZSTDv06_decompressSequences(
+        dctx,
+        dst,
+        dstCapacity,
+        &src.as_slice()[litCSize..],
+        literals,
+    )
 }
 unsafe fn ZSTDv06_decompressFrame(
     dctx: &mut ZSTDv06_DCtx,
