@@ -740,9 +740,10 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> usize {
     }
     let cMem = (*dctx).customMem;
     ZSTD_clearDict(dctx);
+    // The input and output buffers share one allocation
     ZSTD_customFree(
         (*dctx).inBuff as *mut core::ffi::c_void,
-        (*dctx).inBuffSize,
+        (*dctx).inBuffSize.wrapping_add((*dctx).outBuffSize),
         cMem,
     );
     (*dctx).inBuff = core::ptr::null_mut();
@@ -3697,7 +3698,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     } else {
                         ZSTD_customFree(
                             zds.inBuff as *mut core::ffi::c_void,
-                            zds.inBuffSize,
+                            zds.inBuffSize.wrapping_add(zds.outBuffSize),
                             zds.customMem,
                         );
                         zds.inBuffSize = 0;
