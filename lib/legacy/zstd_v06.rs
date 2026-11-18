@@ -2816,7 +2816,7 @@ unsafe fn ZSTDv06_decompressSequences(
     maxDstSize: usize,
     seqStart: *const core::ffi::c_void,
     seqSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut ip = seqStart as *const u8;
     let iend = ip.add(seqSize);
     let ostart = dst as *mut u8;
@@ -2840,8 +2840,8 @@ unsafe fn ZSTDv06_decompressSequences(
         ip as *const core::ffi::c_void,
         seqSize,
     );
-    if ERR_isError(seqHSize) {
-        return seqHSize;
+    if let Some(err) = Error::from_error_code(seqHSize) {
+        return Err(err);
     }
     ip = ip.add(seqHSize);
     dctx.flagRepeatTable = 0;
@@ -2881,7 +2881,7 @@ unsafe fn ZSTDv06_decompressSequences(
             iend.offset_from_unsigned(ip),
         );
         if ERR_isError(errorCode) {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         FSEv06_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
         FSEv06_initDState(&mut seqState.stateOffb, &mut seqState.DStream, DTableOffb);
@@ -2900,21 +2900,21 @@ unsafe fn ZSTDv06_decompressSequences(
                 vBase,
                 dictEnd,
             );
-            if ERR_isError(oneSeqSize) {
-                return oneSeqSize;
+            if let Some(err) = Error::from_error_code(oneSeqSize) {
+                return Err(err);
             }
             op = op.add(oneSeqSize);
         }
         if nbSeq != 0 {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
     }
     let lastLLSize = litEnd.offset_from_unsigned(litPtr);
     if litPtr > litEnd {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op.add(lastLLSize) > oend {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
         memcpy(
@@ -2924,7 +2924,7 @@ unsafe fn ZSTDv06_decompressSequences(
         );
         op = op.add(lastLLSize);
     }
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 unsafe fn ZSTDv06_checkContinuity(dctx: &mut ZSTDv06_DCtx, dst: *const core::ffi::c_void) {
     if dst != dctx.previousDstEnd {
@@ -2960,6 +2960,7 @@ unsafe fn ZSTDv06_decompressBlock_internal(
         ip as *const core::ffi::c_void,
         srcSize,
     )
+    .unwrap_or_else(|err| err.to_error_code())
 }
 unsafe fn ZSTDv06_decompressFrame(
     dctx: &mut ZSTDv06_DCtx,
