@@ -1,7 +1,7 @@
 use core::ptr;
 use std::alloc::AllocError;
 
-use libc::{free, malloc, memcpy, ptrdiff_t};
+use libc::{memcpy, ptrdiff_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
@@ -138,8 +138,7 @@ pub(crate) struct ZBUFFv06_DCtx {
     stage: ZBUFFv06_dStage,
     inBuff: Box<[u8]>,
     inPos: usize,
-    outBuff: *mut core::ffi::c_char,
-    outBuffSize: usize,
+    outBuff: Box<[u8]>,
     outStart: usize,
     outEnd: usize,
     blockSize: usize,
@@ -3403,6 +3402,7 @@ pub(crate) fn ZBUFFv06_createDCtx() -> Result<Box<ZBUFFv06_DCtx>, AllocError> {
     let mut zbd = unsafe {
         (&raw mut (*zbd.as_mut_ptr()).zd).write(ZSTDv06_createDCtx()?);
         (&raw mut (*zbd.as_mut_ptr()).inBuff).write(Box::default());
+        (&raw mut (*zbd.as_mut_ptr()).outBuff).write(Box::default());
         zbd.assume_init()
     };
 
@@ -3416,9 +3416,7 @@ pub(crate) unsafe fn ZBUFFv06_freeDCtx(zbd: *mut ZBUFFv06_DCtx) -> usize {
         return 0;
     }
 
-    let zbd = unsafe { Box::from_raw(zbd) };
-
-    free(zbd.outBuff as *mut core::ffi::c_void);
+    let _ = unsafe { Box::from_raw(zbd) };
 
     0
 }
@@ -3556,13 +3554,11 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     let neededOutSize = (1usize << zbd.fParams.windowLog)
                         .wrapping_add(blockSize)
                         .wrapping_add((WILDCOPY_OVERLENGTH * 2) as usize);
-                    if zbd.outBuffSize < neededOutSize {
-                        free(zbd.outBuff as *mut core::ffi::c_void);
-                        zbd.outBuffSize = neededOutSize;
-                        zbd.outBuff = malloc(neededOutSize) as *mut core::ffi::c_char;
-                        if zbd.outBuff.is_null() {
+                    if zbd.outBuff.len() < neededOutSize {
+                        let Ok(outBuff) = box_try_new_zeroed_slice(neededOutSize) else {
                             return Error::memory_allocation.to_error_code();
-                        }
+                        };
+                        zbd.outBuff = unsafe { outBuff.assume_init() };
                     }
                     zbd.stage = ZBUFFds_read;
                     current_block = Block::Read;
@@ -3594,8 +3590,8 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                 // decode directly from src
                 let decodedSize = ZSTDv06_decompressContinue(
                     &mut zbd.zd,
-                    zbd.outBuff.add(zbd.outStart) as *mut core::ffi::c_void,
-                    zbd.outBuffSize.wrapping_sub(zbd.outStart),
+                    zbd.outBuff[zbd.outStart..].as_mut_ptr().cast(),
+                    zbd.outBuff.len().wrapping_sub(zbd.outStart),
                     ip as *const core::ffi::c_void,
                     neededInSize,
                 );
@@ -3646,8 +3642,8 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             // decode loaded input
             let decodedSize_0 = ZSTDv06_decompressContinue(
                 &mut zbd.zd,
-                zbd.outBuff.add(zbd.outStart) as *mut core::ffi::c_void,
-                zbd.outBuffSize.wrapping_sub(zbd.outStart),
+                zbd.outBuff[zbd.outStart..].as_mut_ptr().cast(),
+                zbd.outBuff.len().wrapping_sub(zbd.outStart),
                 zbd.inBuff[..neededInSize_0].as_ptr().cast(),
                 neededInSize_0,
             );
@@ -3671,14 +3667,14 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             let flushedSize = ZBUFFv06_limitCopy(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
-                zbd.outBuff.add(zbd.outStart) as *const core::ffi::c_void,
+                zbd.outBuff[zbd.outStart..].as_ptr().cast(),
                 toFlushSize,
             );
             op = op.add(flushedSize);
             zbd.outStart = zbd.outStart.wrapping_add(flushedSize);
             if flushedSize == toFlushSize {
                 zbd.stage = ZBUFFds_read;
-                if zbd.outStart.wrapping_add(zbd.blockSize) > zbd.outBuffSize {
+                if zbd.outStart.wrapping_add(zbd.blockSize) > zbd.outBuff.len() {
                     zbd.outEnd = 0;
                     zbd.outStart = zbd.outEnd;
                 }
