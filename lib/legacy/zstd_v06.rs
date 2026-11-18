@@ -7,7 +7,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
-use crate::lib::polyfill::box_try_new_zeroed;
+use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
@@ -136,8 +136,7 @@ pub(crate) struct ZBUFFv06_DCtx {
     zd: Box<ZSTDv06_DCtx>,
     fParams: ZSTDv06_frameParams,
     stage: ZBUFFv06_dStage,
-    inBuff: *mut core::ffi::c_char,
-    inBuffSize: usize,
+    inBuff: Box<[u8]>,
     inPos: usize,
     outBuff: *mut core::ffi::c_char,
     outBuffSize: usize,
@@ -3403,6 +3402,7 @@ pub(crate) fn ZBUFFv06_createDCtx() -> Result<Box<ZBUFFv06_DCtx>, AllocError> {
     // SAFETY: a zeroed ZBUFFv06_DCtx with the zd field set is correctly initialized.
     let mut zbd = unsafe {
         (&raw mut (*zbd.as_mut_ptr()).zd).write(ZSTDv06_createDCtx()?);
+        (&raw mut (*zbd.as_mut_ptr()).inBuff).write(Box::default());
         zbd.assume_init()
     };
 
@@ -3418,7 +3418,6 @@ pub(crate) unsafe fn ZBUFFv06_freeDCtx(zbd: *mut ZBUFFv06_DCtx) -> usize {
 
     let zbd = unsafe { Box::from_raw(zbd) };
 
-    free(zbd.inBuff as *mut core::ffi::c_void);
     free(zbd.outBuff as *mut core::ffi::c_void);
 
     0
@@ -3547,13 +3546,11 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     // Frame header instruct buffer sizes
                     let blockSize = core::cmp::min(1 << zbd.fParams.windowLog, 128 * 1024) as usize;
                     zbd.blockSize = blockSize;
-                    if zbd.inBuffSize < blockSize {
-                        free(zbd.inBuff as *mut core::ffi::c_void);
-                        zbd.inBuffSize = blockSize;
-                        zbd.inBuff = malloc(blockSize) as *mut core::ffi::c_char;
-                        if zbd.inBuff.is_null() {
+                    if zbd.inBuff.len() < blockSize {
+                        let Ok(inBuff) = box_try_new_zeroed_slice(blockSize) else {
                             return Error::memory_allocation.to_error_code();
-                        }
+                        };
+                        zbd.inBuff = unsafe { inBuff.assume_init() };
                     }
 
                     let neededOutSize = (1usize << zbd.fParams.windowLog)
@@ -3629,11 +3626,11 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             // should always be <= remaining space within inBuff
             let toLoad_0 = neededInSize_0.wrapping_sub(zbd.inPos);
             let mut loadedSize: usize = 0;
-            if toLoad_0 > zbd.inBuffSize.wrapping_sub(zbd.inPos) {
+            if toLoad_0 > zbd.inBuff.len().wrapping_sub(zbd.inPos) {
                 return Error::corruption_detected.to_error_code();
             }
             loadedSize = ZBUFFv06_limitCopy(
-                zbd.inBuff.add(zbd.inPos) as *mut core::ffi::c_void,
+                zbd.inBuff[zbd.inPos..].as_mut_ptr().cast(),
                 toLoad_0,
                 ip as *const core::ffi::c_void,
                 iend.offset_from_unsigned(ip),
@@ -3651,7 +3648,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                 &mut zbd.zd,
                 zbd.outBuff.add(zbd.outStart) as *mut core::ffi::c_void,
                 zbd.outBuffSize.wrapping_sub(zbd.outStart),
-                zbd.inBuff as *const core::ffi::c_void,
+                zbd.inBuff[..neededInSize_0].as_ptr().cast(),
                 neededInSize_0,
             );
             if ERR_isError(decodedSize_0) {
