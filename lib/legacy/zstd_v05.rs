@@ -2336,8 +2336,7 @@ unsafe fn ZSTDv05_execSequence(
     mut op: *mut u8,
     oend: *mut u8,
     mut sequence: seq_t,
-    litPtr: *mut *const u8,
-    litLimit: *const u8,
+    litPtr: &mut &[u8],
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
@@ -2348,13 +2347,12 @@ unsafe fn ZSTDv05_execSequence(
     let sequenceLength = sequence.litLength.wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
     let oend_8 = oend.wrapping_sub(8);
-    let litEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let seqLength = sequence.litLength.wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from_unsigned(op) {
         return Err(Error::dstSize_tooSmall);
     }
-    if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
+    if sequence.litLength > litPtr.len() {
         return Err(Error::corruption_detected);
     }
     if oLitEnd > oend_8 {
@@ -2363,12 +2361,9 @@ unsafe fn ZSTDv05_execSequence(
     if oMatchEnd > oend {
         return Err(Error::dstSize_tooSmall);
     }
-    if litEnd > litLimit {
-        return Err(Error::corruption_detected);
-    }
-    ZSTDv05_wildcopy(op, *litPtr, sequence.litLength as ptrdiff_t);
+    ZSTDv05_wildcopy(op, litPtr.as_ptr(), sequence.litLength as ptrdiff_t);
     op = oLitEnd;
-    *litPtr = litEnd;
+    *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
         if sequence.offset > oLitEnd.addr().wrapping_sub(vBase.addr()) {
             return Err(Error::corruption_detected);
@@ -2433,8 +2428,7 @@ unsafe fn ZSTDv05_decompressSequences(
     let ostart = dst as *mut u8;
     let mut op = ostart;
     let oend = ostart.add(maxDstSize);
-    let mut litPtr = dctx.litPtr;
-    let litEnd = litPtr.add(dctx.litSize);
+    let mut litPtr = core::slice::from_raw_parts(dctx.litPtr, dctx.litSize);
     let mut nbSeq = 0;
     let mut dumps = &[][..];
     let DTableLL = &mut dctx.LLTable;
@@ -2476,31 +2470,20 @@ unsafe fn ZSTDv05_decompressSequences(
             let mut oneSeqSize: usize = 0;
             nbSeq -= 1;
             ZSTDv05_decodeSequence(&mut sequence, &mut seqState);
-            oneSeqSize = ZSTDv05_execSequence(
-                op,
-                oend,
-                sequence,
-                &mut litPtr,
-                litEnd,
-                base,
-                vBase,
-                dictEnd,
-            )?;
+            oneSeqSize =
+                ZSTDv05_execSequence(op, oend, sequence, &mut litPtr, base, vBase, dictEnd)?;
             op = op.add(oneSeqSize);
         }
         if nbSeq != 0 {
             return Err(Error::corruption_detected);
         }
     }
-    let lastLLSize = litEnd.offset_from_unsigned(litPtr);
-    if litPtr > litEnd {
-        return Err(Error::corruption_detected);
-    }
+    let lastLLSize = litPtr.len();
     if op.add(lastLLSize) > oend {
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
-        ptr::copy_nonoverlapping(litPtr, op, lastLLSize);
+        ptr::copy_nonoverlapping(litPtr.as_ptr(), op, lastLLSize);
         op = op.add(lastLLSize);
     }
     Ok(op.offset_from_unsigned(ostart))
