@@ -2292,10 +2292,10 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
     dctx: &mut ZSTDv06_DCtx,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let istart = src as *const u8;
     if srcSize < MIN_CBLOCK_SIZE as usize {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     match *istart as core::ffi::c_int >> 6 {
         IS_HUF => {
@@ -2304,7 +2304,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             let mut singleStream = 0;
             let mut lhSize = (*istart as core::ffi::c_int >> 4 & 3) as u32;
             if srcSize < 5 {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             match lhSize {
                 2 => {
@@ -2341,10 +2341,10 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 _ => unreachable!(),
             }
             if litSize > ZSTDv06_BLOCKSIZE_MAX as usize {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             if litCSize.wrapping_add(lhSize as usize) > srcSize {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             if ERR_isError(if singleStream != 0 {
                 HUFv06_decompress1X2(
@@ -2361,7 +2361,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                     litCSize,
                 )
             }) {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             dctx.litPtr = (&raw mut dctx.litBuffer).cast();
             dctx.litSize = litSize;
@@ -2370,17 +2370,17 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
-            litCSize.wrapping_add(lhSize as usize)
+            Ok(litCSize.wrapping_add(lhSize as usize))
         }
         IS_PCH => {
             let mut litSize_0: usize = 0;
             let mut litCSize_0: usize = 0;
             let mut lhSize_0 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
             if lhSize_0 != 1 {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             if dctx.flagRepeatTable == 0 {
-                return Error::dictionary_corrupted.to_error_code();
+                return Err(Error::dictionary_corrupted);
             }
             lhSize_0 = 3;
             litSize_0 = (((*istart as core::ffi::c_int & 15) << 6)
@@ -2388,7 +2388,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             litCSize_0 = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
                 + *istart.add(2) as core::ffi::c_int) as usize;
             if litCSize_0.wrapping_add(lhSize_0 as usize) > srcSize {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             let errorCode = HUFv06_decompress1X4_usingDTable(
                 dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
@@ -2398,7 +2398,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 dctx.hufTableX4.as_mut_ptr(),
             );
             if ERR_isError(errorCode) {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize_0;
@@ -2407,7 +2407,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
-            litCSize_0.wrapping_add(lhSize_0 as usize)
+            Ok(litCSize_0.wrapping_add(lhSize_0 as usize))
         }
         IS_RAW => {
             let mut litSize_1: usize = 0;
@@ -2436,7 +2436,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 > srcSize
             {
                 if litSize_1.wrapping_add(lhSize_1 as usize) > srcSize {
-                    return Error::corruption_detected.to_error_code();
+                    return Err(Error::corruption_detected);
                 }
                 memcpy(
                     dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
@@ -2450,11 +2450,11 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
-                return (lhSize_1 as usize).wrapping_add(litSize_1);
+                return Ok((lhSize_1 as usize).wrapping_add(litSize_1));
             }
             dctx.litPtr = istart.offset(lhSize_1 as isize);
             dctx.litSize = litSize_1;
-            (lhSize_1 as usize).wrapping_add(litSize_1)
+            Ok((lhSize_1 as usize).wrapping_add(litSize_1))
         }
         IS_RLE => {
             let mut litSize_2: usize = 0;
@@ -2471,7 +2471,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                         + *istart.add(2) as core::ffi::c_int)
                         as usize;
                     if srcSize < 4 {
-                        return Error::corruption_detected.to_error_code();
+                        return Err(Error::corruption_detected);
                     }
                 }
                 0 | 1 => {
@@ -2481,7 +2481,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 _ => unreachable!(),
             }
             if litSize_2 > ZSTDv06_BLOCKSIZE_MAX as usize {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             core::ptr::write_bytes(
                 dctx.litBuffer.as_mut_ptr(),
@@ -2490,9 +2490,9 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             );
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize_2;
-            lhSize_2.wrapping_add(1) as usize
+            Ok(lhSize_2.wrapping_add(1) as usize)
         }
-        _ => Error::corruption_detected.to_error_code(),
+        _ => Err(Error::corruption_detected),
     }
 }
 unsafe fn ZSTDv06_buildSeqTable(
@@ -2962,10 +2962,10 @@ unsafe fn ZSTDv06_decompressBlock_internal(
     if srcSize >= ZSTDv06_BLOCKSIZE_MAX as usize {
         return Error::srcSize_wrong.to_error_code();
     }
-    let litCSize = ZSTDv06_decodeLiteralsBlock(dctx, ip.cast(), srcSize);
-    if ERR_isError(litCSize) {
-        return litCSize;
-    }
+    let litCSize = match ZSTDv06_decodeLiteralsBlock(dctx, ip.cast(), srcSize) {
+        Ok(litCSize) => litCSize,
+        Err(err) => return err.to_error_code(),
+    };
     ip = ip.add(litCSize);
     srcSize = srcSize.wrapping_sub(litCSize);
     ZSTDv06_decompressSequences(
