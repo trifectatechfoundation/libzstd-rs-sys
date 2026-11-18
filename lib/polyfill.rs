@@ -63,10 +63,12 @@ cfg_select! {
     }
 }
 
+#[inline]
 pub(crate) fn box_try_new_zeroed<T>() -> Result<Box<MaybeUninit<T>>, AllocError> {
     box_try_new_zeroed_in(std::alloc::Global)
 }
 
+#[inline]
 pub(crate) fn box_try_new_zeroed_in<T, A: Allocator>(
     alloc: A,
 ) -> Result<Box<MaybeUninit<T>, A>, AllocError> {
@@ -78,4 +80,30 @@ pub(crate) fn box_try_new_zeroed_in<T, A: Allocator>(
     };
     // SAFETY: Pointer is nonnull and matches the allocator.
     unsafe { Ok(Box::from_raw_in(ptr.as_ptr(), alloc)) }
+}
+
+#[inline]
+pub(crate) fn box_try_new_zeroed_slice<T>(len: usize) -> Result<Box<[MaybeUninit<T>]>, AllocError> {
+    box_try_new_zeroed_slice_in(len, std::alloc::Global)
+}
+
+#[inline]
+pub(crate) fn box_try_new_zeroed_slice_in<T, A: Allocator>(
+    len: usize,
+    alloc: A,
+) -> Result<Box<[MaybeUninit<T>], A>, AllocError> {
+    let ptr = if size_of::<T>() == 0 || len == 0 {
+        NonNull::dangling()
+    } else {
+        let layout = match Layout::array::<MaybeUninit<T>>(len) {
+            Ok(l) => l,
+            Err(_) => return Err(AllocError),
+        };
+        alloc.allocate_zeroed(layout)?.cast()
+    };
+    // SAFETY: `ptr` was just allocated with `alloc` with the layout for an array of length
+    // `len`, and the layout creation would have failed if `len` overflowed an isize.
+    // `into_box` is sound to call since `len` corresponds to the length of the just-created
+    // `RawVec`.
+    unsafe { Ok(Vec::from_raw_parts_in(ptr.as_ptr(), len, len, alloc).into_boxed_slice()) }
 }
