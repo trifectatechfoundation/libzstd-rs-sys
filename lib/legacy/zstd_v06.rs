@@ -225,7 +225,7 @@ unsafe fn ZSTDv06_wildcopy(
     }
 }
 #[inline]
-unsafe fn BITv06_highbit32(val: u32) -> core::ffi::c_uint {
+fn BITv06_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
 }
 
