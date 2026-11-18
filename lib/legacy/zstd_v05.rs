@@ -8,7 +8,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
-use crate::lib::polyfill::box_try_new_zeroed;
+use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
@@ -134,8 +134,7 @@ struct algo_time_t {
 pub(crate) struct ZBUFFv05_DCtx {
     zc: Box<ZSTDv05_DCtx>,
     params: ZSTDv05_parameters,
-    inBuff: *mut core::ffi::c_char,
-    inBuffSize: usize,
+    inBuff: Box<[u8]>,
     inPos: usize,
     outBuff: *mut core::ffi::c_char,
     outBuffSize: usize,
@@ -2876,6 +2875,7 @@ pub(crate) fn ZBUFFv05_createDCtx() -> Result<Box<ZBUFFv05_DCtx>, AllocError> {
     // SAFETY: a zeroed ZBUFFv05_DCtx with the zc field set is correctly initialized.
     let mut zbc = unsafe {
         (&raw mut (*zbc.as_mut_ptr()).zc).write(ZSTDv05_createDCtx()?);
+        (&raw mut (*zbc.as_mut_ptr()).inBuff).write(Box::default());
         zbc.assume_init()
     };
 
@@ -2891,7 +2891,6 @@ pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> usize {
 
     let zbc = unsafe { Box::from_raw(zbc) };
 
-    free(zbc.inBuff as *mut core::ffi::c_void);
     free(zbc.outBuff as *mut core::ffi::c_void);
 
     0
@@ -2994,13 +2993,11 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             // apply header to create / resize buffers
             let neededOutSize = 1 << zbc.params.windowLog;
             let neededInSize = BLOCKSIZE as usize; // a block is never > BLOCKSIZE
-            if zbc.inBuffSize < neededInSize {
-                free(zbc.inBuff as *mut core::ffi::c_void);
-                zbc.inBuffSize = neededInSize;
-                zbc.inBuff = malloc(neededInSize) as *mut core::ffi::c_char;
-                if zbc.inBuff.is_null() {
+            if zbc.inBuff.len() < neededInSize {
+                let Ok(inBuff) = box_try_new_zeroed_slice(neededInSize) else {
                     return Err(Error::memory_allocation);
-                }
+                };
+                zbc.inBuff = unsafe { inBuff.assume_init() };
             }
             if zbc.outBuffSize < neededOutSize {
                 free(zbc.outBuff as *mut core::ffi::c_void);
@@ -3012,11 +3009,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
             if zbc.hPos != 0 {
                 // some data already loaded into headerBuffer : transfer into inBuff
-                ptr::copy_nonoverlapping(
-                    zbc.headerBuffer.as_ptr(),
-                    zbc.inBuff.cast::<u8>(),
-                    zbc.hPos,
-                );
+                zbc.inBuff[..zbc.hPos].copy_from_slice(&zbc.headerBuffer[..zbc.hPos]);
                 zbc.inPos = zbc.hPos;
                 zbc.hPos = 0;
                 zbc.stage = ZBUFFv05ds_load;
@@ -3067,11 +3060,11 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize.wrapping_sub(zbc.inPos);
             let mut loadedSize: usize = 0;
-            if toLoad > zbc.inBuffSize.wrapping_sub(zbc.inPos) {
+            if toLoad > zbc.inBuff.len().wrapping_sub(zbc.inPos) {
                 return Err(Error::corruption_detected); // should never happen
             }
             loadedSize = ZBUFFv05_limitCopy(
-                zbc.inBuff.add(zbc.inPos) as *mut core::ffi::c_void,
+                zbc.inBuff[zbc.inPos..].as_mut_ptr().cast(),
                 toLoad,
                 core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
             );
@@ -3086,7 +3079,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     &mut zbc.zc,
                     zbc.outBuff.add(zbc.outStart) as *mut core::ffi::c_void,
                     zbc.outBuffSize.wrapping_sub(zbc.outStart),
-                    Reader::from_raw_parts(zbc.inBuff as *const u8, neededInSize),
+                    Reader::from_slice(&zbc.inBuff[..neededInSize]),
                 )?;
                 zbc.inPos = 0; // input is consumed
                 if decodedSize_0 == 0 {
