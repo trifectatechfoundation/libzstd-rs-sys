@@ -2,7 +2,7 @@ use core::{mem, ptr};
 use std::alloc::AllocError;
 use std::marker::PhantomData;
 
-use libc::{free, malloc, ptrdiff_t};
+use libc::ptrdiff_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
@@ -136,8 +136,7 @@ pub(crate) struct ZBUFFv05_DCtx {
     params: ZSTDv05_parameters,
     inBuff: Box<[u8]>,
     inPos: usize,
-    outBuff: *mut core::ffi::c_char,
-    outBuffSize: usize,
+    outBuff: Box<[u8]>,
     outStart: usize,
     outEnd: usize,
     hPos: usize,
@@ -2876,6 +2875,7 @@ pub(crate) fn ZBUFFv05_createDCtx() -> Result<Box<ZBUFFv05_DCtx>, AllocError> {
     let mut zbc = unsafe {
         (&raw mut (*zbc.as_mut_ptr()).zc).write(ZSTDv05_createDCtx()?);
         (&raw mut (*zbc.as_mut_ptr()).inBuff).write(Box::default());
+        (&raw mut (*zbc.as_mut_ptr()).outBuff).write(Box::default());
         zbc.assume_init()
     };
 
@@ -2889,9 +2889,7 @@ pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> usize {
         return 0;
     }
 
-    let zbc = unsafe { Box::from_raw(zbc) };
-
-    free(zbc.outBuff as *mut core::ffi::c_void);
+    let _ = unsafe { Box::from_raw(zbc) };
 
     0
 }
@@ -2999,13 +2997,11 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 };
                 zbc.inBuff = unsafe { inBuff.assume_init() };
             }
-            if zbc.outBuffSize < neededOutSize {
-                free(zbc.outBuff as *mut core::ffi::c_void);
-                zbc.outBuffSize = neededOutSize;
-                zbc.outBuff = malloc(neededOutSize) as *mut core::ffi::c_char;
-                if zbc.outBuff.is_null() {
+            if zbc.outBuff.len() < neededOutSize {
+                let Ok(outBuff) = box_try_new_zeroed_slice(neededOutSize) else {
                     return Err(Error::memory_allocation);
-                }
+                };
+                zbc.outBuff = unsafe { outBuff.assume_init() };
             }
             if zbc.hPos != 0 {
                 // some data already loaded into headerBuffer : transfer into inBuff
@@ -3033,8 +3029,8 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 // directly decode from src
                 let decodedSize = ZSTDv05_decompressContinue(
                     &mut zbc.zc,
-                    zbc.outBuff.add(zbc.outStart) as *mut core::ffi::c_void,
-                    zbc.outBuffSize.wrapping_sub(zbc.outStart),
+                    zbc.outBuff[zbc.outStart..].as_mut_ptr().cast(),
+                    zbc.outBuff.len().wrapping_sub(zbc.outStart),
                     Reader::from_raw_parts(ip, neededInSize),
                 )?;
                 ip = ip.add(neededInSize);
@@ -3077,8 +3073,8 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             } else {
                 let decodedSize_0 = ZSTDv05_decompressContinue(
                     &mut zbc.zc,
-                    zbc.outBuff.add(zbc.outStart) as *mut core::ffi::c_void,
-                    zbc.outBuffSize.wrapping_sub(zbc.outStart),
+                    zbc.outBuff[zbc.outStart..].as_mut_ptr().cast(),
+                    zbc.outBuff.len().wrapping_sub(zbc.outStart),
                     Reader::from_slice(&zbc.inBuff[..neededInSize]),
                 )?;
                 zbc.inPos = 0; // input is consumed
@@ -3100,13 +3096,13 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             let flushedSize = ZBUFFv05_limitCopy(
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
-                core::slice::from_raw_parts(zbc.outBuff.add(zbc.outStart).cast(), toFlushSize),
+                &zbc.outBuff[zbc.outStart..][..toFlushSize],
             );
             op = op.add(flushedSize);
             zbc.outStart = zbc.outStart.wrapping_add(flushedSize);
             if flushedSize == toFlushSize {
                 zbc.stage = ZBUFFv05ds_read;
-                if zbc.outStart.wrapping_add(BLOCKSIZE as usize) > zbc.outBuffSize {
+                if zbc.outStart.wrapping_add(BLOCKSIZE as usize) > zbc.outBuff.len() {
                     zbc.outEnd = 0;
                     zbc.outStart = zbc.outEnd;
                 }
