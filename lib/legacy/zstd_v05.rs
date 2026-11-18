@@ -2892,15 +2892,15 @@ pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> usize {
     0
 }
 pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
-    zbc: *mut ZBUFFv05_DCtx,
+    zbc: &mut ZBUFFv05_DCtx,
     dict: &[u8],
 ) -> Result<(), Error> {
-    (*zbc).stage = ZBUFFv05ds_readHeader;
-    (*zbc).outEnd = 0;
-    (*zbc).outStart = (*zbc).outEnd;
-    (*zbc).inPos = (*zbc).outStart;
-    (*zbc).hPos = (*zbc).inPos;
-    ZSTDv05_decompressBegin_usingDict(&mut (*zbc).zc, dict)
+    zbc.stage = ZBUFFv05ds_readHeader;
+    zbc.outEnd = 0;
+    zbc.outStart = zbc.outEnd;
+    zbc.inPos = zbc.outStart;
+    zbc.hPos = zbc.inPos;
+    ZSTDv05_decompressBegin_usingDict(&mut zbc.zc, dict)
 }
 
 #[allow(clippy::drop_non_drop)]
