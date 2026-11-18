@@ -3064,7 +3064,7 @@ unsafe fn ZSTDv06_decompressFrame(
     op.offset_from_unsigned(ostart)
 }
 pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
     src: *const core::ffi::c_void,

@@ -211,7 +211,7 @@ fn ZSTD_decompressLegacy(
 
             let result = unsafe {
                 ZSTDv06_decompress_usingDict(
-                    &mut *zd,
+                    &mut zd,
                     dst,
                     dstCapacity,
                     src,
