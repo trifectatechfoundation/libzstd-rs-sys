@@ -22,7 +22,7 @@ pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
 #[inline]
 pub(crate) fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
     cfg_select! {
-        feature = "trace" => unsafe { statics::ZSTD_trace_compress_begin(_cctx) }
+        feature = "trace" => unsafe { statics::ZSTD_trace_compress_begin(_cctx) },
         _ => 0,
     }
 }
@@ -38,7 +38,7 @@ pub(crate) fn ZSTD_trace_compress_end(_ctx: ZSTD_TraceCtx, _trace: &ZSTD_Trace) 
 #[inline]
 pub(crate) fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
     cfg_select! {
-        feature = "trace" => unsafe { statics::ZSTD_trace_decompress_begin(_dctx) }
+        feature = "trace" => unsafe { statics::ZSTD_trace_decompress_begin(_dctx) },
         _ => 0,
     }
 }
