@@ -439,7 +439,7 @@ unsafe fn ZSTD_decompressLegacyStream(
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
             let mut decodedSize = output.size.wrapping_sub(output.pos);
             let hintSize =
-                ZBUFFv06_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
+                ZBUFFv06_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
             output.pos = output.pos.wrapping_add(decodedSize);
             input.pos = input.pos.wrapping_add(readSize);
             hintSize
