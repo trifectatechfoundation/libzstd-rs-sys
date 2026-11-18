@@ -3244,16 +3244,16 @@ unsafe fn ZSTDv06_decompressContinue(
     0
 }
 unsafe fn ZSTDv06_refDictContent(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) {
-    (*dctx).dictEnd = (*dctx).previousDstEnd;
-    (*dctx).vBase = (dict as *const u8).wrapping_sub(
-        ((*dctx).previousDstEnd as *const u8).offset_from_unsigned((*dctx).base as *const u8),
+    dctx.dictEnd = dctx.previousDstEnd;
+    dctx.vBase = (dict as *const u8).wrapping_sub(
+        (dctx.previousDstEnd as *const u8).offset_from_unsigned(dctx.base as *const u8),
     ) as *const core::ffi::c_void;
-    (*dctx).base = dict;
-    (*dctx).previousDstEnd =
+    dctx.base = dict;
+    dctx.previousDstEnd =
         (dict as *const core::ffi::c_char).add(dictSize) as *const core::ffi::c_void;
 }
 unsafe fn ZSTDv06_loadEntropy(
