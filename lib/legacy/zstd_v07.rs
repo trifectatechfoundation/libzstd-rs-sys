@@ -2741,7 +2741,7 @@ pub(crate) unsafe fn ZBUFFv07_freeDCtx(zbd: *mut ZBUFFv07_DCtx) -> usize {
     0
 }
 
-pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
+pub(crate) fn ZBUFFv07_decompressInitDictionary(
     zbd: &mut ZBUFFv07_DCtx,
     dict: &[u8],
 ) -> Result<(), Error> {
