@@ -3140,8 +3140,8 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
     *cSize = ip.offset_from_unsigned(src as *const u8);
     *dBound = (nbBlocks * ZSTDv06_BLOCKSIZE_MAX as usize) as core::ffi::c_ulonglong;
 }
-unsafe fn ZSTDv06_nextSrcSizeToDecompress(dctx: *mut ZSTDv06_DCtx) -> usize {
-    (*dctx).expected
+fn ZSTDv06_nextSrcSizeToDecompress(dctx: &ZSTDv06_DCtx) -> usize {
+    dctx.expected
 }
 unsafe fn ZSTDv06_decompressContinue(
     dctx: &mut ZSTDv06_DCtx,
@@ -3518,7 +3518,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     continue;
                 } else {
                     // Consume header
-                    let h1Size = ZSTDv06_nextSrcSizeToDecompress(&mut *zbd.zd); // == ZSTDv06_frameHeaderSize_min
+                    let h1Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd); // == ZSTDv06_frameHeaderSize_min
                     let h1Result = ZSTDv06_decompressContinue(
                         &mut zbd.zd,
                         core::ptr::null_mut(),
@@ -3531,7 +3531,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     }
                     if h1Size < zbd.lhSize {
                         // long header
-                        let h2Size = ZSTDv06_nextSrcSizeToDecompress(&mut *zbd.zd);
+                        let h2Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
                         let h2Result = ZSTDv06_decompressContinue(
                             &mut zbd.zd,
                             core::ptr::null_mut(),
@@ -3585,7 +3585,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
         if current_block == Block::Read {
             drop(current_block);
 
-            let neededInSize = ZSTDv06_nextSrcSizeToDecompress(&mut *zbd.zd);
+            let neededInSize = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
             if neededInSize == 0 {
                 // end of frame
                 zbd.stage = ZBUFFds_init;
@@ -3625,7 +3625,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
         if current_block == Block::Load {
             drop(current_block);
 
-            let neededInSize_0 = ZSTDv06_nextSrcSizeToDecompress(&mut *zbd.zd);
+            let neededInSize_0 = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
             // should always be <= remaining space within inBuff
             let toLoad_0 = neededInSize_0.wrapping_sub(zbd.inPos);
             let mut loadedSize: usize = 0;
@@ -3693,7 +3693,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     }
     *srcSizePtr = ip.offset_from_unsigned(istart);
     *dstCapacityPtr = op.offset_from_unsigned(ostart);
-    let mut nextSrcSizeHint = ZSTDv06_nextSrcSizeToDecompress(&mut *zbd.zd);
+    let mut nextSrcSizeHint = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
     if nextSrcSizeHint > ZSTDv06_blockHeaderSize {
         nextSrcSizeHint = nextSrcSizeHint.wrapping_add(ZSTDv06_blockHeaderSize);
     }
