@@ -2706,8 +2706,7 @@ unsafe fn ZSTDv06_execSequence(
     mut op: *mut u8,
     oend: *mut u8,
     mut sequence: seq_t,
-    litPtr: *mut *const u8,
-    litLimit: *const u8,
+    litPtr: &mut &[u8],
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
@@ -2716,13 +2715,12 @@ unsafe fn ZSTDv06_execSequence(
     let sequenceLength = sequence.litLength.wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
     let oend_8 = oend.wrapping_sub(8);
-    let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let seqLength = sequence.litLength.wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from_unsigned(op) {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
+    if sequence.litLength > litPtr.len() {
         return Error::corruption_detected.to_error_code();
     }
     if oLitEnd > oend_8 {
@@ -2731,16 +2729,13 @@ unsafe fn ZSTDv06_execSequence(
     if oMatchEnd > oend {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if iLitEnd > litLimit {
-        return Error::corruption_detected.to_error_code();
-    }
     ZSTDv06_wildcopy(
         op as *mut core::ffi::c_void,
-        *litPtr as *const core::ffi::c_void,
+        litPtr.as_ptr() as *const core::ffi::c_void,
         sequence.litLength as ptrdiff_t,
     );
     op = oLitEnd;
-    *litPtr = iLitEnd;
+    *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
         if sequence.offset > oLitEnd.addr().wrapping_sub(vBase.addr()) {
             return Error::corruption_detected.to_error_code();
@@ -2821,8 +2816,7 @@ unsafe fn ZSTDv06_decompressSequences(
     let ostart = dst as *mut u8;
     let oend = ostart.add(maxDstSize);
     let mut op = ostart;
-    let mut litPtr = dctx.litPtr;
-    let litEnd = litPtr.add(dctx.litSize);
+    let mut litPtr = core::slice::from_raw_parts(dctx.litPtr, dctx.litSize);
     let DTableLL = dctx.LLTable.as_mut_ptr();
     let DTableML = dctx.MLTable.as_mut_ptr();
     let DTableOffb = dctx.OffTable.as_mut_ptr();
@@ -2889,16 +2883,8 @@ unsafe fn ZSTDv06_decompressSequences(
         {
             nbSeq -= 1;
             ZSTDv06_decodeSequence(&mut sequence, &mut seqState);
-            let oneSeqSize = ZSTDv06_execSequence(
-                op,
-                oend,
-                sequence,
-                &mut litPtr,
-                litEnd,
-                base,
-                vBase,
-                dictEnd,
-            );
+            let oneSeqSize =
+                ZSTDv06_execSequence(op, oend, sequence, &mut litPtr, base, vBase, dictEnd);
             if let Some(err) = Error::from_error_code(oneSeqSize) {
                 return Err(err);
             }
@@ -2908,17 +2894,14 @@ unsafe fn ZSTDv06_decompressSequences(
             return Err(Error::corruption_detected);
         }
     }
-    let lastLLSize = litEnd.offset_from_unsigned(litPtr);
-    if litPtr > litEnd {
-        return Err(Error::corruption_detected);
-    }
+    let lastLLSize = litPtr.len();
     if op.add(lastLLSize) > oend {
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
         memcpy(
             op as *mut core::ffi::c_void,
-            litPtr as *const core::ffi::c_void,
+            litPtr.as_ptr() as *const core::ffi::c_void,
             lastLLSize,
         );
         op = op.add(lastLLSize);
