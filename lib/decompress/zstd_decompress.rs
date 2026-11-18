@@ -53,7 +53,7 @@ use crate::lib::legacy::zstd_v06::{
     ZBUFFv06_DCtx, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
     ZBUFFv06_decompressInitDictionary, ZBUFFv06_freeDCtx, ZSTDv06_createDCtx,
     ZSTDv06_decompress_usingDict, ZSTDv06_findFrameSizeInfoLegacy, ZSTDv06_frameParams,
-    ZSTDv06_freeDCtx, ZSTDv06_getFrameParams,
+    ZSTDv06_getFrameParams,
 };
 use crate::lib::legacy::zstd_v07::{
     ZBUFFv07_DCtx, ZBUFFv07_createDCtx, ZBUFFv07_decompressContinue,
@@ -205,13 +205,13 @@ fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let zd = unsafe { ZSTDv06_createDCtx() };
-            if zd.is_null() {
+            let Ok(mut zd) = ZSTDv06_createDCtx() else {
                 return Err(Error::memory_allocation);
-            }
+            };
+
             let result = unsafe {
                 ZSTDv06_decompress_usingDict(
-                    zd,
+                    &mut *zd,
                     dst,
                     dstCapacity,
                     src,
@@ -220,7 +220,9 @@ fn ZSTD_decompressLegacy(
                     dict.len(),
                 )
             };
-            unsafe { ZSTDv06_freeDCtx(zd) };
+
+            drop(zd);
+
             // TODO: make `ZSTDv06_decompress_usingDict` return a Result
             Error::from_error_code(result).map_or(Ok(result), Err)
         }
