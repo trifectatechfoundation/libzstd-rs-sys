@@ -1767,8 +1767,9 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<usize, E
         return Err(Error::corruption_detected);
     }
     if cSrc.len() == 1 {
-        core::ptr::write_bytes(dst.as_mut_ptr().cast::<u8>(), cSrc[0], dst.capacity());
-        return Ok(dst.capacity());
+        let capacity = dst.capacity();
+        dst.write_bytes(cSrc[0], capacity);
+        return Ok(capacity);
     }
     let Q = (cSrc.len() * 16 / dst.capacity()) as u32;
     let mut Dtime: [u32; 3] = [0; 3];
