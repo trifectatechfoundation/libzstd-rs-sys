@@ -2941,14 +2941,14 @@ unsafe fn ZSTDv06_decompressSequences(
     }
     op.offset_from_unsigned(ostart)
 }
-unsafe fn ZSTDv06_checkContinuity(dctx: *mut ZSTDv06_DCtx, dst: *const core::ffi::c_void) {
-    if dst != (*dctx).previousDstEnd {
-        (*dctx).dictEnd = (*dctx).previousDstEnd;
-        (*dctx).vBase = (dst as *const u8).wrapping_sub(
-            ((*dctx).previousDstEnd as *const u8).offset_from_unsigned((*dctx).base as *const u8),
+unsafe fn ZSTDv06_checkContinuity(dctx: &mut ZSTDv06_DCtx, dst: *const core::ffi::c_void) {
+    if dst != dctx.previousDstEnd {
+        dctx.dictEnd = dctx.previousDstEnd;
+        dctx.vBase = (dst as *const u8).wrapping_sub(
+            (dctx.previousDstEnd as *const u8).offset_from_unsigned(dctx.base as *const u8),
         ) as *const core::ffi::c_void;
-        (*dctx).base = dst;
-        (*dctx).previousDstEnd = dst;
+        dctx.base = dst;
+        dctx.previousDstEnd = dst;
     }
 }
 unsafe fn ZSTDv06_decompressBlock_internal(
