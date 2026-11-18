@@ -3358,7 +3358,7 @@ unsafe fn ZSTDv06_loadEntropy(
         .wrapping_add(litlengthHeaderSize)
 }
 unsafe fn ZSTDv06_decompress_insertDictionary(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: usize,
 ) -> usize {
