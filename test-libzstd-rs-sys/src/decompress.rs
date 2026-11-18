@@ -1431,3 +1431,102 @@ mod ddict {
         });
     }
 }
+
+// These frames exercise retained history pointers after the legacy output buffer wraps.
+mod legacy_output_history {
+    use libzstd_rs_sys::lib::decompress::zstd_decompress::{
+        ZSTDv05_MAGICNUMBER, ZSTDv06_MAGICNUMBER, ZSTDv07_MAGICNUMBER,
+    };
+    use libzstd_rs_sys::*;
+
+    fn check(frame: &[u8], expected_len: usize) {
+        unsafe {
+            let ctx = ZSTD_createDCtx();
+            assert!(!ctx.is_null());
+            let mut decoded = vec![0u8; expected_len];
+            let mut input = ZSTD_inBuffer {
+                src: frame.as_ptr().cast(),
+                size: frame.len(),
+                pos: 0,
+            };
+            let mut output = ZSTD_outBuffer {
+                dst: decoded.as_mut_ptr().cast(),
+                size: decoded.len(),
+                pos: 0,
+            };
+            loop {
+                let previous = (input.pos, output.pos);
+                let result = ZSTD_decompressStream(ctx, &mut output, &mut input);
+                assert_eq!(ZSTD_isError(result), 0);
+                if result == 0 {
+                    break;
+                }
+                assert_ne!(
+                    (input.pos, output.pos),
+                    previous,
+                    "decoder made no progress"
+                );
+            }
+            ZSTD_freeDCtx(ctx);
+            assert_eq!(input.pos, frame.len());
+            assert_eq!(output.pos, expected_len);
+            assert_eq!(decoded, vec![b'x'; expected_len]);
+        }
+    }
+
+    #[test]
+    fn v05() {
+        check(
+            &[
+                ZSTDv05_MAGICNUMBER.to_le_bytes().as_slice(),
+                &[
+                    0, // frame header, 2 KiB window
+                    0, 0, 3, 0xc9, b'x', 0, // 9 RLE literals to trigger output buffer wrap
+                    0, 0, 9, 0x80, 1, 0x54, 0, 0, 0, 0, 0, 1, // match: offset 1, length 4
+                    0x40, 0, 3, b'x', b'x', b'x', // raw block
+                    0xc0, 0, 0, // end of frame
+                ],
+            ]
+            .concat(),
+            16,
+        );
+    }
+
+    #[test]
+    fn v06() {
+        check(
+            &[
+                ZSTDv06_MAGICNUMBER.to_le_bytes().as_slice(),
+                &[
+                    0, // frame header, 4 KiB window
+                    0, 0, 5, 0xf0, 0x10, 0, b'x', 0, // 4096 RLE literals
+                    0, 0, 3, 0xd1, b'x', 0, // 17 more literals trigger output-buffer wrap
+                    0, 0, 9, 0x80, 1, 0x54, 0, 0, 0, 0, 0, 1, // match: offset 1, length 3
+                    0x40, 0, 3, b'x', b'x', b'x', // raw block
+                    0xc0, 0, 0, // end of frame
+                ],
+            ]
+            .concat(),
+            4119,
+        );
+    }
+
+    #[test]
+    fn v07() {
+        check(
+            &[
+                ZSTDv07_MAGICNUMBER.to_le_bytes().as_slice(),
+                &[
+                    0, 0, // frame header, 1 KiB window
+                    0, 0, 4, 0xe4, 0, b'x', 0, // 1024 RLE literals
+                    0, 0, 3, 0xd1, b'x', 0, // 17 more literals trigger output-buffer wrap
+                    0, 0, 9, 0x80, 1, 0x54, 0, 2, 0, 0, 0, 4, // match: offset 1, length 3
+                    0x40, 0, 3, b'x', b'x', b'x', // raw block
+                    0xc0, 0, 0, // end of frame
+                ],
+            ]
+            .concat(),
+            1047,
+        );
+    }
+}
