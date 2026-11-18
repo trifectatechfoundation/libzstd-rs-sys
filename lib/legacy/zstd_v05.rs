@@ -2909,7 +2909,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
 pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     zbc: &mut ZBUFFv05_DCtx,
     dst: *mut core::ffi::c_void,
-    maxDstSizePtr: *mut usize,
+    maxDstSizePtr: &mut usize,
     src: *const u8,
     srcSizePtr: *mut usize,
 ) -> Result<usize, Error> {
