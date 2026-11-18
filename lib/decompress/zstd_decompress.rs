@@ -356,7 +356,10 @@ unsafe fn ZSTD_initLegacyStream(
         }
         6 => {
             let dctx = if prevVersion != newVersion {
-                ZBUFFv06_createDCtx()
+                match ZBUFFv06_createDCtx() {
+                    Ok(dctx) => Box::into_raw(dctx),
+                    Err(_) => return Err(Error::memory_allocation),
+                }
             } else {
                 *legacyContext as *mut ZBUFFv06_DCtx
             };
