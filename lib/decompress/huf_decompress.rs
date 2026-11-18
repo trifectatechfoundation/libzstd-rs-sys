@@ -2233,6 +2233,24 @@ impl<'a> Writer<'a> {
         self.ptr = NonNull::new(unsafe { ptr.add(src.len()) });
     }
 
+    pub(crate) fn write_bytes(&mut self, byte: u8, len: usize) {
+        if len == 0 {
+            return;
+        }
+
+        if len > self.capacity() {
+            panic!("write out of bounds");
+        }
+
+        let ptr = self.as_mut_ptr();
+
+        // SAFETY: `len <= capacity`.
+        unsafe { core::ptr::write_bytes(ptr, byte, len) };
+
+        // SAFETY: `ptr..end` is a contiguous allocation of at least `len` bytes.
+        self.ptr = NonNull::new(unsafe { ptr.add(len) });
+    }
+
     pub(crate) fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
 

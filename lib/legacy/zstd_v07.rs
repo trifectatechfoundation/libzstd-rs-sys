@@ -2324,9 +2324,7 @@ fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Resu
     if length > dst.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if length > 0 {
-        unsafe { core::ptr::write_bytes(dst.as_mut_ptr(), byte, length) };
-    }
+    dst.write_bytes(byte, length);
     Ok(length)
 }
 fn ZSTDv07_decompressFrame(
