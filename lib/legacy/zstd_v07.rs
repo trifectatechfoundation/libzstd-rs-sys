@@ -2822,7 +2822,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 ZSTDv07_decompressContinue(
                     &mut zbd.zd,
                     Writer::from_slice(&mut []),
-                    Reader::from_raw_parts(zbd.headerBuffer.as_ptr(), h1Size),
+                    Reader::from_slice(&zbd.headerBuffer[..h1Size]),
                 )?;
                 if h1Size < zbd.lhSize {
                     // long header
@@ -2830,7 +2830,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     ZSTDv07_decompressContinue(
                         &mut zbd.zd,
                         Writer::from_slice(&mut []),
-                        Reader::from_raw_parts(zbd.headerBuffer.as_ptr().add(h1Size), h2Size),
+                        Reader::from_slice(&zbd.headerBuffer[h1Size..h1Size + h2Size]),
                     )?;
                 }
                 zbd.fParams.windowSize = core::cmp::max(zbd.fParams.windowSize, 1 << 10);
