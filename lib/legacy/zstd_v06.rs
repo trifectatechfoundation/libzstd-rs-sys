@@ -2826,7 +2826,7 @@ unsafe fn ZSTDv06_execSequence(
     sequenceLength
 }
 unsafe fn ZSTDv06_decompressSequences(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: usize,
     seqStart: *const core::ffi::c_void,
@@ -2837,21 +2837,21 @@ unsafe fn ZSTDv06_decompressSequences(
     let ostart = dst as *mut u8;
     let oend = ostart.add(maxDstSize);
     let mut op = ostart;
-    let mut litPtr = (*dctx).litPtr;
-    let litEnd = litPtr.add((*dctx).litSize);
-    let DTableLL = ((*dctx).LLTable).as_mut_ptr();
-    let DTableML = ((*dctx).MLTable).as_mut_ptr();
-    let DTableOffb = ((*dctx).OffTable).as_mut_ptr();
-    let base = (*dctx).base as *const u8;
-    let vBase = (*dctx).vBase as *const u8;
-    let dictEnd = (*dctx).dictEnd as *const u8;
+    let mut litPtr = dctx.litPtr;
+    let litEnd = litPtr.add(dctx.litSize);
+    let DTableLL = dctx.LLTable.as_mut_ptr();
+    let DTableML = dctx.MLTable.as_mut_ptr();
+    let DTableOffb = dctx.OffTable.as_mut_ptr();
+    let base = dctx.base as *const u8;
+    let vBase = dctx.vBase as *const u8;
+    let dictEnd = dctx.dictEnd as *const u8;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTDv06_decodeSeqHeaders(
         &mut nbSeq,
         DTableLL,
         DTableML,
         DTableOffb,
-        (*dctx).flagRepeatTable,
+        dctx.flagRepeatTable,
         ip as *const core::ffi::c_void,
         seqSize,
     );
@@ -2859,7 +2859,7 @@ unsafe fn ZSTDv06_decompressSequences(
         return seqHSize;
     }
     ip = ip.add(seqHSize);
-    (*dctx).flagRepeatTable = 0;
+    dctx.flagRepeatTable = 0;
     if nbSeq != 0 {
         let mut sequence = seq_t {
             litLength: 0,
