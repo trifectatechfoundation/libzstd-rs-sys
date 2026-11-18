@@ -1432,8 +1432,8 @@ mod ddict {
     }
 }
 
-// These frames exercise retained history pointers after the legacy output buffer wraps.
-mod legacy_output_history {
+// These frames exercise retained history pointers after the output buffer wraps.
+mod output_history {
     use libzstd_rs_sys::lib::decompress::zstd_decompress::{
         ZSTDv05_MAGICNUMBER, ZSTDv06_MAGICNUMBER, ZSTDv07_MAGICNUMBER,
     };
@@ -1472,6 +1472,27 @@ mod legacy_output_history {
             assert_eq!(output.pos, expected_len);
             assert_eq!(decoded, vec![b'x'; expected_len]);
         }
+    }
+
+    #[test]
+    fn current() {
+        check(
+            &[
+                ZSTD_MAGICNUMBER.to_le_bytes().as_slice(),
+                &[
+                    0, 0, // frame header, unknown content size, 1 KiB window
+                    0x02, 0x20, 0, b'x', // RLE block, 1024 bytes
+                    0x02, 0x20, 0, b'x', // RLE block, 1024 more bytes
+                    // The buffer wraps after output exceeds window + block size + 64 bytes.
+                    0x0a, 0x02, 0, b'x', // RLE block, 65 more bytes
+                    0x3d, 0, 0, // Last compressed block, 7 bytes
+                    0, // No literals
+                    1, 0x54, 0, 2, 0, 4, // One match: offset 1, length 3
+                ],
+            ]
+            .concat(),
+            2116,
+        );
     }
 
     #[test]
