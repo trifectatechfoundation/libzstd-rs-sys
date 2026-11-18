@@ -3454,7 +3454,7 @@ unsafe fn ZBUFFv06_limitCopy(
 pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     zbd: &mut ZBUFFv06_DCtx,
     dst: *mut core::ffi::c_void,
-    dstCapacityPtr: *mut usize,
+    dstCapacityPtr: &mut usize,
     src: *const core::ffi::c_void,
     srcSizePtr: *mut usize,
 ) -> usize {
