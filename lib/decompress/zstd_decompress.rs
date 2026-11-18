@@ -46,8 +46,8 @@ use crate::lib::common::zstd_trace::{
 use crate::lib::legacy::zstd_v05::{
     ZBUFFv05_DCtx, ZBUFFv05_createDCtx, ZBUFFv05_decompressContinue,
     ZBUFFv05_decompressInitDictionary, ZBUFFv05_freeDCtx, ZSTDv05_createDCtx,
-    ZSTDv05_decompress_usingDict, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_freeDCtx,
-    ZSTDv05_getFrameParams, ZSTDv05_parameters,
+    ZSTDv05_decompress_usingDict, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_getFrameParams,
+    ZSTDv05_parameters,
 };
 use crate::lib::legacy::zstd_v06::{
     ZBUFFv06_DCtx, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
@@ -186,13 +186,15 @@ fn ZSTD_decompressLegacy(
 
     match version {
         5 => {
-            let zd = unsafe { ZSTDv05_createDCtx() };
-            if zd.is_null() {
+            let Ok(mut zd) = ZSTDv05_createDCtx() else {
                 return Err(Error::memory_allocation);
-            }
+            };
+
             let result =
-                unsafe { ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict) };
-            unsafe { ZSTDv05_freeDCtx(zd) };
+                unsafe { ZSTDv05_decompress_usingDict(&mut zd, dst, dstCapacity, src, dict) };
+
+            drop(zd);
+
             result
         }
         6 => {
