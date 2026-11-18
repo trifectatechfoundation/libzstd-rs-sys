@@ -2687,14 +2687,13 @@ fn ZSTDv05_nextSrcSizeToDecompress(dctx: &mut ZSTDv05_DCtx) -> usize {
 }
 unsafe fn ZSTDv05_decompressContinue(
     dctx: &mut ZSTDv05_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: usize,
+    mut dst: Writer<'_>,
     src: Reader<'_>,
 ) -> Result<usize, Error> {
     if src.len() != dctx.expected {
         return Err(Error::srcSize_wrong);
     }
-    ZSTDv05_checkContinuity(dctx, dst);
+    ZSTDv05_checkContinuity(dctx, dst.as_ptr().cast());
     match dctx.stage as core::ffi::c_uint {
         0 => {
             if src.len() != ZSTDv05_frameHeaderSize_min {
@@ -2730,8 +2729,13 @@ unsafe fn ZSTDv05_decompressContinue(
         }
         3 => {
             let rSize = match dctx.bType as core::ffi::c_uint {
-                0 => ZSTDv05_decompressBlock_internal(dctx, dst, maxDstSize, src),
-                1 => ZSTDv05_copyRawBlock(dst, maxDstSize, src),
+                0 => ZSTDv05_decompressBlock_internal(
+                    dctx,
+                    dst.as_mut_ptr().cast(),
+                    dst.capacity(),
+                    src,
+                ),
+                1 => ZSTDv05_copyRawBlock(dst.as_mut_ptr().cast(), dst.capacity(), src),
                 2 => return Err(Error::GENERIC),
                 3 => Ok(0),
                 _ => return Err(Error::GENERIC),
@@ -2739,8 +2743,7 @@ unsafe fn ZSTDv05_decompressContinue(
             dctx.stage = ZSTDv05ds_decodeBlockHeader;
             dctx.expected = ZSTDv05_blockHeaderSize;
             let rSize = rSize?;
-            dctx.previousDstEnd =
-                (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
+            dctx.previousDstEnd = dst.as_ptr().add(rSize).cast();
             return Ok(rSize);
         }
         _ => return Err(Error::GENERIC),
@@ -3023,8 +3026,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 // directly decode from src
                 let decodedSize = ZSTDv05_decompressContinue(
                     &mut zbc.zc,
-                    zbc.outBuff[zbc.outStart..].as_mut_ptr().cast(),
-                    zbc.outBuff.len().wrapping_sub(zbc.outStart),
+                    Writer::from_boxed_slice(&mut zbc.outBuff).subslice(zbc.outStart..),
                     Reader::from_raw_parts(ip, neededInSize),
                 )?;
                 ip = ip.add(neededInSize);
@@ -3067,8 +3069,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             } else {
                 let decodedSize_0 = ZSTDv05_decompressContinue(
                     &mut zbc.zc,
-                    zbc.outBuff[zbc.outStart..].as_mut_ptr().cast(),
-                    zbc.outBuff.len().wrapping_sub(zbc.outStart),
+                    Writer::from_boxed_slice(&mut zbc.outBuff).subslice(zbc.outStart..),
                     Reader::from_slice(&zbc.inBuff[..neededInSize]),
                 )?;
                 zbc.inPos = 0; // input is consumed
