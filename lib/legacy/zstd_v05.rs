@@ -2992,16 +2992,10 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             let neededOutSize = 1 << zbc.params.windowLog;
             let neededInSize = BLOCKSIZE as usize; // a block is never > BLOCKSIZE
             if zbc.inBuff.len() < neededInSize {
-                let Ok(inBuff) = box_try_new_zeroed_slice(neededInSize) else {
-                    return Err(Error::memory_allocation);
-                };
-                zbc.inBuff = unsafe { inBuff.assume_init() };
+                zbc.inBuff = unsafe { box_try_new_zeroed_slice(neededInSize)?.assume_init() };
             }
             if zbc.outBuff.len() < neededOutSize {
-                let Ok(outBuff) = box_try_new_zeroed_slice(neededOutSize) else {
-                    return Err(Error::memory_allocation);
-                };
-                zbc.outBuff = unsafe { outBuff.assume_init() };
+                zbc.outBuff = unsafe { box_try_new_zeroed_slice(neededOutSize)?.assume_init() };
             }
             if zbc.hPos != 0 {
                 // some data already loaded into headerBuffer : transfer into inBuff
