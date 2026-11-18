@@ -415,7 +415,7 @@ const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 fn HUFv06_isError(code: usize) -> core::ffi::c_uint {
     ERR_isError(code) as _
 }
-unsafe fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
+fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
     (if (a as core::ffi::c_int) < 0 {
         -(a as core::ffi::c_int)
     } else {
