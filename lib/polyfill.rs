@@ -1,3 +1,9 @@
+use std::{
+    alloc::{AllocError, Allocator, Layout},
+    mem::MaybeUninit,
+    ptr::NonNull,
+};
+
 /// Keep the branches on either side of this point in source order.
 ///
 /// Once inlined, `a && b` on two cheap, side-effect-free tests becomes two branches, and LLVM
@@ -13,6 +19,7 @@ macro_rules! branch_barrier {
         }
     };
 }
+
 pub(crate) use branch_barrier;
 
 pub trait PointerExt {
@@ -54,4 +61,21 @@ cfg_select! {
             b
         }
     }
+}
+
+pub(crate) fn box_try_new_zeroed<T>() -> Result<Box<MaybeUninit<T>>, AllocError> {
+    box_try_new_zeroed_in(std::alloc::Global)
+}
+
+pub(crate) fn box_try_new_zeroed_in<T, A: Allocator>(
+    alloc: A,
+) -> Result<Box<MaybeUninit<T>, A>, AllocError> {
+    let ptr = if size_of::<T>() == 0 {
+        NonNull::dangling()
+    } else {
+        let layout = Layout::new::<MaybeUninit<T>>();
+        alloc.allocate_zeroed(layout)?.cast()
+    };
+    // SAFETY: Pointer is nonnull and matches the allocator.
+    unsafe { Ok(Box::from_raw_in(ptr.as_ptr(), alloc)) }
 }
