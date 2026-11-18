@@ -1379,7 +1379,6 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
         let mut ip = 0;
         let mut remainingSize = src.len();
         let mut nbBlocks = 0usize;
-        let mut blocksBound = 0u64;
         let mut zfh = ZSTD_FrameHeader::default();
 
         // extract Frame Header
@@ -1403,11 +1402,6 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
             remainingSize =
                 remainingSize.wrapping_sub(ZSTD_BLOCKHEADERSIZE.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
-            // single-pass decoding accepts Raw and RLE blocks larger than blockSizeMax
-            blocksBound += match blockProperties.blockType {
-                BlockType::Compressed => u64::from(zfh.blockSizeMax),
-                _ => u64::from(Ord::max(blockProperties.origSize, zfh.blockSizeMax)),
-            };
 
             if blockProperties.lastBlock {
                 break;
@@ -1427,7 +1421,8 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
         frameSizeInfo.decompressedBound = if zfh.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN {
             zfh.frameContentSize
         } else {
-            blocksBound
+            (nbBlocks as core::ffi::c_ulonglong)
+                .wrapping_mul(zfh.blockSizeMax as core::ffi::c_ulonglong)
         };
         Ok(frameSizeInfo)
     }
@@ -1491,8 +1486,7 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
 ///         [`ZSTD_decompressBound`] return the same value.
 ///
 /// Note 2: when the decompressed size field isn't available, the upper-bound for that frame is
-///         calculated by: `upper-bound = #blocks * min(128 KB, Window_Size)`, except that a Raw or
-///         RLE block declaring a larger size counts with its declared size.
+///         calculated by: `upper-bound = #blocks * min(128 KB, Window_Size)`
 ///
 /// Note 3: `ZSTD_CONTENTSIZE_ERROR` is also returned if the upper-bound does not fit in a `u64`.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBound))]
@@ -1774,6 +1768,10 @@ fn ZSTD_decompressFrame(
                 return Err(Error::corruption_detected);
             }
         };
+
+        if decodedSize > dctx.fParams.blockSizeMax as usize {
+            return Err(Error::corruption_detected);
+        }
 
         if dctx.validateChecksum {
             let written = op.subslice(..decodedSize);
@@ -3932,8 +3930,8 @@ mod tests {
         }
     }
 
-    /// Single-pass decoding accepts Raw and RLE blocks larger than the block size maximum, so the
-    /// bound must cover them. The 6 KB window gives a block size maximum of 6144.
+    /// A block that decodes to more than the block size maximum is rejected, so the bound of one
+    /// block size maximum per block holds. The 6 KB window gives a block size maximum of 6144.
     #[test]
     fn decompress_bound_oversized_blocks() {
         let rle_frame = [0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x14, 0xEB, 0x25, 0x02, b'a'];
@@ -3944,8 +3942,14 @@ mod tests {
         raw_frame.extend_from_slice(&block_header.to_le_bytes()[..3]);
         raw_frame.resize(raw_frame.len() + raw_size, b'a');
 
-        for (frame, expected_size) in [(&rle_frame[..], 17_597), (&raw_frame[..], raw_size)] {
-            let mut out = vec![0u8; 1 << 15];
+        #[rustfmt::skip]
+        let compressed_frame = [
+            0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x14, 0x4D, 0x00, 0x00,
+            0x10, 0x61, 0x61, 0x01, 0x00, 0x15, 0xD8, 0x03, 0x2C,
+        ];
+
+        for frame in [&rle_frame[..], &raw_frame[..], &compressed_frame[..]] {
+            let mut out = vec![0u8; 1 << 20];
             unsafe {
                 let decompressed = ZSTD_decompress(
                     out.as_mut_ptr().cast(),
@@ -3953,13 +3957,10 @@ mod tests {
                     frame.as_ptr().cast(),
                     frame.len(),
                 );
-                assert_eq!(decompressed, expected_size);
+                assert_eq!(decompressed, Error::corruption_detected.to_error_code());
 
                 let bound = ZSTD_decompressBound(frame.as_ptr().cast(), frame.len());
-                assert!(
-                    bound >= expected_size as u64,
-                    "bound {bound} < {expected_size}"
-                );
+                assert_eq!(bound, 6144);
             }
         }
     }
