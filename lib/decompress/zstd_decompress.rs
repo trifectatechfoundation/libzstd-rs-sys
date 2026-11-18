@@ -366,7 +366,7 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Err(Error::memory_allocation);
             }
-            ZBUFFv06_decompressInitDictionary(dctx, dict, dictSize);
+            ZBUFFv06_decompressInitDictionary(&mut *dctx, dict, dictSize);
             *legacyContext = dctx as *mut core::ffi::c_void;
         }
         7 => {
