@@ -2026,6 +2026,15 @@ pub struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
+    /// Borrows a boxed output buffer without creating a mutable reference to its bytes.
+    /// This preserves raw history pointers retained by streaming decoders across calls.
+    pub(crate) fn from_boxed_slice(buffer: &'a mut Box<[u8]>) -> Self {
+        let len = buffer.len();
+        let ptr = Box::as_mut_ptr(buffer).cast::<u8>();
+        // SAFETY: The box owns `len` initialized bytes and remains borrowed for `'a`.
+        unsafe { Self::from_raw_parts(ptr, len) }
+    }
+
     pub(crate) fn from_slice(slice: &'a mut [u8]) -> Self {
         let len = slice.len();
         let ptr = NonNull::new(slice.as_mut_ptr()).unwrap();
@@ -2257,6 +2266,23 @@ mod tests {
                 length: 4,
             }
         );
+    }
+
+    #[test]
+    fn writer_from_boxed_slice_preserves_history() {
+        let mut buffer = vec![0u8; 8].into_boxed_slice();
+        let history = Writer::from_boxed_slice(&mut buffer).as_ptr();
+
+        Writer::from_boxed_slice(&mut buffer)
+            .subslice(4..)
+            .write_u8(42);
+        Writer::from_boxed_slice(&mut buffer).write_u8(7);
+
+        // SAFETY: The allocation is still alive, and no mutable slice was created.
+        unsafe {
+            assert_eq!(*history, 7);
+            assert_eq!(*history.add(4), 42);
+        }
     }
 
     #[test]

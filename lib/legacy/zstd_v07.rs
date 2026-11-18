@@ -2879,7 +2879,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     if isSkipFrame {
                         Writer::from_slice(&mut [])
                     } else {
-                        Writer::from_slice(&mut zbd.outBuff[zbd.outStart..])
+                        Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..)
                     },
                     Reader::from_raw_parts(ip, neededInSize),
                 )?;
@@ -2927,7 +2927,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             let isSkipFrame_0 = ZSTDv07_isSkipFrame(&zbd.zd);
             let decodedSize_0 = ZSTDv07_decompressContinue(
                 &mut zbd.zd,
-                Writer::from_slice(&mut zbd.outBuff[zbd.outStart..]),
+                Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..),
                 Reader::from_slice(&zbd.inBuff[..neededInSize_0]),
             )?;
             zbd.inPos = 0; // input is consumed

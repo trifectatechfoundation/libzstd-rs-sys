@@ -7,6 +7,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
+use crate::lib::decompress::huf_decompress::Writer;
 use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
 use crate::ZSTD_CONTENTSIZE_ERROR;
 
@@ -3143,16 +3144,15 @@ fn ZSTDv06_nextSrcSizeToDecompress(dctx: &ZSTDv06_DCtx) -> usize {
 }
 unsafe fn ZSTDv06_decompressContinue(
     dctx: &mut ZSTDv06_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
+    mut dst: Writer<'_>,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
     if srcSize != dctx.expected {
         return Error::srcSize_wrong.to_error_code();
     }
-    if dstCapacity != 0 {
-        ZSTDv06_checkContinuity(dctx, dst);
+    if !dst.is_empty() {
+        ZSTDv06_checkContinuity(dctx, dst.as_ptr().cast());
     }
     match dctx.stage as core::ffi::c_uint {
         0 => {
@@ -3199,10 +3199,17 @@ unsafe fn ZSTDv06_decompressContinue(
             let mut rSize: usize = 0;
             match dctx.bType as core::ffi::c_uint {
                 0 => {
-                    rSize = ZSTDv06_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize);
+                    rSize = ZSTDv06_decompressBlock_internal(
+                        dctx,
+                        dst.as_mut_ptr().cast(),
+                        dst.capacity(),
+                        src,
+                        srcSize,
+                    );
                 }
                 1 => {
-                    rSize = ZSTDv06_copyRawBlock(dst, dstCapacity, src, srcSize);
+                    rSize =
+                        ZSTDv06_copyRawBlock(dst.as_mut_ptr().cast(), dst.capacity(), src, srcSize);
                 }
                 2 => return Error::GENERIC.to_error_code(),
                 3 => {
@@ -3215,8 +3222,7 @@ unsafe fn ZSTDv06_decompressContinue(
             if ERR_isError(rSize) {
                 return rSize;
             }
-            dctx.previousDstEnd =
-                (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
+            dctx.previousDstEnd = dst.as_ptr().add(rSize).cast();
             return rSize;
         }
         _ => return Error::GENERIC.to_error_code(),
@@ -3518,8 +3524,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     let h1Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd); // == ZSTDv06_frameHeaderSize_min
                     let h1Result = ZSTDv06_decompressContinue(
                         &mut zbd.zd,
-                        core::ptr::null_mut(),
-                        0,
+                        Writer::from_slice(&mut []),
                         zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                         h1Size,
                     );
@@ -3531,8 +3536,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                         let h2Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
                         let h2Result = ZSTDv06_decompressContinue(
                             &mut zbd.zd,
-                            core::ptr::null_mut(),
-                            0,
+                            Writer::from_slice(&mut []),
                             zbd.headerBuffer.as_mut_ptr().add(h1Size) as *const core::ffi::c_void,
                             h2Size,
                         );
@@ -3590,8 +3594,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                 // decode directly from src
                 let decodedSize = ZSTDv06_decompressContinue(
                     &mut zbd.zd,
-                    zbd.outBuff[zbd.outStart..].as_mut_ptr().cast(),
-                    zbd.outBuff.len().wrapping_sub(zbd.outStart),
+                    Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..),
                     ip as *const core::ffi::c_void,
                     neededInSize,
                 );
@@ -3642,8 +3645,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             // decode loaded input
             let decodedSize_0 = ZSTDv06_decompressContinue(
                 &mut zbd.zd,
-                zbd.outBuff[zbd.outStart..].as_mut_ptr().cast(),
-                zbd.outBuff.len().wrapping_sub(zbd.outStart),
+                Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..),
                 zbd.inBuff[..neededInSize_0].as_ptr().cast(),
                 neededInSize_0,
             );
