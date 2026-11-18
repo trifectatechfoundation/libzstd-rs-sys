@@ -2940,16 +2940,12 @@ unsafe fn ZSTDv06_decompressBlock_internal(
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
     src: Reader<'_>,
-) -> usize {
+) -> Result<usize, Error> {
     if src.len() >= ZSTDv06_BLOCKSIZE_MAX as usize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
-    let litCSize = match ZSTDv06_decodeLiteralsBlock(dctx, src.as_slice()) {
-        Ok(litCSize) => litCSize,
-        Err(err) => return err.to_error_code(),
-    };
+    let litCSize = ZSTDv06_decodeLiteralsBlock(dctx, src.as_slice())?;
     ZSTDv06_decompressSequences(dctx, dst, dstCapacity, &src.as_slice()[litCSize..])
-        .unwrap_or_else(|err| err.to_error_code())
 }
 unsafe fn ZSTDv06_decompressFrame(
     dctx: &mut ZSTDv06_DCtx,
@@ -3007,7 +3003,8 @@ unsafe fn ZSTDv06_decompressFrame(
                     op as *mut core::ffi::c_void,
                     oend.offset_from_unsigned(op),
                     Reader::from_raw_parts(ip, cBlockSize),
-                );
+                )
+                .unwrap_or_else(|err| err.to_error_code());
             }
             1 => {
                 decodedSize = ZSTDv06_copyRawBlock(
@@ -3179,7 +3176,8 @@ unsafe fn ZSTDv06_decompressContinue(
                         dst.as_mut_ptr().cast(),
                         dst.capacity(),
                         Reader::from_raw_parts(src.cast(), srcSize),
-                    );
+                    )
+                    .unwrap_or_else(|err| err.to_error_code());
                 }
                 1 => {
                     rSize =
