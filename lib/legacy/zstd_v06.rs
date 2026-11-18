@@ -3380,11 +3380,11 @@ unsafe fn ZSTDv06_decompress_insertDictionary(
     0
 }
 unsafe fn ZSTDv06_decompressBegin_usingDict(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> usize {
-    let errorCode = ZSTDv06_decompressBegin(&mut *dctx);
+    let errorCode = ZSTDv06_decompressBegin(dctx);
     if ERR_isError(errorCode) {
         return errorCode;
     }
@@ -3432,7 +3432,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressInitDictionary(
     zbd.outStart = zbd.outEnd;
     zbd.inPos = zbd.outStart;
     zbd.lhSize = zbd.inPos;
-    ZSTDv06_decompressBegin_usingDict(&mut *zbd.zd, dict, dictSize)
+    ZSTDv06_decompressBegin_usingDict(&mut zbd.zd, dict, dictSize)
 }
 #[inline]
 unsafe fn ZBUFFv06_limitCopy(
