@@ -1842,15 +1842,20 @@ pub(crate) fn ZSTDv05_getFrameParams(
     }
     Ok(0)
 }
-unsafe fn ZSTDv05_decodeFrameHeader_Part2(
-    zc: *mut ZSTDv05_DCtx,
-    src: &[u8],
+fn ZSTDv05_decodeFrameHeader_Part2(
+    zc: &mut ZSTDv05_DCtx,
+    src: Option<&[u8]>,
 ) -> Result<usize, Error> {
-    if src.len() != (*zc).headerSize {
+    let src = match src {
+        Some(src) => src,
+        None => &zc.headerBuffer[..zc.headerSize],
+    };
+
+    if src.len() != zc.headerSize {
         return Err(Error::srcSize_wrong);
     }
-    let result = ZSTDv05_getFrameParams(&mut (*zc).params, src);
-    if MEM_32bits() && (*zc).params.windowLog > 25 {
+    let result = ZSTDv05_getFrameParams(&mut zc.params, src);
+    if MEM_32bits() && zc.params.windowLog > 25 {
         return Err(Error::frameParameter_unsupported);
     }
     result
@@ -2572,7 +2577,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
     ip = ip.add(frameHeaderSize);
     remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
     frameHeaderSize =
-        ZSTDv05_decodeFrameHeader_Part2(dctx, src.subslice(..frameHeaderSize).as_slice())?;
+        ZSTDv05_decodeFrameHeader_Part2(dctx, Some(src.subslice(..frameHeaderSize).as_slice()))?;
     loop {
         let cBlockSize = ZSTDv05_getcBlockSize(
             core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
@@ -2742,7 +2747,7 @@ unsafe fn ZSTDv05_decompressContinue(
         }
         _ => return Err(Error::GENERIC),
     }
-    ZSTDv05_decodeFrameHeader_Part2(dctx, &dctx.headerBuffer[..dctx.headerSize])?;
+    ZSTDv05_decodeFrameHeader_Part2(dctx, None)?;
     dctx.expected = ZSTDv05_blockHeaderSize;
     dctx.stage = ZSTDv05ds_decodeBlockHeader;
     Ok(0)
