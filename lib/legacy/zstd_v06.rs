@@ -2236,12 +2236,12 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
     0
 }
 unsafe fn ZSTDv06_decodeFrameHeader(
-    zc: *mut ZSTDv06_DCtx,
+    zc: &mut ZSTDv06_DCtx,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
-    let result = ZSTDv06_getFrameParams(&mut (*zc).fParams, src, srcSize);
-    if MEM_32bits() && (*zc).fParams.windowLog > 25 {
+    let result = ZSTDv06_getFrameParams(&mut zc.fParams, src, srcSize);
+    if MEM_32bits() && zc.fParams.windowLog > 25 {
         return Error::frameParameter_unsupported.to_error_code();
     }
     result
@@ -3231,9 +3231,10 @@ unsafe fn ZSTDv06_decompressContinue(
         src,
         dctx.expected,
     );
+    let headerBuffer = dctx.headerBuffer;
     result = ZSTDv06_decodeFrameHeader(
         dctx,
-        dctx.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
+        headerBuffer.as_ptr() as *const core::ffi::c_void,
         dctx.headerSize,
     );
     if ERR_isError(result) {
