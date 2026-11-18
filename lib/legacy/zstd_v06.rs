@@ -3257,7 +3257,7 @@ unsafe fn ZSTDv06_refDictContent(
         (dict as *const core::ffi::c_char).add(dictSize) as *const core::ffi::c_void;
 }
 unsafe fn ZSTDv06_loadEntropy(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: usize,
 ) -> usize {
@@ -3265,7 +3265,7 @@ unsafe fn ZSTDv06_loadEntropy(
     let mut offcodeHeaderSize: usize = 0;
     let mut matchlengthHeaderSize: usize = 0;
     let mut litlengthHeaderSize: usize = 0;
-    hSize = HUFv06_readDTableX4(((*dctx).hufTableX4).as_mut_ptr(), dict, dictSize);
+    hSize = HUFv06_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize);
     if ERR_isError(hSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -3288,7 +3288,7 @@ unsafe fn ZSTDv06_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     let errorCode = FSEv06_buildDTable(
-        ((*dctx).OffTable).as_mut_ptr(),
+        dctx.OffTable.as_mut_ptr(),
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
         offcodeLog,
@@ -3315,7 +3315,7 @@ unsafe fn ZSTDv06_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     let errorCode_0 = FSEv06_buildDTable(
-        ((*dctx).MLTable).as_mut_ptr(),
+        dctx.MLTable.as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
         matchlengthMaxValue,
         matchlengthLog,
@@ -3343,7 +3343,7 @@ unsafe fn ZSTDv06_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     let errorCode_1 = FSEv06_buildDTable(
-        ((*dctx).LLTable).as_mut_ptr(),
+        dctx.LLTable.as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
         litlengthMaxValue,
         litlengthLog,
@@ -3351,7 +3351,7 @@ unsafe fn ZSTDv06_loadEntropy(
     if ERR_isError(errorCode_1) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*dctx).flagRepeatTable = 1;
+    dctx.flagRepeatTable = 1;
     hSize
         .wrapping_add(offcodeHeaderSize)
         .wrapping_add(matchlengthHeaderSize)
