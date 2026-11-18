@@ -412,7 +412,7 @@ const FSEv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 const FSEv06_MAX_TABLELOG: core::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2;
 const FSEv06_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
-unsafe fn HUFv06_isError(code: usize) -> core::ffi::c_uint {
+fn HUFv06_isError(code: usize) -> core::ffi::c_uint {
     ERR_isError(code) as _
 }
 unsafe fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
