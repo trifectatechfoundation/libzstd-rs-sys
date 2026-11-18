@@ -2769,7 +2769,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
     dst: *mut core::ffi::c_void,
     dstCapacityPtr: &mut usize,
     src: *const core::ffi::c_void,
-    srcSizePtr: *mut usize,
+    srcSizePtr: &mut usize,
 ) -> Result<usize, Error> {
     let istart = src as *const u8;
     let iend = istart.add(*srcSizePtr);
