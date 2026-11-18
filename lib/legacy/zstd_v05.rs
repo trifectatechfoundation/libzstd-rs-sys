@@ -132,7 +132,7 @@ struct algo_time_t {
 }
 #[repr(C)]
 pub(crate) struct ZBUFFv05_DCtx {
-    zc: *mut ZSTDv05_DCtx,
+    zc: Box<ZSTDv05_DCtx>,
     params: ZSTDv05_parameters,
     inBuff: *mut core::ffi::c_char,
     inBuffSize: usize,
@@ -2865,32 +2865,30 @@ unsafe fn ZBUFFv05_limitCopy(dst: *mut core::ffi::c_void, maxDstSize: usize, src
     length
 }
 const ZSTDv05_frameHeaderSize_max_0: core::ffi::c_int = 5;
-pub(crate) unsafe fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
-    let zbc = malloc(size_of::<ZBUFFv05_DCtx>()) as *mut ZBUFFv05_DCtx;
-    if zbc.is_null() {
-        return core::ptr::null_mut();
-    }
-    ptr::write_bytes(zbc as *mut u8, 0, size_of::<ZBUFFv05_DCtx>());
-    (*zbc).zc = match ZSTDv05_createDCtx() {
-        Ok(zc) => Box::into_raw(zc),
-        Err(_) => {
-            ZBUFFv05_freeDCtx(zbc);
-            return core::ptr::null_mut();
-        }
+pub(crate) fn ZBUFFv05_createDCtx() -> Result<Box<ZBUFFv05_DCtx>, AllocError> {
+    let mut zbc = box_try_new_zeroed::<ZBUFFv05_DCtx>()?;
+
+    // SAFETY: a zeroed ZBUFFv05_DCtx with the zc field set is correctly initialized.
+    let mut zbc = unsafe {
+        (&raw mut (*zbc.as_mut_ptr()).zc).write(ZSTDv05_createDCtx()?);
+        zbc.assume_init()
     };
-    (*zbc).stage = ZBUFFv05ds_init;
-    zbc
+
+    zbc.stage = ZBUFFv05ds_init;
+
+    Ok(zbc)
 }
+
 pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> usize {
     if zbc.is_null() {
         return 0;
     }
-    if !(*zbc).zc.is_null() {
-        drop(Box::from_raw((*zbc).zc));
-    }
-    free((*zbc).inBuff as *mut core::ffi::c_void);
-    free((*zbc).outBuff as *mut core::ffi::c_void);
-    free(zbc as *mut core::ffi::c_void);
+
+    let zbc = unsafe { Box::from_raw(zbc) };
+
+    free(zbc.inBuff as *mut core::ffi::c_void);
+    free(zbc.outBuff as *mut core::ffi::c_void);
+
     0
 }
 pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
@@ -2902,7 +2900,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
     (*zbc).outStart = (*zbc).outEnd;
     (*zbc).inPos = (*zbc).outStart;
     (*zbc).hPos = (*zbc).inPos;
-    ZSTDv05_decompressBegin_usingDict(&mut *(*zbc).zc, dict)
+    ZSTDv05_decompressBegin_usingDict(&mut (*zbc).zc, dict)
 }
 
 #[allow(clippy::drop_non_drop)]
@@ -3026,7 +3024,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
         if current_block == Block::Read {
             drop(current_block);
 
-            let neededInSize = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
+            let neededInSize = ZSTDv05_nextSrcSizeToDecompress(&mut zbc.zc);
             if neededInSize == 0 {
                 // end of frame
                 zbc.stage = ZBUFFv05ds_init;
@@ -3036,7 +3034,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             if iend.offset_from_unsigned(ip) >= neededInSize {
                 // directly decode from src
                 let decodedSize = ZSTDv05_decompressContinue(
-                    &mut *zbc.zc,
+                    &mut zbc.zc,
                     zbc.outBuff.add(zbc.outStart) as *mut core::ffi::c_void,
                     zbc.outBuffSize.wrapping_sub(zbc.outStart),
                     Reader::from_raw_parts(ip, neededInSize),
@@ -3060,7 +3058,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
         if current_block == Block::Load {
             drop(current_block);
 
-            let neededInSize = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
+            let neededInSize = ZSTDv05_nextSrcSizeToDecompress(&mut zbc.zc);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize.wrapping_sub(zbc.inPos);
             let mut loadedSize: usize = 0;
@@ -3080,7 +3078,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 continue;
             } else {
                 let decodedSize_0 = ZSTDv05_decompressContinue(
-                    &mut *zbc.zc,
+                    &mut zbc.zc,
                     zbc.outBuff.add(zbc.outStart) as *mut core::ffi::c_void,
                     zbc.outBuffSize.wrapping_sub(zbc.outStart),
                     Reader::from_raw_parts(zbc.inBuff as *const u8, neededInSize),
@@ -3123,7 +3121,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     }
     *srcSizePtr = ip.offset_from_unsigned(istart);
     *maxDstSizePtr = op.offset_from_unsigned(ostart);
-    let mut nextSrcSizeHint = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
+    let mut nextSrcSizeHint = ZSTDv05_nextSrcSizeToDecompress(&mut zbc.zc);
     if nextSrcSizeHint > ZBUFFv05_blockHeaderSize {
         nextSrcSizeHint = nextSrcSizeHint.wrapping_add(ZBUFFv05_blockHeaderSize);
     }
