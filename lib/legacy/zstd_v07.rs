@@ -1774,9 +1774,7 @@ fn ZSTDv07_copyRawBlock(mut dst: Writer<'_>, src: &[u8]) -> Result<usize, Error>
     if src.len() > dst.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if !src.is_empty() {
-        unsafe { ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
-    }
+    dst.write_slice(src);
     Ok(src.len())
 }
 
@@ -2295,10 +2293,7 @@ fn ZSTDv07_decompressSequences(
     if lastLLSize > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if lastLLSize > 0 {
-        unsafe { ptr::copy_nonoverlapping(litPtr.as_ptr(), op.as_mut_ptr(), lastLLSize) };
-        op = op.subslice(lastLLSize..);
-    }
+    op.write_slice(litPtr);
     Ok(dst_capacity - op.capacity())
 }
 

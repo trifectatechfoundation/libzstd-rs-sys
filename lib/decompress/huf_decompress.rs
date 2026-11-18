@@ -2215,6 +2215,24 @@ impl<'a> Writer<'a> {
         self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(1)) }
     }
 
+    pub(crate) fn write_slice(&mut self, src: &[u8]) {
+        if src.is_empty() {
+            return;
+        }
+
+        if src.len() > self.capacity() {
+            panic!("write out of bounds");
+        }
+
+        let ptr = self.as_mut_ptr();
+
+        // SAFETY: `src.len() <= capacity`, and `src` cannot alias the uniquely borrowed `self`.
+        unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), ptr, src.len()) };
+
+        // SAFETY: `ptr..end` is a contiguous allocation of at least `src.len()` bytes.
+        self.ptr = NonNull::new(unsafe { ptr.add(src.len()) });
+    }
+
     pub(crate) fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
 
