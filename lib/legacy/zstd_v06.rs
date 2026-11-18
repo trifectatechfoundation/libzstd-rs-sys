@@ -2289,7 +2289,7 @@ unsafe fn ZSTDv06_copyRawBlock(
     srcSize
 }
 unsafe fn ZSTDv06_decodeLiteralsBlock(
-    dctx: *mut ZSTDv06_DCtx,
+    dctx: &mut ZSTDv06_DCtx,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> usize {
@@ -2348,14 +2348,14 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             }
             if ERR_isError(if singleStream != 0 {
                 HUFv06_decompress1X2(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
                     istart.offset(lhSize as isize) as *const core::ffi::c_void,
                     litCSize,
                 )
             } else {
                 HUFv06_decompress(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
                     istart.offset(lhSize as isize) as *const core::ffi::c_void,
                     litCSize,
@@ -2363,10 +2363,10 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             }) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = (&raw mut (*dctx).litBuffer).cast();
-            (*dctx).litSize = litSize;
+            dctx.litPtr = (&raw mut dctx.litBuffer).cast();
+            dctx.litSize = litSize;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
+                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2379,7 +2379,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             if lhSize_0 != 1 {
                 return Error::corruption_detected.to_error_code();
             }
-            if (*dctx).flagRepeatTable == 0 {
+            if dctx.flagRepeatTable == 0 {
                 return Error::dictionary_corrupted.to_error_code();
             }
             lhSize_0 = 3;
@@ -2391,19 +2391,19 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 return Error::corruption_detected.to_error_code();
             }
             let errorCode = HUFv06_decompress1X4_usingDTable(
-                ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 litSize_0,
                 istart.offset(lhSize_0 as isize) as *const core::ffi::c_void,
                 litCSize_0,
-                ((*dctx).hufTableX4).as_mut_ptr(),
+                dctx.hufTableX4.as_mut_ptr(),
             );
             if ERR_isError(errorCode) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-            (*dctx).litSize = litSize_0;
+            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litSize = litSize_0;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
+                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2439,21 +2439,21 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                     return Error::corruption_detected.to_error_code();
                 }
                 memcpy(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     istart.offset(lhSize_1 as isize) as *const core::ffi::c_void,
                     litSize_1,
                 );
-                (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-                (*dctx).litSize = litSize_1;
+                dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+                dctx.litSize = litSize_1;
                 ptr::write_bytes(
-                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
+                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
                 return (lhSize_1 as usize).wrapping_add(litSize_1);
             }
-            (*dctx).litPtr = istart.offset(lhSize_1 as isize);
-            (*dctx).litSize = litSize_1;
+            dctx.litPtr = istart.offset(lhSize_1 as isize);
+            dctx.litSize = litSize_1;
             (lhSize_1 as usize).wrapping_add(litSize_1)
         }
         IS_RLE => {
@@ -2484,12 +2484,12 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 return Error::corruption_detected.to_error_code();
             }
             core::ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr(),
+                dctx.litBuffer.as_mut_ptr(),
                 *istart.offset(lhSize_2 as isize),
                 litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as usize),
             );
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-            (*dctx).litSize = litSize_2;
+            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litSize = litSize_2;
             lhSize_2.wrapping_add(1) as usize
         }
         _ => Error::corruption_detected.to_error_code(),
