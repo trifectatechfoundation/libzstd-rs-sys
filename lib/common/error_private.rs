@@ -1,4 +1,5 @@
 use core::ffi::c_char;
+use std::alloc::AllocError;
 
 use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
 
@@ -54,6 +55,12 @@ impl Error {
         }
 
         Self::try_from(code.wrapping_neg() as u32).ok()
+    }
+}
+
+impl From<AllocError> for Error {
+    fn from(_: AllocError) -> Self {
+        Self::memory_allocation
     }
 }
 

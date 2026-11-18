@@ -2842,19 +2842,13 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 let blockSize = core::cmp::min(zbd.fParams.windowSize, 128 * 1024) as usize;
                 zbd.blockSize = blockSize;
                 if zbd.inBuff.len() < blockSize {
-                    let Ok(inBuff) = box_try_new_zeroed_slice(blockSize) else {
-                        return Err(Error::memory_allocation);
-                    };
-                    zbd.inBuff = unsafe { inBuff.assume_init() };
+                    zbd.inBuff = unsafe { box_try_new_zeroed_slice(blockSize)?.assume_init() };
                 }
                 let neededOutSize = (zbd.fParams.windowSize as usize)
                     .wrapping_add(blockSize)
                     .wrapping_add(WILDCOPY_OVERLENGTH * 2);
                 if zbd.outBuff.len() < neededOutSize {
-                    let Ok(outBuff) = box_try_new_zeroed_slice(neededOutSize) else {
-                        return Err(Error::memory_allocation);
-                    };
-                    zbd.outBuff = unsafe { outBuff.assume_init() };
+                    zbd.outBuff = unsafe { box_try_new_zeroed_slice(neededOutSize)?.assume_init() };
                 }
                 zbd.stage = ZBUFFds_read;
                 current_block = Block::Read;

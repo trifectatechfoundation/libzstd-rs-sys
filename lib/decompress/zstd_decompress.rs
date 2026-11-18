@@ -186,9 +186,7 @@ fn ZSTD_decompressLegacy(
 
     match version {
         5 => {
-            let Ok(mut zd) = ZSTDv05_createDCtx() else {
-                return Err(Error::memory_allocation);
-            };
+            let mut zd = ZSTDv05_createDCtx()?;
 
             let result =
                 unsafe { ZSTDv05_decompress_usingDict(&mut zd, dst, dstCapacity, src, dict) };
@@ -205,9 +203,7 @@ fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let Ok(mut zd) = ZSTDv06_createDCtx() else {
-                return Err(Error::memory_allocation);
-            };
+            let mut zd = ZSTDv06_createDCtx()?;
 
             let result = unsafe {
                 ZSTDv06_decompress_usingDict(
@@ -234,9 +230,7 @@ fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let Ok(mut zd) = ZSTDv07_createDCtx() else {
-                return Err(Error::memory_allocation);
-            };
+            let mut zd = ZSTDv07_createDCtx()?;
 
             let result = unsafe {
                 ZSTDv07_decompress_usingDict(
@@ -334,10 +328,7 @@ unsafe fn ZSTD_initLegacyStream(
     match newVersion {
         5 => {
             let dctx = if prevVersion != newVersion {
-                match ZBUFFv05_createDCtx() {
-                    Ok(dctx) => Box::into_raw(dctx),
-                    Err(_) => return Err(Error::memory_allocation),
-                }
+                Box::into_raw(ZBUFFv05_createDCtx()?)
             } else {
                 *legacyContext as *mut ZBUFFv05_DCtx
             };
@@ -356,10 +347,7 @@ unsafe fn ZSTD_initLegacyStream(
         }
         6 => {
             let dctx = if prevVersion != newVersion {
-                match ZBUFFv06_createDCtx() {
-                    Ok(dctx) => Box::into_raw(dctx),
-                    Err(_) => return Err(Error::memory_allocation),
-                }
+                Box::into_raw(ZBUFFv06_createDCtx()?)
             } else {
                 *legacyContext as *mut ZBUFFv06_DCtx
             };
@@ -371,10 +359,7 @@ unsafe fn ZSTD_initLegacyStream(
         }
         7 => {
             let dctx = if prevVersion != newVersion {
-                match ZBUFFv07_createDCtx() {
-                    Ok(dctx) => Box::into_raw(dctx),
-                    Err(_) => return Err(Error::memory_allocation),
-                }
+                Box::into_raw(ZBUFFv07_createDCtx()?)
             } else {
                 *legacyContext as *mut ZBUFFv07_DCtx
             };
