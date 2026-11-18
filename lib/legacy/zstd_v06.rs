@@ -3456,7 +3456,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     dst: *mut core::ffi::c_void,
     dstCapacityPtr: &mut usize,
     src: *const core::ffi::c_void,
-    srcSizePtr: *mut usize,
+    srcSizePtr: &mut usize,
 ) -> usize {
     let istart = src as *const core::ffi::c_char;
     let iend = istart.add(*srcSizePtr);
