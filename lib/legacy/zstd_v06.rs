@@ -7,6 +7,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
+use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
 use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
 use crate::ZSTD_CONTENTSIZE_ERROR;
@@ -2954,14 +2955,14 @@ unsafe fn ZSTDv06_decompressBlock_internal(
     dctx: &mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    mut srcSize: usize,
+    src: Reader<'_>,
 ) -> usize {
-    let mut ip = src as *const u8;
+    let mut ip = src.as_ptr();
+    let mut srcSize = src.len();
     if srcSize >= ZSTDv06_BLOCKSIZE_MAX as usize {
         return Error::srcSize_wrong.to_error_code();
     }
-    let litCSize = ZSTDv06_decodeLiteralsBlock(dctx, src, srcSize);
+    let litCSize = ZSTDv06_decodeLiteralsBlock(dctx, ip.cast(), srcSize);
     if ERR_isError(litCSize) {
         return litCSize;
     }
@@ -3030,8 +3031,7 @@ unsafe fn ZSTDv06_decompressFrame(
                     dctx,
                     op as *mut core::ffi::c_void,
                     oend.offset_from_unsigned(op),
-                    ip as *const core::ffi::c_void,
-                    cBlockSize,
+                    Reader::from_raw_parts(ip, cBlockSize),
                 );
             }
             1 => {
@@ -3203,8 +3203,7 @@ unsafe fn ZSTDv06_decompressContinue(
                         dctx,
                         dst.as_mut_ptr().cast(),
                         dst.capacity(),
-                        src,
-                        srcSize,
+                        Reader::from_raw_parts(src.cast(), srcSize),
                     );
                 }
                 1 => {
