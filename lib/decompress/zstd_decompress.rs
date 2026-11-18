@@ -345,7 +345,7 @@ unsafe fn ZSTD_initLegacyStream(
                 return Err(Error::memory_allocation);
             }
             let _ = ZBUFFv05_decompressInitDictionary(
-                dctx,
+                &mut *dctx,
                 if dictSize != 0 {
                     core::slice::from_raw_parts(dict.cast(), dictSize)
                 } else {
