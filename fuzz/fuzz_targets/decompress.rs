@@ -62,39 +62,45 @@ fn c(compressed: &[u8]) -> (usize, Vec<u8>) {
     (result, decompressed)
 }
 
-/// Whether the C library's streaming decoder reports an error for `compressed`.
+/// Decompresses with the C library's buffer-less streaming API.
 ///
 /// The zstd 1.5.7 behind `zstd-sys` rejects a block that decodes to more than the block size
-/// maximum in streaming mode only. The Rust port rejects it in both modes, as zstd's dev branch does.
-fn c_stream_errors(compressed: &[u8]) -> bool {
+/// maximum only when streaming. The Rust port rejects it in one-shot mode too, as zstd's dev
+/// branch does.
+fn c_buffer_less(compressed: &[u8], capacity: usize) -> usize {
     use zstd_sys::*;
 
+    let mut decompressed = vec![0u8; capacity];
+    let mut read = 0;
+    let mut written = 0;
+
     unsafe {
-        let dstream = ZSTD_createDStream();
-        let mut input = ZSTD_inBuffer {
-            src: compressed.as_ptr() as *const c_void,
-            size: compressed.len(),
-            pos: 0,
-        };
-        let mut out = vec![0u8; 1 << 17];
-        let mut errored = false;
-        loop {
-            let mut output = ZSTD_outBuffer {
-                dst: out.as_mut_ptr() as *mut c_void,
-                size: out.len(),
-                pos: 0,
-            };
-            let ret = ZSTD_decompressStream(dstream, &mut output, &mut input);
-            if ZSTD_isError(ret) != 0 {
-                errored = true;
+        let dctx = ZSTD_createDCtx();
+        let mut result = ZSTD_decompressBegin(dctx);
+        while ZSTD_isError(result) == 0 && read < compressed.len() {
+            let size = ZSTD_nextSrcSizeToDecompress(dctx);
+            if size == 0 {
+                // The frame is done, start the next one.
+                result = ZSTD_decompressBegin(dctx);
+                continue;
+            }
+            if size > compressed.len() - read {
                 break;
             }
-            if ret == 0 || (input.pos == input.size && output.pos == 0) {
-                break;
+            result = ZSTD_decompressContinue(
+                dctx,
+                decompressed[written..].as_mut_ptr() as *mut c_void,
+                capacity - written,
+                compressed[read..].as_ptr() as *const c_void,
+                size,
+            );
+            read += size;
+            if ZSTD_isError(result) == 0 {
+                written += result;
             }
         }
-        ZSTD_freeDStream(dstream);
-        errored
+        ZSTD_freeDCtx(dctx);
+        result
     }
 }
 
@@ -110,7 +116,10 @@ fuzz_target!(|data: &[u8]| {
         return;
     }
 
-    if rs_err == Err(Error::corruption_detected) && c_err != rs_err && c_stream_errors(data) {
+    if rs_err == Err(Error::corruption_detected)
+        && c_err != rs_err
+        && to_result(c_buffer_less(data, rs_out.len())) == rs_err
+    {
         return;
     }
 
