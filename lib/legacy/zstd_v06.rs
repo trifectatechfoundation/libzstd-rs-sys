@@ -2814,11 +2814,10 @@ unsafe fn ZSTDv06_decompressSequences(
     dctx: &mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: usize,
-    seqStart: *const core::ffi::c_void,
-    seqSize: usize,
+    seqStart: &[u8],
 ) -> Result<usize, Error> {
-    let mut ip = seqStart as *const u8;
-    let iend = ip.add(seqSize);
+    let mut ip = seqStart.as_ptr();
+    let iend = seqStart.as_ptr_range().end;
     let ostart = dst as *mut u8;
     let oend = ostart.add(maxDstSize);
     let mut op = ostart;
@@ -2838,7 +2837,7 @@ unsafe fn ZSTDv06_decompressSequences(
         DTableOffb,
         dctx.flagRepeatTable,
         ip as *const core::ffi::c_void,
-        seqSize,
+        seqStart.len(),
     );
     if let Some(err) = Error::from_error_code(seqHSize) {
         return Err(err);
@@ -2942,25 +2941,15 @@ unsafe fn ZSTDv06_decompressBlock_internal(
     dstCapacity: usize,
     src: Reader<'_>,
 ) -> usize {
-    let mut ip = src.as_ptr();
-    let mut srcSize = src.len();
-    if srcSize >= ZSTDv06_BLOCKSIZE_MAX as usize {
+    if src.len() >= ZSTDv06_BLOCKSIZE_MAX as usize {
         return Error::srcSize_wrong.to_error_code();
     }
     let litCSize = match ZSTDv06_decodeLiteralsBlock(dctx, src.as_slice()) {
         Ok(litCSize) => litCSize,
         Err(err) => return err.to_error_code(),
     };
-    ip = ip.add(litCSize);
-    srcSize = srcSize.wrapping_sub(litCSize);
-    ZSTDv06_decompressSequences(
-        dctx,
-        dst,
-        dstCapacity,
-        ip as *const core::ffi::c_void,
-        srcSize,
-    )
-    .unwrap_or_else(|err| err.to_error_code())
+    ZSTDv06_decompressSequences(dctx, dst, dstCapacity, &src.as_slice()[litCSize..])
+        .unwrap_or_else(|err| err.to_error_code())
 }
 unsafe fn ZSTDv06_decompressFrame(
     dctx: &mut ZSTDv06_DCtx,
