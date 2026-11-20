@@ -31,6 +31,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decompress-bound"
+path = "fuzz_targets/decompress_bound.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decompress-overlapping"
 path = "fuzz_targets/decompress_overlapping.rs"
 test = false
