@@ -224,17 +224,13 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> usize {
         + (*ctx).threadCapacity * size_of::<JoinHandle<()>>()
 }
 
-/// # Returns
-///
-/// - 0 on success,
-/// - 1 on error
-unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> core::ffi::c_int {
+unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> Result<(), ()> {
     if numThreads <= (*ctx).threadCapacity {
         if numThreads == 0 {
-            return 1;
+            return Err(());
         }
         (*ctx).threadLimit = numThreads;
-        return 0;
+        return Ok(());
     }
 
     let threadPool = ZSTD_customCalloc(
@@ -242,7 +238,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> core::f
         (*ctx).customMem,
     ) as *mut JoinHandle<()>;
     if threadPool.is_null() {
-        return 1;
+        return Err(());
     }
     // Replace existing thread pool
     libc::memcpy(
@@ -270,7 +266,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> core::f
     // Successfully expanded
     (*ctx).threadCapacity = numThreads;
     (*ctx).threadLimit = numThreads;
-    0
+    Ok(())
 }
 
 /// Expands or shrinks pool's number of threads.
@@ -279,14 +275,9 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> core::f
 /// since it tries to preserve and reuse existing threads.
 ///
 /// - `numThreads` must be at least 1.
-///
-/// # Returns
-///
-/// - 0 on success,
-/// - 1 on error
-pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> core::ffi::c_int {
+pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Result<(), ()> {
     if ctx.is_null() {
-        return 1;
+        return Err(());
     }
     let _guard = (*ctx).queueMutex.lock().unwrap();
     let result = POOL_resize_internal(ctx, numThreads);
