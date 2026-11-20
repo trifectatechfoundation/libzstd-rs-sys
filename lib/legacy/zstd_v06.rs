@@ -410,9 +410,6 @@ const FSEv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 const FSEv06_MAX_TABLELOG: core::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2;
 const FSEv06_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
-fn HUFv06_isError(code: usize) -> core::ffi::c_uint {
-    ERR_isError(code) as _
-}
 fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
     (if (a as core::ffi::c_int) < 0 {
         -(a as core::ffi::c_int)
@@ -1314,7 +1311,7 @@ unsafe fn HUFv06_readDTableX4(
     DTable: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut weightList: [u8; 256] = [0; 256];
     let mut sortedSymbol: [sortedSymbol_t; 256] = [sortedSymbol_t {
         symbol: 0,
@@ -1333,9 +1330,9 @@ unsafe fn HUFv06_readDTableX4(
     let dtPtr = DTable as *mut core::ffi::c_void;
     let dt = (dtPtr as *mut HUFv06_DEltX4).add(1);
     if memLog > HUFv06_ABSOLUTEMAX_TABLELOG as u32 {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
-    iSize = match HUFv06_readStats(
+    iSize = HUFv06_readStats(
         weightList.as_mut_ptr(),
         (HUFv06_MAX_SYMBOL_VALUE + 1) as usize,
         rankStats.as_mut_ptr(),
@@ -1343,12 +1340,9 @@ unsafe fn HUFv06_readDTableX4(
         &mut tableLog,
         src,
         srcSize,
-    ) {
-        Ok(iSize) => iSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if tableLog > memLog {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     maxW = tableLog;
     while *rankStats.as_mut_ptr().offset(maxW as isize) == 0 {
@@ -1398,7 +1392,7 @@ unsafe fn HUFv06_readDTableX4(
         maxW,
         tableLog.wrapping_add(1),
     );
-    iSize
+    Ok(iSize)
 }
 unsafe fn HUFv06_decodeSymbolX4(
     op: *mut core::ffi::c_void,
@@ -1727,10 +1721,10 @@ unsafe fn HUFv06_decompress4X4(
 ) -> usize {
     let mut DTable: [core::ffi::c_uint; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let hSize = HUFv06_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize);
-    if HUFv06_isError(hSize) != 0 {
-        return hSize;
-    }
+    let hSize = match HUFv06_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize) {
+        Ok(hSize) => hSize,
+        Err(err) => return err.to_error_code(),
+    };
     if hSize >= cSrcSize {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -3224,10 +3218,10 @@ unsafe fn ZSTDv06_loadEntropy(
     let mut offcodeHeaderSize: usize = 0;
     let mut matchlengthHeaderSize: usize = 0;
     let mut litlengthHeaderSize: usize = 0;
-    hSize = HUFv06_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize);
-    if ERR_isError(hSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    hSize = match HUFv06_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize) {
+        Ok(hSize) => hSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     dict = (dict as *const core::ffi::c_char).add(hSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(hSize);
     let mut offcodeNCount: [core::ffi::c_short; 29] = [0; 29];
