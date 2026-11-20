@@ -3,7 +3,7 @@ use std::alloc::AllocError;
 
 use libc::{memcpy, ptrdiff_t};
 
-use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
@@ -2068,7 +2068,7 @@ unsafe fn HUFv06_decompress(
 unsafe fn ZSTDv06_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 4);
 }
-fn ZSTDv06_decompressBegin(dctx: &mut ZSTDv06_DCtx) -> usize {
+fn ZSTDv06_decompressBegin(dctx: &mut ZSTDv06_DCtx) {
     dctx.expected = ZSTDv06_frameHeaderSize_min;
     dctx.stage = ZSTDds_getFrameHeaderSize;
     dctx.previousDstEnd = core::ptr::null();
@@ -2077,7 +2077,6 @@ fn ZSTDv06_decompressBegin(dctx: &mut ZSTDv06_DCtx) -> usize {
     dctx.dictEnd = core::ptr::null();
     dctx.hufTableX4[0] = ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
     dctx.flagRepeatTable = 0;
-    0
 }
 
 pub(crate) fn ZSTDv06_createDCtx() -> Result<Box<ZSTDv06_DCtx>, AllocError> {
@@ -3224,10 +3223,7 @@ unsafe fn ZSTDv06_decompressBegin_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> usize {
-    let errorCode = ZSTDv06_decompressBegin(dctx);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    ZSTDv06_decompressBegin(dctx);
     if !dict.is_null() && dictSize != 0 {
         if ZSTDv06_decompress_insertDictionary(dctx, dict, dictSize).is_err() {
             return Error::dictionary_corrupted.to_error_code();
