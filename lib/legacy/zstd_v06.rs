@@ -741,7 +741,7 @@ unsafe fn FSEv06_decompress(
     maxDstSize: usize,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let istart = cSrc as *const u8;
     let mut ip = istart;
     let mut counting: [core::ffi::c_short; 256] = [0; 256];
@@ -749,31 +749,26 @@ unsafe fn FSEv06_decompress(
     let mut tableLog: core::ffi::c_uint = 0;
     let mut maxSymbolValue = FSEv06_MAX_SYMBOL_VALUE as core::ffi::c_uint;
     if cSrcSize < 2 {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
-    let NCountLength = match FSEv06_readNCount(
+    let NCountLength = FSEv06_readNCount(
         counting.as_mut_ptr(),
         &mut maxSymbolValue,
         &mut tableLog,
         istart as *const core::ffi::c_void,
         cSrcSize,
-    ) {
-        Ok(NCountLength) => NCountLength,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if NCountLength >= cSrcSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     ip = ip.add(NCountLength);
     cSrcSize = cSrcSize.wrapping_sub(NCountLength);
-    if let Err(err) = FSEv06_buildDTable(
+    FSEv06_buildDTable(
         dt.as_mut_ptr(),
         counting.as_mut_ptr(),
         maxSymbolValue,
         tableLog,
-    ) {
-        return err.to_error_code();
-    }
+    )?;
     FSEv06_decompress_usingDTable(
         dst,
         maxDstSize,
@@ -781,7 +776,6 @@ unsafe fn FSEv06_decompress(
         cSrcSize,
         dt.as_mut_ptr(),
     )
-    .unwrap_or_else(|err| err.to_error_code())
 }
 const HUFv06_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
 const HUFv06_MAX_TABLELOG: core::ffi::c_int = 12;
@@ -829,15 +823,15 @@ unsafe fn HUFv06_readStats(
         if iSize.wrapping_add(1) > srcSize {
             return Error::srcSize_wrong.to_error_code();
         }
-        oSize = FSEv06_decompress(
+        oSize = match FSEv06_decompress(
             huffWeight as *mut core::ffi::c_void,
             hwSize.wrapping_sub(1),
             ip.add(1) as *const core::ffi::c_void,
             iSize,
-        );
-        if ERR_isError(oSize) {
-            return oSize;
-        }
+        ) {
+            Ok(oSize) => oSize,
+            Err(err) => return err.to_error_code(),
+        };
     }
     core::ptr::write_bytes(rankStats, 0, (HUFv06_ABSOLUTEMAX_TABLELOG + 1) as usize);
     weightTotal = 0;
