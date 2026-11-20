@@ -871,7 +871,7 @@ unsafe fn HUFv06_readDTableX2(
     DTable: *mut u16,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut huffWeight: [u8; 256] = [0; 256];
     let mut rankVal: [u32; 17] = [0; 17];
     let mut tableLog = 0;
@@ -880,7 +880,7 @@ unsafe fn HUFv06_readDTableX2(
     let mut nextRankStart: u32 = 0;
     let dtPtr = DTable.add(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUFv06_DEltX2;
-    iSize = match HUFv06_readStats(
+    iSize = HUFv06_readStats(
         huffWeight.as_mut_ptr(),
         (HUFv06_MAX_SYMBOL_VALUE + 1) as usize,
         rankVal.as_mut_ptr(),
@@ -888,12 +888,9 @@ unsafe fn HUFv06_readDTableX2(
         &mut tableLog,
         src,
         srcSize,
-    ) {
-        Ok(iSize) => iSize,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
     if tableLog > *DTable as u32 {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     *DTable = tableLog as u16;
     nextRankStart = 0;
@@ -915,7 +912,7 @@ unsafe fn HUFv06_readDTableX2(
         let fresh11 = &mut rankVal[w as usize];
         *fresh11 = (*fresh11).wrapping_add(length);
     }
-    iSize
+    Ok(iSize)
 }
 unsafe fn HUFv06_decodeSymbolX2(
     Dstream: *mut BITv06_DStream_t,
@@ -997,10 +994,10 @@ unsafe fn HUFv06_decompress1X2(
 ) -> usize {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let errorCode = HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
-    }
+    let errorCode = match HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize) {
+        Ok(errorCode) => errorCode,
+        Err(err) => return err.to_error_code(),
+    };
     if errorCode >= cSrcSize {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -1188,10 +1185,10 @@ unsafe fn HUFv06_decompress4X2(
 ) -> usize {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let errorCode = HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
-    }
+    let errorCode = match HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize) {
+        Ok(errorCode) => errorCode,
+        Err(err) => return err.to_error_code(),
+    };
     if errorCode >= cSrcSize {
         return Error::srcSize_wrong.to_error_code();
     }
