@@ -285,19 +285,15 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Resul
     result
 }
 
-/// # Returns
-///
-/// - 1 if the queue is full,
-/// - 0 otherwise
+/// Returns true if the queue is full.
 ///
 /// When queueSize is 1 (pool was created with an intended queueSize of 0),
 /// then a queue is empty if there is a thread free _and_ no job is waiting.
-unsafe fn isQueueFull(ctx: *const POOL_ctx) -> core::ffi::c_int {
+unsafe fn isQueueFull(ctx: *const POOL_ctx) -> bool {
     if (*ctx).queueSize > 1 {
-        ((*ctx).queueHead == ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize)
-            as core::ffi::c_int
+        (*ctx).queueHead == ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize
     } else {
-        ((*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0) as core::ffi::c_int
+        (*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0
     }
 }
 
@@ -328,7 +324,7 @@ pub unsafe fn POOL_add(
 ) {
     let mut guard = (*ctx).queueMutex.lock().unwrap();
     // Wait until there is space in the queue for the new job
-    while isQueueFull(ctx) != 0 && (*ctx).shutdown == 0 {
+    while isQueueFull(ctx) && (*ctx).shutdown == 0 {
         guard = (*ctx).queuePushCond.wait(guard).unwrap();
     }
     POOL_add_internal(ctx, function, opaque);
@@ -347,7 +343,7 @@ pub(crate) unsafe fn POOL_tryAdd(
     opaque: *mut core::ffi::c_void,
 ) -> core::ffi::c_int {
     let _guard = (*ctx).queueMutex.lock().unwrap();
-    if isQueueFull(ctx) != 0 {
+    if isQueueFull(ctx) {
         return 0;
     }
     POOL_add_internal(ctx, function, opaque);
