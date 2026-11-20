@@ -109,14 +109,6 @@ struct HUFv06_DEltX4 {
     nbBits: u8,
     length: u8,
 }
-type decompressionAlgo = Option<
-    unsafe fn(
-        *mut core::ffi::c_void,
-        usize,
-        *const core::ffi::c_void,
-        usize,
-    ) -> Result<usize, Error>,
->;
 type rankVal_t = [[u32; 17]; 16];
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -2043,8 +2035,6 @@ unsafe fn HUFv06_decompress(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
 ) -> Result<usize, Error> {
-    static decompress: [decompressionAlgo; 3] =
-        [Some(HUFv06_decompress4X2), Some(HUFv06_decompress4X4), None];
     let mut Dtime: [u32; 3] = [0; 3];
     if dstSize == 0 {
         return Err(Error::dstSize_tooSmall);
@@ -2069,11 +2059,11 @@ unsafe fn HUFv06_decompress(
     }
     Dtime[1] = Dtime[1].wrapping_add(Dtime[1] >> 4);
     Dtime[2] = Dtime[2].wrapping_add(Dtime[2] >> 3);
-    let mut algoNb = 0;
     if Dtime[1] < Dtime[0] {
-        algoNb = 1;
+        HUFv06_decompress4X4(dst, dstSize, cSrc, cSrcSize)
+    } else {
+        HUFv06_decompress4X2(dst, dstSize, cSrc, cSrcSize)
     }
-    (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
 }
 unsafe fn ZSTDv06_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 4);
