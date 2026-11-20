@@ -3117,105 +3117,88 @@ unsafe fn ZSTDv06_loadEntropy(
     dctx: &mut ZSTDv06_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut hSize: usize = 0;
     let mut offcodeHeaderSize: usize = 0;
     let mut matchlengthHeaderSize: usize = 0;
     let mut litlengthHeaderSize: usize = 0;
-    hSize = match HUFv06_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize) {
-        Ok(hSize) => hSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    hSize = HUFv06_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize)
+        .map_err(|_| Error::dictionary_corrupted)?;
     dict = (dict as *const core::ffi::c_char).add(hSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(hSize);
     let mut offcodeNCount: [core::ffi::c_short; 29] = [0; 29];
     let mut offcodeMaxValue = MaxOff as u32;
     let mut offcodeLog: u32 = 0;
-    offcodeHeaderSize = match FSEv06_readNCount(
+    offcodeHeaderSize = FSEv06_readNCount(
         offcodeNCount.as_mut_ptr(),
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dict,
         dictSize,
-    ) {
-        Ok(offcodeHeaderSize) => offcodeHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if offcodeLog > OffFSELog as u32 {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
-    if FSEv06_buildDTable(
+    FSEv06_buildDTable(
         dctx.OffTable.as_mut_ptr(),
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
         offcodeLog,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     dict = (dict as *const core::ffi::c_char).add(offcodeHeaderSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(offcodeHeaderSize);
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    matchlengthHeaderSize = match FSEv06_readNCount(
+    matchlengthHeaderSize = FSEv06_readNCount(
         matchlengthNCount.as_mut_ptr(),
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dict,
         dictSize,
-    ) {
-        Ok(matchlengthHeaderSize) => matchlengthHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if matchlengthLog > MLFSELog as core::ffi::c_uint {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
-    if FSEv06_buildDTable(
+    FSEv06_buildDTable(
         dctx.MLTable.as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
         matchlengthMaxValue,
         matchlengthLog,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     dict =
         (dict as *const core::ffi::c_char).add(matchlengthHeaderSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(matchlengthHeaderSize);
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    litlengthHeaderSize = match FSEv06_readNCount(
+    litlengthHeaderSize = FSEv06_readNCount(
         litlengthNCount.as_mut_ptr(),
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dict,
         dictSize,
-    ) {
-        Ok(litlengthHeaderSize) => litlengthHeaderSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    )
+    .map_err(|_| Error::dictionary_corrupted)?;
     if litlengthLog > LLFSELog as core::ffi::c_uint {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
-    if FSEv06_buildDTable(
+    FSEv06_buildDTable(
         dctx.LLTable.as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
         litlengthMaxValue,
         litlengthLog,
     )
-    .is_err()
-    {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    .map_err(|_| Error::dictionary_corrupted)?;
     dctx.flagRepeatTable = 1;
-    hSize
+    Ok(hSize
         .wrapping_add(offcodeHeaderSize)
         .wrapping_add(matchlengthHeaderSize)
-        .wrapping_add(litlengthHeaderSize)
+        .wrapping_add(litlengthHeaderSize))
 }
 unsafe fn ZSTDv06_decompress_insertDictionary(
     dctx: &mut ZSTDv06_DCtx,
@@ -3230,10 +3213,10 @@ unsafe fn ZSTDv06_decompress_insertDictionary(
     }
     dict = (dict as *const core::ffi::c_char).add(4) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(4);
-    eSize = ZSTDv06_loadEntropy(dctx, dict, dictSize);
-    if ERR_isError(eSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    eSize = match ZSTDv06_loadEntropy(dctx, dict, dictSize) {
+        Ok(eSize) => eSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     dict = (dict as *const core::ffi::c_char).add(eSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(eSize);
     ZSTDv06_refDictContent(dctx, dict, dictSize);
