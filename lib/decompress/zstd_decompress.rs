@@ -426,7 +426,7 @@ unsafe fn ZSTD_decompressLegacyStream(
                 ZBUFFv06_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
             output.pos = output.pos.wrapping_add(decodedSize);
             input.pos = input.pos.wrapping_add(readSize);
-            hintSize
+            hintSize.unwrap_or_else(|err| err.to_error_code())
         }
         7 => {
             let dctx = legacyContext as *mut ZBUFFv07_DCtx;
