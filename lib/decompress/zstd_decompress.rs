@@ -257,7 +257,7 @@ fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> 
                 src,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
-            );
+            )?;
         }
         6 => unsafe {
             ZSTDv06_findFrameSizeInfoLegacy(
@@ -265,22 +265,18 @@ fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> 
                 src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
-            )
+            )?;
         },
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
                 Reader::from_slice(src),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
-            );
+            )?;
         }
         _ => {
             return Err(Error::prefix_unknown);
         }
-    }
-
-    if let Some(err) = Error::from_error_code(frameSizeInfo.compressedSize) {
-        return Err(err);
     }
 
     if frameSizeInfo.compressedSize > src.len() {

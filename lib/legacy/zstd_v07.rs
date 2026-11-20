@@ -10,7 +10,6 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
 use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice, PointerExt};
-use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
@@ -2399,40 +2398,23 @@ pub(crate) fn ZSTDv07_decompress_usingDict(
     ZSTDv07_decompressFrame(dctx, dst, src)
 }
 
-fn ZSTD_errorFrameSizeInfoLegacy(
-    cSize: &mut usize,
-    dBound: &mut core::ffi::c_ulonglong,
-    ret: Error,
-) {
-    *cSize = ret.to_error_code();
-    *dBound = ZSTD_CONTENTSIZE_ERROR;
-}
 pub(crate) fn ZSTDv07_findFrameSizeInfoLegacy(
     src: Reader<'_>,
     cSize: &mut usize,
     dBound: &mut core::ffi::c_ulonglong,
-) {
+) -> Result<(), Error> {
     let srcSize = src.len();
     let mut ip = src;
     let mut nbBlocks = 0_usize;
     if ip.len() < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
-        return;
+        return Err(Error::srcSize_wrong);
     }
-    let frameHeaderSize = match ZSTDv07_frameHeaderSize(ip.subslice(..)) {
-        Ok(frameHeaderSize) => frameHeaderSize,
-        Err(err) => {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
-            return;
-        }
-    };
+    let frameHeaderSize = ZSTDv07_frameHeaderSize(ip.subslice(..))?;
     if u32::from_le_bytes(ip.subslice(..4).as_slice().try_into().unwrap()) != ZSTDv07_MAGICNUMBER {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown);
-        return;
+        return Err(Error::prefix_unknown);
     }
     if ip.len() < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
-        return;
+        return Err(Error::srcSize_wrong);
     }
     ip = ip.subslice(frameHeaderSize..);
     loop {
@@ -2440,26 +2422,20 @@ pub(crate) fn ZSTDv07_findFrameSizeInfoLegacy(
             blockType: bt_compressed,
             origSize: 0,
         };
-        let cBlockSize = match ZSTDv07_getcBlockSize(ip.subslice(..), &mut blockProperties) {
-            Ok(cBlockSize) => cBlockSize,
-            Err(err) => {
-                ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
-                return;
-            }
-        };
+        let cBlockSize = ZSTDv07_getcBlockSize(ip.subslice(..), &mut blockProperties)?;
         ip = ip.subslice(ZSTDv07_blockHeaderSize..);
         if blockProperties.blockType == bt_end {
             break;
         }
         if cBlockSize > ip.len() {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
-            return;
+            return Err(Error::srcSize_wrong);
         }
         ip = ip.subslice(cBlockSize..);
         nbBlocks = nbBlocks.wrapping_add(1);
     }
     *cSize = srcSize - ip.len();
     *dBound = (nbBlocks * ZSTDv07_BLOCKSIZE_ABSOLUTEMAX) as core::ffi::c_ulonglong;
+    Ok(())
 }
 fn ZSTDv07_nextSrcSizeToDecompress(dctx: &ZSTDv07_DCtx) -> usize {
     dctx.expected
