@@ -622,7 +622,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
     cSrcSize: usize,
     dt: *const FSEv06_DTable,
     fast: core::ffi::c_uint,
-) -> usize {
+) -> Result<usize, Error> {
     let ostart = dst as *mut u8;
     let mut op = ostart;
     let omax = op.add(maxDstSize);
@@ -641,9 +641,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         state: 0,
         table: core::ptr::null::<core::ffi::c_void>(),
     };
-    if let Err(err) = BITv06_initDStream(&mut bitD, cSrc, cSrcSize) {
-        return err.to_error_code();
-    }
+    BITv06_initDStream(&mut bitD, cSrc, cSrcSize)?;
     FSEv06_initDState(&mut state1, &mut bitD, dt);
     FSEv06_initDState(&mut state2, &mut bitD, dt);
     while BITv06_reloadDStream(&mut bitD) == BITv06_DStream_unfinished && op < olimit {
@@ -683,7 +681,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
     }
     loop {
         if op > omax.sub(2) {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         *op = (if fast != 0 {
             FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
@@ -701,7 +699,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             break;
         } else {
             if op > omax.sub(2) {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
             *op = (if fast != 0 {
                 FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
@@ -721,7 +719,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             break;
         }
     }
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 unsafe fn FSEv06_decompress_usingDTable(
     dst: *mut core::ffi::c_void,
@@ -729,7 +727,7 @@ unsafe fn FSEv06_decompress_usingDTable(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
     dt: *const FSEv06_DTable,
-) -> usize {
+) -> Result<usize, Error> {
     let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const FSEv06_DTableHeader;
     let fastMode = (*DTableH).fastMode as u32;
@@ -783,6 +781,7 @@ unsafe fn FSEv06_decompress(
         cSrcSize,
         dt.as_mut_ptr(),
     )
+    .unwrap_or_else(|err| err.to_error_code())
 }
 const HUFv06_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
 const HUFv06_MAX_TABLELOG: core::ffi::c_int = 12;
