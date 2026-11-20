@@ -531,7 +531,7 @@ unsafe fn FSEv06_buildDTable(
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
-) -> usize {
+) -> Result<(), Error> {
     let tdPtr = dt.add(1) as *mut core::ffi::c_void;
     let tableDecode = tdPtr as *mut FSEv06_decode_t;
     let mut symbolNext: [u16; 256] = [0; 256];
@@ -539,10 +539,10 @@ unsafe fn FSEv06_buildDTable(
     let tableSize = (1 << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     if maxSymbolValue > FSEv06_MAX_SYMBOL_VALUE as core::ffi::c_uint {
-        return Error::maxSymbolValue_tooLarge.to_error_code();
+        return Err(Error::maxSymbolValue_tooLarge);
     }
     if tableLog > FSEv06_MAX_TABLELOG as core::ffi::c_uint {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     let mut DTableH = FSEv06_DTableHeader {
         tableLog: 0,
@@ -585,7 +585,7 @@ unsafe fn FSEv06_buildDTable(
         }
     }
     if position != 0 {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
     for u in 0..tableSize {
         let symbol = (*tableDecode.offset(u as isize)).symbol;
@@ -600,7 +600,7 @@ unsafe fn FSEv06_buildDTable(
             as u32)
             .wrapping_sub(tableSize) as u16;
     }
-    0
+    Ok(())
 }
 unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) -> usize {
     let ptr = dt as *mut core::ffi::c_void;
@@ -768,14 +768,13 @@ unsafe fn FSEv06_decompress(
     }
     ip = ip.add(NCountLength);
     cSrcSize = cSrcSize.wrapping_sub(NCountLength);
-    let errorCode = FSEv06_buildDTable(
+    if let Err(err) = FSEv06_buildDTable(
         dt.as_mut_ptr(),
         counting.as_mut_ptr(),
         maxSymbolValue,
         tableLog,
-    );
-    if ERR_isError(errorCode) {
-        return errorCode;
+    ) {
+        return err.to_error_code();
     }
     FSEv06_decompress_usingDTable(
         dst,
@@ -2505,7 +2504,7 @@ unsafe fn ZSTDv06_buildSeqTable(
             1
         }
         0 => {
-            FSEv06_buildDTable(DTable, defaultNorm, max, defaultLog);
+            let _ = FSEv06_buildDTable(DTable, defaultNorm, max, defaultLog);
             0
         }
         2 => {
@@ -2525,7 +2524,7 @@ unsafe fn ZSTDv06_buildSeqTable(
             if tableLog > maxLog {
                 return Error::corruption_detected.to_error_code();
             }
-            FSEv06_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
+            let _ = FSEv06_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
             headerSize
         }
         _ => unreachable!(),
@@ -3260,13 +3259,14 @@ unsafe fn ZSTDv06_loadEntropy(
     if offcodeLog > OffFSELog as u32 {
         return Error::dictionary_corrupted.to_error_code();
     }
-    let errorCode = FSEv06_buildDTable(
+    if FSEv06_buildDTable(
         dctx.OffTable.as_mut_ptr(),
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
         offcodeLog,
-    );
-    if ERR_isError(errorCode) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     dict = (dict as *const core::ffi::c_char).add(offcodeHeaderSize) as *const core::ffi::c_void;
@@ -3287,13 +3287,14 @@ unsafe fn ZSTDv06_loadEntropy(
     if matchlengthLog > MLFSELog as core::ffi::c_uint {
         return Error::dictionary_corrupted.to_error_code();
     }
-    let errorCode_0 = FSEv06_buildDTable(
+    if FSEv06_buildDTable(
         dctx.MLTable.as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
         matchlengthMaxValue,
         matchlengthLog,
-    );
-    if ERR_isError(errorCode_0) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     dict =
@@ -3315,13 +3316,14 @@ unsafe fn ZSTDv06_loadEntropy(
     if litlengthLog > LLFSELog as core::ffi::c_uint {
         return Error::dictionary_corrupted.to_error_code();
     }
-    let errorCode_1 = FSEv06_buildDTable(
+    if FSEv06_buildDTable(
         dctx.LLTable.as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
         litlengthMaxValue,
         litlengthLog,
-    );
-    if ERR_isError(errorCode_1) {
+    )
+    .is_err()
+    {
         return Error::dictionary_corrupted.to_error_code();
     }
     dctx.flagRepeatTable = 1;
