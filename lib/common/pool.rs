@@ -241,11 +241,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> Result<
         return Err(());
     }
     // Replace existing thread pool
-    libc::memcpy(
-        threadPool as *mut core::ffi::c_void,
-        (*ctx).threads as *const core::ffi::c_void,
-        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
-    );
+    ptr::copy_nonoverlapping((*ctx).threads, threadPool, (*ctx).threadCapacity);
     ZSTD_customFree(
         (*ctx).threads as *mut core::ffi::c_void,
         (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
