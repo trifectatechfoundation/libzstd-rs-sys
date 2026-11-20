@@ -45,7 +45,7 @@ pub(crate) struct POOL_job {
 }
 
 /// The function type that can be added to a thread pool
-pub type POOL_function = unsafe fn(*mut core::ffi::c_void) -> ();
+pub type POOL_function = unsafe fn(*mut core::ffi::c_void);
 
 pub type ZSTD_threadPool = POOL_ctx;
 
