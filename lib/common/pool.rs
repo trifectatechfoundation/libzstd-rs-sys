@@ -335,17 +335,17 @@ pub unsafe fn POOL_add(
 ///
 /// # Returns
 ///
-/// - 1 on success,
-/// - 0 otherwise
+/// - `Ok(())` on success
+/// - `Err(())` if the queue is full
 pub(crate) unsafe fn POOL_tryAdd(
     ctx: *mut POOL_ctx,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
-) -> core::ffi::c_int {
+) -> Result<(), ()> {
     let _guard = (*ctx).queueMutex.lock().unwrap();
     if isQueueFull(ctx) {
-        return 0;
+        return Err(());
     }
     POOL_add_internal(ctx, function, opaque);
-    1
+    Ok(())
 }

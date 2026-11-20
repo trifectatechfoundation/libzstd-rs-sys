@@ -1655,16 +1655,16 @@ unsafe fn ZSTDMT_createCompressionJob(
         }
     }
 
-    if POOL_tryAdd(
+    match POOL_tryAdd(
         (*mtctx).factory,
         ZSTDMT_compressionJob,
         ((*mtctx).jobs).offset(jobID as isize).cast(),
-    ) != 0
-    {
-        (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
-        (*mtctx).jobReady = 0;
-    } else {
-        (*mtctx).jobReady = 1;
+    ) {
+        Ok(()) => {
+            (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
+            (*mtctx).jobReady = 0;
+        }
+        Err(()) => (*mtctx).jobReady = 1,
     }
 }
 
