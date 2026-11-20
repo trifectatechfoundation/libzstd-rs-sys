@@ -2939,7 +2939,7 @@ pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> Result<usize, Error> {
-    ZSTDv06_decompressBegin_usingDict(dctx, dict, dictSize);
+    let _ = ZSTDv06_decompressBegin_usingDict(dctx, dict, dictSize);
     ZSTDv06_checkContinuity(dctx, dst);
     ZSTDv06_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
 }
@@ -3222,14 +3222,13 @@ unsafe fn ZSTDv06_decompressBegin_usingDict(
     dctx: &mut ZSTDv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: usize,
-) -> usize {
+) -> Result<(), Error> {
     ZSTDv06_decompressBegin(dctx);
     if !dict.is_null() && dictSize != 0 {
-        if ZSTDv06_decompress_insertDictionary(dctx, dict, dictSize).is_err() {
-            return Error::dictionary_corrupted.to_error_code();
-        }
+        ZSTDv06_decompress_insertDictionary(dctx, dict, dictSize)
+            .map_err(|_| Error::dictionary_corrupted)?;
     }
-    0
+    Ok(())
 }
 pub(crate) fn ZBUFFv06_createDCtx() -> Result<Box<ZBUFFv06_DCtx>, AllocError> {
     let mut zbd = box_try_new_zeroed::<ZBUFFv06_DCtx>()?;
@@ -3260,7 +3259,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressInitDictionary(
     zbd: &mut ZBUFFv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: usize,
-) -> usize {
+) -> Result<(), Error> {
     zbd.stage = ZBUFFds_loadHeader;
     zbd.outEnd = 0;
     zbd.outStart = zbd.outEnd;
