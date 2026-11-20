@@ -2420,41 +2420,39 @@ unsafe fn ZSTDv06_buildSeqTable(
     defaultNorm: *const i16,
     defaultLog: u32,
     flagRepeatTable: u32,
-) -> usize {
+) -> Result<usize, Error> {
     match type_0 {
         1 => {
             if srcSize == 0 {
-                return Error::srcSize_wrong.to_error_code();
+                return Err(Error::srcSize_wrong);
             }
             if *(src as *const u8) as u32 > max {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             FSEv06_buildDTable_rle(DTable, *(src as *const u8));
-            1
+            Ok(1)
         }
         0 => {
             let _ = FSEv06_buildDTable(DTable, defaultNorm, max, defaultLog);
-            0
+            Ok(0)
         }
         2 => {
             if flagRepeatTable == 0 {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
-            0
+            Ok(0)
         }
         3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize =
-                match FSEv06_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize) {
-                    Ok(headerSize) => headerSize,
-                    Err(_) => return Error::corruption_detected.to_error_code(),
-                };
+                FSEv06_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize)
+                    .map_err(|_| Error::corruption_detected)?;
             if tableLog > maxLog {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             let _ = FSEv06_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
-            headerSize
+            Ok(headerSize)
         }
         _ => unreachable!(),
     }
@@ -2503,7 +2501,7 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
     let Offtype = (*ip as core::ffi::c_int >> 4 & 3) as u32;
     let MLtype = (*ip as core::ffi::c_int >> 2 & 3) as u32;
     ip = ip.add(1);
-    let bhSize = ZSTDv06_buildSeqTable(
+    let bhSize = match ZSTDv06_buildSeqTable(
         DTableLL,
         LLtype,
         MaxLL as u32,
@@ -2513,12 +2511,12 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
         flagRepeatTable,
-    );
-    if ERR_isError(bhSize) {
-        return Error::corruption_detected.to_error_code();
-    }
+    ) {
+        Ok(bhSize) => bhSize,
+        Err(_) => return Error::corruption_detected.to_error_code(),
+    };
     ip = ip.add(bhSize);
-    let bhSize_0 = ZSTDv06_buildSeqTable(
+    let bhSize_0 = match ZSTDv06_buildSeqTable(
         DTableOffb,
         Offtype,
         MaxOff as u32,
@@ -2528,12 +2526,12 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
         flagRepeatTable,
-    );
-    if ERR_isError(bhSize_0) {
-        return Error::corruption_detected.to_error_code();
-    }
+    ) {
+        Ok(bhSize) => bhSize,
+        Err(_) => return Error::corruption_detected.to_error_code(),
+    };
     ip = ip.add(bhSize_0);
-    let bhSize_1 = ZSTDv06_buildSeqTable(
+    let bhSize_1 = match ZSTDv06_buildSeqTable(
         DTableML,
         MLtype,
         MaxML as u32,
@@ -2543,10 +2541,10 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
         flagRepeatTable,
-    );
-    if ERR_isError(bhSize_1) {
-        return Error::corruption_detected.to_error_code();
-    }
+    ) {
+        Ok(bhSize) => bhSize,
+        Err(_) => return Error::corruption_detected.to_error_code(),
+    };
     ip = ip.add(bhSize_1);
     ip.offset_from_unsigned(istart)
 }
