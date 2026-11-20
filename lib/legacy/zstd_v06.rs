@@ -789,13 +789,13 @@ unsafe fn HUFv06_readStats(
     tableLogPtr: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut weightTotal: u32 = 0;
     let mut ip = src as *const u8;
     let mut iSize: usize = 0;
     let mut oSize: usize = 0;
     if srcSize == 0 {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     iSize = *ip as usize;
     if iSize >= 128 {
@@ -808,10 +808,10 @@ unsafe fn HUFv06_readStats(
             oSize = iSize.wrapping_sub(127);
             iSize = oSize.wrapping_add(1) / 2;
             if iSize.wrapping_add(1) > srcSize {
-                return Error::srcSize_wrong.to_error_code();
+                return Err(Error::srcSize_wrong);
             }
             if oSize >= hwSize {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             ip = ip.add(1);
             for n in (0..oSize).step_by(2) {
@@ -821,24 +821,21 @@ unsafe fn HUFv06_readStats(
         }
     } else {
         if iSize.wrapping_add(1) > srcSize {
-            return Error::srcSize_wrong.to_error_code();
+            return Err(Error::srcSize_wrong);
         }
-        oSize = match FSEv06_decompress(
+        oSize = FSEv06_decompress(
             huffWeight as *mut core::ffi::c_void,
             hwSize.wrapping_sub(1),
             ip.add(1) as *const core::ffi::c_void,
             iSize,
-        ) {
-            Ok(oSize) => oSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
     }
     core::ptr::write_bytes(rankStats, 0, (HUFv06_ABSOLUTEMAX_TABLELOG + 1) as usize);
     weightTotal = 0;
     let mut n_0: u32 = 0;
     while (n_0 as usize) < oSize {
         if *huffWeight.offset(n_0 as isize) as core::ffi::c_int >= HUFv06_ABSOLUTEMAX_TABLELOG {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         let fresh9 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
         *fresh9 = (*fresh9).wrapping_add(1);
@@ -847,11 +844,11 @@ unsafe fn HUFv06_readStats(
         n_0 = n_0.wrapping_add(1);
     }
     if weightTotal == 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     let tableLog = weightTotal.bit_width();
     if tableLog > HUFv06_ABSOLUTEMAX_TABLELOG as u32 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     *tableLogPtr = tableLog;
     let total = (1 << tableLog) as u32;
@@ -859,16 +856,16 @@ unsafe fn HUFv06_readStats(
     let verif = (1 << BITv06_highbit32(rest)) as u32;
     let lastWeight = rest.bit_width();
     if verif != rest {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     *huffWeight.add(oSize) = lastWeight as u8;
     let fresh10 = &mut (*rankStats.offset(lastWeight as isize));
     *fresh10 = (*fresh10).wrapping_add(1);
     if *rankStats.add(1) < 2 || *rankStats.add(1) & 1 != 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
-    iSize.wrapping_add(1)
+    Ok(iSize.wrapping_add(1))
 }
 unsafe fn HUFv06_readDTableX2(
     DTable: *mut u16,
@@ -883,7 +880,7 @@ unsafe fn HUFv06_readDTableX2(
     let mut nextRankStart: u32 = 0;
     let dtPtr = DTable.add(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUFv06_DEltX2;
-    iSize = HUFv06_readStats(
+    iSize = match HUFv06_readStats(
         huffWeight.as_mut_ptr(),
         (HUFv06_MAX_SYMBOL_VALUE + 1) as usize,
         rankVal.as_mut_ptr(),
@@ -891,10 +888,10 @@ unsafe fn HUFv06_readDTableX2(
         &mut tableLog,
         src,
         srcSize,
-    );
-    if HUFv06_isError(iSize) != 0 {
-        return iSize;
-    }
+    ) {
+        Ok(iSize) => iSize,
+        Err(err) => return err.to_error_code(),
+    };
     if tableLog > *DTable as u32 {
         return Error::tableLog_tooLarge.to_error_code();
     }
@@ -1341,7 +1338,7 @@ unsafe fn HUFv06_readDTableX4(
     if memLog > HUFv06_ABSOLUTEMAX_TABLELOG as u32 {
         return Error::tableLog_tooLarge.to_error_code();
     }
-    iSize = HUFv06_readStats(
+    iSize = match HUFv06_readStats(
         weightList.as_mut_ptr(),
         (HUFv06_MAX_SYMBOL_VALUE + 1) as usize,
         rankStats.as_mut_ptr(),
@@ -1349,10 +1346,10 @@ unsafe fn HUFv06_readDTableX4(
         &mut tableLog,
         src,
         srcSize,
-    );
-    if HUFv06_isError(iSize) != 0 {
-        return iSize;
-    }
+    ) {
+        Ok(iSize) => iSize,
+        Err(err) => return err.to_error_code(),
+    };
     if tableLog > memLog {
         return Error::tableLog_tooLarge.to_error_code();
     }
