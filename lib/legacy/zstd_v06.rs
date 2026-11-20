@@ -2168,11 +2168,11 @@ unsafe fn ZSTDv06_getcBlockSize(
     src: *const core::ffi::c_void,
     srcSize: usize,
     bpPtr: *mut blockProperties_t,
-) -> usize {
+) -> Result<usize, Error> {
     let in_0 = src as *const u8;
     let mut cSize: u32 = 0;
     if srcSize < ZSTDv06_blockHeaderSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     (*bpPtr).blockType = (*in_0 as core::ffi::c_int >> 6) as blockType_t;
     cSize = (*in_0.add(2) as core::ffi::c_int
@@ -2183,13 +2183,11 @@ unsafe fn ZSTDv06_getcBlockSize(
     } else {
         0
     };
-    if (*bpPtr).blockType == bt_end {
-        return 0;
+    match (*bpPtr).blockType {
+        bt_end => Ok(0),
+        bt_rle => Ok(1),
+        _ => Ok(cSize as usize),
     }
-    if (*bpPtr).blockType == bt_rle {
-        return 1;
-    }
-    cSize as usize
 }
 unsafe fn ZSTDv06_copyRawBlock(
     dst: *mut core::ffi::c_void,
@@ -2909,14 +2907,14 @@ unsafe fn ZSTDv06_decompressFrame(
     remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
     loop {
         let mut decodedSize = 0;
-        let cBlockSize = ZSTDv06_getcBlockSize(
+        let cBlockSize = match ZSTDv06_getcBlockSize(
             ip as *const core::ffi::c_void,
             iend.offset_from_unsigned(ip),
             &mut blockProperties,
-        );
-        if ERR_isError(cBlockSize) {
-            return cBlockSize;
-        }
+        ) {
+            Ok(cBlockSize) => cBlockSize,
+            Err(err) => return err.to_error_code(),
+        };
         ip = ip.add(ZSTDv06_blockHeaderSize);
         remainingSize = remainingSize.wrapping_sub(ZSTDv06_blockHeaderSize);
         if cBlockSize > remainingSize {
@@ -3014,15 +3012,17 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
     ip = ip.add(frameHeaderSize);
     remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
     loop {
-        let cBlockSize = ZSTDv06_getcBlockSize(
+        let cBlockSize = match ZSTDv06_getcBlockSize(
             ip as *const core::ffi::c_void,
             remainingSize,
             &mut blockProperties,
-        );
-        if ERR_isError(cBlockSize) {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, cBlockSize);
-            return;
-        }
+        ) {
+            Ok(cBlockSize) => cBlockSize,
+            Err(err) => {
+                ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err.to_error_code());
+                return;
+            }
+        };
         ip = ip.add(ZSTDv06_blockHeaderSize);
         remainingSize = remainingSize.wrapping_sub(ZSTDv06_blockHeaderSize);
         if cBlockSize > remainingSize {
@@ -3081,10 +3081,10 @@ unsafe fn ZSTDv06_decompressContinue(
                 blockType: bt_compressed,
                 origSize: 0,
             };
-            let cBlockSize = ZSTDv06_getcBlockSize(src, ZSTDv06_blockHeaderSize, &mut bp);
-            if ERR_isError(cBlockSize) {
-                return cBlockSize;
-            }
+            let cBlockSize = match ZSTDv06_getcBlockSize(src, ZSTDv06_blockHeaderSize, &mut bp) {
+                Ok(cBlockSize) => cBlockSize,
+                Err(err) => return err.to_error_code(),
+            };
             if bp.blockType == bt_end {
                 dctx.expected = 0;
                 dctx.stage = ZSTDds_getFrameHeaderSize;
