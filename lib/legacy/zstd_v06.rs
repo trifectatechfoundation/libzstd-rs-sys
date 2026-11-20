@@ -2632,7 +2632,7 @@ unsafe fn ZSTDv06_execSequence(
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
-) -> usize {
+) -> Result<usize, Error> {
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = sequence.litLength.wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
@@ -2640,16 +2640,16 @@ unsafe fn ZSTDv06_execSequence(
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let seqLength = sequence.litLength.wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from_unsigned(op) {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if sequence.litLength > litPtr.len() - WILDCOPY_OVERLENGTH as usize {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if oLitEnd > oend_8 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if oMatchEnd > oend {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     ZSTDv06_wildcopy(
         op as *mut core::ffi::c_void,
@@ -2660,12 +2660,12 @@ unsafe fn ZSTDv06_execSequence(
     *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
         if sequence.offset > oLitEnd.addr().wrapping_sub(vBase.addr()) {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.wrapping_sub(base.addr() - match_0.addr());
         if sequence.matchLength <= dictEnd.addr() - match_0.addr() {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
-            return sequenceLength;
+            return Ok(sequenceLength);
         }
         let length1 = dictEnd.offset_from_unsigned(match_0);
         core::ptr::copy(match_0, oLitEnd, length1);
@@ -2678,7 +2678,7 @@ unsafe fn ZSTDv06_execSequence(
                 op = op.add(1);
                 match_0 = match_0.add(1);
             }
-            return sequenceLength;
+            return Ok(sequenceLength);
         }
     }
     if sequence.offset < 8 {
@@ -2725,7 +2725,7 @@ unsafe fn ZSTDv06_execSequence(
             sequence.matchLength as ptrdiff_t - 8,
         );
     }
-    sequenceLength
+    Ok(sequenceLength)
 }
 unsafe fn ZSTDv06_decompressSequences(
     dctx: &mut ZSTDv06_DCtx,
@@ -2808,10 +2808,7 @@ unsafe fn ZSTDv06_decompressSequences(
             nbSeq -= 1;
             ZSTDv06_decodeSequence(&mut sequence, &mut seqState);
             let oneSeqSize =
-                ZSTDv06_execSequence(op, oend, sequence, &mut litPtr, base, vBase, dictEnd);
-            if let Some(err) = Error::from_error_code(oneSeqSize) {
-                return Err(err);
-            }
+                ZSTDv06_execSequence(op, oend, sequence, &mut litPtr, base, vBase, dictEnd)?;
             op = op.add(oneSeqSize);
         }
         if nbSeq != 0 {
