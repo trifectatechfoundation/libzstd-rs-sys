@@ -232,10 +232,10 @@ unsafe fn BITv06_initDStream(
     bitD: *mut BITv06_DStream_t,
     srcBuffer: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     if srcSize < 1 {
         ptr::write_bytes(bitD as *mut u8, 0, size_of::<BITv06_DStream_t>());
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     let bitD = &mut *bitD;
@@ -249,7 +249,7 @@ unsafe fn BITv06_initDStream(
         bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
         if lastByte == 0 {
-            return Error::GENERIC.to_error_code(); // endMark not present
+            return Err(Error::GENERIC); // endMark not present
         }
         bitD.bitsConsumed = 8 - BITv06_highbit32(lastByte as u32);
     } else {
@@ -287,12 +287,12 @@ unsafe fn BITv06_initDStream(
         let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
         if lastByte == 0 {
             // endMark not present
-            return Error::GENERIC.to_error_code();
+            return Err(Error::GENERIC);
         }
         bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv06_highbit32(lastByte as u32);
         bitD.bitsConsumed += (size_of::<usize>() - srcSize) as u32 * 8;
     }
-    srcSize
+    Ok(srcSize)
 }
 
 #[inline]
@@ -641,9 +641,8 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         state: 0,
         table: core::ptr::null::<core::ffi::c_void>(),
     };
-    let errorCode = BITv06_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(errorCode) {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD, cSrc, cSrcSize) {
+        return err.to_error_code();
     }
     FSEv06_initDState(&mut state1, &mut bitD, dt);
     FSEv06_initDState(&mut state2, &mut bitD, dt);
@@ -992,9 +991,8 @@ unsafe fn HUFv06_decompress1X2_usingDTable(
         ptr: core::ptr::null::<core::ffi::c_char>(),
         start: core::ptr::null::<core::ffi::c_char>(),
     };
-    let errorCode = BITv06_initDStream(&mut bitD, cSrc, cSrcSize);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD, cSrc, cSrcSize) {
+        return err.to_error_code();
     }
     HUFv06_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
     if BITv06_endOfDStream(&bitD) == 0 {
@@ -1043,7 +1041,6 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv06_DEltX2).add(1);
     let dtLog = *DTable as u32;
-    let mut errorCode: usize = 0;
     let mut bitD1 = BITv06_DStream_t {
         bitContainer: 0,
         bitsConsumed: 0,
@@ -1094,21 +1091,17 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4) {
+        return err.to_error_code();
     }
     endSignal = BITv06_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
@@ -1513,9 +1506,8 @@ unsafe fn HUFv06_decompress1X4_usingDTable(
         ptr: core::ptr::null::<core::ffi::c_char>(),
         start: core::ptr::null::<core::ffi::c_char>(),
     };
-    let errorCode = BITv06_initDStream(&mut bitD, istart as *const core::ffi::c_void, cSrcSize);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD, istart as *const core::ffi::c_void, cSrcSize) {
+        return err.to_error_code();
     }
     HUFv06_decodeStreamX4(ostart, &mut bitD, oend, dt, dtLog);
     if BITv06_endOfDStream(&bitD) == 0 {
@@ -1539,7 +1531,6 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv06_DEltX4).add(1);
     let dtLog = *DTable;
-    let mut errorCode: usize = 0;
     let mut bitD1 = BITv06_DStream_t {
         bitContainer: 0,
         bitsConsumed: 0,
@@ -1590,21 +1581,17 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3) {
+        return err.to_error_code();
     }
-    errorCode = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
-    if HUFv06_isError(errorCode) != 0 {
-        return errorCode;
+    if let Err(err) = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4) {
+        return err.to_error_code();
     }
     endSignal = BITv06_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
@@ -2887,12 +2874,13 @@ unsafe fn ZSTDv06_decompressSequences(
         ptr::write_bytes(&raw mut sequence as *mut u8, 0, size_of::<seq_t>());
         sequence.offset = REPCODE_STARTVALUE as usize;
         seqState.prevOffset[..ZSTDv06_REP_INIT as usize].fill(REPCODE_STARTVALUE as usize);
-        let errorCode = BITv06_initDStream(
+        if BITv06_initDStream(
             &mut seqState.DStream,
             ip as *const core::ffi::c_void,
             iend.offset_from_unsigned(ip),
-        );
-        if ERR_isError(errorCode) {
+        )
+        .is_err()
+        {
             return Err(Error::corruption_detected);
         }
         FSEv06_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
