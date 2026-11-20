@@ -426,7 +426,7 @@ unsafe fn FSEv06_readNCount(
     tableLogPtr: *mut core::ffi::c_uint,
     headerBuffer: *const core::ffi::c_void,
     hbSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let istart = headerBuffer as *const u8;
     let iend = istart.add(hbSize);
     let mut ip = istart;
@@ -438,12 +438,12 @@ unsafe fn FSEv06_readNCount(
     let mut charnum = 0;
     let mut previous0 = false;
     if hbSize < 4 {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
     nbBits = (bitStream & 0xf).wrapping_add(FSEv06_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSEv06_TABLELOG_ABSOLUTE_MAX {
-        return Error::tableLog_tooLarge.to_error_code();
+        return Err(Error::tableLog_tooLarge);
     }
     bitStream >>= 4;
     bitCount = 4;
@@ -472,7 +472,7 @@ unsafe fn FSEv06_readNCount(
             n0 = n0.wrapping_add(bitStream & 3);
             bitCount += 2;
             if n0 > *maxSVPtr {
-                return Error::maxSymbolValue_tooSmall.to_error_code();
+                return Err(Error::maxSymbolValue_tooSmall);
             }
             while charnum < n0 {
                 *normalizedCounter.offset(charnum as isize) = 0;
@@ -517,14 +517,14 @@ unsafe fn FSEv06_readNCount(
         bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> (bitCount & 31);
     }
     if remaining != 1 {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     }
     *maxSVPtr = charnum.wrapping_sub(1);
     ip = ip.offset(((bitCount + 7) >> 3) as isize);
     if ip.offset_from_unsigned(istart) > hbSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
-    ip.offset_from_unsigned(istart)
+    Ok(ip.offset_from_unsigned(istart))
 }
 unsafe fn FSEv06_buildDTable(
     dt: *mut FSEv06_DTable,
@@ -753,16 +753,16 @@ unsafe fn FSEv06_decompress(
     if cSrcSize < 2 {
         return Error::srcSize_wrong.to_error_code();
     }
-    let NCountLength = FSEv06_readNCount(
+    let NCountLength = match FSEv06_readNCount(
         counting.as_mut_ptr(),
         &mut maxSymbolValue,
         &mut tableLog,
         istart as *const core::ffi::c_void,
         cSrcSize,
-    );
-    if ERR_isError(NCountLength) {
-        return NCountLength;
-    }
+    ) {
+        Ok(NCountLength) => NCountLength,
+        Err(err) => return err.to_error_code(),
+    };
     if NCountLength >= cSrcSize {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -2518,10 +2518,10 @@ unsafe fn ZSTDv06_buildSeqTable(
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize =
-                FSEv06_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize);
-            if ERR_isError(headerSize) {
-                return Error::corruption_detected.to_error_code();
-            }
+                match FSEv06_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize) {
+                    Ok(headerSize) => headerSize,
+                    Err(_) => return Error::corruption_detected.to_error_code(),
+                };
             if tableLog > maxLog {
                 return Error::corruption_detected.to_error_code();
             }
@@ -3247,16 +3247,16 @@ unsafe fn ZSTDv06_loadEntropy(
     let mut offcodeNCount: [core::ffi::c_short; 29] = [0; 29];
     let mut offcodeMaxValue = MaxOff as u32;
     let mut offcodeLog: u32 = 0;
-    offcodeHeaderSize = FSEv06_readNCount(
+    offcodeHeaderSize = match FSEv06_readNCount(
         offcodeNCount.as_mut_ptr(),
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dict,
         dictSize,
-    );
-    if ERR_isError(offcodeHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(offcodeHeaderSize) => offcodeHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if offcodeLog > OffFSELog as u32 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -3274,16 +3274,16 @@ unsafe fn ZSTDv06_loadEntropy(
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    matchlengthHeaderSize = FSEv06_readNCount(
+    matchlengthHeaderSize = match FSEv06_readNCount(
         matchlengthNCount.as_mut_ptr(),
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dict,
         dictSize,
-    );
-    if ERR_isError(matchlengthHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(matchlengthHeaderSize) => matchlengthHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if matchlengthLog > MLFSELog as core::ffi::c_uint {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -3302,16 +3302,16 @@ unsafe fn ZSTDv06_loadEntropy(
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    litlengthHeaderSize = FSEv06_readNCount(
+    litlengthHeaderSize = match FSEv06_readNCount(
         litlengthNCount.as_mut_ptr(),
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dict,
         dictSize,
-    );
-    if ERR_isError(litlengthHeaderSize) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
+    ) {
+        Ok(litlengthHeaderSize) => litlengthHeaderSize,
+        Err(_) => return Error::dictionary_corrupted.to_error_code(),
+    };
     if litlengthLog > LLFSELog as core::ffi::c_uint {
         return Error::dictionary_corrupted.to_error_code();
     }
