@@ -596,7 +596,7 @@ unsafe fn FSEv06_buildDTable(
     }
     Ok(())
 }
-unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) -> usize {
+unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) {
     let ptr = dt as *mut core::ffi::c_void;
     let DTableH = ptr as *mut FSEv06_DTableHeader;
     let dPtr = dt.add(1) as *mut core::ffi::c_void;
@@ -606,7 +606,6 @@ unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) -> usi
     (*cell).newState = 0;
     (*cell).symbol = symbolValue;
     (*cell).nbBits = 0;
-    0
 }
 #[inline(always)]
 unsafe fn FSEv06_decompress_usingDTable_generic(
