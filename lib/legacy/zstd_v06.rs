@@ -109,8 +109,14 @@ struct HUFv06_DEltX4 {
     nbBits: u8,
     length: u8,
 }
-type decompressionAlgo =
-    Option<unsafe fn(*mut core::ffi::c_void, usize, *const core::ffi::c_void, usize) -> usize>;
+type decompressionAlgo = Option<
+    unsafe fn(
+        *mut core::ffi::c_void,
+        usize,
+        *const core::ffi::c_void,
+        usize,
+    ) -> Result<usize, Error>,
+>;
 type rankVal_t = [[u32; 17]; 16];
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -962,7 +968,7 @@ unsafe fn HUFv06_decompress1X2_usingDTable(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
     DTable: *const u16,
-) -> usize {
+) -> Result<usize, Error> {
     let op = dst as *mut u8;
     let oend = op.add(dstSize);
     let dtLog = *DTable as u32;
@@ -974,32 +980,27 @@ unsafe fn HUFv06_decompress1X2_usingDTable(
         ptr: core::ptr::null::<core::ffi::c_char>(),
         start: core::ptr::null::<core::ffi::c_char>(),
     };
-    if let Err(err) = BITv06_initDStream(&mut bitD, cSrc, cSrcSize) {
-        return err.to_error_code();
-    }
+    BITv06_initDStream(&mut bitD, cSrc, cSrcSize)?;
     HUFv06_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
     if BITv06_endOfDStream(&bitD) == 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    dstSize
+    Ok(dstSize)
 }
 unsafe fn HUFv06_decompress1X2(
     dst: *mut core::ffi::c_void,
     dstSize: usize,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let errorCode = match HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize) {
-        Ok(errorCode) => errorCode,
-        Err(err) => return err.to_error_code(),
-    };
-    if errorCode >= cSrcSize {
-        return Error::srcSize_wrong.to_error_code();
+    let headerSize = HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize)?;
+    if headerSize >= cSrcSize {
+        return Err(Error::srcSize_wrong);
     }
-    ip = ip.add(errorCode);
-    cSrcSize = cSrcSize.wrapping_sub(errorCode);
+    ip = ip.add(headerSize);
+    cSrcSize = cSrcSize.wrapping_sub(headerSize);
     HUFv06_decompress1X2_usingDTable(
         dst,
         dstSize,
@@ -1014,9 +1015,9 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
     DTable: *const u16,
-) -> usize {
+) -> Result<usize, Error> {
     if cSrcSize < 10 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     let istart = cSrc as *const u8;
     let ostart = dst as *mut u8;
@@ -1072,20 +1073,12 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
             .wrapping_add(6),
     );
     if length4 > cSrcSize {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    if let Err(err) = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4) {
-        return err.to_error_code();
-    }
+    BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1)?;
+    BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2)?;
+    BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3)?;
+    BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4)?;
     endSignal = BITv06_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
@@ -1153,13 +1146,13 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
             | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
     }
     if op1 > opStart2 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op2 > opStart3 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op3 > opStart4 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     HUFv06_decodeStreamX2(op1, &mut bitD1, opStart2, dt, dtLog);
     HUFv06_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
@@ -1170,27 +1163,24 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
         & BITv06_endOfDStream(&bitD3)
         & BITv06_endOfDStream(&bitD4);
     if endSignal == 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    dstSize
+    Ok(dstSize)
 }
 unsafe fn HUFv06_decompress4X2(
     dst: *mut core::ffi::c_void,
     dstSize: usize,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let errorCode = match HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize) {
-        Ok(errorCode) => errorCode,
-        Err(err) => return err.to_error_code(),
-    };
-    if errorCode >= cSrcSize {
-        return Error::srcSize_wrong.to_error_code();
+    let headerSize = HUFv06_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize)?;
+    if headerSize >= cSrcSize {
+        return Err(Error::srcSize_wrong);
     }
-    ip = ip.add(errorCode);
-    cSrcSize = cSrcSize.wrapping_sub(errorCode);
+    ip = ip.add(headerSize);
+    cSrcSize = cSrcSize.wrapping_sub(headerSize);
     HUFv06_decompress4X2_usingDTable(
         dst,
         dstSize,
@@ -1473,7 +1463,7 @@ unsafe fn HUFv06_decompress1X4_usingDTable(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
     DTable: *const u32,
-) -> usize {
+) -> Result<usize, Error> {
     let istart = cSrc as *const u8;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
@@ -1486,14 +1476,12 @@ unsafe fn HUFv06_decompress1X4_usingDTable(
         ptr: core::ptr::null::<core::ffi::c_char>(),
         start: core::ptr::null::<core::ffi::c_char>(),
     };
-    if let Err(err) = BITv06_initDStream(&mut bitD, istart as *const core::ffi::c_void, cSrcSize) {
-        return err.to_error_code();
-    }
+    BITv06_initDStream(&mut bitD, istart as *const core::ffi::c_void, cSrcSize)?;
     HUFv06_decodeStreamX4(ostart, &mut bitD, oend, dt, dtLog);
     if BITv06_endOfDStream(&bitD) == 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    dstSize
+    Ok(dstSize)
 }
 unsafe fn HUFv06_decompress4X4_usingDTable(
     dst: *mut core::ffi::c_void,
@@ -1501,9 +1489,9 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
     DTable: *const u32,
-) -> usize {
+) -> Result<usize, Error> {
     if cSrcSize < 10 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     let istart = cSrc as *const u8;
     let ostart = dst as *mut u8;
@@ -1559,20 +1547,12 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
             .wrapping_add(6),
     );
     if length4 > cSrcSize {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    if let Err(err) = BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3) {
-        return err.to_error_code();
-    }
-    if let Err(err) = BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4) {
-        return err.to_error_code();
-    }
+    BITv06_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1)?;
+    BITv06_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2)?;
+    BITv06_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3)?;
+    BITv06_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4)?;
     endSignal = BITv06_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
@@ -1692,13 +1672,13 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
             | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
     }
     if op1 > opStart2 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op2 > opStart3 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if op3 > opStart4 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     HUFv06_decodeStreamX4(op1, &mut bitD1, opStart2, dt, dtLog);
     HUFv06_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
@@ -1709,24 +1689,21 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
         & BITv06_endOfDStream(&bitD3)
         & BITv06_endOfDStream(&bitD4);
     if endSignal == 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
-    dstSize
+    Ok(dstSize)
 }
 unsafe fn HUFv06_decompress4X4(
     dst: *mut core::ffi::c_void,
     dstSize: usize,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut DTable: [core::ffi::c_uint; 4097] = [12; 4097];
     let mut ip = cSrc as *const u8;
-    let hSize = match HUFv06_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize) {
-        Ok(hSize) => hSize,
-        Err(err) => return err.to_error_code(),
-    };
+    let hSize = HUFv06_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize)?;
     if hSize >= cSrcSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     ip = ip.add(hSize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
@@ -2065,42 +2042,23 @@ unsafe fn HUFv06_decompress(
     dstSize: usize,
     cSrc: *const core::ffi::c_void,
     cSrcSize: usize,
-) -> usize {
-    static decompress: [decompressionAlgo; 3] = [
-        Some(
-            HUFv06_decompress4X2
-                as unsafe fn(
-                    *mut core::ffi::c_void,
-                    usize,
-                    *const core::ffi::c_void,
-                    usize,
-                ) -> usize,
-        ),
-        Some(
-            HUFv06_decompress4X4
-                as unsafe fn(
-                    *mut core::ffi::c_void,
-                    usize,
-                    *const core::ffi::c_void,
-                    usize,
-                ) -> usize,
-        ),
-        None,
-    ];
+) -> Result<usize, Error> {
+    static decompress: [decompressionAlgo; 3] =
+        [Some(HUFv06_decompress4X2), Some(HUFv06_decompress4X4), None];
     let mut Dtime: [u32; 3] = [0; 3];
     if dstSize == 0 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if cSrcSize > dstSize {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if cSrcSize == dstSize {
         memcpy(dst, cSrc, dstSize);
-        return dstSize;
+        return Ok(dstSize);
     }
     if cSrcSize == 1 {
         core::ptr::write_bytes(dst.cast::<u8>(), *(cSrc as *const u8), dstSize);
-        return dstSize;
+        return Ok(dstSize);
     }
     let Q = (cSrcSize * 16 / dstSize) as u32;
     let D256 = (dstSize >> 8) as u32;
@@ -2311,7 +2269,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock<'a>(
             if litCSize.wrapping_add(lhSize as usize) > src.len() {
                 return Err(Error::corruption_detected);
             }
-            if ERR_isError(if singleStream != 0 {
+            if singleStream != 0 {
                 HUFv06_decompress1X2(
                     dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
@@ -2325,9 +2283,8 @@ unsafe fn ZSTDv06_decodeLiteralsBlock<'a>(
                     src[lhSize as usize..].as_ptr() as *const core::ffi::c_void,
                     litCSize,
                 )
-            }) {
-                return Err(Error::corruption_detected);
             }
+            .map_err(|_| Error::corruption_detected)?;
             ptr::write_bytes(
                 dctx.litBuffer.as_mut_ptr().add(litSize),
                 0,
@@ -2356,16 +2313,14 @@ unsafe fn ZSTDv06_decodeLiteralsBlock<'a>(
             if litCSize_0.wrapping_add(lhSize_0 as usize) > src.len() {
                 return Err(Error::corruption_detected);
             }
-            let errorCode = HUFv06_decompress1X4_usingDTable(
+            HUFv06_decompress1X4_usingDTable(
                 dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 litSize_0,
                 src[lhSize_0 as usize..].as_ptr() as *const core::ffi::c_void,
                 litCSize_0,
                 dctx.hufTableX4.as_mut_ptr(),
-            );
-            if ERR_isError(errorCode) {
-                return Err(Error::corruption_detected);
-            }
+            )
+            .map_err(|_| Error::corruption_detected)?;
             ptr::write_bytes(
                 dctx.litBuffer.as_mut_ptr().add(litSize_0),
                 0,
