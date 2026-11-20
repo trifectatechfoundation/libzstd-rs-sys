@@ -55,7 +55,7 @@ jobs:
           cp target/${{matrix.target}}/release/examples/decompress .
           cp target/${{matrix.target}}/release/examples/compress .
       - name: Benchmark
-        uses: trifectatechfoundation/benchmarker-action@main
+        uses: trifectatechfoundation/benchmarker-action@d5bf2864d0d1b39716caeb5714bb9150d4149a03
         with:
           deploy-key: "${{ secrets.BENCH_DATA_DEPLOY_KEY }}"
           bench-repo: "git@github.com:trifectatechfoundation/libzstd-rs-sys-bench.git"
