@@ -2194,15 +2194,15 @@ unsafe fn ZSTDv06_copyRawBlock(
     dstCapacity: usize,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     if dst.is_null() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if srcSize > dstCapacity {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     memcpy(dst, src, srcSize);
-    srcSize
+    Ok(srcSize)
 }
 enum Literals<'a> {
     Buffer {
@@ -2936,7 +2936,8 @@ unsafe fn ZSTDv06_decompressFrame(
                     oend.offset_from_unsigned(op),
                     ip as *const core::ffi::c_void,
                     cBlockSize,
-                );
+                )
+                .unwrap_or_else(|err| err.to_error_code());
             }
             2 => return Error::GENERIC.to_error_code(),
             3 => {
@@ -3109,7 +3110,8 @@ unsafe fn ZSTDv06_decompressContinue(
                 }
                 1 => {
                     rSize =
-                        ZSTDv06_copyRawBlock(dst.as_mut_ptr().cast(), dst.capacity(), src, srcSize);
+                        ZSTDv06_copyRawBlock(dst.as_mut_ptr().cast(), dst.capacity(), src, srcSize)
+                            .unwrap_or_else(|err| err.to_error_code());
                 }
                 2 => return Error::GENERIC.to_error_code(),
                 3 => {
