@@ -219,8 +219,7 @@ fn ZSTD_decompressLegacy(
 
             drop(zd);
 
-            // TODO: make `ZSTDv06_decompress_usingDict` return a Result
-            Error::from_error_code(result).map_or(Ok(result), Err)
+            result
         }
         7 => {
             let compressedSize = src.len();
