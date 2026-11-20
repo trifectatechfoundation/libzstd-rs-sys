@@ -1254,9 +1254,7 @@ unsafe fn ZSTDMT_resize(
     mtctx: *mut ZSTDMT_CCtx,
     nbWorkers: core::ffi::c_uint,
 ) -> Result<(), Error> {
-    if POOL_resize((*mtctx).factory, nbWorkers as usize) != 0 {
-        return Err(Error::memory_allocation);
-    }
+    POOL_resize((*mtctx).factory, nbWorkers as usize).map_err(|()| Error::memory_allocation)?;
     ZSTDMT_expandJobsTable(mtctx, nbWorkers)?;
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
         (*mtctx).bufPool,
