@@ -3204,23 +3204,20 @@ unsafe fn ZSTDv06_decompress_insertDictionary(
     dctx: &mut ZSTDv06_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: usize,
-) -> usize {
+) -> Result<(), Error> {
     let mut eSize: usize = 0;
     let magic = MEM_readLE32(dict);
     if magic != ZSTDv06_DICT_MAGIC {
         ZSTDv06_refDictContent(dctx, dict, dictSize);
-        return 0;
+        return Ok(());
     }
     dict = (dict as *const core::ffi::c_char).add(4) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(4);
-    eSize = match ZSTDv06_loadEntropy(dctx, dict, dictSize) {
-        Ok(eSize) => eSize,
-        Err(_) => return Error::dictionary_corrupted.to_error_code(),
-    };
+    eSize = ZSTDv06_loadEntropy(dctx, dict, dictSize).map_err(|_| Error::dictionary_corrupted)?;
     dict = (dict as *const core::ffi::c_char).add(eSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(eSize);
     ZSTDv06_refDictContent(dctx, dict, dictSize);
-    0
+    Ok(())
 }
 unsafe fn ZSTDv06_decompressBegin_usingDict(
     dctx: &mut ZSTDv06_DCtx,
@@ -3232,8 +3229,7 @@ unsafe fn ZSTDv06_decompressBegin_usingDict(
         return errorCode;
     }
     if !dict.is_null() && dictSize != 0 {
-        let errorCode_0 = ZSTDv06_decompress_insertDictionary(dctx, dict, dictSize);
-        if ERR_isError(errorCode_0) {
+        if ZSTDv06_decompress_insertDictionary(dctx, dict, dictSize).is_err() {
             return Error::dictionary_corrupted.to_error_code();
         }
     }
