@@ -10,7 +10,6 @@ use crate::lib::common::mem::{
 use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
 use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
-use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
 pub(crate) struct ZSTDv06_DCtx {
@@ -2943,20 +2942,12 @@ pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
     ZSTDv06_checkContinuity(dctx, dst);
     ZSTDv06_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
 }
-unsafe fn ZSTD_errorFrameSizeInfoLegacy(
-    cSize: *mut usize,
-    dBound: *mut core::ffi::c_ulonglong,
-    ret: usize,
-) {
-    *cSize = ret;
-    *dBound = ZSTD_CONTENTSIZE_ERROR;
-}
 pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
     src: *const core::ffi::c_void,
     srcSize: usize,
     cSize: *mut usize,
     dBound: *mut core::ffi::c_ulonglong,
-) {
+) -> Result<(), Error> {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
     let mut nbBlocks = 0usize;
@@ -2966,40 +2957,25 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
             origSize: 0,
         }
     };
-    let frameHeaderSize = match ZSTDv06_frameHeaderSize(src, srcSize) {
-        Ok(frameHeaderSize) => frameHeaderSize,
-        Err(err) => {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err.to_error_code());
-            return;
-        }
-    };
+    let frameHeaderSize = ZSTDv06_frameHeaderSize(src, srcSize)?;
     if MEM_readLE32(src) != ZSTDv06_MAGICNUMBER {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown.to_error_code());
-        return;
+        return Err(Error::prefix_unknown);
     }
     if srcSize < frameHeaderSize.wrapping_add(ZSTDv06_blockHeaderSize) {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong.to_error_code());
-        return;
+        return Err(Error::srcSize_wrong);
     }
     ip = ip.add(frameHeaderSize);
     remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
     loop {
-        let cBlockSize = match ZSTDv06_getcBlockSize(
+        let cBlockSize = ZSTDv06_getcBlockSize(
             ip as *const core::ffi::c_void,
             remainingSize,
             &mut blockProperties,
-        ) {
-            Ok(cBlockSize) => cBlockSize,
-            Err(err) => {
-                ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err.to_error_code());
-                return;
-            }
-        };
+        )?;
         ip = ip.add(ZSTDv06_blockHeaderSize);
         remainingSize = remainingSize.wrapping_sub(ZSTDv06_blockHeaderSize);
         if cBlockSize > remainingSize {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong.to_error_code());
-            return;
+            return Err(Error::srcSize_wrong);
         }
         if cBlockSize == 0 {
             break;
@@ -3010,6 +2986,7 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
     }
     *cSize = ip.offset_from_unsigned(src as *const u8);
     *dBound = (nbBlocks * ZSTDv06_BLOCKSIZE_MAX as usize) as core::ffi::c_ulonglong;
+    Ok(())
 }
 fn ZSTDv06_nextSrcSizeToDecompress(dctx: &ZSTDv06_DCtx) -> usize {
     dctx.expected

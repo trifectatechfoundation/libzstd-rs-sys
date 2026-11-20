@@ -9,7 +9,6 @@ use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32
 use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
 use crate::lib::polyfill::{box_try_new_zeroed, box_try_new_zeroed_slice};
-use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
 pub(crate) struct ZSTDv05_DCtx {
@@ -2620,19 +2619,11 @@ pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src)
 }
-fn ZSTD_errorFrameSizeInfoLegacy(
-    cSize: &mut usize,
-    dBound: &mut core::ffi::c_ulonglong,
-    ret: Error,
-) {
-    *cSize = ret.to_error_code();
-    *dBound = ZSTD_CONTENTSIZE_ERROR;
-}
 pub(crate) fn ZSTDv05_findFrameSizeInfoLegacy(
     src: &[u8],
     cSize: &mut usize,
     dBound: &mut core::ffi::c_ulonglong,
-) {
+) -> Result<(), Error> {
     let mut ip = src;
     let mut nbBlocks = 0usize;
     let mut blockProperties = blockProperties_t {
@@ -2640,26 +2631,17 @@ pub(crate) fn ZSTDv05_findFrameSizeInfoLegacy(
         origSize: 0,
     };
     if src.len() < ZSTDv05_frameHeaderSize_min {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
-        return;
+        return Err(Error::srcSize_wrong);
     }
     if u32::from_le_bytes(src[..4].try_into().unwrap()) != ZSTDv05_MAGICNUMBER {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown);
-        return;
+        return Err(Error::prefix_unknown);
     }
     ip = &ip[ZSTDv05_frameHeaderSize_min..];
     loop {
-        let cBlockSize = match ZSTDv05_getcBlockSize(ip, &mut blockProperties) {
-            Ok(cBlockSize) => cBlockSize,
-            Err(err) => {
-                ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
-                return;
-            }
-        };
+        let cBlockSize = ZSTDv05_getcBlockSize(ip, &mut blockProperties)?;
         ip = &ip[ZSTDv05_blockHeaderSize..];
         if cBlockSize > ip.len() {
-            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
-            return;
+            return Err(Error::srcSize_wrong);
         }
         if cBlockSize == 0 {
             break;
@@ -2669,6 +2651,7 @@ pub(crate) fn ZSTDv05_findFrameSizeInfoLegacy(
     }
     *cSize = src.len() - ip.len();
     *dBound = (nbBlocks * BLOCKSIZE as usize) as core::ffi::c_ulonglong;
+    Ok(())
 }
 fn ZSTDv05_nextSrcSizeToDecompress(dctx: &mut ZSTDv05_DCtx) -> usize {
     dctx.expected
