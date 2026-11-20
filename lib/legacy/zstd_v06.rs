@@ -3292,7 +3292,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     dstCapacityPtr: &mut usize,
     src: *const core::ffi::c_void,
     srcSizePtr: &mut usize,
-) -> usize {
+) -> Result<usize, Error> {
     let istart = src as *const core::ffi::c_char;
     let iend = istart.add(*srcSizePtr);
     let mut ip = istart;
@@ -3309,17 +3309,14 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             Flush,
         }
         let mut current_block: Block;
-        match zbd.stage as core::ffi::c_uint {
-            ZBUFFds_init => return Error::init_missing.to_error_code(),
+        match zbd.stage {
+            ZBUFFds_init => return Err(Error::init_missing),
             ZBUFFds_loadHeader => {
-                let hSize = match ZSTDv06_getFrameParams(
+                let hSize = ZSTDv06_getFrameParams(
                     &mut zbd.fParams,
                     zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                     zbd.lhSize,
-                ) {
-                    Ok(hSize) => hSize,
-                    Err(err) => return err.to_error_code(),
-                };
+                )?;
                 if hSize != 0 {
                     // if hSize!=0, hSize > zbd->lhSize
                     let toLoad = hSize - zbd.lhSize;
@@ -3336,9 +3333,9 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                         zbd.lhSize = zbd.lhSize.wrapping_add(iend.offset_from_unsigned(ip));
                         *dstCapacityPtr = 0;
                         // remaining header bytes + next block header
-                        return hSize
+                        return Ok(hSize
                             .wrapping_sub(zbd.lhSize)
-                            .wrapping_add(ZSTDv06_blockHeaderSize);
+                            .wrapping_add(ZSTDv06_blockHeaderSize));
                     }
                     memcpy(
                         zbd.headerBuffer.as_mut_ptr().add(zbd.lhSize) as *mut core::ffi::c_void,
@@ -3351,25 +3348,21 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                 } else {
                     // Consume header
                     let h1Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd); // == ZSTDv06_frameHeaderSize_min
-                    if let Err(err) = ZSTDv06_decompressContinue(
+                    ZSTDv06_decompressContinue(
                         &mut zbd.zd,
                         Writer::from_slice(&mut []),
                         zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                         h1Size,
-                    ) {
-                        return err.to_error_code();
-                    }
+                    )?;
                     if h1Size < zbd.lhSize {
                         // long header
                         let h2Size = ZSTDv06_nextSrcSizeToDecompress(&zbd.zd);
-                        if let Err(err) = ZSTDv06_decompressContinue(
+                        ZSTDv06_decompressContinue(
                             &mut zbd.zd,
                             Writer::from_slice(&mut []),
                             zbd.headerBuffer.as_mut_ptr().add(h1Size) as *const core::ffi::c_void,
                             h2Size,
-                        ) {
-                            return err.to_error_code();
-                        }
+                        )?;
                     }
 
                     // Frame header instruct buffer sizes
@@ -3377,7 +3370,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                     zbd.blockSize = blockSize;
                     if zbd.inBuff.len() < blockSize {
                         let Ok(inBuff) = box_try_new_zeroed_slice(blockSize) else {
-                            return Error::memory_allocation.to_error_code();
+                            return Err(Error::memory_allocation);
                         };
                         zbd.inBuff = unsafe { inBuff.assume_init() };
                     }
@@ -3387,7 +3380,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
                         .wrapping_add((WILDCOPY_OVERLENGTH * 2) as usize);
                     if zbd.outBuff.len() < neededOutSize {
                         let Ok(outBuff) = box_try_new_zeroed_slice(neededOutSize) else {
-                            return Error::memory_allocation.to_error_code();
+                            return Err(Error::memory_allocation);
                         };
                         zbd.outBuff = unsafe { outBuff.assume_init() };
                     }
@@ -3404,7 +3397,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             ZBUFFds_flush => {
                 current_block = Block::Flush;
             }
-            _ => return Error::GENERIC.to_error_code(),
+            _ => return Err(Error::GENERIC),
         }
         if current_block == Block::Read {
             drop(current_block);
@@ -3419,15 +3412,12 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
 
             if iend.offset_from_unsigned(ip) >= neededInSize {
                 // decode directly from src
-                let decodedSize = match ZSTDv06_decompressContinue(
+                let decodedSize = ZSTDv06_decompressContinue(
                     &mut zbd.zd,
                     Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..),
                     ip as *const core::ffi::c_void,
                     neededInSize,
-                ) {
-                    Ok(decodedSize) => decodedSize,
-                    Err(err) => return err.to_error_code(),
-                };
+                )?;
                 ip = ip.add(neededInSize);
                 if decodedSize == 0 {
                     // this was just a header
@@ -3453,7 +3443,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             let toLoad_0 = neededInSize_0.wrapping_sub(zbd.inPos);
             let mut loadedSize: usize = 0;
             if toLoad_0 > zbd.inBuff.len().wrapping_sub(zbd.inPos) {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             loadedSize = ZBUFFv06_limitCopy(
                 zbd.inBuff[zbd.inPos..].as_mut_ptr().cast(),
@@ -3470,15 +3460,12 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             }
 
             // decode loaded input
-            let decodedSize_0 = match ZSTDv06_decompressContinue(
+            let decodedSize_0 = ZSTDv06_decompressContinue(
                 &mut zbd.zd,
                 Writer::from_boxed_slice(&mut zbd.outBuff).subslice(zbd.outStart..),
                 zbd.inBuff[..neededInSize_0].as_ptr().cast(),
                 neededInSize_0,
-            ) {
-                Ok(decodedSize) => decodedSize,
-                Err(err) => return err.to_error_code(),
-            };
+            )?;
             zbd.inPos = 0; // input is consumed
             if decodedSize_0 == 0 {
                 // this was just a header
@@ -3520,5 +3507,5 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
         nextSrcSizeHint = nextSrcSizeHint.wrapping_add(ZSTDv06_blockHeaderSize);
     }
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub(zbd.inPos); // already loaded
-    nextSrcSizeHint
+    Ok(nextSrcSizeHint)
 }
