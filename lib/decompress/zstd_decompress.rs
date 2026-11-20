@@ -151,7 +151,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
         6 => {
             let mut fParams = ZSTDv06_frameParams::default();
             match unsafe { ZSTDv06_getFrameParams(&mut fParams, ptr, src.len() as _) } {
-                0 => Some(fParams.frameContentSize),
+                Ok(0) => Some(fParams.frameContentSize),
                 _ => None,
             }
         }

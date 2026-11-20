@@ -2101,32 +2101,30 @@ unsafe fn ZSTDv06_frameHeaderSize(
         .wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize)))
 }
 
-/// [`ZSTDv06_getFrameParams`] :
-/// decode Frame Header, or provide expected `srcSize`.
-/// @return : 0, `fparamsPtr` is correctly filled,
-///          >0, `srcSize` is too small, result is expected `srcSize`,
-///           or an error code, which can be tested using [`ZSTDv06_isError`]
+/// Decode Frame Header, or provide expected `srcSize`.
+///
+/// # Returns
+/// - 0 if `fparamsPtr` is correctly filled,
+/// - >0 if `srcSize` is too small, result is expected `srcSize`,
+/// - or an error
 pub(crate) unsafe fn ZSTDv06_getFrameParams(
     fparamsPtr: *mut ZSTDv06_frameParams,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let ip = src as *const u8;
 
     if srcSize < ZSTDv06_frameHeaderSize_min {
-        return ZSTDv06_frameHeaderSize_min;
+        return Ok(ZSTDv06_frameHeaderSize_min);
     }
     if MEM_readLE32(src) != ZSTDv06_MAGICNUMBER {
-        return Error::prefix_unknown.to_error_code();
+        return Err(Error::prefix_unknown);
     }
 
     // ensure there is enough `srcSize` to fully read/decode frame header
-    let fhsize = match ZSTDv06_frameHeaderSize(src, srcSize) {
-        Ok(fhsize) => fhsize,
-        Err(err) => return err.to_error_code(),
-    };
+    let fhsize = ZSTDv06_frameHeaderSize(src, srcSize)?;
     if srcSize < fhsize {
-        return fhsize;
+        return Ok(fhsize);
     }
 
     ptr::write_bytes(fparamsPtr as *mut u8, 0, size_of::<ZSTDv06_frameParams>());
@@ -2136,7 +2134,7 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
         (frameDesc & 0xf) as core::ffi::c_uint + ZSTDv06_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
     if frameDesc & 0x20 != 0 {
         // reserved 1 bit
-        return Error::frameParameter_unsupported.to_error_code();
+        return Err(Error::frameParameter_unsupported);
     }
     match frameDesc as core::ffi::c_int >> 6 {
         // fcsId
@@ -2153,16 +2151,16 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
         _ => unreachable!(),
     }
 
-    0
+    Ok(0)
 }
 unsafe fn ZSTDv06_decodeFrameHeader(
     zc: &mut ZSTDv06_DCtx,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let result = ZSTDv06_getFrameParams(&mut zc.fParams, src, srcSize);
     if MEM_32bits() && zc.fParams.windowLog > 25 {
-        return Error::frameParameter_unsupported.to_error_code();
+        return Err(Error::frameParameter_unsupported);
     }
     result
 }
@@ -2904,7 +2902,7 @@ unsafe fn ZSTDv06_decompressFrame(
     if srcSize < frameHeaderSize.wrapping_add(ZSTDv06_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
-    if ZSTDv06_decodeFrameHeader(dctx, src, frameHeaderSize) != 0 {
+    if !matches!(ZSTDv06_decodeFrameHeader(dctx, src, frameHeaderSize), Ok(0)) {
         return Error::corruption_detected.to_error_code();
     }
     ip = ip.add(frameHeaderSize);
@@ -3129,7 +3127,6 @@ unsafe fn ZSTDv06_decompressContinue(
         }
         _ => return Error::GENERIC.to_error_code(),
     }
-    let mut result: usize = 0;
     memcpy(
         dctx.headerBuffer
             .as_mut_ptr()
@@ -3138,13 +3135,12 @@ unsafe fn ZSTDv06_decompressContinue(
         dctx.expected,
     );
     let headerBuffer = dctx.headerBuffer;
-    result = ZSTDv06_decodeFrameHeader(
+    if let Err(err) = ZSTDv06_decodeFrameHeader(
         dctx,
         headerBuffer.as_ptr() as *const core::ffi::c_void,
         dctx.headerSize,
-    );
-    if ERR_isError(result) {
-        return result;
+    ) {
+        return err.to_error_code();
     }
     dctx.expected = ZSTDv06_blockHeaderSize;
     dctx.stage = ZSTDds_decodeBlockHeader;
@@ -3388,17 +3384,17 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
         match zbd.stage as core::ffi::c_uint {
             ZBUFFds_init => return Error::init_missing.to_error_code(),
             ZBUFFds_loadHeader => {
-                let hSize = ZSTDv06_getFrameParams(
+                let hSize = match ZSTDv06_getFrameParams(
                     &mut zbd.fParams,
                     zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                     zbd.lhSize,
-                );
+                ) {
+                    Ok(hSize) => hSize,
+                    Err(err) => return err.to_error_code(),
+                };
                 if hSize != 0 {
                     // if hSize!=0, hSize > zbd->lhSize
                     let toLoad = hSize - zbd.lhSize;
-                    if ERR_isError(hSize) {
-                        return hSize;
-                    }
                     if toLoad > iend.offset_from_unsigned(ip) {
                         // not enough input to load full header
                         if !ip.is_null() {
