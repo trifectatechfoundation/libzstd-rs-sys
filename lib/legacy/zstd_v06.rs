@@ -2863,7 +2863,7 @@ unsafe fn ZSTDv06_decompressFrame(
     dstCapacity: usize,
     src: *const core::ffi::c_void,
     srcSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
     let ostart = dst as *mut u8;
@@ -2877,73 +2877,59 @@ unsafe fn ZSTDv06_decompressFrame(
         }
     };
     if srcSize < ZSTDv06_frameHeaderSize_min.wrapping_add(ZSTDv06_blockHeaderSize) {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
-    let frameHeaderSize = match ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min) {
-        Ok(frameHeaderSize) => frameHeaderSize,
-        Err(err) => return err.to_error_code(),
-    };
+    let frameHeaderSize = ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min)?;
     if srcSize < frameHeaderSize.wrapping_add(ZSTDv06_blockHeaderSize) {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     if !matches!(ZSTDv06_decodeFrameHeader(dctx, src, frameHeaderSize), Ok(0)) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     ip = ip.add(frameHeaderSize);
     remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
     loop {
-        let mut decodedSize = 0;
-        let cBlockSize = match ZSTDv06_getcBlockSize(
+        let cBlockSize = ZSTDv06_getcBlockSize(
             ip as *const core::ffi::c_void,
             iend.offset_from_unsigned(ip),
             &mut blockProperties,
-        ) {
-            Ok(cBlockSize) => cBlockSize,
-            Err(err) => return err.to_error_code(),
-        };
+        )?;
         ip = ip.add(ZSTDv06_blockHeaderSize);
         remainingSize = remainingSize.wrapping_sub(ZSTDv06_blockHeaderSize);
         if cBlockSize > remainingSize {
-            return Error::srcSize_wrong.to_error_code();
+            return Err(Error::srcSize_wrong);
         }
-        match blockProperties.blockType as core::ffi::c_uint {
-            0 => {
-                decodedSize = ZSTDv06_decompressBlock_internal(
-                    dctx,
-                    op as *mut core::ffi::c_void,
-                    oend.offset_from_unsigned(op),
-                    Reader::from_raw_parts(ip, cBlockSize),
-                )
-                .unwrap_or_else(|err| err.to_error_code());
-            }
-            1 => {
-                decodedSize = ZSTDv06_copyRawBlock(
-                    op as *mut core::ffi::c_void,
-                    oend.offset_from_unsigned(op),
-                    ip as *const core::ffi::c_void,
-                    cBlockSize,
-                )
-                .unwrap_or_else(|err| err.to_error_code());
-            }
-            2 => return Error::GENERIC.to_error_code(),
+        let decodedSize = match blockProperties.blockType {
+            0 => ZSTDv06_decompressBlock_internal(
+                dctx,
+                op as *mut core::ffi::c_void,
+                oend.offset_from_unsigned(op),
+                Reader::from_raw_parts(ip, cBlockSize),
+            ),
+            1 => ZSTDv06_copyRawBlock(
+                op as *mut core::ffi::c_void,
+                oend.offset_from_unsigned(op),
+                ip as *const core::ffi::c_void,
+                cBlockSize,
+            ),
+            2 => return Err(Error::GENERIC),
             3 => {
                 if remainingSize != 0 {
-                    return Error::srcSize_wrong.to_error_code();
+                    return Err(Error::srcSize_wrong);
                 }
+                Ok(0)
             }
-            _ => return Error::GENERIC.to_error_code(),
-        }
+            _ => return Err(Error::GENERIC),
+        };
         if cBlockSize == 0 {
             break;
         }
-        if ERR_isError(decodedSize) {
-            return decodedSize;
-        }
+        let decodedSize = decodedSize?;
         op = op.add(decodedSize);
         ip = ip.add(cBlockSize);
         remainingSize = remainingSize.wrapping_sub(cBlockSize);
     }
-    op.offset_from_unsigned(ostart)
+    Ok(op.offset_from_unsigned(ostart))
 }
 pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
     dctx: &mut ZSTDv06_DCtx,
@@ -2953,7 +2939,7 @@ pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
     srcSize: usize,
     dict: *const core::ffi::c_void,
     dictSize: usize,
-) -> usize {
+) -> Result<usize, Error> {
     ZSTDv06_decompressBegin_usingDict(dctx, dict, dictSize);
     ZSTDv06_checkContinuity(dctx, dst);
     ZSTDv06_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
