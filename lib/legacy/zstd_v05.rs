@@ -582,13 +582,12 @@ unsafe fn FSEv05_readNCount(
     }
     Ok(ip.offset_from_unsigned(istart))
 }
-fn FSEv05_buildDTable_rle<const N: usize>(dt: &mut FSEv05_DTable<N>, symbolValue: u8) -> usize {
+fn FSEv05_buildDTable_rle<const N: usize>(dt: &mut FSEv05_DTable<N>, symbolValue: u8) {
     dt.header.tableLog = 0;
     dt.header.fastMode = 0;
     dt.data[0].newState = 0;
     dt.data[0].symbol = symbolValue;
     dt.data[0].nbBits = 0;
-    0
 }
 fn FSEv05_buildDTable_raw<const N: usize>(
     dt: &mut FSEv05_DTable<N>,
