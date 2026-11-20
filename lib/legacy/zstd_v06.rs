@@ -2089,12 +2089,16 @@ pub(crate) fn ZSTDv06_createDCtx() -> Result<Box<ZSTDv06_DCtx>, AllocError> {
     Ok(dctx)
 }
 
-unsafe fn ZSTDv06_frameHeaderSize(src: *const core::ffi::c_void, srcSize: usize) -> usize {
+unsafe fn ZSTDv06_frameHeaderSize(
+    src: *const core::ffi::c_void,
+    srcSize: usize,
+) -> Result<usize, Error> {
     if srcSize < ZSTDv06_frameHeaderSize_min {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     let fcsId = (*(src as *const u8).add(4) as core::ffi::c_int >> 6) as u32;
-    ZSTDv06_frameHeaderSize_min.wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize))
+    Ok(ZSTDv06_frameHeaderSize_min
+        .wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize)))
 }
 
 /// [`ZSTDv06_getFrameParams`] :
@@ -2117,7 +2121,10 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
     }
 
     // ensure there is enough `srcSize` to fully read/decode frame header
-    let fhsize = ZSTDv06_frameHeaderSize(src, srcSize);
+    let fhsize = match ZSTDv06_frameHeaderSize(src, srcSize) {
+        Ok(fhsize) => fhsize,
+        Err(err) => return err.to_error_code(),
+    };
     if srcSize < fhsize {
         return fhsize;
     }
@@ -2890,10 +2897,10 @@ unsafe fn ZSTDv06_decompressFrame(
     if srcSize < ZSTDv06_frameHeaderSize_min.wrapping_add(ZSTDv06_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
-    let frameHeaderSize = ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min);
-    if ERR_isError(frameHeaderSize) {
-        return frameHeaderSize;
-    }
+    let frameHeaderSize = match ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min) {
+        Ok(frameHeaderSize) => frameHeaderSize,
+        Err(err) => return err.to_error_code(),
+    };
     if srcSize < frameHeaderSize.wrapping_add(ZSTDv06_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -2991,11 +2998,13 @@ pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
             origSize: 0,
         }
     };
-    let frameHeaderSize = ZSTDv06_frameHeaderSize(src, srcSize);
-    if ERR_isError(frameHeaderSize) {
-        ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, frameHeaderSize);
-        return;
-    }
+    let frameHeaderSize = match ZSTDv06_frameHeaderSize(src, srcSize) {
+        Ok(frameHeaderSize) => frameHeaderSize,
+        Err(err) => {
+            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err.to_error_code());
+            return;
+        }
+    };
     if MEM_readLE32(src) != ZSTDv06_MAGICNUMBER {
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown.to_error_code());
         return;
@@ -3052,10 +3061,10 @@ unsafe fn ZSTDv06_decompressContinue(
             if srcSize != ZSTDv06_frameHeaderSize_min {
                 return Error::srcSize_wrong.to_error_code();
             }
-            dctx.headerSize = ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min);
-            if ERR_isError(dctx.headerSize) {
-                return dctx.headerSize;
-            }
+            dctx.headerSize = match ZSTDv06_frameHeaderSize(src, ZSTDv06_frameHeaderSize_min) {
+                Ok(headerSize) => headerSize,
+                Err(err) => return err.to_error_code(),
+            };
             memcpy(
                 dctx.headerBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 src,
