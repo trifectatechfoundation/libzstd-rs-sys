@@ -1,11 +1,12 @@
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 
-use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc};
+use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator};
 use crate::lib::common::error_private::Error;
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_entropyDTables_t};
+use crate::lib::polyfill::box_try_new_zeroed_in;
 use crate::lib::zstd::{
     ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dictContentType_e,
     ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_MAGIC_DICTIONARY,
@@ -192,22 +193,18 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     dictContentType: ZSTD_dictContentType_e,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_DDict {
-    let ddict = ZSTD_customMalloc(size_of::<ZSTD_DDict>(), customMem) as *mut ZSTD_DDict;
-
-    if ddict.is_null() {
+    let alloc = ZstdAllocator::new(customMem);
+    let Ok(ddict) = box_try_new_zeroed_in::<ZSTD_DDict, _>(alloc) else {
         return core::ptr::null_mut();
-    }
+    };
+    // SAFETY: all-zero bytes are a valid `ZSTD_DDict`.
+    let mut ddict = ddict.assume_init();
 
-    (*ddict).cMem = customMem;
-    if ZSTD_initDDict_internal(
-        ddict.as_mut().unwrap(),
-        dict,
-        dictSize,
-        dictLoadMethod,
-        dictContentType,
-    )
-    .is_err()
-    {
+    ddict.cMem = customMem;
+    let init = ZSTD_initDDict_internal(&mut ddict, dict, dictSize, dictLoadMethod, dictContentType);
+
+    let ddict = Box::into_raw_with_allocator(ddict).0;
+    if init.is_err() {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
     }
@@ -309,11 +306,7 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> usize {
     }
     let cMem = (*ddict).cMem;
     ZSTD_customFree((*ddict).dictBuffer, (*ddict).dictSize, cMem);
-    ZSTD_customFree(
-        ddict as *mut core::ffi::c_void,
-        size_of::<ZSTD_DDict>(),
-        cMem,
-    );
+    drop(Box::from_raw_in(ddict, ZstdAllocator::new(cMem)));
     0
 }
 
