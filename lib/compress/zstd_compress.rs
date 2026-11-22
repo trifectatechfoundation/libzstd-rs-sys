@@ -1337,15 +1337,11 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> usize {
         return Error::memory_allocation.to_error_code();
     }
 
-    let cctxInWorkspace =
-        ZSTD_cwksp_owns_buffer(&(*cctx).workspace, cctx as *const core::ffi::c_void);
     ZSTD_freeCCtxContent(cctx);
-    if !cctxInWorkspace {
-        drop(Box::from_raw_in(
-            cctx,
-            ZstdAllocator::new((*cctx).customMem),
-        ));
-    }
+    drop(Box::from_raw_in(
+        cctx,
+        ZstdAllocator::new((*cctx).customMem),
+    ));
 
     0
 }
