@@ -1,3 +1,4 @@
+use core::alloc::AllocError;
 use core::mem::MaybeUninit;
 use core::ptr;
 
@@ -7271,9 +7272,8 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     useRowMatchFinder: ParamSwitch,
     enableDedicatedDictSearch: bool,
     customMem: ZSTD_customMem,
-) -> *mut ZSTD_CDict {
-    let workspaceSize = (ZSTD_cwksp_alloc_size(size_of::<ZSTD_CDict>()))
-        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
+) -> Result<Box<ZSTD_CDict, ZstdAllocator>, AllocError> {
+    let workspaceSize = ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE)
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             useRowMatchFinder,
@@ -7288,21 +7288,27 @@ unsafe fn ZSTD_createCDict_advanced_internal(
                 size_of::<*mut core::ffi::c_void>(),
             ))
         });
-    let workspace = ZSTD_customMalloc(workspaceSize, customMem);
-    let mut ws = ZSTD_cwksp::default();
 
+    let alloc = ZstdAllocator::new(customMem);
+    let cdict = box_try_new_zeroed_in::<ZSTD_CDict, _>(alloc)?;
+    // SAFETY: all-zero bytes are a valid `ZSTD_CDict`.
+    let mut cdict = cdict.assume_init();
+
+    let workspace = ZSTD_customMalloc(workspaceSize, customMem);
     if workspace.is_null() {
-        return core::ptr::null_mut();
+        return Err(AllocError);
     }
 
-    ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, CwkspAllocKind::Dynamic);
-
-    let cdict = ZSTD_cwksp_reserve_object(&mut ws, size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
-    ZSTD_cwksp_move(&mut (*cdict).workspace, &mut ws);
-    (*cdict).customMem = customMem;
-    (*cdict).compressionLevel = ZSTD_NO_CLEVEL; // signals advanced API usage
-    (*cdict).useRowMatchFinder = useRowMatchFinder;
-    cdict
+    ZSTD_cwksp_init(
+        &mut cdict.workspace,
+        workspace,
+        workspaceSize,
+        CwkspAllocKind::Dynamic,
+    );
+    cdict.customMem = customMem;
+    cdict.compressionLevel = ZSTD_NO_CLEVEL; // signals advanced API usage
+    cdict.useRowMatchFinder = useRowMatchFinder;
+    Ok(cdict)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_advanced))]
@@ -7367,25 +7373,28 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     cctxParams.useRowMatchFinder =
         ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
 
-    let cdict = ZSTD_createCDict_advanced_internal(
+    let Ok(cdict) = ZSTD_createCDict_advanced_internal(
         dictSize,
         dictLoadMethod,
         cctxParams.cParams,
         cctxParams.useRowMatchFinder,
         cctxParams.enableDedicatedDictSearch != 0,
         customMem,
-    );
+    ) else {
+        return core::ptr::null_mut();
+    };
 
-    if cdict.is_null()
-        || ZSTD_initCDict_internal(
-            cdict,
-            dict,
-            dictSize,
-            dictLoadMethod,
-            dictContentType,
-            cctxParams,
-        )
-        .is_err()
+    let (cdict, _) = Box::into_raw_with_allocator(cdict);
+
+    if ZSTD_initCDict_internal(
+        cdict,
+        dict,
+        dictSize,
+        dictLoadMethod,
+        dictContentType,
+        cctxParams,
+    )
+    .is_err()
     {
         ZSTD_freeCDict(cdict);
         return core::ptr::null_mut();
@@ -7468,11 +7477,7 @@ pub unsafe extern "C" fn ZSTD_freeCDict(cdict: *mut ZSTD_CDict) -> usize {
         ZSTD_cwksp_owns_buffer(&(*cdict).workspace, cdict as *const core::ffi::c_void);
     ZSTD_cwksp_free(&mut (*cdict).workspace, cMem);
     if !cdictInWorkspace {
-        ZSTD_customFree(
-            cdict as *mut core::ffi::c_void,
-            (*cdict).dictContentSize,
-            cMem,
-        );
+        drop(Box::from_raw_in(cdict, ZstdAllocator::new(cMem)));
     }
     0
 }
