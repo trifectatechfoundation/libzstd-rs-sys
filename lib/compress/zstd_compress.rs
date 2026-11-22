@@ -7342,8 +7342,27 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     originalCctxParams: *const ZSTD_CCtx_params,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    let mut cctxParams = *originalCctxParams;
+    match ZSTD_createCDict_internal(
+        dict,
+        dictSize,
+        dictLoadMethod,
+        dictContentType,
+        *originalCctxParams,
+        customMem,
+    ) {
+        Ok(cdict) => Box::into_raw_with_allocator(cdict).0,
+        Err(_) => core::ptr::null_mut(),
+    }
+}
 
+unsafe fn ZSTD_createCDict_internal(
+    dict: *const core::ffi::c_void,
+    dictSize: usize,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
+    mut cctxParams: ZSTD_CCtx_params,
+    customMem: ZSTD_customMem,
+) -> Result<Box<ZSTD_CDict, ZstdAllocator>, Error> {
     let mut cParams = if cctxParams.enableDedicatedDictSearch != 0 {
         let mut cParams =
             ZSTD_compressionParameters::new_for_dds(cctxParams.compressionLevel, dictSize);
@@ -7373,33 +7392,61 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     cctxParams.useRowMatchFinder =
         ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
 
-    let Ok(mut cdict) = ZSTD_createCDict_advanced_internal(
+    let mut cdict = ZSTD_createCDict_advanced_internal(
         dictSize,
         dictLoadMethod,
         cctxParams.cParams,
         cctxParams.useRowMatchFinder,
         cctxParams.enableDedicatedDictSearch != 0,
         customMem,
-    ) else {
-        return core::ptr::null_mut();
-    };
+    )?;
 
-    let init = ZSTD_initCDict_internal(
+    if let Err(err) = ZSTD_initCDict_internal(
         &mut cdict,
         dict,
         dictSize,
         dictLoadMethod,
         dictContentType,
         cctxParams,
-    );
-
-    let (cdict, _) = Box::into_raw_with_allocator(cdict);
-    if init.is_err() {
-        ZSTD_freeCDict(cdict);
-        return core::ptr::null_mut();
+    ) {
+        ZSTD_cwksp_free(&mut cdict.workspace, customMem);
+        return Err(err);
     }
 
-    cdict
+    Ok(cdict)
+}
+
+unsafe fn ZSTD_createCDict_withLevel(
+    dict: *const core::ffi::c_void,
+    dictSize: usize,
+    compressionLevel: core::ffi::c_int,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+) -> *mut ZSTD_CDict {
+    let mut cctxParams = ZSTD_CCtx_params::new(0);
+    cctxParams.cParams = ZSTD_compressionParameters::new(
+        compressionLevel,
+        ZSTD_CONTENTSIZE_UNKNOWN,
+        dictSize,
+        CParamMode::CreateCDict,
+    );
+    let Ok(mut cdict) = ZSTD_createCDict_internal(
+        dict,
+        dictSize,
+        dictLoadMethod,
+        ZSTD_dct_auto,
+        cctxParams,
+        ZSTD_customMem::default(),
+    ) else {
+        return core::ptr::null_mut();
+    };
+
+    cdict.compressionLevel = if compressionLevel == 0 {
+        ZSTD_CLEVEL_DEFAULT
+    } else {
+        compressionLevel
+    };
+
+    Box::into_raw_with_allocator(cdict).0
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict))]
@@ -7408,30 +7455,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
     dictSize: usize,
     compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let cParams = ZSTD_compressionParameters::new(
-        compressionLevel,
-        ZSTD_CONTENTSIZE_UNKNOWN,
-        dictSize,
-        CParamMode::CreateCDict,
-    );
-    let cdict = ZSTD_createCDict_advanced(
-        dict,
-        dictSize,
-        ZSTD_dlm_byCopy,
-        ZSTD_dct_auto,
-        cParams,
-        ZSTD_customMem::default(),
-    );
-
-    if !cdict.is_null() {
-        (*cdict).compressionLevel = if compressionLevel == 0 {
-            ZSTD_CLEVEL_DEFAULT
-        } else {
-            compressionLevel
-        };
-    }
-
-    cdict
+    ZSTD_createCDict_withLevel(dict, dictSize, compressionLevel, ZSTD_dlm_byCopy)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_byReference))]
@@ -7440,30 +7464,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
     dictSize: usize,
     compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let cParams = ZSTD_compressionParameters::new(
-        compressionLevel,
-        ZSTD_CONTENTSIZE_UNKNOWN,
-        dictSize,
-        CParamMode::CreateCDict,
-    );
-    let cdict = ZSTD_createCDict_advanced(
-        dict,
-        dictSize,
-        ZSTD_dlm_byRef,
-        ZSTD_dct_auto,
-        cParams,
-        ZSTD_customMem::default(),
-    );
-
-    if !cdict.is_null() {
-        (*cdict).compressionLevel = if compressionLevel == 0 {
-            ZSTD_CLEVEL_DEFAULT
-        } else {
-            compressionLevel
-        };
-    }
-
-    cdict
+    ZSTD_createCDict_withLevel(dict, dictSize, compressionLevel, ZSTD_dlm_byRef)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCDict))]
