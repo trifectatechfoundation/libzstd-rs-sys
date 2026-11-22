@@ -64,6 +64,20 @@ cfg_select! {
 }
 
 #[inline]
+pub(crate) fn box_try_new_uninit_in<T, A: Allocator>(
+    alloc: A,
+) -> Result<Box<MaybeUninit<T>, A>, AllocError> {
+    let ptr = if size_of::<T>() == 0 {
+        NonNull::dangling()
+    } else {
+        let layout = Layout::new::<MaybeUninit<T>>();
+        alloc.allocate(layout)?.cast()
+    };
+    // SAFETY: Pointer is nonnull and matches the allocator.
+    unsafe { Ok(Box::from_raw_in(ptr.as_ptr(), alloc)) }
+}
+
+#[inline]
 pub(crate) fn box_try_new_zeroed<T>() -> Result<Box<MaybeUninit<T>>, AllocError> {
     box_try_new_zeroed_in(std::alloc::Global)
 }

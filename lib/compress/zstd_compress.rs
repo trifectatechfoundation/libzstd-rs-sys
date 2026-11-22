@@ -1,7 +1,7 @@
 use core::mem::MaybeUninit;
 use core::ptr;
 
-use crate::lib::polyfill::PointerExt;
+use crate::lib::polyfill::{box_try_new_uninit_in, PointerExt};
 
 #[derive(Default)]
 #[repr(C)]
@@ -689,7 +689,7 @@ fn ZSTD_checkDictValidity(
 
 use libc::ptrdiff_t;
 
-use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
+use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator};
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
 use crate::lib::common::entropy_common::FSE_readNCount;
@@ -1524,15 +1524,13 @@ impl From<ZSTD_compressionParameters> for ZSTD_CCtx_params {
     }
 }
 
-unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
-    let params =
-        ZSTD_customCalloc(size_of::<ZSTD_CCtx_params>(), customMem) as *mut ZSTD_CCtx_params;
-    if params.is_null() {
+fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
+    let mut params = ZSTD_CCtx_params::new(ZSTD_CLEVEL_DEFAULT);
+    params.customMem = customMem;
+    let Ok(boxed) = box_try_new_uninit_in(ZstdAllocator::new(customMem)) else {
         return core::ptr::null_mut();
-    }
-    ZSTD_CCtxParams_init(params, ZSTD_CLEVEL_DEFAULT);
-    (*params).customMem = customMem;
-    params
+    };
+    Box::into_raw_with_allocator(Box::write(boxed, params)).0
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtxParams))]
@@ -1545,11 +1543,10 @@ pub unsafe extern "C" fn ZSTD_freeCCtxParams(params: *mut ZSTD_CCtx_params) -> u
     if params.is_null() {
         return 0;
     }
-    ZSTD_customFree(
-        params as *mut core::ffi::c_void,
-        size_of::<ZSTD_CCtx_params>(),
-        (*params).customMem,
-    );
+    drop(Box::from_raw_in(
+        params,
+        ZstdAllocator::new((*params).customMem),
+    ));
     0
 }
 
