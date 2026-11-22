@@ -2,7 +2,9 @@ use core::ffi::c_char;
 use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
-use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
+use crate::lib::common::allocations::{
+    ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator,
+};
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::HUF_flags;
@@ -29,6 +31,7 @@ use crate::lib::decompress::{
     OF_bits, StreamStage, ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_entropyDTables_t, ZSTD_frame,
     ZSTD_skippableFrame,
 };
+use crate::lib::polyfill::box_try_new_uninit_in;
 use crate::lib::zstd::{
     BufferMode, ForceIgnoreChecksum, Format, ZSTD_ResetDirective, ZSTD_customMem, ZSTD_dParameter,
     ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e,
@@ -687,14 +690,14 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
 }
 
 unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
-    let alloc = ZSTD_customMalloc(size_of::<ZSTD_DCtx>(), customMem);
-    let Some(dctx) = alloc.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut() else {
+    let alloc = ZstdAllocator::new(customMem);
+    let Ok(mut dctx) = box_try_new_uninit_in::<ZSTD_DCtx, _>(alloc) else {
         return core::ptr::null_mut();
     };
 
     (*dctx.as_mut_ptr()).customMem = customMem;
-    ZSTD_initDCtx_internal(dctx);
-    dctx.as_mut_ptr()
+    ZSTD_initDCtx_internal(&mut dctx);
+    Box::into_raw_with_allocator(dctx).0.cast::<ZSTD_DCtx>()
 }
 
 /// Create a decompression context using a custom memory allocator
@@ -748,7 +751,7 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> usize {
     if let Some(ddictSet) = (*dctx).ddictSet.take() {
         ddictSet.free(cMem);
     }
-    ZSTD_customFree(dctx as *mut core::ffi::c_void, size_of::<ZSTD_DCtx>(), cMem);
+    drop(Box::from_raw_in(dctx, ZstdAllocator::new(cMem)));
     0
 }
 
