@@ -7473,12 +7473,8 @@ pub unsafe extern "C" fn ZSTD_freeCDict(cdict: *mut ZSTD_CDict) -> usize {
         return 0;
     }
     let cMem = (*cdict).customMem;
-    let cdictInWorkspace =
-        ZSTD_cwksp_owns_buffer(&(*cdict).workspace, cdict as *const core::ffi::c_void);
     ZSTD_cwksp_free(&mut (*cdict).workspace, cMem);
-    if !cdictInWorkspace {
-        drop(Box::from_raw_in(cdict, ZstdAllocator::new(cMem)));
-    }
+    drop(Box::from_raw_in(cdict, ZstdAllocator::new(cMem)));
     0
 }
 
