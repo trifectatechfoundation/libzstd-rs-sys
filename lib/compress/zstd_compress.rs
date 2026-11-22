@@ -7199,43 +7199,43 @@ pub unsafe extern "C" fn ZSTD_sizeof_CDict(cdict: *const ZSTD_CDict) -> usize {
 }
 
 unsafe fn ZSTD_initCDict_internal(
-    cdict: *mut ZSTD_CDict,
+    cdict: &mut ZSTD_CDict,
     dictBuffer: *const core::ffi::c_void,
     dictSize: usize,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     dictContentType: ZSTD_dictContentType_e,
     mut params: ZSTD_CCtx_params,
 ) -> Result<(), Error> {
-    (*cdict).matchState.cParams = params.cParams;
-    (*cdict).matchState.dedicatedDictSearch = params.enableDedicatedDictSearch;
+    cdict.matchState.cParams = params.cParams;
+    cdict.matchState.dedicatedDictSearch = params.enableDedicatedDictSearch;
     if dictLoadMethod == ZSTD_dlm_byRef || dictBuffer.is_null() || dictSize == 0 {
-        (*cdict).dictContent = dictBuffer;
+        cdict.dictContent = dictBuffer;
     } else {
         let internalBuffer = ZSTD_cwksp_reserve_object(
-            &mut (*cdict).workspace,
+            &mut cdict.workspace,
             ZSTD_cwksp_align(dictSize, size_of::<*mut core::ffi::c_void>()),
         );
         if internalBuffer.is_null() {
             return Err(Error::memory_allocation);
         }
-        (*cdict).dictContent = internalBuffer;
+        cdict.dictContent = internalBuffer;
         core::ptr::copy_nonoverlapping(
             dictBuffer.cast::<u8>(),
             internalBuffer.cast::<u8>(),
             dictSize,
         );
     }
-    (*cdict).dictContentSize = dictSize;
-    (*cdict).dictContentType = dictContentType;
+    cdict.dictContentSize = dictSize;
+    cdict.dictContentType = dictContentType;
 
-    (*cdict).entropyWorkspace =
-        ZSTD_cwksp_reserve_object(&mut (*cdict).workspace, HUF_WORKSPACE_SIZE) as *mut u32;
+    cdict.entropyWorkspace =
+        ZSTD_cwksp_reserve_object(&mut cdict.workspace, HUF_WORKSPACE_SIZE) as *mut u32;
 
     // Reset the state to no dictionary
-    ZSTD_reset_compressedBlockState(&mut (*cdict).cBlockState);
+    ZSTD_reset_compressedBlockState(&mut cdict.cBlockState);
     ZSTD_reset_matchState(
-        &mut (*cdict).matchState,
-        &mut (*cdict).workspace,
+        &mut cdict.matchState,
+        &mut cdict.workspace,
         &params.cParams,
         params.useRowMatchFinder,
         CompResetPolicy::MakeClean,
@@ -7248,19 +7248,19 @@ unsafe fn ZSTD_initCDict_internal(
     params.compressionLevel = ZSTD_CLEVEL_DEFAULT;
     params.fParams.contentSizeFlag = 1;
     let dictID = ZSTD_compress_insertDictionary(
-        &mut (*cdict).cBlockState,
-        &mut (*cdict).matchState,
+        &mut cdict.cBlockState,
+        &mut cdict.matchState,
         None,
-        &mut (*cdict).workspace,
+        &mut cdict.workspace,
         &params,
-        (*cdict).dictContent,
-        (*cdict).dictContentSize,
+        cdict.dictContent,
+        cdict.dictContentSize,
         dictContentType,
         DictTableLoadMethod::Full,
         TableFillPurpose::ForCDict,
-        (*cdict).entropyWorkspace as *mut core::ffi::c_void,
+        cdict.entropyWorkspace as *mut core::ffi::c_void,
     )?;
-    (*cdict).dictID = dictID as u32;
+    cdict.dictID = dictID as u32;
 
     Ok(())
 }
@@ -7373,7 +7373,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     cctxParams.useRowMatchFinder =
         ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
 
-    let Ok(cdict) = ZSTD_createCDict_advanced_internal(
+    let Ok(mut cdict) = ZSTD_createCDict_advanced_internal(
         dictSize,
         dictLoadMethod,
         cctxParams.cParams,
@@ -7384,18 +7384,17 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         return core::ptr::null_mut();
     };
 
-    let (cdict, _) = Box::into_raw_with_allocator(cdict);
-
-    if ZSTD_initCDict_internal(
-        cdict,
+    let init = ZSTD_initCDict_internal(
+        &mut cdict,
         dict,
         dictSize,
         dictLoadMethod,
         dictContentType,
         cctxParams,
-    )
-    .is_err()
-    {
+    );
+
+    let (cdict, _) = Box::into_raw_with_allocator(cdict);
+    if init.is_err() {
         ZSTD_freeCDict(cdict);
         return core::ptr::null_mut();
     }
@@ -7530,6 +7529,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     if cdict.is_null() {
         return core::ptr::null();
     }
+    ptr::write_bytes(cdict, 0, 1);
     ZSTD_cwksp_move(&mut (*cdict).workspace, &mut ws);
 
     if workspaceSize < neededSize {
@@ -7543,7 +7543,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     (*cdict).compressionLevel = ZSTD_NO_CLEVEL;
 
     if ZSTD_initCDict_internal(
-        cdict,
+        &mut *cdict,
         dict,
         dictSize,
         dictLoadMethod,
