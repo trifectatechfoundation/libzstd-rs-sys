@@ -2,9 +2,7 @@ use core::ffi::c_char;
 use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
-use crate::lib::common::allocations::{
-    ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator,
-};
+use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator};
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::HUF_flags;
@@ -31,7 +29,7 @@ use crate::lib::decompress::{
     OF_bits, StreamStage, ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_entropyDTables_t, ZSTD_frame,
     ZSTD_skippableFrame,
 };
-use crate::lib::polyfill::box_try_new_uninit_in;
+use crate::lib::polyfill::{box_try_new_uninit_in, box_try_new_zeroed_slice_in};
 use crate::lib::zstd::{
     BufferMode, ForceIgnoreChecksum, Format, ZSTD_ResetDirective, ZSTD_customMem, ZSTD_dParameter,
     ZSTD_dct_auto, ZSTD_dct_rawContent, ZSTD_dictContentType_e, ZSTD_dictLoadMethod_e,
@@ -459,11 +457,11 @@ impl ZSTD_DDictHashSet {
     ///
     /// # Returns
     ///
-    /// - an index between `0..hashSet.ddictPtrTableSize`
+    /// - an index between `0..hashSet.ddictPtrTable.len()`
     fn get_index(&self, dictID: u32) -> usize {
         let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
-        // `ddictPtrTableSize` is a multiple of 2, use `size - 1` as a mask to get an index within `0..hashSet.ddictPtrTableSize`
-        hash as usize & self.ddictPtrTableSize.wrapping_sub(1)
+        // `ddictPtrTable.len()` is a power of 2, use `len - 1` as a mask to get an index within `0..hashSet.ddictPtrTable.len()`
+        hash as usize & self.ddictPtrTable.len().wrapping_sub(1)
     }
 
     /// Adds [`ZSTD_DDict`] to a hashset without resizing it.
@@ -472,11 +470,11 @@ impl ZSTD_DDictHashSet {
     unsafe fn emplace_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
         let dictID = ZSTD_getDictID_fromDDict(ddict);
         let mut idx = self.get_index(dictID);
-        let idxRangeMask = self.ddictPtrTableSize - 1;
-        if self.ddictPtrCount == self.ddictPtrTableSize {
+        let idxRangeMask = self.ddictPtrTable.len() - 1;
+        if self.ddictPtrCount == self.ddictPtrTable.len() {
             return Err(Error::GENERIC);
         }
-        let table = self.as_mut_slice();
+        let table = &mut self.ddictPtrTable;
         while !table[idx].is_null() {
             if ZSTD_getDictID_fromDDict(table[idx]) == dictID {
                 table[idx] = ddict;
@@ -492,15 +490,14 @@ impl ZSTD_DDictHashSet {
     /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
     /// allocates the new table, and frees the old table.
     unsafe fn expand(&mut self, customMem: ZSTD_customMem) -> Result<(), Error> {
-        let newTableSize = self.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR;
+        let newTableSize = self.ddictPtrTable.len() * DDICT_HASHSET_RESIZE_FACTOR;
         let newSet = Self::new_with_size(newTableSize, customMem)?;
         let oldSet = core::mem::replace(self, newSet);
-        for &ddict in oldSet.as_slice() {
+        for &ddict in &oldSet.ddictPtrTable {
             if !ddict.is_null() {
                 self.emplace_ddict(ddict)?;
             }
         }
-        oldSet.free(customMem);
         Ok(())
     }
 
@@ -512,9 +509,9 @@ impl ZSTD_DDictHashSet {
     /// - `NULL` if no such dictionary exists
     unsafe fn get_ddict(&self, dictID: u32) -> *const ZSTD_DDict {
         let mut idx = self.get_index(dictID);
-        let idxRangeMask = self.ddictPtrTableSize - 1;
+        let idxRangeMask = self.ddictPtrTable.len() - 1;
         loop {
-            let currDictID = match self.as_slice()[idx].as_ref() {
+            let currDictID = match self.ddictPtrTable[idx].as_ref() {
                 Some(ddict) => ddict.dictID as usize,
                 None => 0,
             };
@@ -527,7 +524,7 @@ impl ZSTD_DDictHashSet {
             idx = (idx + 1) & idxRangeMask; // loop back to the start of the table when we reach the end
         }
 
-        self.as_slice()[idx]
+        self.ddictPtrTable[idx]
     }
 
     /// Allocates space for and returns a ddict hash set.
@@ -537,29 +534,21 @@ impl ZSTD_DDictHashSet {
     /// - the [`ZSTD_DDictHashSet`] if allocation succeeds. The hash set's `ZSTD_DDict*` table has all
     ///   values automatically set to `NULL` to begin with.
     /// - [`Error::memory_allocation`] if allocation failed
-    unsafe fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
+    fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
         Self::new_with_size(DDICT_HASHSET_TABLE_BASE_SIZE, customMem)
     }
 
-    unsafe fn new_with_size(tableSize: usize, customMem: ZSTD_customMem) -> Result<Self, Error> {
-        let table = ZSTD_customCalloc(tableSize * size_of::<*const ZSTD_DDict>(), customMem)
-            as *mut *const ZSTD_DDict;
+    fn new_with_size(tableSize: usize, customMem: ZSTD_customMem) -> Result<Self, Error> {
+        let alloc = ZstdAllocator::new(customMem);
+        let table = box_try_new_zeroed_slice_in::<*const ZSTD_DDict, _>(tableSize, alloc)
+            .map_err(|AllocError| Error::memory_allocation)?;
+        // SAFETY: all-zero bytes are a valid (null) `*const ZSTD_DDict`.
+        let table = unsafe { table.assume_init() };
+
         Ok(Self {
-            ddictPtrTable: NonNull::new(table).ok_or(Error::memory_allocation)?,
-            ddictPtrTableSize: tableSize,
+            ddictPtrTable: table,
             ddictPtrCount: 0,
         })
-    }
-
-    /// Frees the table of `ZSTD_DDict*` within a hashset.
-    ///
-    /// Note: The `ZSTD_DDict*` within the table are NOT freed.
-    unsafe fn free(self, customMem: ZSTD_customMem) {
-        ZSTD_customFree(
-            self.ddictPtrTable.as_ptr() as *mut core::ffi::c_void,
-            self.ddictPtrTableSize * size_of::<*const ZSTD_DDict>(),
-            customMem,
-        );
     }
 
     /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
@@ -568,7 +557,7 @@ impl ZSTD_DDictHashSet {
         ddict: *const ZSTD_DDict,
         customMem: ZSTD_customMem,
     ) -> Result<(), Error> {
-        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ddictPtrTableSize
+        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ddictPtrTable.len()
             * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT
             != 0
         {
@@ -638,7 +627,7 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>, customMem: ZSTD_cus
         (*dctx).oversizedDuration = 0;
         (*dctx).isFrameDecompression = true;
         (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
-        (*dctx).ddictSet = None;
+        (&raw mut (*dctx).ddictSet).write(None);
 
         // Prevent issues with uninitialized memory.
         (*dctx).headerBuffer = [0u8; 18];
@@ -748,9 +737,7 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> usize {
     if !((*dctx).legacyContext).is_null() {
         ZSTD_freeLegacyStreamContext((*dctx).legacyContext, (*dctx).previousLegacyVersion);
     }
-    if let Some(ddictSet) = (*dctx).ddictSet.take() {
-        ddictSet.free(cMem);
-    }
+    drop((*dctx).ddictSet.take());
     drop(Box::from_raw_in(dctx, ZstdAllocator::new(cMem)));
     0
 }
