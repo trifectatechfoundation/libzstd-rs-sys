@@ -159,7 +159,7 @@ fn ZSTD_initDDict_internal(
         let Ok(mut internalBuffer) = box_try_new_uninit_slice_in::<u8, _>(dictSize, alloc) else {
             ddict.dictBuffer = core::ptr::null_mut();
             ddict.dictContent = core::ptr::null();
-            return Err(Error::dictionary_corrupted);
+            return Err(Error::memory_allocation);
         };
         let src = unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) };
         internalBuffer.write_copy_of_slice(src);

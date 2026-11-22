@@ -3676,7 +3676,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         // static DCtx
                         debug_assert!(zds.staticSize >= size_of::<ZSTD_DCtx>()); // controlled at init
                         if bufferSize > zds.staticSize - size_of::<ZSTD_DCtx>() {
-                            return Error::dictionary_corrupted.to_error_code();
+                            return Error::memory_allocation.to_error_code();
                         }
                     } else {
                         ZSTD_customFree(
@@ -3688,7 +3688,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         zds.outBuffSize = 0;
                         zds.inBuff = ZSTD_customMalloc(bufferSize, zds.customMem).cast::<u8>();
                         if zds.inBuff.is_null() {
-                            return Error::dictionary_corrupted.to_error_code();
+                            return Error::memory_allocation.to_error_code();
                         }
                     }
                     zds.inBuffSize = neededInBuffSize;
@@ -3912,5 +3912,46 @@ mod tests {
                 expected == actual
             }
         }
+    }
+
+    #[test]
+    fn stream_buffers_out_of_memory() {
+        // A static context with room for itself only: the stream buffers it
+        // needs to decode into a small output buffer do not fit.
+        let data = b"zstd ".repeat(1 << 16);
+        let mut compressed = vec![0u8; crate::ZSTD_compressBound(data.len())];
+        let size = unsafe {
+            crate::ZSTD_compress(
+                compressed.as_mut_ptr().cast(),
+                compressed.len(),
+                data.as_ptr().cast(),
+                data.len(),
+                3,
+            )
+        };
+        assert_eq!(crate::ZSTD_isError(size), 0);
+
+        let mut workspace = vec![0u64; ZSTD_estimateDCtxSize().div_ceil(8)];
+        let dctx =
+            unsafe { ZSTD_initStaticDCtx(workspace.as_mut_ptr().cast(), workspace.len() * 8) };
+        assert!(!dctx.is_null());
+
+        let mut out = [0u8; 16];
+        let mut output = ZSTD_outBuffer {
+            dst: out.as_mut_ptr().cast(),
+            size: out.len(),
+            pos: 0,
+        };
+        let mut input = ZSTD_inBuffer {
+            src: compressed.as_ptr().cast(),
+            size,
+            pos: 0,
+        };
+        let ret = unsafe { ZSTD_decompressStream(dctx, &mut output, &mut input) };
+        // As in C: the buffers are a memory allocation that failed.
+        assert_eq!(
+            crate::lib::common::zstd_common::ZSTD_getErrorCode(ret),
+            crate::lib::zstd::ZSTD_error_memory_allocation
+        );
     }
 }
