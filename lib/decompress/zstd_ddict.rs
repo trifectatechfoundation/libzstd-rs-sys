@@ -1,12 +1,12 @@
 use core::mem::MaybeUninit;
-use core::ptr::NonNull;
+use core::ptr::{self, NonNull};
 
-use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator};
+use crate::lib::common::allocations::ZstdAllocator;
 use crate::lib::common::error_private::Error;
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_entropyDTables_t};
-use crate::lib::polyfill::box_try_new_zeroed_in;
+use crate::lib::polyfill::{box_try_new_uninit_slice_in, box_try_new_zeroed_in};
 use crate::lib::zstd::{
     ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_fullDict, ZSTD_dct_rawContent, ZSTD_dictContentType_e,
     ZSTD_dictLoadMethod_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_MAGIC_DICTIONARY,
@@ -166,15 +166,17 @@ fn ZSTD_initDDict_internal(
             dictSize = 0;
         }
     } else {
-        unsafe {
-            let internalBuffer = ZSTD_customMalloc(dictSize, ddict.cMem);
-            ddict.dictBuffer = internalBuffer;
-            ddict.dictContent = internalBuffer;
-            if internalBuffer.is_null() {
-                return Err(Error::dictionary_corrupted);
-            }
-            core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
-        }
+        let alloc = ZstdAllocator::new(ddict.cMem);
+        let Ok(mut internalBuffer) = box_try_new_uninit_slice_in::<u8, _>(dictSize, alloc) else {
+            ddict.dictBuffer = core::ptr::null_mut();
+            ddict.dictContent = core::ptr::null();
+            return Err(Error::dictionary_corrupted);
+        };
+        let src = unsafe { core::slice::from_raw_parts(dict.cast::<u8>(), dictSize) };
+        internalBuffer.write_copy_of_slice(src);
+        let internalBuffer = Box::into_raw_with_allocator(internalBuffer).0;
+        ddict.dictBuffer = internalBuffer.cast();
+        ddict.dictContent = internalBuffer.cast();
     }
 
     ddict.dictSize = dictSize;
@@ -305,7 +307,15 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> usize {
         return 0;
     }
     let cMem = (*ddict).cMem;
-    ZSTD_customFree((*ddict).dictBuffer, (*ddict).dictSize, cMem);
+    if !(*ddict).dictBuffer.is_null() {
+        drop(Box::from_raw_in(
+            ptr::slice_from_raw_parts_mut(
+                (*ddict).dictBuffer.cast::<MaybeUninit<u8>>(),
+                (*ddict).dictSize,
+            ),
+            ZstdAllocator::new(cMem),
+        ));
+    }
     drop(Box::from_raw_in(ddict, ZstdAllocator::new(cMem)));
     0
 }
