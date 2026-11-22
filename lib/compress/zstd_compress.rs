@@ -1,7 +1,7 @@
 use core::mem::MaybeUninit;
 use core::ptr;
 
-use crate::lib::polyfill::{box_try_new_uninit_in, PointerExt};
+use crate::lib::polyfill::{box_try_new_uninit_in, box_try_new_zeroed_in, PointerExt};
 
 #[derive(Default)]
 #[repr(C)]
@@ -1222,12 +1222,16 @@ pub(crate) unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_custom
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
-    let cctx = ZSTD_customMalloc(size_of::<ZSTD_CCtx>(), customMem) as *mut ZSTD_CCtx;
-    if cctx.is_null() {
+    let alloc = ZstdAllocator::new(customMem);
+    let Ok(mut cctx) = box_try_new_zeroed_in::<ZSTD_CCtx, _>(alloc) else {
         return core::ptr::null_mut();
-    }
-    ZSTD_initCCtx(cctx, customMem);
-    cctx
+    };
+
+    ZSTD_initCCtx(cctx.as_mut_ptr(), customMem);
+
+    let (ptr, _) = Box::into_raw_with_allocator(cctx);
+
+    ptr.cast::<ZSTD_CCtx>()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCCtx))]
@@ -1336,11 +1340,10 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> usize {
         ZSTD_cwksp_owns_buffer(&(*cctx).workspace, cctx as *const core::ffi::c_void);
     ZSTD_freeCCtxContent(cctx);
     if !cctxInWorkspace {
-        ZSTD_customFree(
-            cctx as *mut core::ffi::c_void,
-            size_of::<ZSTD_CCtx>(),
-            (*cctx).customMem,
-        );
+        drop(Box::from_raw_in(
+            cctx,
+            ZstdAllocator::new((*cctx).customMem),
+        ));
     }
 
     0
