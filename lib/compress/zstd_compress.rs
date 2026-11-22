@@ -1213,8 +1213,9 @@ pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
     ZSTD_createCCtx_advanced(ZSTD_customMem::default())
 }
 
-pub(crate) unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
-    ptr::write_bytes(cctx as *mut u8, 0, size_of::<ZSTD_CCtx>());
+pub(crate) unsafe fn ZSTD_initCCtx(cctx: &mut MaybeUninit<ZSTD_CCtx>, memManager: ZSTD_customMem) {
+    *cctx = MaybeUninit::zeroed();
+    let cctx = cctx.as_mut_ptr();
     (*cctx).customMem = memManager;
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     let _err = ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_parameters);
@@ -1227,7 +1228,7 @@ pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> 
         return core::ptr::null_mut();
     };
 
-    ZSTD_initCCtx(cctx.as_mut_ptr(), customMem);
+    ZSTD_initCCtx(&mut cctx, customMem);
 
     let (ptr, _) = Box::into_raw_with_allocator(cctx);
 
@@ -7134,18 +7135,12 @@ pub unsafe extern "C" fn ZSTD_compress(
     srcSize: usize,
     compressionLevel: core::ffi::c_int,
 ) -> usize {
-    let mut ctxBody = ZSTD_CCtx::default();
+    let mut ctxBody = MaybeUninit::uninit();
     ZSTD_initCCtx(&mut ctxBody, ZSTD_customMem::default());
-    let result = ZSTD_compressCCtx(
-        &mut ctxBody,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        compressionLevel,
-    );
+    let ctxBody = ctxBody.assume_init_mut();
+    let result = ZSTD_compressCCtx(ctxBody, dst, dstCapacity, src, srcSize, compressionLevel);
     // can't free ctxBody itself, as it's on stack; free only heap content
-    ZSTD_freeCCtxContent(&mut ctxBody);
+    ZSTD_freeCCtxContent(ctxBody);
 
     result
 }

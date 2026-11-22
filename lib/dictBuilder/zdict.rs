@@ -737,7 +737,7 @@ unsafe fn ZDICT_analyzeEntropy(
     notificationLevel: core::ffi::c_uint,
 ) -> Result<usize, Error> {
     let mut cctx = Box::new_uninit();
-    ZSTD_initCCtx(cctx.as_mut_ptr(), ZSTD_customMem::default());
+    ZSTD_initCCtx(&mut cctx, ZSTD_customMem::default());
 
     let mut esr = EStats_ress_t {
         dict: core::ptr::null_mut(),
