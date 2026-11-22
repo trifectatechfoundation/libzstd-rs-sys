@@ -489,9 +489,10 @@ impl ZSTD_DDictHashSet {
 
     /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
     /// allocates the new table, and frees the old table.
-    unsafe fn expand(&mut self, customMem: ZSTD_customMem) -> Result<(), Error> {
+    unsafe fn expand(&mut self) -> Result<(), Error> {
         let newTableSize = self.ddictPtrTable.len() * DDICT_HASHSET_RESIZE_FACTOR;
-        let newSet = Self::new_with_size(newTableSize, customMem)?;
+        let alloc = *Box::allocator(&self.ddictPtrTable);
+        let newSet = Self::new_with_size(newTableSize, alloc)?;
         let oldSet = core::mem::replace(self, newSet);
         for &ddict in &oldSet.ddictPtrTable {
             if !ddict.is_null() {
@@ -535,14 +536,15 @@ impl ZSTD_DDictHashSet {
     ///   values automatically set to `NULL` to begin with.
     /// - [`Error::memory_allocation`] if allocation failed
     fn new(customMem: ZSTD_customMem) -> Result<Self, Error> {
-        Self::new_with_size(DDICT_HASHSET_TABLE_BASE_SIZE, customMem)
+        Self::new_with_size(DDICT_HASHSET_TABLE_BASE_SIZE, ZstdAllocator::new(customMem))
     }
 
-    fn new_with_size(tableSize: usize, customMem: ZSTD_customMem) -> Result<Self, Error> {
-        let alloc = ZstdAllocator::new(customMem);
-        let table = box_try_new_zeroed_slice_in::<*const ZSTD_DDict, _>(tableSize, alloc)
-            .map_err(|AllocError| Error::memory_allocation)?;
-        // SAFETY: all-zero bytes are a valid (null) `*const ZSTD_DDict`.
+    fn new_with_size(tableSize: usize, alloc: ZstdAllocator) -> Result<Self, Error> {
+        // NOTE: raw pointers don't implement IsZero due to providence, so using
+        // (a fallible equivalent of) `vec![core::ptr::null_mut(); n]` is inefficient.
+        let table = box_try_new_zeroed_slice_in::<*const ZSTD_DDict, _>(tableSize, alloc)?;
+
+        // SAFETY: all-zero bytes are a valid (NULL) `*const ZSTD_DDict`.
         let table = unsafe { table.assume_init() };
 
         Ok(Self {
@@ -552,16 +554,12 @@ impl ZSTD_DDictHashSet {
     }
 
     /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
-    unsafe fn add_ddict(
-        &mut self,
-        ddict: *const ZSTD_DDict,
-        customMem: ZSTD_customMem,
-    ) -> Result<(), Error> {
+    unsafe fn add_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
         if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ddictPtrTable.len()
             * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT
             != 0
         {
-            self.expand(customMem)?;
+            self.expand()?;
         }
         self.emplace_ddict(ddict)
     }
@@ -2833,7 +2831,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
             };
 
             debug_assert_eq!((*dctx).staticSize, 0); // ddictSet cannot have been allocated if static dctx
-            if let Err(err) = ddictSet.add_ddict(ddict, (*dctx).customMem) {
+            if let Err(err) = ddictSet.add_ddict(ddict) {
                 return err.to_error_code();
             }
         }
