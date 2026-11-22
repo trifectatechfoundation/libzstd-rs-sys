@@ -887,7 +887,7 @@ pub(super) fn COVER_checkTotalCompressedSize(
     let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
 
     let mut cctx = Box::new_uninit();
-    unsafe { ZSTD_initCCtx(cctx.as_mut_ptr(), ZSTD_customMem::default()) };
+    unsafe { ZSTD_initCCtx(&mut cctx, ZSTD_customMem::default()) };
     let mut cctx = unsafe { cctx.assume_init() };
 
     let cdict = unsafe {
