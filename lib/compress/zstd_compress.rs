@@ -932,14 +932,6 @@ fn ZSTD_cwksp_internal_advance_phase(
     Ok(())
 }
 
-/// Returns whether this object/buffer/etc was allocated in this workspace.
-#[inline]
-fn ZSTD_cwksp_owns_buffer(ws: &ZSTD_cwksp, ptr: *const core::ffi::c_void) -> bool {
-    !ptr.is_null()
-        && ws.workspace <= ptr as *mut core::ffi::c_void
-        && ptr < ws.workspaceEnd as *const core::ffi::c_void
-}
-
 /// Internal function. Do not use directly.
 #[inline]
 fn ZSTD_cwksp_reserve_internal(
