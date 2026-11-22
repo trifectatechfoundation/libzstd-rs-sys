@@ -97,6 +97,25 @@ pub(crate) fn box_try_new_zeroed_in<T, A: Allocator>(
 }
 
 #[inline]
+pub(crate) fn box_try_new_uninit_slice_in<T, A: Allocator>(
+    len: usize,
+    alloc: A,
+) -> Result<Box<[MaybeUninit<T>], A>, AllocError> {
+    let ptr = if size_of::<T>() == 0 || len == 0 {
+        NonNull::dangling()
+    } else {
+        let layout = match Layout::array::<MaybeUninit<T>>(len) {
+            Ok(l) => l,
+            Err(_) => return Err(AllocError),
+        };
+        alloc.allocate(layout)?.cast()
+    };
+    // SAFETY: `ptr` was just allocated with `alloc` with the layout for an array of length
+    // `len`, and the layout creation would have failed if `len` overflowed an isize.
+    unsafe { Ok(Vec::from_raw_parts_in(ptr.as_ptr(), len, len, alloc).into_boxed_slice()) }
+}
+
+#[inline]
 pub(crate) fn box_try_new_zeroed_slice<T>(len: usize) -> Result<Box<[MaybeUninit<T>]>, AllocError> {
     box_try_new_zeroed_slice_in(len, std::alloc::Global)
 }
