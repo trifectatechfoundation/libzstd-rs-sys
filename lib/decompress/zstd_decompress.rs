@@ -617,10 +617,11 @@ fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     }
 }
 
-fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
+fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>, customMem: ZSTD_customMem) {
     unsafe {
         let dctx = dctx.as_mut_ptr();
 
+        (*dctx).customMem = customMem;
         (*dctx).staticSize = 0;
         (*dctx).ddict = core::ptr::null();
         (*dctx).ddictLocal = core::ptr::null_mut();
@@ -682,21 +683,20 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     }
 
     let dctx = workspace.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
-    ZSTD_initDCtx_internal(dctx);
+    ZSTD_initDCtx_internal(dctx, ZSTD_customMem::default());
 
     (*dctx.as_mut_ptr()).staticSize = workspaceSize;
     (*dctx.as_mut_ptr()).inBuff = dctx.as_mut_ptr().add(1).cast::<u8>();
     dctx.as_mut_ptr()
 }
 
-unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
+fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
     let alloc = ZstdAllocator::new(customMem);
     let Ok(mut dctx) = box_try_new_uninit_in::<ZSTD_DCtx, _>(alloc) else {
         return core::ptr::null_mut();
     };
 
-    (*dctx.as_mut_ptr()).customMem = customMem;
-    ZSTD_initDCtx_internal(&mut dctx);
+    ZSTD_initDCtx_internal(&mut dctx, customMem);
     Box::into_raw_with_allocator(dctx).0.cast::<ZSTD_DCtx>()
 }
 
