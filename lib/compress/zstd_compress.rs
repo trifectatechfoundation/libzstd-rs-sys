@@ -626,7 +626,7 @@ pub type ZSTD_SequenceCopier_f = unsafe fn(
     *mut ZSTD_CCtx,
     &mut ZSTD_SequencePosition,
     &[ZSTD_Sequence],
-    *const core::ffi::c_void,
+    &[u8],
     usize,
     ParamSwitch,
 ) -> Result<usize, Error>;
@@ -4432,7 +4432,7 @@ unsafe fn ZSTD_buildSeqStore(
                     zc,
                     &mut seqPos,
                     extSeqs,
-                    src,
+                    core::slice::from_raw_parts(src.cast(), srcSize),
                     srcSize,
                     (*zc).appliedParams.searchForExternalRepcodes,
                 )?;
@@ -8698,13 +8698,13 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     cctx: *mut ZSTD_CCtx,
     seqPos: &mut ZSTD_SequencePosition,
     inSeqs: &[ZSTD_Sequence],
-    src: *const core::ffi::c_void,
+    src: &[u8],
     blockSize: usize,
     externalRepSearch: ParamSwitch,
 ) -> Result<usize, Error> {
     let mut idx = seqPos.idx;
     let startIdx = idx;
-    let mut ip = src as *const u8;
+    let mut ip = src.as_ptr();
     let iend = ip.add(blockSize);
 
     let dictSize = if !((*cctx).cdict).is_null() {
@@ -8822,14 +8822,14 @@ unsafe fn ZSTD_transferSequences_noDelim(
     cctx: *mut ZSTD_CCtx,
     seqPos: &mut ZSTD_SequencePosition,
     inSeqs: &[ZSTD_Sequence],
-    src: *const core::ffi::c_void,
+    src: &[u8],
     blockSize: usize,
     externalRepSearch: ParamSwitch,
 ) -> Result<usize, Error> {
     let mut idx = seqPos.idx;
     let mut startPosInSequence = seqPos.posInSequence;
     let mut endPosInSequence = seqPos.posInSequence.wrapping_add(blockSize as u32);
-    let istart = src as *const u8;
+    let istart = src.as_ptr();
     let mut ip = istart;
     let mut iend = istart.add(blockSize);
     let mut bytesAdjustment = 0;
@@ -9088,7 +9088,7 @@ unsafe fn ZSTD_compressSequences_internal(
             cctx,
             &mut seqPos,
             inSeqs,
-            ip as *const core::ffi::c_void,
+            core::slice::from_raw_parts(ip, blockSize),
             blockSize,
             (*cctx).appliedParams.searchForExternalRepcodes,
         )?;
