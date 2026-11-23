@@ -4487,75 +4487,71 @@ unsafe fn ZSTD_copyBlockSequences(
     seqStore: &SeqStore_t,
     prevRepcodes: &RepCodes,
 ) -> Result<(), Error> {
-    let inSeqs: *const SeqDef = seqStore.sequencesStart;
-    let nbInSequences = seqStore.sequences.offset_from_unsigned(inSeqs);
+    let inSeqs = seqStore.seqs();
     let nbInLiterals = seqStore.lit.offset_from_unsigned(seqStore.litStart);
 
-    let outSeqs = seqCollector.seqStart.cast::<ZSTD_Sequence>();
-    let outSeqs = if seqCollector.seqIndex == 0 {
-        outSeqs
-    } else {
-        outSeqs.add(seqCollector.seqIndex)
-    };
-    let nbOutSequences = nbInSequences.wrapping_add(1);
+    let nbOutSequences = inSeqs.len().wrapping_add(1);
     let mut nbOutLiterals = 0usize;
 
     if nbOutSequences > (seqCollector.seqStart.len()).wrapping_sub(seqCollector.seqIndex) {
         return Err(Error::dstSize_tooSmall);
     }
 
+    let outSeqs = &mut (&mut *seqCollector.seqStart)[seqCollector.seqIndex..][..nbOutSequences];
+    let (lastSeq, outSeqs) = outSeqs.split_last_mut().unwrap();
+
     let mut repcodes = *prevRepcodes;
-    for i in 0..nbInSequences {
-        (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
-        (*outSeqs.add(i)).matchLength = u32::from((*inSeqs.add(i)).mlBase) + u32::from(MINMATCH);
-        (*outSeqs.add(i)).rep = 0;
+    for (i, (inSeq, outSeq)) in inSeqs.iter().zip(outSeqs).enumerate() {
+        let mut litLength = u32::from(inSeq.litLength);
+        let mut matchLength = u32::from(inSeq.mlBase) + u32::from(MINMATCH);
 
         // Handle the possible single length >= 64K
         // There can only be one because we add MINMATCH to every match length,
         // and blocks are at most 128K.
         if i == seqStore.longLengthPos as usize {
             if seqStore.longLengthType == LongLengthType::Literal {
-                let fresh4 = &mut (*outSeqs.add(i)).litLength;
-                *fresh4 = (*fresh4).wrapping_add(0x10000);
+                litLength = litLength.wrapping_add(0x10000);
             } else if seqStore.longLengthType == LongLengthType::Match {
-                let fresh5 = &mut (*outSeqs.add(i)).matchLength;
-                *fresh5 = (*fresh5).wrapping_add(0x10000);
+                matchLength = matchLength.wrapping_add(0x10000);
             }
         }
 
         // Determine the raw offset given the offBase, which may be a repcode.
-        let rawOffset = if 1 <= (*inSeqs.add(i)).offBase && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM
-        {
-            let repcode = (*inSeqs.add(i)).offBase;
-            (*outSeqs.add(i)).rep = repcode;
-            if (*outSeqs.add(i)).litLength != 0 {
+        let (rep, rawOffset) = if 1 <= inSeq.offBase && inSeq.offBase <= ZSTD_REP_NUM {
+            let repcode = inSeq.offBase;
+            let rawOffset = if litLength != 0 {
                 repcodes[repcode.wrapping_sub(1) as usize]
             } else if repcode == 3 {
                 repcodes[0].wrapping_sub(1)
             } else {
                 repcodes[repcode as usize]
-            }
+            };
+            (repcode, rawOffset)
         } else {
-            ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM)
+            (0, inSeq.offBase.wrapping_sub(ZSTD_REP_NUM))
         };
-        (*outSeqs.add(i)).offset = rawOffset;
+        outSeq.write(ZSTD_Sequence {
+            offset: rawOffset,
+            litLength,
+            matchLength,
+            rep,
+        });
 
         // Update repcode history for the sequence
-        ZSTD_updateRep(
-            &mut repcodes,
-            (*inSeqs.add(i)).offBase,
-            (*inSeqs.add(i)).litLength == 0,
-        );
-        nbOutLiterals = nbOutLiterals.wrapping_add((*outSeqs.add(i)).litLength as usize);
+        ZSTD_updateRep(&mut repcodes, inSeq.offBase, inSeq.litLength == 0);
+        nbOutLiterals = nbOutLiterals.wrapping_add(litLength as usize);
     }
 
     // Insert last literals (if any exist) in the block as a sequence with ml == off == 0.
     // If there are no last literals, then we'll emit (of: 0, ml: 0, ll: 0), which is a marker
     // for the block boundary, according to the API.
     let lastLLSize = nbInLiterals.wrapping_sub(nbOutLiterals);
-    (*outSeqs.add(nbInSequences)).litLength = lastLLSize as u32;
-    (*outSeqs.add(nbInSequences)).matchLength = 0;
-    (*outSeqs.add(nbInSequences)).offset = 0;
+    lastSeq.write(ZSTD_Sequence {
+        offset: 0,
+        litLength: lastLLSize as u32,
+        matchLength: 0,
+        rep: 0,
+    });
 
     seqCollector.seqIndex = seqCollector.seqIndex.wrapping_add(nbOutSequences);
 
