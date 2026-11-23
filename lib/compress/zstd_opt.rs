@@ -314,25 +314,18 @@ unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &OptState, optLevel: u3
         .wrapping_sub(WEIGHT(freq, optLevel))
 }
 
-/// Provides the cost of the match part (offset + matchLength) of a sequence.
-/// Must be combined with ZSTD_fullLiteralsCost() to get the full cost of a sequence.
+/// Provides the cost of the offset part of a sequence.
+/// Must be combined with ZSTD_getMatchLengthPrice() to get the cost of the match part
+/// (offset + matchLength), and with ZSTD_fullLiteralsCost() to get the full cost of a sequence.
 /// @offBase: sumtype, representing an offset or a repcode, and using numeric representation of ZSTD_storeSeq()
 /// @optLevel: when <2, favors small offset for decompression speed (improved cache efficiency)
 #[inline(always)]
-unsafe fn ZSTD_getMatchPrice(
-    offBase: u32,
-    matchLength: u32,
-    opt_state: &OptState,
-    optLevel: u32,
-) -> u32 {
+unsafe fn ZSTD_getOffsetPrice(offBase: u32, opt_state: &OptState, optLevel: u32) -> u32 {
     let offCode = ZSTD_highbit32(offBase);
-    let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
 
     if opt_state.priceType == OptPrice::Predef {
-        // fixed scheme, does not use statistics
-        return WEIGHT(mlBase, optLevel)
-            // emulated offset cost
-            .wrapping_add(16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER);
+        // fixed scheme, does not use statistics: emulated offset cost
+        return 16u32.wrapping_add(offCode) * BITCOST_MULTIPLIER;
     }
 
     // dynamic statistics
@@ -344,18 +337,27 @@ unsafe fn ZSTD_getMatchPrice(
         price = price.wrapping_add(offCode.wrapping_sub(19) * 2 * BITCOST_MULTIPLIER);
     }
 
-    // match Length
-    let mlCode = ZSTD_MLcode(mlBase);
-    let matchLengthFreq = opt_state.matchLengthFreq()[mlCode as usize];
-    price = price.wrapping_add(
-        (ML_bits[mlCode as usize] as u32 * BITCOST_MULTIPLIER).wrapping_add(
-            (opt_state.matchLengthSumBasePrice).wrapping_sub(WEIGHT(matchLengthFreq, optLevel)),
-        ),
-    );
-
     price = price.wrapping_add(BITCOST_MULTIPLIER / 5); // heuristic: make matches a bit more costly to favor less sequences -> faster decompression speed
 
     price
+}
+
+/// Provides the cost of the matchLength part of a sequence, see ZSTD_getOffsetPrice().
+#[inline(always)]
+unsafe fn ZSTD_getMatchLengthPrice(matchLength: u32, opt_state: &OptState, optLevel: u32) -> u32 {
+    let mlBase = matchLength.wrapping_sub(u32::from(MINMATCH));
+
+    if opt_state.priceType == OptPrice::Predef {
+        // fixed scheme, does not use statistics
+        return WEIGHT(mlBase, optLevel);
+    }
+
+    // dynamic statistics
+    let mlCode = ZSTD_MLcode(mlBase);
+    let matchLengthFreq = opt_state.matchLengthFreq()[mlCode as usize];
+    (ML_bits[mlCode as usize] as u32 * BITCOST_MULTIPLIER).wrapping_add(
+        (opt_state.matchLengthSumBasePrice).wrapping_sub(WEIGHT(matchLengthFreq, optLevel)),
+    )
 }
 
 /// assumption: literals + litLength <= iend
@@ -1246,9 +1248,11 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                 let mut pos = minMatch as usize;
                 for m in &matches[..nbMatches] {
                     let offBase = m.off;
+                    let offsetPrice = ZSTD_getOffsetPrice(offBase, &ms.opt, OPT_LEVEL);
                     let end = m.len as usize;
                     while pos <= end {
-                        let matchPrice = ZSTD_getMatchPrice(offBase, pos as u32, &ms.opt, OPT_LEVEL)
+                        let matchPrice = offsetPrice
+                            .wrapping_add(ZSTD_getMatchLengthPrice(pos as u32, &ms.opt, OPT_LEVEL))
                             as core::ffi::c_int;
                         let sequencePrice = opt[0].price + matchPrice;
                         opt[pos].mlen = pos as u32;
@@ -1381,6 +1385,8 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                                     // set prices using matches found at position == cur
                                     for matchNb in 0..nbMatches {
                                         let offset = matches[matchNb].off;
+                                        let offsetPrice =
+                                            ZSTD_getOffsetPrice(offset, &ms.opt, OPT_LEVEL);
                                         let lastML = matches[matchNb].len;
                                         let startML = if matchNb > 0 {
                                             matches[matchNb - 1].len.wrapping_add(1)
@@ -1392,8 +1398,10 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                                         for mlen in (startML..lastML + 1).rev() {
                                             let pos = cur.wrapping_add(mlen as usize);
                                             let price = basePrice
-                                                + ZSTD_getMatchPrice(
-                                                    offset, mlen, &ms.opt, OPT_LEVEL,
+                                                + offsetPrice.wrapping_add(
+                                                    ZSTD_getMatchLengthPrice(
+                                                        mlen, &ms.opt, OPT_LEVEL,
+                                                    ),
                                                 )
                                                     as core::ffi::c_int;
 
