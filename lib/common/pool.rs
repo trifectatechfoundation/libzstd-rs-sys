@@ -24,15 +24,13 @@ struct PoolState {
     threads: Vec<JoinHandle<()>, ZstdAllocator>,
     threadLimit: usize,
 
-    /// The queue is a circular buffer
+    /// The queue is a circular buffer, the slots in `queueHead..queueTail` hold the pending jobs
     queue: Box<[Option<POOL_job>], ZstdAllocator>,
     queueHead: usize,
     queueTail: usize,
 
     /// The number of threads working on jobs
     numThreadsBusy: usize,
-    /// Indicates if the queue is empty
-    queueEmpty: core::ffi::c_int,
     /// Indicates if the queue is shutting down
     shutdown: core::ffi::c_int,
 }
@@ -63,10 +61,10 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     loop {
         // Lock the mutex and wait for a non-empty queue or until shutdown
         let mut state = (*ctx).state.lock().unwrap();
-        while state.queueEmpty != 0 || state.numThreadsBusy >= state.threadLimit {
+        while state.isQueueEmpty() || state.numThreadsBusy >= state.threadLimit {
             if state.shutdown != 0 {
-                // Even if !queueEmpty, (possible if numThreadsBusy >= threadLimit),
-                // a few threads will be shutdown while !queueEmpty, but enough threads
+                // Even if the queue is not empty, (possible if numThreadsBusy >= threadLimit),
+                // a few threads will be shutdown while the queue is not empty, but enough threads
                 // will remain active to finish the queue
                 return;
             }
@@ -78,7 +76,6 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         let job = state.queue[queueHead].take().unwrap();
         state.queueHead = queueHead.wrapping_add(1) % state.queue.len();
         state.numThreadsBusy += 1;
-        state.queueEmpty = (state.queueHead == state.queueTail) as core::ffi::c_int;
 
         // Unlock the mutex, signal a pusher, and run the job
         (*ctx).queuePushCond.notify_one();
@@ -143,7 +140,6 @@ pub(crate) unsafe fn POOL_create_advanced(
         queueHead: 0,
         queueTail: 0,
         numThreadsBusy: 0,
-        queueEmpty: 1,
         shutdown: 0,
     };
     ptr::write(
@@ -199,7 +195,7 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
 /// Waits for all queued jobs to finish executing.
 pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
     let mut state = (*ctx).state.lock().unwrap();
-    while state.queueEmpty == 0 || state.numThreadsBusy > 0 {
+    while !state.isQueueEmpty() || state.numThreadsBusy > 0 {
         state = (*ctx).queuePushCond.wait(state).unwrap();
     }
 }
@@ -272,13 +268,18 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Resul
 }
 
 impl PoolState {
+    /// Returns true if no job is waiting in the queue.
+    fn isQueueEmpty(&self) -> bool {
+        self.queue[self.queueHead].is_none()
+    }
+
     /// Returns true if the queue is full.
     ///
     /// When `queue.len()` is 1 (pool was created with an intended queueSize of 0),
     /// then a queue is empty if there is a thread free _and_ no job is waiting.
     fn isQueueFull(&self) -> bool {
         match self.queue.len() {
-            1 => self.numThreadsBusy == self.threadLimit || self.queueEmpty == 0,
+            1 => self.numThreadsBusy == self.threadLimit || !self.isQueueEmpty(),
             n => self.queueHead == (self.queueTail + 1) % n,
         }
     }
@@ -295,7 +296,6 @@ unsafe fn POOL_add_internal(
         return;
     }
 
-    state.queueEmpty = 0;
     let queueTail = state.queueTail;
     state.queue[queueTail] = Some(job);
     state.queueTail = (queueTail + 1) % state.queue.len();
