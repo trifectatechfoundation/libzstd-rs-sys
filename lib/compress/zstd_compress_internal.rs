@@ -300,7 +300,7 @@ pub enum OptPrice {
 }
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct OptState {
     pub litFreq: *mut [core::ffi::c_uint; MaxLit as usize + 1],
     pub litLengthFreq: *mut [core::ffi::c_uint; MaxLL as usize + 1],
