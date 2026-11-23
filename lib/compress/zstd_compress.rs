@@ -4239,7 +4239,7 @@ pub fn ZSTD_resetSeqStore(ssPtr: &mut SeqStore_t) {
 /// - The number of sequences after post-processing
 /// - Or an error code
 unsafe fn ZSTD_postProcessSequenceProducerResult(
-    outSeqs: *mut ZSTD_Sequence,
+    outSeqs: &mut [MaybeUninit<ZSTD_Sequence>],
     nbExternalSeqs: usize,
     outSeqsCapacity: usize,
     srcSize: usize,
@@ -4252,12 +4252,19 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
         return Err(Error::sequenceProducer_failed);
     }
 
+    const BLOCK_DELIMITER: ZSTD_Sequence = ZSTD_Sequence {
+        offset: 0,
+        litLength: 0,
+        matchLength: 0,
+        rep: 0,
+    };
+
     if srcSize == 0 {
-        ptr::write_bytes(outSeqs as *mut u8, 0, size_of::<ZSTD_Sequence>());
+        outSeqs[0].write(BLOCK_DELIMITER);
         return Ok(1);
     }
 
-    let lastSeq = *outSeqs.add(nbExternalSeqs.wrapping_sub(1));
+    let lastSeq = outSeqs[nbExternalSeqs.wrapping_sub(1)].assume_init();
     // We can return early if lastSeq is already a block delimiter.
     if lastSeq.offset == 0 && lastSeq.matchLength == 0 {
         return Ok(nbExternalSeqs);
@@ -4270,11 +4277,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
     }
 
     // lastSeq is not a block delimiter, so we need to append one.
-    ptr::write_bytes(
-        outSeqs.add(nbExternalSeqs) as *mut u8,
-        0,
-        size_of::<ZSTD_Sequence>(),
-    );
+    outSeqs[nbExternalSeqs].write(BLOCK_DELIMITER);
     Ok(nbExternalSeqs.wrapping_add(1))
 }
 
@@ -4406,7 +4409,7 @@ unsafe fn ZSTD_buildSeqStore(
         );
 
         match ZSTD_postProcessSequenceProducerResult(
-            (*zc).extSeqBuf,
+            core::slice::from_raw_parts_mut((*zc).extSeqBuf.cast(), (*zc).extSeqBufCapacity),
             nbExternalSeqs,
             (*zc).extSeqBufCapacity,
             srcSize,
