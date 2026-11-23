@@ -4491,15 +4491,16 @@ unsafe fn ZSTD_copyBlockSequences(
     let nbInSequences = seqStore.sequences.offset_from_unsigned(inSeqs);
     let nbInLiterals = seqStore.lit.offset_from_unsigned(seqStore.litStart);
 
+    let outSeqs = seqCollector.seqStart.cast::<ZSTD_Sequence>();
     let outSeqs = if seqCollector.seqIndex == 0 {
-        seqCollector.seqStart
+        outSeqs
     } else {
-        seqCollector.seqStart.add(seqCollector.seqIndex)
+        outSeqs.add(seqCollector.seqIndex)
     };
     let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0usize;
 
-    if nbOutSequences > (seqCollector.maxSequences).wrapping_sub(seqCollector.seqIndex) {
+    if nbOutSequences > (seqCollector.seqStart.len()).wrapping_sub(seqCollector.seqIndex) {
         return Err(Error::dstSize_tooSmall);
     }
 
@@ -4603,9 +4604,8 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
 
     (*zc).seqCollector = SeqCollector {
         collectSequences: 1,
-        seqStart: outSeqs,
+        seqStart: ptr::slice_from_raw_parts_mut(outSeqs.cast(), outSeqsSize),
         seqIndex: 0,
-        maxSequences: outSeqsSize,
     };
 
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);

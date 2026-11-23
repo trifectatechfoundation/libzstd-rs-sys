@@ -1,3 +1,5 @@
+use core::mem::MaybeUninit;
+
 use crate::internal::MEM_readLE32;
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
@@ -372,12 +374,21 @@ pub struct ZSTD_blockState_t {
 }
 
 #[repr(C)]
-#[derive(Default)]
 pub struct SeqCollector {
     pub collectSequences: core::ffi::c_int,
-    pub seqStart: *mut ZSTD_Sequence,
+    pub seqStart: *mut [MaybeUninit<ZSTD_Sequence>],
     pub seqIndex: usize,
-    pub maxSequences: usize,
+}
+
+#[allow(clippy::derivable_impls)] // `*mut [T]` has no `Default` impl.
+impl Default for SeqCollector {
+    fn default() -> Self {
+        Self {
+            collectSequences: 0,
+            seqStart: &mut [],
+            seqIndex: 0,
+        }
+    }
 }
 
 /// Indicates whether this compression proceeds directly from user-provided
