@@ -7,6 +7,17 @@ use crate::lib::zstd::ZSTD_customMem;
 
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
+
+    /// The mutex that protects the queue
+    state: Mutex<PoolState>,
+    /// Condition variable for pushers to wait on when the queue is full
+    queuePushCond: Condvar,
+    /// Condition variables for poppers to wait on when the queue is empty
+    queuePopCond: Condvar,
+}
+
+/// The part of [`POOL_ctx`] that is protected by its mutex
+struct PoolState {
     /// Keep track of the threads
     threads: *mut JoinHandle<()>,
     threadCapacity: usize,
@@ -22,13 +33,6 @@ pub struct POOL_ctx {
     numThreadsBusy: usize,
     /// Indicates if the queue is empty
     queueEmpty: core::ffi::c_int,
-
-    /// The mutex that protects the queue
-    queueMutex: Mutex<()>,
-    /// Condition variable for pushers to wait on when the queue is full
-    queuePushCond: Condvar,
-    /// Condition variables for poppers to wait on when the queue is empty
-    queuePopCond: Condvar,
     /// Indicates if the queue is shutting down
     shutdown: core::ffi::c_int,
 }
@@ -58,32 +62,31 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     }
     loop {
         // Lock the mutex and wait for a non-empty queue or until shutdown
-        let mut guard = (*ctx).queueMutex.lock().unwrap();
-        #[expect(clippy::while_immutable_condition)]
-        while (*ctx).queueEmpty != 0 || (*ctx).numThreadsBusy >= (*ctx).threadLimit {
-            if (*ctx).shutdown != 0 {
+        let mut state = (*ctx).state.lock().unwrap();
+        while state.queueEmpty != 0 || state.numThreadsBusy >= state.threadLimit {
+            if state.shutdown != 0 {
                 // Even if !queueEmpty, (possible if numThreadsBusy >= threadLimit),
                 // a few threads will be shutdown while !queueEmpty, but enough threads
                 // will remain active to finish the queue
                 return;
             }
-            guard = (*ctx).queuePopCond.wait(guard).unwrap();
+            state = (*ctx).queuePopCond.wait(state).unwrap();
         }
 
         // Pop a job off the queue
-        let job = *((*ctx).queue).add((*ctx).queueHead);
-        (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
-        (*ctx).numThreadsBusy += 1;
-        (*ctx).queueEmpty = ((*ctx).queueHead == (*ctx).queueTail) as core::ffi::c_int;
+        let job = *state.queue.add(state.queueHead);
+        state.queueHead = state.queueHead.wrapping_add(1) % state.queueSize;
+        state.numThreadsBusy += 1;
+        state.queueEmpty = (state.queueHead == state.queueTail) as core::ffi::c_int;
 
         // Unlock the mutex, signal a pusher, and run the job
         (*ctx).queuePushCond.notify_one();
-        drop(guard);
+        drop(state);
         (job.function)(job.opaque);
 
         // If the intended queue size was 0, signal after finishing job
-        guard = (*ctx).queueMutex.lock().unwrap();
-        (*ctx).numThreadsBusy -= 1;
+        state = (*ctx).state.lock().unwrap();
+        state.numThreadsBusy -= 1;
         (*ctx).queuePushCond.notify_one();
     }
 }
@@ -123,22 +126,32 @@ pub(crate) unsafe fn POOL_create_advanced(
 
     // Initialize the job queue.
     // It needs one extra space since one space is wasted to differentiate empty and full queues.
-    (*ctx).queueSize = queueSize.wrapping_add(1);
-    (*ctx).queue =
-        ZSTD_customCalloc((*ctx).queueSize * size_of::<POOL_job>(), customMem) as *mut POOL_job;
-    (*ctx).queueHead = 0;
-    (*ctx).queueTail = 0;
-    (*ctx).numThreadsBusy = 0;
-    (*ctx).queueEmpty = 1;
-    ptr::write(&raw mut (*ctx).queueMutex, Mutex::new(()));
-    ptr::write(&raw mut (*ctx).queuePushCond, Condvar::new());
-    ptr::write(&raw mut (*ctx).queuePopCond, Condvar::new());
-    (*ctx).shutdown = 0;
-    (*ctx).threads = ZSTD_customCalloc(numThreads * size_of::<JoinHandle<()>>(), customMem)
+    let queueSize = queueSize.wrapping_add(1);
+    let queue = ZSTD_customCalloc(queueSize * size_of::<POOL_job>(), customMem) as *mut POOL_job;
+    let threads = ZSTD_customCalloc(numThreads * size_of::<JoinHandle<()>>(), customMem)
         as *mut JoinHandle<()>;
-    (*ctx).threadCapacity = 0;
-    (*ctx).customMem = customMem;
-    if (*ctx).threads.is_null() || (*ctx).queue.is_null() {
+    let state = PoolState {
+        threads,
+        threadCapacity: 0,
+        threadLimit: 0,
+        queue,
+        queueHead: 0,
+        queueTail: 0,
+        queueSize,
+        numThreadsBusy: 0,
+        queueEmpty: 1,
+        shutdown: 0,
+    };
+    ptr::write(
+        ctx,
+        POOL_ctx {
+            customMem,
+            state: Mutex::new(state),
+            queuePushCond: Condvar::new(),
+            queuePopCond: Condvar::new(),
+        },
+    );
+    if threads.is_null() || queue.is_null() {
         POOL_free(ctx);
         return core::ptr::null_mut();
     }
@@ -146,27 +159,31 @@ pub(crate) unsafe fn POOL_create_advanced(
     for i in 0..numThreads {
         let ctx = SendPoolCtxPtr(ctx);
         core::ptr::write(
-            (*ctx.0).threads.add(i),
+            threads.add(i),
             std::thread::spawn(|| {
                 let ctx = ctx;
                 POOL_thread(ctx.0)
             }),
         );
     }
-    (*ctx).threadCapacity = numThreads;
-    (*ctx).threadLimit = numThreads;
+    let mut state = (*ctx).state.lock().unwrap();
+    state.threadCapacity = numThreads;
+    state.threadLimit = numThreads;
+    drop(state);
     ctx
 }
 
 /// Shutdown the queue, wake any sleeping threads, and join all of the threads.
 unsafe fn POOL_join(ctx: *mut POOL_ctx) {
-    let guard = (*ctx).queueMutex.lock().unwrap();
-    (*ctx).shutdown = 1;
-    drop(guard);
+    let mut state = (*ctx).state.lock().unwrap();
+    state.shutdown = 1;
+    let threads = state.threads;
+    let threadCapacity = state.threadCapacity;
+    drop(state);
     (*ctx).queuePushCond.notify_all();
     (*ctx).queuePopCond.notify_all();
-    for i in 0..(*ctx).threadCapacity {
-        core::ptr::read((*ctx).threads.add(i)).join().unwrap();
+    for i in 0..threadCapacity {
+        core::ptr::read(threads.add(i)).join().unwrap();
     }
 }
 
@@ -176,17 +193,25 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
         return;
     }
     POOL_join(ctx);
-    ptr::drop_in_place(&raw mut (*ctx).queueMutex);
+    // All threads have been joined, so we have exclusive access to the state
+    let PoolState {
+        queue,
+        queueSize,
+        threads,
+        threadCapacity,
+        ..
+    } = *(*ctx).state.get_mut().unwrap();
+    ptr::drop_in_place(&raw mut (*ctx).state);
     ptr::drop_in_place(&raw mut (*ctx).queuePushCond);
     ptr::drop_in_place(&raw mut (*ctx).queuePopCond);
     ZSTD_customFree(
-        (*ctx).queue as *mut core::ffi::c_void,
-        (*ctx).queueSize * size_of::<POOL_job>(),
+        queue as *mut core::ffi::c_void,
+        queueSize * size_of::<POOL_job>(),
         (*ctx).customMem,
     );
     ZSTD_customFree(
-        (*ctx).threads as *mut core::ffi::c_void,
-        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
+        threads as *mut core::ffi::c_void,
+        threadCapacity * size_of::<JoinHandle<()>>(),
         (*ctx).customMem,
     );
     ZSTD_customFree(
@@ -198,10 +223,9 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
 
 /// Waits for all queued jobs to finish executing.
 pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
-    let mut guard = (*ctx).queueMutex.lock().unwrap();
-    #[expect(clippy::while_immutable_condition)]
-    while (*ctx).queueEmpty == 0 || (*ctx).numThreadsBusy > 0 {
-        guard = (*ctx).queuePushCond.wait(guard).unwrap();
+    let mut state = (*ctx).state.lock().unwrap();
+    while state.queueEmpty == 0 || state.numThreadsBusy > 0 {
+        state = (*ctx).queuePushCond.wait(state).unwrap();
     }
 }
 
@@ -219,17 +243,22 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> usize {
     if ctx.is_null() {
         return 0;
     }
+    let state = (*ctx).state.lock().unwrap();
     size_of::<POOL_ctx>()
-        + (*ctx).queueSize * size_of::<POOL_job>()
-        + (*ctx).threadCapacity * size_of::<JoinHandle<()>>()
+        + state.queueSize * size_of::<POOL_job>()
+        + state.threadCapacity * size_of::<JoinHandle<()>>()
 }
 
-unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> Result<(), ()> {
-    if numThreads <= (*ctx).threadCapacity {
+unsafe fn POOL_resize_internal(
+    ctx: *mut POOL_ctx,
+    state: &mut PoolState,
+    numThreads: usize,
+) -> Result<(), ()> {
+    if numThreads <= state.threadCapacity {
         if numThreads == 0 {
             return Err(());
         }
-        (*ctx).threadLimit = numThreads;
+        state.threadLimit = numThreads;
         return Ok(());
     }
 
@@ -241,18 +270,18 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> Result<
         return Err(());
     }
     // Replace existing thread pool
-    ptr::copy_nonoverlapping((*ctx).threads, threadPool, (*ctx).threadCapacity);
+    ptr::copy_nonoverlapping(state.threads, threadPool, state.threadCapacity);
     ZSTD_customFree(
-        (*ctx).threads as *mut core::ffi::c_void,
-        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
+        state.threads as *mut core::ffi::c_void,
+        state.threadCapacity * size_of::<JoinHandle<()>>(),
         (*ctx).customMem,
     );
-    (*ctx).threads = threadPool;
+    state.threads = threadPool;
     // Initialize additional threads
-    for threadId in (*ctx).threadCapacity..numThreads {
+    for threadId in state.threadCapacity..numThreads {
         let ctx = SendPoolCtxPtr(ctx);
         core::ptr::write(
-            ((*ctx.0).threads).add(threadId),
+            state.threads.add(threadId),
             std::thread::spawn(|| {
                 let ctx = ctx;
                 POOL_thread(ctx.0)
@@ -260,8 +289,8 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> Result<
         );
     }
     // Successfully expanded
-    (*ctx).threadCapacity = numThreads;
-    (*ctx).threadLimit = numThreads;
+    state.threadCapacity = numThreads;
+    state.threadLimit = numThreads;
     Ok(())
 }
 
@@ -275,37 +304,40 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Resul
     if ctx.is_null() {
         return Err(());
     }
-    let _guard = (*ctx).queueMutex.lock().unwrap();
-    let result = POOL_resize_internal(ctx, numThreads);
+    let mut state = (*ctx).state.lock().unwrap();
+    let result = POOL_resize_internal(ctx, &mut state, numThreads);
     (*ctx).queuePopCond.notify_all();
     result
 }
 
-/// Returns true if the queue is full.
-///
-/// When queueSize is 1 (pool was created with an intended queueSize of 0),
-/// then a queue is empty if there is a thread free _and_ no job is waiting.
-unsafe fn isQueueFull(ctx: *const POOL_ctx) -> bool {
-    if (*ctx).queueSize > 1 {
-        (*ctx).queueHead == ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize
-    } else {
-        (*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0
+impl PoolState {
+    /// Returns true if the queue is full.
+    ///
+    /// When queueSize is 1 (pool was created with an intended queueSize of 0),
+    /// then a queue is empty if there is a thread free _and_ no job is waiting.
+    fn isQueueFull(&self) -> bool {
+        if self.queueSize > 1 {
+            self.queueHead == self.queueTail.wrapping_add(1) % self.queueSize
+        } else {
+            self.numThreadsBusy == self.threadLimit || self.queueEmpty == 0
+        }
     }
 }
 
 unsafe fn POOL_add_internal(
     ctx: *mut POOL_ctx,
+    state: &mut PoolState,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) {
     let job = POOL_job { function, opaque };
-    if (*ctx).shutdown != 0 {
+    if state.shutdown != 0 {
         return;
     }
 
-    (*ctx).queueEmpty = 0;
-    *((*ctx).queue).add((*ctx).queueTail) = job;
-    (*ctx).queueTail = ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize;
+    state.queueEmpty = 0;
+    *state.queue.add(state.queueTail) = job;
+    state.queueTail = state.queueTail.wrapping_add(1) % state.queueSize;
     (*ctx).queuePopCond.notify_one();
 }
 
@@ -318,12 +350,12 @@ pub unsafe fn POOL_add(
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) {
-    let mut guard = (*ctx).queueMutex.lock().unwrap();
+    let mut state = (*ctx).state.lock().unwrap();
     // Wait until there is space in the queue for the new job
-    while isQueueFull(ctx) && (*ctx).shutdown == 0 {
-        guard = (*ctx).queuePushCond.wait(guard).unwrap();
+    while state.isQueueFull() && state.shutdown == 0 {
+        state = (*ctx).queuePushCond.wait(state).unwrap();
     }
-    POOL_add_internal(ctx, function, opaque);
+    POOL_add_internal(ctx, &mut state, function, opaque);
 }
 
 /// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
@@ -338,10 +370,10 @@ pub(crate) unsafe fn POOL_tryAdd(
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) -> Result<(), ()> {
-    let _guard = (*ctx).queueMutex.lock().unwrap();
-    if isQueueFull(ctx) {
+    let mut state = (*ctx).state.lock().unwrap();
+    if state.isQueueFull() {
         return Err(());
     }
-    POOL_add_internal(ctx, function, opaque);
+    POOL_add_internal(ctx, &mut state, function, opaque);
     Ok(())
 }
