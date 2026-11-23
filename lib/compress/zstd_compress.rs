@@ -8701,8 +8701,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 ) -> Result<usize, Error> {
     let mut idx = seqPos.idx;
     let startIdx = idx;
-    let mut ip = src.as_ptr();
-    let iend = ip.add(src.len());
+    let mut pos = 0usize;
 
     let dictSize = if !((*cctx).cdict).is_null() {
         (*(*cctx).cdict).dictContentSize as u32
@@ -8749,12 +8748,12 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         ZSTD_storeSeq(
             &mut (*cctx).seqStore,
             litLength as usize,
-            ip,
-            iend,
+            src[pos..].as_ptr(),
+            src.as_ptr_range().end,
             offBase,
             matchLength as usize,
         );
-        ip = ip.offset(matchLength.wrapping_add(litLength) as isize);
+        pos = pos.wrapping_add(matchLength.wrapping_add(litLength) as usize);
         idx = idx.wrapping_add(1);
     }
 
@@ -8787,16 +8786,16 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     if inSeqs[idx as usize].litLength != 0 {
         ZSTD_storeLastLiterals(
             &mut (*cctx).seqStore,
-            ip,
+            src[pos..].as_ptr(),
             inSeqs[idx as usize].litLength as usize,
         );
-        ip = ip.offset(inSeqs[idx as usize].litLength as isize);
+        pos = pos.wrapping_add(inSeqs[idx as usize].litLength as usize);
         seqPos.posInSrc = seqPos
             .posInSrc
             .wrapping_add(inSeqs[idx as usize].litLength as usize);
     }
 
-    if ip != iend {
+    if pos != src.len() {
         return Err(Error::externalSequences_invalid);
     }
 
@@ -8825,9 +8824,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     let mut idx = seqPos.idx;
     let mut startPosInSequence = seqPos.posInSequence;
     let mut endPosInSequence = seqPos.posInSequence.wrapping_add(src.len() as u32);
-    let istart = src.as_ptr();
-    let mut ip = istart;
-    let mut iend = istart.add(src.len());
+    let mut pos = 0usize;
     let mut bytesAdjustment = 0;
     let mut finalMatchSplit = false;
 
@@ -8937,12 +8934,12 @@ unsafe fn ZSTD_transferSequences_noDelim(
         ZSTD_storeSeq(
             &mut (*cctx).seqStore,
             litLength as usize,
-            ip,
-            iend,
+            src[pos..].as_ptr(),
+            src.as_ptr_range().end,
             offBase,
             matchLength as usize,
         );
-        ip = ip.offset(matchLength.wrapping_add(litLength) as isize);
+        pos = pos.wrapping_add(matchLength.wrapping_add(litLength) as usize);
         if !finalMatchSplit {
             // Next Sequence
             idx = idx.wrapping_add(1);
@@ -8953,15 +8950,15 @@ unsafe fn ZSTD_transferSequences_noDelim(
     seqPos.posInSequence = endPosInSequence;
     (*(*cctx).blockState.nextCBlock).rep = updatedRepcodes;
 
-    iend = iend.sub(bytesAdjustment as usize);
-    if ip != iend {
+    let end = src.len() - bytesAdjustment as usize;
+    if pos != end {
         // Store any last literals
-        let lastLLSize = iend.offset_from_unsigned(ip);
-        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, ip, lastLLSize);
+        let lastLLSize = end - pos;
+        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, src[pos..].as_ptr(), lastLLSize);
         seqPos.posInSrc = seqPos.posInSrc.wrapping_add(lastLLSize);
     }
 
-    Ok(iend.offset_from_unsigned(istart))
+    Ok(end)
 }
 
 /// @seqPos represents a position within @inSeqs,
