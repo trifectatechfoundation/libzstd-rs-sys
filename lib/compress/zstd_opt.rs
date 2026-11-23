@@ -357,15 +357,15 @@ unsafe fn ZSTD_getMatchPrice(
 unsafe fn ZSTD_updateStats(
     opt_state: &mut OptState,
     litLength: u32,
-    literals: *const u8,
+    literals: &[u8],
     offBase: u32,
     matchLength: u32,
 ) {
     // literals
     if opt_state.compress_literals() {
         let litFreq = opt_state.litFreq_mut();
-        for u in 0..litLength {
-            let freq = &mut litFreq[usize::from(*literals.add(u as usize))];
+        for &literal in literals {
+            let freq = &mut litFreq[usize::from(literal)];
             *freq = freq.wrapping_add(ZSTD_LITFREQ_ADD);
         }
         opt_state.litSum = opt_state.litSum.wrapping_add(litLength * ZSTD_LITFREQ_ADD);
@@ -1489,7 +1489,13 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                         // only literals => must be last "sequence", actually starting a new stream of sequences
                         ip = anchor.offset(llen as isize); // last "sequence" is a bunch of literals => don't progress anchor
                     } else {
-                        ZSTD_updateStats(&mut ms.opt, llen, anchor, offBase, mlen);
+                        ZSTD_updateStats(
+                            &mut ms.opt,
+                            llen,
+                            core::slice::from_raw_parts(anchor, llen as usize),
+                            offBase,
+                            mlen,
+                        );
                         ZSTD_storeSeq(
                             seqStore,
                             llen as usize,
