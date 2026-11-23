@@ -1996,8 +1996,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic<
                 let repIndex_2 = current2.wrapping_sub(offset_2);
                 let repMatch_2 = if repIndex_2 < prefixLowestIndex {
                     dictBase
-                        .sub(dictIndexDelta as usize)
-                        .offset(repIndex_2 as isize)
+                        .wrapping_sub(dictIndexDelta as usize)
+                        .wrapping_offset(repIndex_2 as isize)
                 } else {
                     base.wrapping_offset(repIndex_2 as isize)
                 };
