@@ -33,8 +33,10 @@ impl TryFrom<u32> for MultipleDDicts {
 
 #[repr(C)]
 pub struct ZSTD_DDictHashSet {
-    pub(crate) ddictPtrTable: Box<[*const ZSTD_DDict], ZstdAllocator>,
-    pub(crate) ddictPtrCount: usize,
+    /// Underlying storage of the hashmap.
+    pub(crate) ptr_table: Box<[*const ZSTD_DDict], ZstdAllocator>,
+    /// The number of non-NULL elements.
+    pub(crate) ptr_count: usize,
 }
 
 #[repr(C)]

@@ -461,7 +461,7 @@ impl ZSTD_DDictHashSet {
     fn get_index(&self, dictID: u32) -> usize {
         let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
         // `ddictPtrTable.len()` is a power of 2, use `len - 1` as a mask to get an index within `0..hashSet.ddictPtrTable.len()`
-        hash as usize & self.ddictPtrTable.len().wrapping_sub(1)
+        hash as usize & self.ptr_table.len().wrapping_sub(1)
     }
 
     /// Adds [`ZSTD_DDict`] to a hashset without resizing it.
@@ -470,11 +470,11 @@ impl ZSTD_DDictHashSet {
     unsafe fn emplace_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
         let dictID = ZSTD_getDictID_fromDDict(ddict);
         let mut idx = self.get_index(dictID);
-        let idxRangeMask = self.ddictPtrTable.len() - 1;
-        if self.ddictPtrCount == self.ddictPtrTable.len() {
+        let idxRangeMask = self.ptr_table.len() - 1;
+        if self.ptr_count == self.ptr_table.len() {
             return Err(Error::GENERIC);
         }
-        let table = &mut self.ddictPtrTable;
+        let table = &mut self.ptr_table;
         while !table[idx].is_null() {
             if ZSTD_getDictID_fromDDict(table[idx]) == dictID {
                 table[idx] = ddict;
@@ -483,18 +483,18 @@ impl ZSTD_DDictHashSet {
             idx = (idx + 1) & idxRangeMask;
         }
         table[idx] = ddict;
-        self.ddictPtrCount += 1;
+        self.ptr_count += 1;
         Ok(())
     }
 
     /// Expands hash table by factor of [`DDICT_HASHSET_RESIZE_FACTOR`] and rehashes all values,
     /// allocates the new table, and frees the old table.
     unsafe fn expand(&mut self) -> Result<(), Error> {
-        let newTableSize = self.ddictPtrTable.len() * DDICT_HASHSET_RESIZE_FACTOR;
-        let alloc = *Box::allocator(&self.ddictPtrTable);
+        let newTableSize = self.ptr_table.len() * DDICT_HASHSET_RESIZE_FACTOR;
+        let alloc = *Box::allocator(&self.ptr_table);
         let newSet = Self::new_with_size(newTableSize, alloc)?;
         let oldSet = core::mem::replace(self, newSet);
-        for &ddict in &oldSet.ddictPtrTable {
+        for &ddict in &oldSet.ptr_table {
             if !ddict.is_null() {
                 self.emplace_ddict(ddict)?;
             }
@@ -510,9 +510,9 @@ impl ZSTD_DDictHashSet {
     /// - `NULL` if no such dictionary exists
     unsafe fn get_ddict(&self, dictID: u32) -> *const ZSTD_DDict {
         let mut idx = self.get_index(dictID);
-        let idxRangeMask = self.ddictPtrTable.len() - 1;
+        let idxRangeMask = self.ptr_table.len() - 1;
         loop {
-            let currDictID = match self.ddictPtrTable[idx].as_ref() {
+            let currDictID = match self.ptr_table[idx].as_ref() {
                 Some(ddict) => ddict.dictID as usize,
                 None => 0,
             };
@@ -525,7 +525,7 @@ impl ZSTD_DDictHashSet {
             idx = (idx + 1) & idxRangeMask; // loop back to the start of the table when we reach the end
         }
 
-        self.ddictPtrTable[idx]
+        self.ptr_table[idx]
     }
 
     /// Allocates space for and returns a ddict hash set.
@@ -548,14 +548,14 @@ impl ZSTD_DDictHashSet {
         let table = unsafe { table.assume_init() };
 
         Ok(Self {
-            ddictPtrTable: table,
-            ddictPtrCount: 0,
+            ptr_table: table,
+            ptr_count: 0,
         })
     }
 
     /// Adds a [`ZSTD_DDict`] into the [`ZSTD_DDictHashSet`], possibly triggering a resize of the hash set.
     unsafe fn add_ddict(&mut self, ddict: *const ZSTD_DDict) -> Result<(), Error> {
-        if self.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ddictPtrTable.len()
+        if self.ptr_count * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT / self.ptr_table.len()
             * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT
             != 0
         {
