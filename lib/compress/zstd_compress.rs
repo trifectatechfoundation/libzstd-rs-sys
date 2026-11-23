@@ -5758,7 +5758,7 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
 
 unsafe fn ZSTD_optimalBlockSize(
     cctx: *mut ZSTD_CCtx,
-    src: *const core::ffi::c_void,
+    src: &[u8],
     srcSize: usize,
     blockSizeMax: usize,
     mut splitLevel: core::ffi::c_int,
@@ -5791,8 +5791,7 @@ unsafe fn ZSTD_optimalBlockSize(
         splitLevel -= 2;
     }
     debug_assert_eq!(blockSizeMax, 128 << 10);
-    // SAFETY: the caller provides `srcSize` readable bytes, and `srcSize >= 128 KB` was checked above.
-    let block = unsafe { &*src.cast::<[u8; 128 << 10]>() };
+    let block = src.first_chunk().unwrap();
     ZSTD_splitBlock(block, splitLevel, (*cctx).tmpWorkspace, (*cctx).tmpWkspSize)
 }
 
@@ -5831,7 +5830,7 @@ unsafe fn ZSTD_compress_frameChunk(
         let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
         let blockSize = ZSTD_optimalBlockSize(
             cctx,
-            ip as *const core::ffi::c_void,
+            core::slice::from_raw_parts(ip, remaining),
             remaining,
             blockSizeMax,
             (*cctx).appliedParams.preBlockSplitter_level,
