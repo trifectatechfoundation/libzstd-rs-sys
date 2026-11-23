@@ -4598,26 +4598,18 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
 ) -> usize {
     let dstCapacity = ZSTD_compressBound(srcSize);
 
-    let mut targetCBlockSize: core::ffi::c_int = 0;
-    let err_code = ZSTD_CCtx_getParameter(
-        zc,
-        ZSTD_cParameter::ZSTD_c_targetCBlockSize,
-        &mut targetCBlockSize,
-    );
-    if ERR_isError(err_code) {
-        return err_code;
-    }
-    if targetCBlockSize != 0 {
-        return Error::parameter_unsupported.to_error_code();
+    let params = &(*zc).requestedParams;
+
+    match params.get_parameter(ZSTD_cParameter::ZSTD_c_targetCBlockSize) {
+        Ok(0) => {}
+        Ok(_) => return Error::parameter_unsupported.to_error_code(),
+        Err(err) => return err.to_error_code(),
     }
 
-    let mut nbWorkers: core::ffi::c_int = 0;
-    let err_code_0 = ZSTD_CCtx_getParameter(zc, ZSTD_cParameter::ZSTD_c_nbWorkers, &mut nbWorkers);
-    if ERR_isError(err_code_0) {
-        return err_code_0;
-    }
-    if nbWorkers != 0 {
-        return Error::parameter_unsupported.to_error_code();
+    match params.get_parameter(ZSTD_cParameter::ZSTD_c_nbWorkers) {
+        Ok(0) => {}
+        Ok(_) => return Error::parameter_unsupported.to_error_code(),
+        Err(err) => return err.to_error_code(),
     }
 
     let dst = ZSTD_customMalloc(dstCapacity, ZSTD_customMem::default());
