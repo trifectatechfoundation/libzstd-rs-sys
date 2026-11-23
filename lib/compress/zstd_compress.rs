@@ -5759,7 +5759,6 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
 unsafe fn ZSTD_optimalBlockSize(
     cctx: *mut ZSTD_CCtx,
     src: &[u8],
-    srcSize: usize,
     blockSizeMax: usize,
     mut splitLevel: core::ffi::c_int,
     strat: ZSTD_strategy,
@@ -5770,8 +5769,8 @@ unsafe fn ZSTD_optimalBlockSize(
     // Note: conservatively only split full blocks (128 KB) currently.
     // While it's possible to go lower, let's keep it simple for a first implementation.
     // Besides, benefits of splitting are reduced when blocks are already small.
-    if srcSize < (128 * (1 << 10)) || blockSizeMax < (128 * (1 << 10)) {
-        return srcSize.min(blockSizeMax);
+    if src.len() < (128 * (1 << 10)) || blockSizeMax < (128 * (1 << 10)) {
+        return src.len().min(blockSizeMax);
     }
     // Do not split incompressible data though:
     // Require verified savings to allow pre-splitting.
@@ -5831,7 +5830,6 @@ unsafe fn ZSTD_compress_frameChunk(
         let blockSize = ZSTD_optimalBlockSize(
             cctx,
             core::slice::from_raw_parts(ip, remaining),
-            remaining,
             blockSizeMax,
             (*cctx).appliedParams.preBlockSplitter_level,
             (*cctx).appliedParams.cParams.strategy,
