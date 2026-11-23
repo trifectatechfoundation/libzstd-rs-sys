@@ -143,12 +143,7 @@ fn ZSTD_scaleStats(table: &mut [core::ffi::c_uint], logTarget: u32) -> u32 {
 ///    and init from zero if there is none,
 ///    using src for literals stats, and baseline stats for sequence symbols
 /// otherwise downscale existing stats, to be used as seed for next block.
-unsafe fn ZSTD_rescaleFreqs(
-    opt_state: &mut OptState,
-    src: *const u8,
-    srcSize: usize,
-    optLevel: u32,
-) {
+unsafe fn ZSTD_rescaleFreqs(opt_state: &mut OptState, src: &[u8], srcSize: usize, optLevel: u32) {
     let compressedLiterals = opt_state.compress_literals();
     opt_state.priceType = OptPrice::Dynamic;
 
@@ -232,7 +227,7 @@ unsafe fn ZSTD_rescaleFreqs(
                         .litFreq
                         .cast::<[MaybeUninit<core::ffi::c_uint>; MaxLit as usize + 1]>(),
                     &mut lit_0,
-                    core::slice::from_raw_parts(src, srcSize), // use raw first block to init statistics
+                    src, // use raw first block to init statistics
                 );
                 opt_state.litSum =
                     ZSTD_downscaleStats(opt_state.litFreq_mut(), 8, BaseDirective::Possible);
@@ -1173,7 +1168,12 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     );
 
     // init
-    ZSTD_rescaleFreqs(&mut ms.opt, src as *const u8, srcSize, OPT_LEVEL);
+    ZSTD_rescaleFreqs(
+        &mut ms.opt,
+        core::slice::from_raw_parts(istart, srcSize),
+        srcSize,
+        OPT_LEVEL,
+    );
     ip = ip.add(usize::from(ip == prefixStart));
 
     // Match Loop
