@@ -1,8 +1,10 @@
-use core::{mem, ptr};
+use core::mem::{self, MaybeUninit};
+use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZstdAllocator};
+use crate::lib::polyfill::box_try_new_uninit_slice_in;
 use crate::lib::zstd::ZSTD_customMem;
 
 pub struct POOL_ctx {
@@ -23,10 +25,9 @@ struct PoolState {
     threadLimit: usize,
 
     /// The queue is a circular buffer
-    queue: *mut POOL_job,
+    queue: Box<[Option<POOL_job>], ZstdAllocator>,
     queueHead: usize,
     queueTail: usize,
-    queueSize: usize,
 
     /// The number of threads working on jobs
     numThreadsBusy: usize,
@@ -73,8 +74,9 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         }
 
         // Pop a job off the queue
-        let job = *state.queue.add(state.queueHead);
-        state.queueHead = state.queueHead.wrapping_add(1) % state.queueSize;
+        let queueHead = state.queueHead;
+        let job = state.queue[queueHead].take().unwrap();
+        state.queueHead = queueHead.wrapping_add(1) % state.queue.len();
         state.numThreadsBusy += 1;
         state.queueEmpty = (state.queueHead == state.queueTail) as core::ffi::c_int;
 
@@ -118,22 +120,28 @@ pub(crate) unsafe fn POOL_create_advanced(
     if numThreads == 0 {
         return core::ptr::null_mut();
     }
+
+    // Initialize the job queue.
+    // It needs one extra space since one space is wasted to differentiate empty and full queues.
+    let queueSize = queueSize + 1;
+    let alloc = ZstdAllocator::new(customMem);
+    let Ok(mut queue) = box_try_new_uninit_slice_in(queueSize, alloc) else {
+        return core::ptr::null_mut();
+    };
+    queue.fill(MaybeUninit::new(None));
+    // SAFETY: every element was initialized by the `fill` above.
+    let queue = unsafe { queue.assume_init() };
+
     let ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
     if ctx.is_null() {
         return core::ptr::null_mut();
     }
-
-    // Initialize the job queue.
-    // It needs one extra space since one space is wasted to differentiate empty and full queues.
-    let queueSize = queueSize.wrapping_add(1);
-    let queue = ZSTD_customCalloc(queueSize * size_of::<POOL_job>(), customMem) as *mut POOL_job;
     let state = PoolState {
-        threads: Vec::new_in(ZstdAllocator::new(customMem)),
+        threads: Vec::new_in(alloc),
         threadLimit: 0,
         queue,
         queueHead: 0,
         queueTail: 0,
-        queueSize,
         numThreadsBusy: 0,
         queueEmpty: 1,
         shutdown: 0,
@@ -147,10 +155,6 @@ pub(crate) unsafe fn POOL_create_advanced(
             queuePopCond: Condvar::new(),
         },
     );
-    if queue.is_null() {
-        POOL_free(ctx);
-        return core::ptr::null_mut();
-    }
     // Initialize the threads
     let mut state = (*ctx).state.lock().unwrap();
     let result = POOL_resize_internal(ctx, &mut state, numThreads);
@@ -182,18 +186,9 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
         return;
     }
     POOL_join(ctx);
-    // All threads have been joined, so we have exclusive access to the state
-    let PoolState {
-        queue, queueSize, ..
-    } = *(*ctx).state.get_mut().unwrap();
     ptr::drop_in_place(&raw mut (*ctx).state);
     ptr::drop_in_place(&raw mut (*ctx).queuePushCond);
     ptr::drop_in_place(&raw mut (*ctx).queuePopCond);
-    ZSTD_customFree(
-        queue as *mut core::ffi::c_void,
-        queueSize * size_of::<POOL_job>(),
-        (*ctx).customMem,
-    );
     ZSTD_customFree(
         ctx as *mut core::ffi::c_void,
         size_of::<POOL_ctx>(),
@@ -225,7 +220,7 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> usize {
     }
     let state = (*ctx).state.lock().unwrap();
     size_of::<POOL_ctx>()
-        + state.queueSize * size_of::<POOL_job>()
+        + state.queue.len() * size_of::<Option<POOL_job>>()
         + state.threads.capacity() * size_of::<JoinHandle<()>>()
 }
 
@@ -279,13 +274,12 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Resul
 impl PoolState {
     /// Returns true if the queue is full.
     ///
-    /// When queueSize is 1 (pool was created with an intended queueSize of 0),
+    /// When `queue.len()` is 1 (pool was created with an intended queueSize of 0),
     /// then a queue is empty if there is a thread free _and_ no job is waiting.
     fn isQueueFull(&self) -> bool {
-        if self.queueSize > 1 {
-            self.queueHead == self.queueTail.wrapping_add(1) % self.queueSize
-        } else {
-            self.numThreadsBusy == self.threadLimit || self.queueEmpty == 0
+        match self.queue.len() {
+            1 => self.numThreadsBusy == self.threadLimit || self.queueEmpty == 0,
+            n => self.queueHead == (self.queueTail + 1) % n,
         }
     }
 }
@@ -302,8 +296,9 @@ unsafe fn POOL_add_internal(
     }
 
     state.queueEmpty = 0;
-    *state.queue.add(state.queueTail) = job;
-    state.queueTail = state.queueTail.wrapping_add(1) % state.queueSize;
+    let queueTail = state.queueTail;
+    state.queue[queueTail] = Some(job);
+    state.queueTail = (queueTail + 1) % state.queue.len();
     (*ctx).queuePopCond.notify_one();
 }
 
