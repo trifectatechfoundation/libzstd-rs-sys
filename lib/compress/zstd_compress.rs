@@ -4218,9 +4218,9 @@ pub fn ZSTD_selectBlockCompressor(
     }
 }
 
-unsafe fn ZSTD_storeLastLiterals(seqStorePtr: &mut SeqStore_t, anchor: &[u8], lastLLSize: usize) {
-    core::ptr::copy_nonoverlapping(anchor.as_ptr(), seqStorePtr.lit, lastLLSize);
-    seqStorePtr.lit = seqStorePtr.lit.add(lastLLSize);
+unsafe fn ZSTD_storeLastLiterals(seqStorePtr: &mut SeqStore_t, anchor: &[u8]) {
+    core::ptr::copy_nonoverlapping(anchor.as_ptr(), seqStorePtr.lit, anchor.len());
+    seqStorePtr.lit = seqStorePtr.lit.add(anchor.len());
 }
 
 pub fn ZSTD_resetSeqStore(ssPtr: &mut SeqStore_t) {
@@ -4475,7 +4475,7 @@ unsafe fn ZSTD_buildSeqStore(
 
     let lastLiterals = (src as *const u8).add(srcSize).sub(lastLLSize as usize);
     let lastLiterals = core::slice::from_raw_parts(lastLiterals, lastLLSize);
-    ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
+    ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals);
 
     ZSTD_validateSeqStore(&(*zc).seqStore, &(*zc).appliedParams.cParams);
     Ok(BuildSeqStore::Compress)
@@ -8784,7 +8784,6 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         ZSTD_storeLastLiterals(
             &mut (*cctx).seqStore,
             &src[pos..][..inSeqs[idx as usize].litLength as usize],
-            inSeqs[idx as usize].litLength as usize,
         );
         pos = pos.wrapping_add(inSeqs[idx as usize].litLength as usize);
         seqPos.posInSrc = seqPos
@@ -8951,7 +8950,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     if pos != end {
         // Store any last literals
         let lastLLSize = end - pos;
-        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, &src[pos..end], lastLLSize);
+        ZSTD_storeLastLiterals(&mut (*cctx).seqStore, &src[pos..end]);
         seqPos.posInSrc = seqPos.posInSrc.wrapping_add(lastLLSize);
     }
 
