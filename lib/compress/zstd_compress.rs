@@ -4241,10 +4241,9 @@ pub fn ZSTD_resetSeqStore(ssPtr: &mut SeqStore_t) {
 unsafe fn ZSTD_postProcessSequenceProducerResult(
     outSeqs: &mut [MaybeUninit<ZSTD_Sequence>],
     nbExternalSeqs: usize,
-    outSeqsCapacity: usize,
     srcSize: usize,
 ) -> Result<usize, Error> {
-    if nbExternalSeqs > outSeqsCapacity {
+    if nbExternalSeqs > outSeqs.len() {
         return Err(Error::sequenceProducer_failed);
     }
 
@@ -4272,7 +4271,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
 
     // This error condition is only possible if the external matchfinder
     // produced an invalid parse, by definition of ZSTD_sequenceBound().
-    if nbExternalSeqs == outSeqsCapacity {
+    if nbExternalSeqs == outSeqs.len() {
         return Err(Error::sequenceProducer_failed);
     }
 
@@ -4411,7 +4410,6 @@ unsafe fn ZSTD_buildSeqStore(
         match ZSTD_postProcessSequenceProducerResult(
             core::slice::from_raw_parts_mut((*zc).extSeqBuf.cast(), (*zc).extSeqBufCapacity),
             nbExternalSeqs,
-            (*zc).extSeqBufCapacity,
             srcSize,
         ) {
             // Return early if there is no error, since we don't need to worry about last literals
