@@ -1236,6 +1236,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                 // The statistics only change once the forward pass is done.
                 let ll0Price = ZSTD_litLengthPrice(0, &ms.opt, OPT_LEVEL) as i32;
                 let ll1Delta = ZSTD_litLengthPrice(1, &ms.opt, OPT_LEVEL) as i32 - ll0Price;
+                let stats = ms.opt;
 
                 // set prices for first matches starting position == 0
                 for (pos, o) in (1..).zip(&mut opt[1..minMatch as usize]) {
@@ -1248,11 +1249,11 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                 let mut pos = minMatch as usize;
                 for m in &matches[..nbMatches] {
                     let offBase = m.off;
-                    let offsetPrice = ZSTD_getOffsetPrice(offBase, &ms.opt, OPT_LEVEL);
+                    let offsetPrice = ZSTD_getOffsetPrice(offBase, &stats, OPT_LEVEL);
                     let end = m.len as usize;
                     while pos <= end {
                         let matchPrice = offsetPrice
-                            .wrapping_add(ZSTD_getMatchLengthPrice(pos as u32, &ms.opt, OPT_LEVEL))
+                            .wrapping_add(ZSTD_getMatchLengthPrice(pos as u32, &stats, OPT_LEVEL))
                             as core::ffi::c_int;
                         let sequencePrice = opt[0].price + matchPrice;
                         opt[pos].mlen = pos as u32;
@@ -1386,7 +1387,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                                     for matchNb in 0..nbMatches {
                                         let offset = matches[matchNb].off;
                                         let offsetPrice =
-                                            ZSTD_getOffsetPrice(offset, &ms.opt, OPT_LEVEL);
+                                            ZSTD_getOffsetPrice(offset, &stats, OPT_LEVEL);
                                         let lastML = matches[matchNb].len;
                                         let startML = if matchNb > 0 {
                                             matches[matchNb - 1].len.wrapping_add(1)
@@ -1400,7 +1401,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                                             let price = basePrice
                                                 + offsetPrice.wrapping_add(
                                                     ZSTD_getMatchLengthPrice(
-                                                        mlen, &ms.opt, OPT_LEVEL,
+                                                        mlen, &stats, OPT_LEVEL,
                                                     ),
                                                 )
                                                     as core::ffi::c_int;
