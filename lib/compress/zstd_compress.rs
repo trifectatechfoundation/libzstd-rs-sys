@@ -627,7 +627,6 @@ pub type ZSTD_SequenceCopier_f = unsafe fn(
     &mut ZSTD_SequencePosition,
     &[ZSTD_Sequence],
     &[u8],
-    usize,
     ParamSwitch,
 ) -> Result<usize, Error>;
 
@@ -4433,7 +4432,6 @@ unsafe fn ZSTD_buildSeqStore(
                     &mut seqPos,
                     extSeqs,
                     core::slice::from_raw_parts(src.cast(), srcSize),
-                    srcSize,
                     (*zc).appliedParams.searchForExternalRepcodes,
                 )?;
                 ms.ldmSeqStore = core::ptr::null();
@@ -8689,23 +8687,22 @@ fn ZSTD_finalizeOffBase(rawOffset: u32, rep: &RepCodes, ll0: bool) -> u32 {
 /// This function scans through an array of ZSTD_Sequence,
 /// storing the sequences it reads, until it reaches a block delimiter.
 /// Note that the block delimiter includes the last literals of the block.
-/// `blockSize` must be == sum(sequence_lengths).
+/// `src.len()` must be == sum(sequence_lengths).
 ///
 /// # Returns
 ///
-/// `blockSize` on success, or a ZSTD_error
+/// `src.len()` on success, or a ZSTD_error
 unsafe fn ZSTD_transferSequences_wBlockDelim(
     cctx: *mut ZSTD_CCtx,
     seqPos: &mut ZSTD_SequencePosition,
     inSeqs: &[ZSTD_Sequence],
     src: &[u8],
-    blockSize: usize,
     externalRepSearch: ParamSwitch,
 ) -> Result<usize, Error> {
     let mut idx = seqPos.idx;
     let startIdx = idx;
     let mut ip = src.as_ptr();
-    let iend = ip.add(blockSize);
+    let iend = ip.add(src.len());
 
     let dictSize = if !((*cctx).cdict).is_null() {
         (*(*cctx).cdict).dictContentSize as u32
@@ -8805,10 +8802,10 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 
     seqPos.idx = idx.wrapping_add(1);
 
-    Ok(blockSize)
+    Ok(src.len())
 }
 
-/// This function attempts to scan through @blockSize bytes in @src
+/// This function attempts to scan through `src`
 /// represented by the sequences in @inSeqs, storing any (partial) sequences.
 ///
 /// Occasionally, we may want to reduce the actual number of bytes consumed from @src
@@ -8816,22 +8813,21 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 ///
 /// # Returns
 ///
-/// The number of bytes consumed from `src`, necessarily <= `blockSize`.
+/// The number of bytes consumed from `src`, necessarily <= `src.len()`.
 /// Otherwise, it may return a ZSTD error if something went wrong.
 unsafe fn ZSTD_transferSequences_noDelim(
     cctx: *mut ZSTD_CCtx,
     seqPos: &mut ZSTD_SequencePosition,
     inSeqs: &[ZSTD_Sequence],
     src: &[u8],
-    blockSize: usize,
     externalRepSearch: ParamSwitch,
 ) -> Result<usize, Error> {
     let mut idx = seqPos.idx;
     let mut startPosInSequence = seqPos.posInSequence;
-    let mut endPosInSequence = seqPos.posInSequence.wrapping_add(blockSize as u32);
+    let mut endPosInSequence = seqPos.posInSequence.wrapping_add(src.len() as u32);
     let istart = src.as_ptr();
     let mut ip = istart;
-    let mut iend = istart.add(blockSize);
+    let mut iend = istart.add(src.len());
     let mut bytesAdjustment = 0;
     let mut finalMatchSplit = false;
 
@@ -8882,7 +8878,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
             let mut firstHalfMatchLength = endPosInSequence
                 .wrapping_sub(startPosInSequence)
                 .wrapping_sub(litLength);
-            if matchLength as usize > blockSize
+            if matchLength as usize > src.len()
                 && firstHalfMatchLength >= (*cctx).appliedParams.cParams.minMatch
             {
                 // Only ever split the match if it is larger than the block size
@@ -9089,7 +9085,6 @@ unsafe fn ZSTD_compressSequences_internal(
             &mut seqPos,
             inSeqs,
             core::slice::from_raw_parts(ip, blockSize),
-            blockSize,
             (*cctx).appliedParams.searchForExternalRepcodes,
         )?;
 
