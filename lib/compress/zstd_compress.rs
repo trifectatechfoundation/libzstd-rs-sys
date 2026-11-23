@@ -2003,127 +2003,81 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
     param: ZSTD_cParameter,
     value: *mut core::ffi::c_int,
 ) -> usize {
-    match param {
-        ZSTD_cParameter::ZSTD_c_format => {
-            *value = (*CCtxParams).format as core::ffi::c_int;
+    match (*CCtxParams).get_parameter(param) {
+        Ok(v) => {
+            *value = v;
+            0
         }
-        ZSTD_cParameter::ZSTD_c_compressionLevel => {
-            *value = (*CCtxParams).compressionLevel;
-        }
-        ZSTD_cParameter::ZSTD_c_windowLog => {
-            *value = (*CCtxParams).cParams.windowLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_hashLog => {
-            *value = (*CCtxParams).cParams.hashLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_chainLog => {
-            *value = (*CCtxParams).cParams.chainLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_searchLog => {
-            *value = (*CCtxParams).cParams.searchLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_minMatch => {
-            *value = (*CCtxParams).cParams.minMatch as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_targetLength => {
-            *value = (*CCtxParams).cParams.targetLength as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_strategy => {
-            *value = (*CCtxParams).cParams.strategy as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_contentSizeFlag => {
-            *value = (*CCtxParams).fParams.contentSizeFlag;
-        }
-        ZSTD_cParameter::ZSTD_c_checksumFlag => {
-            *value = (*CCtxParams).fParams.checksumFlag;
-        }
-        ZSTD_cParameter::ZSTD_c_dictIDFlag => {
-            *value = core::ffi::c_int::from((*CCtxParams).fParams.noDictIDFlag == 0);
-        }
-        ZSTD_cParameter::ZSTD_c_forceMaxWindow => {
-            *value = (*CCtxParams).forceWindow;
-        }
-        ZSTD_cParameter::ZSTD_c_forceAttachDict => {
-            *value = (*CCtxParams).attachDictPref.0 as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_literalCompressionMode => {
-            *value = (*CCtxParams).literalCompressionMode as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_nbWorkers => {
-            *value = (*CCtxParams).nbWorkers;
-        }
-        ZSTD_cParameter::ZSTD_c_jobSize => {
-            *value = (*CCtxParams).jobSize as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_overlapLog => {
-            *value = (*CCtxParams).overlapLog;
-        }
-        ZSTD_cParameter::ZSTD_c_rsyncable => {
-            *value = (*CCtxParams).rsyncable;
-        }
-        ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch => {
-            *value = (*CCtxParams).enableDedicatedDictSearch;
-        }
-        ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching => {
-            *value = (*CCtxParams).ldmParams.enableLdm as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_ldmHashLog => {
-            *value = (*CCtxParams).ldmParams.hashLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_ldmMinMatch => {
-            *value = (*CCtxParams).ldmParams.minMatchLength as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog => {
-            *value = (*CCtxParams).ldmParams.bucketSizeLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_ldmHashRateLog => {
-            *value = (*CCtxParams).ldmParams.hashRateLog as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_targetCBlockSize => {
-            *value = (*CCtxParams).targetCBlockSize as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_srcSizeHint => {
-            *value = (*CCtxParams).srcSizeHint;
-        }
-        ZSTD_cParameter::ZSTD_c_stableInBuffer => {
-            *value = (*CCtxParams).inBufferMode as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_stableOutBuffer => {
-            *value = (*CCtxParams).outBufferMode as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_blockDelimiters => {
-            *value = (*CCtxParams).blockDelimiters as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_validateSequences => {
-            *value = (*CCtxParams).validateSequences;
-        }
-        ZSTD_cParameter::ZSTD_c_splitAfterSequences => {
-            *value = (*CCtxParams).postBlockSplitter as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_blockSplitterLevel => {
-            *value = (*CCtxParams).preBlockSplitter_level;
-        }
-        ZSTD_cParameter::ZSTD_c_useRowMatchFinder => {
-            *value = (*CCtxParams).useRowMatchFinder as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_deterministicRefPrefix => {
-            *value = (*CCtxParams).deterministicRefPrefix;
-        }
-        ZSTD_cParameter::ZSTD_c_prefetchCDictTables => {
-            *value = (*CCtxParams).prefetchCDictTables as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback => {
-            *value = (*CCtxParams).enableMatchFinderFallback;
-        }
-        ZSTD_cParameter::ZSTD_c_maxBlockSize => {
-            *value = (*CCtxParams).maxBlockSize as core::ffi::c_int;
-        }
-        ZSTD_cParameter::ZSTD_c_repcodeResolution => {
-            *value = (*CCtxParams).searchForExternalRepcodes as core::ffi::c_int;
-        }
-        _ => return Error::parameter_unsupported.to_error_code(),
+        Err(e) => e.to_error_code(),
     }
-    0
+}
+
+impl ZSTD_CCtx_params {
+    /// Safe version of [`ZSTD_CCtxParams_getParameter`]
+    pub fn get_parameter(&self, param: ZSTD_cParameter) -> Result<core::ffi::c_int, Error> {
+        let value = match param {
+            ZSTD_cParameter::ZSTD_c_format => self.format as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_compressionLevel => self.compressionLevel,
+            ZSTD_cParameter::ZSTD_c_windowLog => self.cParams.windowLog as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_hashLog => self.cParams.hashLog as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_chainLog => self.cParams.chainLog as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_searchLog => self.cParams.searchLog as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_minMatch => self.cParams.minMatch as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_targetLength => self.cParams.targetLength as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_strategy => self.cParams.strategy as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_contentSizeFlag => self.fParams.contentSizeFlag,
+            ZSTD_cParameter::ZSTD_c_checksumFlag => self.fParams.checksumFlag,
+            ZSTD_cParameter::ZSTD_c_dictIDFlag => {
+                core::ffi::c_int::from(self.fParams.noDictIDFlag == 0)
+            }
+            ZSTD_cParameter::ZSTD_c_forceMaxWindow => self.forceWindow,
+            ZSTD_cParameter::ZSTD_c_forceAttachDict => self.attachDictPref.0 as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_literalCompressionMode => {
+                self.literalCompressionMode as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_nbWorkers => self.nbWorkers,
+            ZSTD_cParameter::ZSTD_c_jobSize => self.jobSize as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_overlapLog => self.overlapLog,
+            ZSTD_cParameter::ZSTD_c_rsyncable => self.rsyncable,
+            ZSTD_cParameter::ZSTD_c_enableDedicatedDictSearch => self.enableDedicatedDictSearch,
+            ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching => {
+                self.ldmParams.enableLdm as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_ldmHashLog => self.ldmParams.hashLog as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_ldmMinMatch => {
+                self.ldmParams.minMatchLength as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog => {
+                self.ldmParams.bucketSizeLog as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_ldmHashRateLog => {
+                self.ldmParams.hashRateLog as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_targetCBlockSize => self.targetCBlockSize as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_srcSizeHint => self.srcSizeHint,
+            ZSTD_cParameter::ZSTD_c_stableInBuffer => self.inBufferMode as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_stableOutBuffer => self.outBufferMode as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_blockDelimiters => self.blockDelimiters as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_validateSequences => self.validateSequences,
+            ZSTD_cParameter::ZSTD_c_splitAfterSequences => {
+                self.postBlockSplitter as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_blockSplitterLevel => self.preBlockSplitter_level,
+            ZSTD_cParameter::ZSTD_c_useRowMatchFinder => self.useRowMatchFinder as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_deterministicRefPrefix => self.deterministicRefPrefix,
+            ZSTD_cParameter::ZSTD_c_prefetchCDictTables => {
+                self.prefetchCDictTables as core::ffi::c_int
+            }
+            ZSTD_cParameter::ZSTD_c_enableSeqProducerFallback => self.enableMatchFinderFallback,
+            ZSTD_cParameter::ZSTD_c_maxBlockSize => self.maxBlockSize as core::ffi::c_int,
+            ZSTD_cParameter::ZSTD_c_repcodeResolution => {
+                self.searchForExternalRepcodes as core::ffi::c_int
+            }
+            _ => return Err(Error::parameter_unsupported),
+        };
+
+        Ok(value)
+    }
 }
 
 /// Just applies `params` into `cctx`. No action is performed, parameters are merely stored.
