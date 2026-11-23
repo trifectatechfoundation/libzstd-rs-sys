@@ -353,10 +353,8 @@ unsafe fn ZSTD_getMatchPrice(
     price
 }
 
-/// assumption: literals + litLength <= iend
 unsafe fn ZSTD_updateStats(
     opt_state: &mut OptState,
-    litLength: u32,
     literals: &[u8],
     offBase: u32,
     matchLength: u32,
@@ -368,11 +366,13 @@ unsafe fn ZSTD_updateStats(
             let freq = &mut litFreq[usize::from(literal)];
             *freq = freq.wrapping_add(ZSTD_LITFREQ_ADD);
         }
-        opt_state.litSum = opt_state.litSum.wrapping_add(litLength * ZSTD_LITFREQ_ADD);
+        opt_state.litSum = opt_state
+            .litSum
+            .wrapping_add(literals.len() as u32 * ZSTD_LITFREQ_ADD);
     }
 
     // literal Length
-    let llCode = ZSTD_LLcode(litLength);
+    let llCode = ZSTD_LLcode(literals.len() as u32);
     let freq = &mut opt_state.litLengthFreq_mut()[llCode as usize];
     *freq = freq.wrapping_add(1);
     opt_state.litLengthSum = opt_state.litLengthSum.wrapping_add(1);
@@ -1491,7 +1491,6 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
                     } else {
                         ZSTD_updateStats(
                             &mut ms.opt,
-                            llen,
                             core::slice::from_raw_parts(anchor, llen as usize),
                             offBase,
                             mlen,
