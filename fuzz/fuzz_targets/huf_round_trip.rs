@@ -143,17 +143,14 @@ fuzz_target!(|input: HufRoundTripInput| {
     assert!(table_log <= 12);
 
     // Step 5: Build compression table (returns actual tableLog)
-    let table_log = unsafe {
-        lib::compress::huf_compress::HUF_buildCTable_wksp(
-            &mut ct,
-            &count,
-            max_symbol,
-            table_log,
-            workspace.as_mut_ptr().cast(),
-            HUF_WORKSPACE_SIZE,
-        )
-        .unwrap()
-    };
+    let table_log = lib::compress::huf_compress::HUF_buildCTable_wksp(
+        &mut ct,
+        &count,
+        max_symbol,
+        table_log,
+        &mut core::mem::MaybeUninit::uninit(),
+    )
+    .unwrap();
 
     // Step 6: Write compression table to buffer
     let Ok(table_size) = (unsafe {

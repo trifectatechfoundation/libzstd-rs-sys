@@ -720,8 +720,8 @@ use crate::lib::common::zstd_trace::{
 use crate::lib::compress::fse_compress::FSE_buildCTable_wksp;
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
-    HUF_buildCTable_wksp, HUF_estimateCompressedSize, HUF_optimalTableLog, HUF_readCTable,
-    HUF_validateCTable, HUF_writeCTable_wksp,
+    HUF_buildCTable_wksp, HUF_buildCTable_wksp_tables, HUF_estimateCompressedSize,
+    HUF_optimalTableLog, HUF_readCTable, HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
     BufferedPolicy, CParamMode, CompressionStage, DictMode, DictTableLoadMethod, LongLengthType,
@@ -4794,13 +4794,14 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         count,
         hufFlags,
     );
+    debug_assert!(nodeWkspSize >= size_of::<HUF_buildCTable_wksp_tables>());
+    debug_assert!(nodeWksp.cast::<HUF_buildCTable_wksp_tables>().is_aligned());
     let maxBits = HUF_buildCTable_wksp(
         &mut nextHuf.CTable,
         count,
         maxSymbolValue,
         huffLog,
-        nodeWksp as *mut core::ffi::c_void,
-        nodeWkspSize,
+        &mut *nodeWksp.cast(),
     )?;
     huffLog = maxBits as u32;
     // Build and write the CTable

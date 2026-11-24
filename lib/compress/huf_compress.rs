@@ -847,37 +847,31 @@ fn HUF_buildCTableFromTree(
 }
 
 /// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
-/// `workSpace` must be aligned on 4-bytes boundaries, and be at least as large as sizeof([`HUF_buildCTable_wksp_tables`]).
-pub unsafe fn HUF_buildCTable_wksp(
+pub fn HUF_buildCTable_wksp(
     CTable: &mut CTable,
     count: &[c_uint],
     maxSymbolValue: u8,
     mut maxNbBits: u32,
-    workSpace: *mut c_void,
-    mut wkspSize: usize,
+    workSpace: &mut MaybeUninit<HUF_buildCTable_wksp_tables>,
 ) -> Result<core::ffi::c_uint, Error> {
-    let wksp_tables = HUF_alignUpWorkspace(workSpace, &mut wkspSize, align_of::<u32>())
-        as *mut HUF_buildCTable_wksp_tables;
-    let huffNodeTbl = &mut (*wksp_tables).huffNodeTbl;
-
     const {
         assert!(HUF_CTABLE_WORKSPACE_SIZE == size_of::<HUF_buildCTable_wksp_tables>());
     }
 
-    /* safety checks */
-    if wkspSize < size_of::<HUF_buildCTable_wksp_tables>() {
-        return Err(Error::workSpace_tooSmall);
-    }
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
     }
-    huffNodeTbl.fill(nodeElt::default());
+    let wksp_tables = workSpace.write(HUF_buildCTable_wksp_tables {
+        huffNodeTbl: [nodeElt::default(); _],
+        rankPosition: [rankPos::default(); _],
+    });
+    let huffNodeTbl = &mut wksp_tables.huffNodeTbl;
     /* sort, decreasing order */
     HUF_sort(
         &mut huffNodeTbl[1..],
         count,
         maxSymbolValue,
-        &mut (*wksp_tables).rankPosition,
+        &mut wksp_tables.rankPosition,
     );
 
     /* build tree */
@@ -1448,13 +1442,13 @@ pub unsafe fn HUF_optimalTableLog(
 
     /* Search until size increases */
     for optLogGuess in minTableLog..maxTableLog + 1 {
+        debug_assert!(workSpace.cast::<HUF_buildCTable_wksp_tables>().is_aligned());
         if let Ok(maxBits) = HUF_buildCTable_wksp(
             table,
             count,
             maxSymbolValue,
             optLogGuess,
-            workSpace,
-            wkspSize,
+            &mut *workSpace.cast(),
         ) {
             if maxBits < optLogGuess && optLogGuess > minTableLog {
                 break;
@@ -1639,8 +1633,7 @@ pub(crate) unsafe fn HUF_compress<const NB_STREAMS: u32>(
         &(*table).count,
         maxSymbolValue,
         huffLog,
-        &raw mut (*table).wksps.buildCTable_wksp as *mut c_void,
-        size_of::<HUF_buildCTable_wksp_tables>(),
+        &mut *(&raw mut (*table).wksps.buildCTable_wksp).cast(),
     )?;
     huffLog = maxBits as u32;
 
