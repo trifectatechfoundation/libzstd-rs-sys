@@ -338,3 +338,145 @@ pub(crate) unsafe fn POOL_tryAdd(
     POOL_add_internal(ctx, &mut state, function, opaque);
     Ok(())
 }
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod tests {
+    use super::*;
+    use core::ffi::c_void;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::thread;
+    use std::time::Duration;
+
+    const JOBS: usize = 16;
+
+    #[test]
+    fn test_create_zero_threads() {
+        assert!(unsafe { POOL_create(0, 1) }.is_null());
+    }
+
+    unsafe fn increment(opaque: *mut c_void) {
+        let counter = &*opaque.cast::<AtomicUsize>();
+        counter.fetch_add(1, Ordering::Relaxed);
+    }
+
+    unsafe fn delayed_increment(opaque: *mut c_void) {
+        thread::sleep(Duration::from_millis(1));
+        increment(opaque);
+    }
+
+    // The callback must accept a shared AtomicUsize.
+    unsafe fn check_jobs_complete(job: POOL_function) {
+        for workers in 1..=4 {
+            for queue_size in 0..=2 {
+                let counts = [const { AtomicUsize::new(0) }; JOBS];
+                let pool = POOL_create(workers, queue_size);
+                assert!(!pool.is_null());
+                for count in &counts {
+                    POOL_add(pool, job, &raw const *count as *mut c_void);
+                }
+                POOL_free(pool);
+                assert_eq!(
+                    counts.map(AtomicUsize::into_inner),
+                    [1; JOBS],
+                    "workers={workers}, queue_size={queue_size}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_order() {
+        unsafe { check_jobs_complete(increment) }
+    }
+
+    #[test]
+    fn test_wait() {
+        unsafe { check_jobs_complete(delayed_increment) }
+    }
+
+    #[derive(Default)]
+    struct JobCounts {
+        active: usize,
+        peak: usize,
+    }
+
+    struct Concurrency {
+        expected: usize,
+        counts: Mutex<JobCounts>,
+        started: Condvar,
+    }
+
+    unsafe fn measure_concurrency(opaque: *mut c_void) {
+        let jobs = &*opaque.cast::<Concurrency>();
+        let mut counts = jobs.counts.lock().unwrap();
+        counts.active += 1;
+        counts.peak = counts.peak.max(counts.active);
+        if counts.active == jobs.expected {
+            jobs.started.notify_all();
+        }
+        // Let the first wave overlap even if some workers are slow to start.
+        let (counts, _) = jobs
+            .started
+            .wait_timeout_while(counts, Duration::from_secs(5), |counts| {
+                counts.peak < jobs.expected
+            })
+            .unwrap();
+        drop(counts);
+        thread::sleep(Duration::from_millis(10));
+        jobs.counts.lock().unwrap().active -= 1;
+    }
+
+    unsafe fn assert_peak_concurrency(pool: *mut POOL_ctx, expected: usize) {
+        let jobs = Concurrency {
+            expected,
+            counts: Mutex::default(),
+            started: Condvar::new(),
+        };
+        for _ in 0..JOBS {
+            POOL_add(
+                pool,
+                measure_concurrency,
+                (&raw const jobs).cast_mut().cast(),
+            );
+        }
+        POOL_joinJobs(pool);
+        let counts = jobs.counts.into_inner().unwrap();
+        assert_eq!(counts.active, 0);
+        assert_eq!(counts.peak, expected);
+    }
+
+    #[test]
+    fn test_thread_reduction() {
+        unsafe {
+            let pool = mem::DropGuard::new(POOL_create(4, 2), |pool| POOL_free(pool));
+            assert!(!pool.is_null());
+            assert_peak_concurrency(*pool, 4);
+            POOL_resize(*pool, 2).unwrap();
+            assert_peak_concurrency(*pool, 2);
+        }
+    }
+
+    #[test]
+    fn test_abrupt_ending() {
+        unsafe fn count_job(opaque: *mut c_void) {
+            let completed = &*opaque.cast::<Mutex<usize>>();
+            *completed.lock().unwrap() += 1;
+        }
+
+        let completed = Mutex::new(0usize);
+        unsafe {
+            let pool = POOL_create(3, JOBS);
+            assert!(!pool.is_null());
+            // Hold the jobs until the pool has shrunk with work still queued.
+            let guard = completed.lock().unwrap();
+            for _ in 0..JOBS {
+                POOL_add(pool, count_job, (&raw const completed).cast_mut().cast());
+            }
+            let resized = POOL_resize(pool, 1);
+            drop(guard);
+            POOL_free(pool);
+            assert!(resized.is_ok());
+        }
+        assert_eq!(completed.into_inner().unwrap(), JOBS);
+    }
+}
