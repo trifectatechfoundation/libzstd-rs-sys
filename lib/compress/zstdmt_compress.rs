@@ -737,7 +737,11 @@ unsafe fn ZSTDMT_serialState_applySequences(
     seqStore: &RawSeqStore,
 ) {
     if seqStore.size > 0 {
-        ZSTD_referenceExternalSequences(jobCCtx, seqStore.seq, seqStore.size);
+        ZSTD_referenceExternalSequences(
+            &mut (*jobCCtx).externSeqStore,
+            seqStore.seq,
+            seqStore.size,
+        );
     }
 }
 
