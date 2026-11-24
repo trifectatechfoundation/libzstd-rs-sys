@@ -773,7 +773,9 @@ use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt_extDict, ZSTD_compressBlock_btultra, ZSTD_compressBlock_btultra2,
     ZSTD_compressBlock_btultra_dictMatchState, ZSTD_compressBlock_btultra_extDict, ZSTD_updateTree,
 };
-use crate::lib::compress::zstd_preSplit::{ZSTD_splitBlock, ZSTD_SLIPBLOCK_WORKSPACESIZE};
+use crate::lib::compress::zstd_preSplit::{
+    SplitBlockWorkspace, ZSTD_splitBlock, ZSTD_SLIPBLOCK_WORKSPACESIZE,
+};
 use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
     ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow,
@@ -5787,7 +5789,12 @@ unsafe fn ZSTD_optimalBlockSize(
     }
     debug_assert_eq!(blockSizeMax, 128 << 10);
     let block = src.first_chunk().unwrap();
-    ZSTD_splitBlock(block, splitLevel, (*cctx).tmpWorkspace, (*cctx).tmpWkspSize)
+    debug_assert!((*cctx).tmpWkspSize >= ZSTD_SLIPBLOCK_WORKSPACESIZE);
+    let workspace = (*cctx)
+        .tmpWorkspace
+        .cast::<MaybeUninit<SplitBlockWorkspace>>();
+    debug_assert!(workspace.is_aligned());
+    ZSTD_splitBlock(block, splitLevel, &mut *workspace)
 }
 
 /// Compress a chunk of data into one or multiple blocks.

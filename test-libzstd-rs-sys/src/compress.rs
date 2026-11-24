@@ -1083,7 +1083,7 @@ mod sequences_and_literals {
 mod pre_split {
     use core::mem::MaybeUninit;
     use libzstd_rs_sys::lib::compress::zstd_preSplit::{
-        ZSTD_splitBlock, CHUNKSIZE, ZSTD_SLIPBLOCK_WORKSPACESIZE,
+        SplitBlockWorkspace, ZSTD_splitBlock, CHUNKSIZE,
     };
 
     #[test]
@@ -1091,9 +1091,7 @@ mod pre_split {
         // These split positions agree with zstd_preSplit.c for all four sampling
         // rates: an early, middle, or final transition, and a uniform block.
         let mut block = vec![0u8; 128 << 10];
-        let mut workspace = MaybeUninit::<
-            [usize; ZSTD_SLIPBLOCK_WORKSPACESIZE.div_ceil(size_of::<usize>())],
-        >::uninit();
+        let mut workspace = MaybeUninit::<SplitBlockWorkspace>::uninit();
         for boundary in [1, 8, 15, 16] {
             let split = boundary * CHUNKSIZE;
             block.fill(0);
@@ -1101,14 +1099,8 @@ mod pre_split {
             for level in 1..=4 {
                 // The first call must initialize raw storage. Subsequent calls
                 // must reset statistics left by earlier blocks and levels.
-                let actual = unsafe {
-                    ZSTD_splitBlock(
-                        block.as_slice().try_into().unwrap(),
-                        level,
-                        workspace.as_mut_ptr().cast(),
-                        size_of_val(&workspace),
-                    )
-                };
+                let actual =
+                    ZSTD_splitBlock(block.as_slice().try_into().unwrap(), level, &mut workspace);
                 assert_eq!(actual, split, "boundary={boundary}, level={level}");
             }
         }

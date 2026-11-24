@@ -1,12 +1,12 @@
-use core::ptr;
+use core::mem::MaybeUninit;
 
-use core::ffi::{c_int, c_uint, c_void};
+use core::ffi::{c_int, c_uint};
 
 use crate::lib::compress::hist::HIST_add;
 
-pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = size_of::<FPStats>();
+pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = size_of::<SplitBlockWorkspace>();
 #[cfg(target_pointer_width = "64")]
-const _: () = assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE == 8208);
+const _: () = assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE == 8216);
 
 pub const THRESHOLD_PENALTY_RATE: usize = 16;
 pub const THRESHOLD_BASE: usize = THRESHOLD_PENALTY_RATE - 2;
@@ -49,7 +49,18 @@ pub struct BorderStats {
     pub middleEvents: Fingerprint<256>,
 }
 
+#[allow(clippy::large_enum_variant)]
+pub enum SplitBlockWorkspace {
+    Borders(BorderStats),
+    Chunks(FPStats),
+}
+
 impl<const N: usize> Fingerprint<N> {
+    const ZERO: Self = Self {
+        events: [0; N],
+        nbEvents: 0,
+    };
+
     #[inline(always)]
     fn add_events(&mut self, src: &[u8], samplingRate: usize, hashLog: c_uint) {
         debug_assert!(src.len() >= HASHLENGTH);
@@ -193,46 +204,44 @@ fn ZSTD_splitBlock_fromBorders(block: &[u8; 128 << 10], stats: &mut BorderStats)
 ///
 /// * `block` - The block (must be 128 KB)
 /// * `level` - Detection level (0-4). Higher levels spend more energy to detect block boundaries.
-/// * `workspace` - Workspace buffer (must be aligned for `usize`)
-/// * `wkspSize` - Workspace size (must be at least `ZSTD_SLIPBLOCK_WORKSPACESIZE`)
+/// * `workspace` - Workspace for the statistics, overwritten on each call
 ///
 /// # Note
 ///
 /// For the time being, this function only accepts full 128 KB blocks.
 /// While this could be extended to smaller sizes in the future,
 /// it is not yet clear if this would be useful. TBD.
-pub unsafe fn ZSTD_splitBlock(
+pub fn ZSTD_splitBlock(
     block: &[u8; 128 << 10],
     level: c_int,
-    workspace: *mut c_void,
-    wkspSize: usize,
+    workspace: &mut MaybeUninit<SplitBlockWorkspace>,
 ) -> usize {
     debug_assert!((0..=4).contains(&level));
 
-    debug_assert!(!workspace.is_null());
-
     match level {
         0 => {
-            debug_assert!(workspace.cast::<BorderStats>().is_aligned());
-            const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<BorderStats>()) }
-            debug_assert!(wkspSize >= size_of::<BorderStats>());
-
-            let stats = workspace.cast::<BorderStats>();
-            ptr::write_bytes(stats, 0, 1);
-            // SAFETY: the caller provides aligned, writable workspace disjoint from the
-            // input block. `write_bytes` initializes all integer fields before borrowing.
-            let stats = unsafe { &mut *stats };
+            let stats = BorderStats {
+                pastEvents: Fingerprint::ZERO,
+                newEvents: Fingerprint::ZERO,
+                middleEvents: Fingerprint::ZERO,
+            };
+            let SplitBlockWorkspace::Borders(stats) =
+                workspace.write(SplitBlockWorkspace::Borders(stats))
+            else {
+                unreachable!()
+            };
             ZSTD_splitBlock_fromBorders(block, stats)
         }
         _ => {
-            debug_assert!(workspace.cast::<FPStats>().is_aligned());
-            debug_assert!(wkspSize >= size_of::<FPStats>());
-
-            let fpstats = workspace.cast::<FPStats>();
-            ptr::write_bytes(fpstats, 0, 1);
-            // SAFETY: the caller provides aligned, writable workspace disjoint from the
-            // input block. `write_bytes` initializes all integer fields before borrowing.
-            let fpstats = unsafe { &mut *fpstats };
+            let fpstats = FPStats {
+                pastEvents: Fingerprint::ZERO,
+                newEvents: Fingerprint::ZERO,
+            };
+            let SplitBlockWorkspace::Chunks(fpstats) =
+                workspace.write(SplitBlockWorkspace::Chunks(fpstats))
+            else {
+                unreachable!()
+            };
             ZSTD_splitBlock_byChunks(block, level - 1, fpstats)
         }
     }
