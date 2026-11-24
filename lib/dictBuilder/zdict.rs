@@ -855,8 +855,7 @@ unsafe fn analyze_entropy_internal(
         &countLit,
         255,
         huffLog,
-        wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
+        &mut *wksp.as_mut_ptr().cast(),
     )
     .inspect_err(|_| {
         if notificationLevel >= 1 {
@@ -874,8 +873,7 @@ unsafe fn analyze_entropy_internal(
             &countLit,
             255,
             huffLog,
-            wksp.as_mut_ptr() as *mut core::ffi::c_void,
-            size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
+            &mut *wksp.as_mut_ptr().cast(),
         )
         .inspect_err(|_| {
             if notificationLevel >= 1 {
