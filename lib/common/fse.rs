@@ -1,5 +1,3 @@
-use libc::ptrdiff_t;
-
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
@@ -72,7 +70,7 @@ impl FSE_repeat {
 
 #[repr(C)]
 pub struct FSE_CState_t<'a> {
-    pub value: ptrdiff_t,
+    pub value: isize,
     pub stateTable: &'a [u16],
     pub symbolTT: &'a [FSE_symbolCompressionTransform],
     pub stateLog: core::ffi::c_uint,
@@ -145,10 +143,10 @@ impl<'a> FSE_CState_t<'a> {
         let mut state = FSE_CState_t::new(ct);
         let symbolTT = state.symbolTT[symbol as usize];
         let nbBitsOut = symbolTT.deltaNbBits.wrapping_add(1 << 15) >> 16;
-        let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
+        let value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as isize;
 
-        let index = (value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
-        state.value = state.stateTable[index as usize] as ptrdiff_t;
+        let index = (value >> nbBitsOut) + symbolTT.deltaFindState as isize;
+        state.value = state.stateTable[index as usize] as isize;
         state
     }
 }
@@ -170,9 +168,9 @@ pub(crate) fn FSE_encodeSymbol(
     symbol: core::ffi::c_uint,
 ) {
     let symbolTT = state.symbolTT[symbol as usize];
-    let nbBitsOut = ((state.value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
+    let nbBitsOut = ((state.value + symbolTT.deltaNbBits as isize) >> 16) as u32;
     bitC.add_bits(state.value as BitContainerType, nbBitsOut);
-    let index = (state.value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t;
+    let index = (state.value >> nbBitsOut) + symbolTT.deltaFindState as isize;
     state.value = state.stateTable[index as usize] as isize;
 }
 

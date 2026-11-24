@@ -171,6 +171,24 @@ jobs:
           RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links
         run: cargo doc --target ${{matrix.target}} ${{matrix.features}} -p libzstd-rs-sys --lib --no-deps --document-private-items
 
+  check:
+    name: Check wasm32-unknown-unknown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: cargo check
+        run: cargo check --target wasm32-unknown-unknown -p libzstd-rs-sys --lib
+        env:
+          RUSTFLAGS: "-Awarnings"
+
   fuzz-compress:
     name: fuzz-compress
     runs-on: ubuntu-latest
