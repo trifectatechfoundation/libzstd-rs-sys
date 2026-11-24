@@ -3299,7 +3299,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     }
 
     // sequences storage
-    ZSTD_referenceExternalSequences(zc, core::ptr::null_mut(), 0);
+    ZSTD_referenceExternalSequences(&mut (*zc).externSeqStore, core::ptr::null_mut(), 0);
     (*zc).seqStore.maxNbSeq = maxNbSeq;
     (*zc).seqStore.llCode = ZSTD_cwksp_reserve_buffer(ws, maxNbSeq.wrapping_mul(size_of::<u8>()));
     (*zc).seqStore.mlCode = ZSTD_cwksp_reserve_buffer(ws, maxNbSeq.wrapping_mul(size_of::<u8>()));
@@ -6081,16 +6081,16 @@ pub unsafe fn ZSTD_writeLastEmptyBlock(dst: *mut core::ffi::c_void, dstCapacity:
     ZSTD_BLOCKHEADERSIZE
 }
 
-pub unsafe fn ZSTD_referenceExternalSequences(
-    cctx: *mut ZSTD_CCtx,
+pub fn ZSTD_referenceExternalSequences(
+    externSeqStore: &mut RawSeqStore,
     seq: *mut rawSeq,
     nbSeq: usize,
 ) {
-    (*cctx).externSeqStore.seq = seq;
-    (*cctx).externSeqStore.size = nbSeq;
-    (*cctx).externSeqStore.capacity = nbSeq;
-    (*cctx).externSeqStore.pos = 0;
-    (*cctx).externSeqStore.posInSequence = 0;
+    externSeqStore.seq = seq;
+    externSeqStore.size = nbSeq;
+    externSeqStore.capacity = nbSeq;
+    externSeqStore.pos = 0;
+    externSeqStore.posInSequence = 0;
 }
 
 pub(crate) unsafe fn ZSTD_compressContinue_internal(
