@@ -9645,10 +9645,10 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     cSize
 }
 
-unsafe fn inBuffer_forEndFlush(zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
-    let stableInput = (*zcs).appliedParams.inBufferMode == ZSTD_bm_stable;
+fn inBuffer_forEndFlush(zcs: &ZSTD_CStream) -> ZSTD_inBuffer {
+    let stableInput = zcs.appliedParams.inBufferMode == ZSTD_bm_stable;
     if stableInput {
-        (*zcs).expectedInBuffer
+        zcs.expectedInBuffer
     } else {
         ZSTD_inBuffer::default()
     }
@@ -9662,7 +9662,7 @@ pub unsafe extern "C" fn ZSTD_flushStream(
     zcs: *mut ZSTD_CStream,
     output: *mut ZSTD_outBuffer,
 ) -> usize {
-    let mut input = inBuffer_forEndFlush(zcs);
+    let mut input = inBuffer_forEndFlush(&*zcs);
     input.size = input.pos; // do not ingest more input during flush
     let output = output.as_mut().unwrap();
     compress_stream(zcs, output, &mut input, ZSTD_e_flush).unwrap_or_else(|e| e.to_error_code())
@@ -9673,7 +9673,7 @@ pub unsafe extern "C" fn ZSTD_endStream(
     zcs: *mut ZSTD_CStream,
     output: *mut ZSTD_outBuffer,
 ) -> usize {
-    let mut input = inBuffer_forEndFlush(zcs);
+    let mut input = inBuffer_forEndFlush(&*zcs);
     let output = output.as_mut().unwrap();
     let remainingToFlush = match compress_stream(zcs, output, &mut input, ZSTD_e_end) {
         Ok(remaining) => remaining,
