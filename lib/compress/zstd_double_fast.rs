@@ -16,10 +16,10 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
-    let hashLarge = ms.hashTable;
+    let hashLarge = core::slice::from_raw_parts_mut(ms.hashTable, 1 << cParams.hashLog);
     let hBitsL = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let mls = cParams.minMatch;
-    let hashSmall = ms.chainTable;
+    let hashSmall = core::slice::from_raw_parts_mut(ms.chainTable, 1 << cParams.chainLog);
     let hBitsS = (cParams.chainLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let base = ms.window.base;
     let mut ip = base.wrapping_offset(ms.nextToUpdate as isize);
@@ -37,7 +37,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
             if i == 0 {
                 ZSTD_writeTaggedIndex(hashSmall, smHashAndTag, curr.wrapping_add(i));
             }
-            if i == 0 || *hashLarge.add(lgHashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS) == 0 {
+            if i == 0 || hashLarge[lgHashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS] == 0 {
                 ZSTD_writeTaggedIndex(hashLarge, lgHashAndTag, curr.wrapping_add(i));
             }
             // Only load extra positions for DictTableLoadMethod::Full

@@ -17,7 +17,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
     dtlm: DictTableLoadMethod,
 ) {
     let cParams = &ms.cParams;
-    let hashTable = ms.hashTable;
+    let hashTable = core::slice::from_raw_parts_mut(ms.hashTable, 1 << cParams.hashLog);
     let hBits = (cParams.hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS);
     let mls = cParams.minMatch;
     let base = ms.window.base;
@@ -35,7 +35,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
             // Only load extra positions for DictTableLoadMethod::Full
             for p in 1..fastHashFillStep {
                 let hashAndTag_0 = ZSTD_hashPtr(ip.offset(p as isize).cast(), hBits, mls);
-                if *hashTable.add(hashAndTag_0 >> ZSTD_SHORT_CACHE_TAG_BITS) == 0 {
+                if hashTable[hashAndTag_0 >> ZSTD_SHORT_CACHE_TAG_BITS] == 0 {
                     // not yet filled
                     ZSTD_writeTaggedIndex(hashTable, hashAndTag_0, curr.wrapping_add(p));
                 }
