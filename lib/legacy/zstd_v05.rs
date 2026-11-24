@@ -2,8 +2,6 @@ use core::{mem, ptr};
 use std::alloc::AllocError;
 use std::marker::PhantomData;
 
-use libc::ptrdiff_t;
-
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
@@ -176,7 +174,7 @@ const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 
 #[inline]
-unsafe fn ZSTDv05_wildcopy(dst: *mut u8, src: *const u8, length: ptrdiff_t) {
+unsafe fn ZSTDv05_wildcopy(dst: *mut u8, src: *const u8, length: isize) {
     let mut ip = src;
     let mut op = dst;
     let oend = op.offset(length);
@@ -2374,7 +2372,7 @@ unsafe fn ZSTDv05_execSequence(
     if oMatchEnd > oend {
         return Err(Error::dstSize_tooSmall);
     }
-    ZSTDv05_wildcopy(op, litPtr.as_ptr(), sequence.litLength as ptrdiff_t);
+    ZSTDv05_wildcopy(op, litPtr.as_ptr(), sequence.litLength as isize);
     op = oLitEnd;
     *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
@@ -2418,7 +2416,7 @@ unsafe fn ZSTDv05_execSequence(
     match_0 = match_0.add(8);
     if oMatchEnd > oend.sub((16 - MINMATCH) as usize) {
         if op < oend_8 {
-            ZSTDv05_wildcopy(op, match_0, oend_8.offset_from(op) as ptrdiff_t);
+            ZSTDv05_wildcopy(op, match_0, oend_8.offset_from(op));
             match_0 = match_0.add(oend_8.offset_from_unsigned(op));
             op = oend_8;
         }
@@ -2428,7 +2426,7 @@ unsafe fn ZSTDv05_execSequence(
             match_0 = match_0.add(1);
         }
     } else {
-        ZSTDv05_wildcopy(op, match_0, sequence.matchLength as ptrdiff_t - 8);
+        ZSTDv05_wildcopy(op, match_0, sequence.matchLength as isize - 8);
     }
     Ok(sequenceLength)
 }

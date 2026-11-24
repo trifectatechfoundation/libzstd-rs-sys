@@ -1,8 +1,6 @@
 use core::ptr;
 use std::alloc::AllocError;
 
-use libc::{memcpy, ptrdiff_t};
-
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
@@ -202,10 +200,14 @@ unsafe fn ZSTDv06_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_vo
 }
 const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 #[inline]
+unsafe fn memcpy(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void, length: usize) {
+    ptr::copy_nonoverlapping(src.cast::<u8>(), dst.cast::<u8>(), length);
+}
+#[inline]
 unsafe fn ZSTDv06_wildcopy(
     dst: *mut core::ffi::c_void,
     src: *const core::ffi::c_void,
-    length: ptrdiff_t,
+    length: isize,
 ) {
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
@@ -2651,7 +2653,7 @@ unsafe fn ZSTDv06_execSequence(
     ZSTDv06_wildcopy(
         op as *mut core::ffi::c_void,
         litPtr.as_ptr() as *const core::ffi::c_void,
-        sequence.litLength as ptrdiff_t,
+        sequence.litLength as isize,
     );
     op = oLitEnd;
     *litPtr = &litPtr[sequence.litLength..];
@@ -2705,7 +2707,7 @@ unsafe fn ZSTDv06_execSequence(
             ZSTDv06_wildcopy(
                 op as *mut core::ffi::c_void,
                 match_0 as *const core::ffi::c_void,
-                oend_8.offset_from(op) as ptrdiff_t,
+                oend_8.offset_from(op),
             );
             match_0 = match_0.add(oend_8.offset_from_unsigned(op));
             op = oend_8;
@@ -2719,7 +2721,7 @@ unsafe fn ZSTDv06_execSequence(
         ZSTDv06_wildcopy(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
-            sequence.matchLength as ptrdiff_t - 8,
+            sequence.matchLength as isize - 8,
         );
     }
     Ok(sequenceLength)

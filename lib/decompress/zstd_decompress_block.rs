@@ -3,8 +3,6 @@ use core::ffi::c_void;
 use core::ops::Range;
 use core::ptr::{self, NonNull};
 
-use libc::ptrdiff_t;
-
 use crate::lib::common::bitstream::{
     BIT_DStream_t, STREAM_ACCUMULATOR_MIN, STREAM_ACCUMULATOR_MIN_32, STREAM_ACCUMULATOR_MIN_64,
 };
@@ -1098,7 +1096,7 @@ unsafe fn ZSTD_safecopy(
 /// This version allows overlap with dst before src, or handles the non-overlap case with dst after src
 /// Kept separate from more common [`ZSTD_safecopy`] case to avoid performance impact to the safecopy common case */
 unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: usize) {
-    let diff = op.offset_from(ip) as ptrdiff_t;
+    let diff = op.offset_from(ip);
     let oend = op.add(length);
     if length < 8 || diff > -8 {
         /* Handle short lengths, close overlaps, and dst not before src. */
@@ -1109,7 +1107,7 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         }
         return;
     }
-    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -(WILDCOPY_VECLEN as ptrdiff_t) {
+    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -(WILDCOPY_VECLEN as isize) {
         ZSTD_wildcopy(
             op,
             ip,

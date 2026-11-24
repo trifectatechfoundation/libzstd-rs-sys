@@ -687,8 +687,6 @@ fn ZSTD_checkDictValidity(
     }
 }
 
-use libc::ptrdiff_t;
-
 use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc, ZstdAllocator};
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::STREAM_ACCUMULATOR_MIN;
@@ -4338,8 +4336,8 @@ unsafe fn ZSTD_buildSeqStore(
     let istart = src as *const u8;
     let curr = istart.wrapping_offset_from(base) as u32;
 
-    if size_of::<ptrdiff_t>() == 8 {
-        assert!(istart.wrapping_offset_from(base) < u32::MAX as ptrdiff_t); /* ensure no overflow */
+    if size_of::<isize>() == 8 {
+        assert!(istart.wrapping_offset_from(base) < u32::MAX as isize); /* ensure no overflow */
     }
 
     if curr > ms.nextToUpdate.wrapping_add(384) {

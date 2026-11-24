@@ -824,7 +824,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             match_2 = base.wrapping_offset(matchIndex as isize);
             if matchIndex >= dictLimit {
                 // ensure early section of match is equal as expected
-                debug_assert_eq!(libc::memcmp(match_2.cast(), ip.cast(), matchLength), 0);
+                debug_assert!(
+                    core::slice::from_raw_parts(match_2, matchLength)
+                        == core::slice::from_raw_parts(ip, matchLength)
+                );
             }
             matchLength = matchLength.wrapping_add(ZSTD_count(
                 ip.add(matchLength),
