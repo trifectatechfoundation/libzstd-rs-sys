@@ -882,7 +882,7 @@ unsafe fn analyze_entropy_internal(
         })?;
         debug_assert_eq!(maxNbBits, 9);
     }
-    let huffLog = maxNbBits as u32;
+    let huffLog = maxNbBits;
 
     // look for most common first offsets
     for (offset, rep) in repOffset[1..MAXREPOFFSET].iter().enumerate() {
