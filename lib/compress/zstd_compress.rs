@@ -6194,12 +6194,9 @@ pub unsafe extern "C" fn ZSTD_compressContinue(
 }
 
 #[deprecated]
-unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> usize {
-    let cParams = (*cctx).appliedParams.cParams;
-    (*cctx)
-        .appliedParams
-        .maxBlockSize
-        .min(1 << cParams.windowLog)
+fn ZSTD_getBlockSize_deprecated(cctx: &ZSTD_CCtx) -> usize {
+    let cParams = cctx.appliedParams.cParams;
+    cctx.appliedParams.maxBlockSize.min(1 << cParams.windowLog)
 }
 
 #[deprecated(
@@ -6208,7 +6205,7 @@ unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> usize {
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getBlockSize))]
 pub unsafe extern "C" fn ZSTD_getBlockSize(cctx: *const ZSTD_CCtx) -> usize {
     #[allow(deprecated)]
-    ZSTD_getBlockSize_deprecated(cctx)
+    ZSTD_getBlockSize_deprecated(&*cctx)
 }
 
 #[deprecated(note = "Deprecated definitions that are still used internally.")]
@@ -6221,7 +6218,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     srcSize: usize,
 ) -> usize {
     #[allow(deprecated)]
-    let blockSizeMax = ZSTD_getBlockSize_deprecated(cctx);
+    let blockSizeMax = ZSTD_getBlockSize_deprecated(&*cctx);
     if srcSize > blockSizeMax {
         return Error::srcSize_wrong.to_error_code();
     }
