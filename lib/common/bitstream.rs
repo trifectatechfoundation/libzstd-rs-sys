@@ -15,14 +15,12 @@ pub(crate) const STREAM_ACCUMULATOR_MIN: u32 = match size_of::<usize>() {
 };
 
 #[repr(C)]
-#[derive(Default)]
 pub(crate) struct BIT_CStream_t {
-    // FIXME make all fields private to this module
-    pub(crate) bitContainer: BitContainerType,
-    pub(crate) bitPos: core::ffi::c_uint,
-    pub(crate) startPtr: *mut core::ffi::c_char,
-    pub(crate) ptr: *mut core::ffi::c_char,
-    pub(crate) endPtr: *mut core::ffi::c_char,
+    bitContainer: BitContainerType,
+    bitPos: core::ffi::c_uint,
+    startPtr: *mut core::ffi::c_char,
+    ptr: *mut core::ffi::c_char,
+    endPtr: *mut core::ffi::c_char,
 }
 
 impl BIT_CStream_t {
