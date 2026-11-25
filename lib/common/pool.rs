@@ -1,10 +1,9 @@
 use core::mem::{self, MaybeUninit};
-use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
-use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZstdAllocator};
-use crate::lib::polyfill::box_try_new_uninit_slice_in;
+use crate::lib::common::allocations::ZstdAllocator;
+use crate::lib::polyfill::{box_try_new_uninit_in, box_try_new_uninit_slice_in};
 use crate::lib::zstd::ZSTD_customMem;
 
 pub struct POOL_ctx {
@@ -129,10 +128,9 @@ pub(crate) unsafe fn POOL_create_advanced(
     // SAFETY: every element was initialized by the `fill` above.
     let queue = unsafe { queue.assume_init() };
 
-    let ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
-    if ctx.is_null() {
+    let Ok(ctx) = box_try_new_uninit_in(alloc) else {
         return core::ptr::null_mut();
-    }
+    };
     let state = PoolState {
         threads: Vec::new_in(alloc),
         threadLimit: 0,
@@ -142,7 +140,7 @@ pub(crate) unsafe fn POOL_create_advanced(
         numThreadsBusy: 0,
         shutdown: 0,
     };
-    ptr::write(
+    let ctx = Box::write(
         ctx,
         POOL_ctx {
             customMem,
@@ -151,6 +149,7 @@ pub(crate) unsafe fn POOL_create_advanced(
             queuePopCond: Condvar::new(),
         },
     );
+    let (ctx, _) = Box::into_raw_with_allocator(ctx);
     // Initialize the threads
     let mut state = (*ctx).state.lock().unwrap();
     let result = POOL_resize_internal(ctx, &mut state, numThreads);
@@ -182,14 +181,7 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
         return;
     }
     POOL_join(ctx);
-    ptr::drop_in_place(&raw mut (*ctx).state);
-    ptr::drop_in_place(&raw mut (*ctx).queuePushCond);
-    ptr::drop_in_place(&raw mut (*ctx).queuePopCond);
-    ZSTD_customFree(
-        ctx as *mut core::ffi::c_void,
-        size_of::<POOL_ctx>(),
-        (*ctx).customMem,
-    );
+    drop(Box::from_raw_in(ctx, ZstdAllocator::new((*ctx).customMem)));
 }
 
 /// Waits for all queued jobs to finish executing.
