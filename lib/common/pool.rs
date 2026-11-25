@@ -162,14 +162,14 @@ pub(crate) unsafe fn POOL_create_advanced(
 }
 
 /// Shutdown the queue, wake any sleeping threads, and join all of the threads.
-unsafe fn POOL_join(ctx: *mut POOL_ctx) {
-    let mut state = (*ctx).state.lock().unwrap();
+fn POOL_join(ctx: &POOL_ctx) {
+    let mut state = ctx.state.lock().unwrap();
     state.shutdown = 1;
-    let alloc = ZstdAllocator::new((*ctx).customMem);
+    let alloc = ZstdAllocator::new(ctx.customMem);
     let threads = mem::replace(&mut state.threads, Vec::new_in(alloc));
     drop(state);
-    (*ctx).queuePushCond.notify_all();
-    (*ctx).queuePopCond.notify_all();
+    ctx.queuePushCond.notify_all();
+    ctx.queuePopCond.notify_all();
     for thread in threads {
         thread.join().unwrap();
     }
@@ -180,7 +180,7 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
     if ctx.is_null() {
         return;
     }
-    POOL_join(ctx);
+    POOL_join(&*ctx);
     drop(Box::from_raw_in(ctx, ZstdAllocator::new((*ctx).customMem)));
 }
 
