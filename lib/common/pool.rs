@@ -197,16 +197,10 @@ pub unsafe extern "C" fn ZSTD_freeThreadPool(pool: *mut ZSTD_threadPool) {
     POOL_free(pool);
 }
 
-/// # Returns
-///
-/// The memory usage of the threadpool.
-///
-/// Note: compatible with NULL (returns 0 in this case)
-pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> usize {
-    if ctx.is_null() {
-        return 0;
-    }
-    let state = (*ctx).state.lock().unwrap();
+/// Returns the memory usage of the thread pool, or zero for `None`.
+pub(crate) fn POOL_sizeof(ctx: Option<&POOL_ctx>) -> usize {
+    let Some(ctx) = ctx else { return 0 };
+    let state = ctx.state.lock().unwrap();
     size_of::<POOL_ctx>()
         + state.queue.len() * size_of::<Option<POOL_job>>()
         + state.threads.capacity() * size_of::<JoinHandle<()>>()
