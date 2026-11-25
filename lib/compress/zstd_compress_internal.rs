@@ -160,7 +160,7 @@ pub(crate) const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_uint = 8;
 pub(crate) const ZSTD_SHORT_CACHE_TAG_MASK: usize = (1 << ZSTD_SHORT_CACHE_TAG_BITS) - 1;
 
 /// Helper function for ZSTD_fillHashTable and ZSTD_fillDoubleHashTable.
-/// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into hashTable[hash].
+/// Unpacks hashAndTag into (hash, tag), then packs (index, tag) into `hashTable[hash]`.
 #[inline]
 pub(crate) unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: usize, index: u32) {
     let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;

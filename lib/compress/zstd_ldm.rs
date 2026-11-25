@@ -845,7 +845,7 @@ impl<'a> RawSeqStoreMut<'a> {
     }
 }
 
-/// A cursor over borrowed, initialized [`RawSeqStore_t`] sequences.
+/// A cursor over borrowed, initialized [`RawSeqStore`] sequences.
 #[derive(Default)]
 pub(crate) struct RawSeqCursor<'a> {
     sequences: &'a [rawSeq],

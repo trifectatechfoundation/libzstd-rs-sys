@@ -760,7 +760,7 @@ pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const 
 ///
 /// If no [`ZSTD_DDict`] is found, then no action is taken, and the `ZSTD_DCtx::ddict` remains as-is.
 ///
-/// [`ZSTD_d_refMultipleDDicts`] must be enabled for this function to be called.
+/// [`ZSTD_dParameter::ZSTD_d_refMultipleDDicts`] must be enabled for this function to be called.
 fn ZSTD_DCtx_selectFrameDDict(dctx: &mut ZSTD_DCtx) {
     debug_assert_eq!(dctx.refMultipleDDicts, MultipleDDicts::Multiple);
     debug_assert!(dctx.ddictSet.is_some());
@@ -2202,7 +2202,7 @@ fn decompress_continue(
 /// # Returns
 ///
 /// - size of entropy tables read
-/// - [`Error::dictionary_corrupted`] if the dictionary entropy is invalid
+/// - `Error::dictionary_corrupted` if the dictionary entropy is invalid
 pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> Result<usize, Error> {
     // skip header = magic + dictID
     let Some((_, mut dictPtr)) = dict.split_at_checked(8) else {
@@ -3265,9 +3265,9 @@ fn ZSTD_DCtx_isOversizedTooLong(zds: &ZSTD_DStream) -> bool {
     zds.oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as usize
 }
 
-/// Checks that the output buffer hasn't changed if [`ZSTD_obm_stable`] is used
+/// Checks that the output buffer hasn't changed if [`BufferMode::Stable`] is used for the output buffer
 fn ZSTD_checkOutBuffer(zds: &ZSTD_DStream, output: &ZSTD_outBuffer) -> Result<(), Error> {
-    // No requirement when `ZSTD_obm_stable` is not enabled
+    // No requirement when `outBufferMode` is not stable
     if zds.outBufferMode != BufferMode::Stable {
         return Ok(());
     }
@@ -3790,7 +3790,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     input.pos = ip.byte_offset_from_unsigned(input.src);
     output.pos = op.byte_offset_from_unsigned(output.dst);
 
-    // Update the expected output buffer for ZSTD_obm_stable.
+    // Update the expected output buffer for `BufferMode::Stable`.
     zds.expectedOutBuffer = *output;
 
     if ip == istart && op == ostart {
