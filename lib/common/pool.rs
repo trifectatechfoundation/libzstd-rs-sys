@@ -34,7 +34,7 @@ struct PoolState {
     shutdown: core::ffi::c_int,
 }
 
-struct SendPoolCtxPtr(*mut POOL_ctx);
+struct SendPoolCtxPtr(*const POOL_ctx);
 unsafe impl Send for SendPoolCtxPtr {}
 
 /// A job is a function and an opaque argument
@@ -53,13 +53,10 @@ pub type ZSTD_threadPool = POOL_ctx;
 /// Work thread for the thread pool.
 ///
 /// Waits for jobs and executes them.
-unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
-    if ctx.is_null() {
-        return;
-    }
+fn POOL_thread(ctx: &POOL_ctx) {
     loop {
         // Lock the mutex and wait for a non-empty queue or until shutdown
-        let mut state = (*ctx).state.lock().unwrap();
+        let mut state = ctx.state.lock().unwrap();
         while state.isQueueEmpty() || state.numThreadsBusy >= state.threadLimit {
             if state.shutdown != 0 {
                 // Even if the queue is not empty, (possible if numThreadsBusy >= threadLimit),
@@ -67,7 +64,7 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
                 // will remain active to finish the queue
                 return;
             }
-            state = (*ctx).queuePopCond.wait(state).unwrap();
+            state = ctx.queuePopCond.wait(state).unwrap();
         }
 
         // Pop a job off the queue
@@ -77,14 +74,15 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         state.numThreadsBusy += 1;
 
         // Unlock the mutex, signal a pusher, and run the job
-        (*ctx).queuePushCond.notify_one();
+        ctx.queuePushCond.notify_one();
         drop(state);
-        (job.function)(job.opaque);
+        // SAFETY: The caller that queued the job guarantees it can run on a worker thread
+        unsafe { (job.function)(job.opaque) };
 
         // If the intended queue size was 0, signal after finishing job
-        state = (*ctx).state.lock().unwrap();
+        state = ctx.state.lock().unwrap();
         state.numThreadsBusy -= 1;
-        (*ctx).queuePushCond.notify_one();
+        ctx.queuePushCond.notify_one();
     }
 }
 
@@ -229,7 +227,8 @@ unsafe fn POOL_resize_internal(
         let ctx = SendPoolCtxPtr(ctx);
         state.threads.push(std::thread::spawn(|| {
             let ctx = ctx;
-            POOL_thread(ctx.0)
+            // SAFETY: POOL_free joins this worker before freeing the pool
+            POOL_thread(unsafe { &*ctx.0 })
         }));
     }
     // Successfully expanded
