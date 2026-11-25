@@ -308,22 +308,22 @@ pub unsafe fn POOL_add(ctx: &POOL_ctx, function: POOL_function, opaque: *mut cor
 }
 
 /// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
-/// Returns immediately even if not (does not block).
+/// Returns `Err(())` immediately if not (does not block).
 ///
-/// # Returns
+/// # Safety
 ///
-/// - `Ok(())` on success
-/// - `Err(())` if the queue is full
+/// If the job is enqueued, the caller must ensure that `function(opaque)` can run
+/// safely on a worker thread and that its data stays valid until `function(opaque)` returns.
 pub(crate) unsafe fn POOL_tryAdd(
-    ctx: *mut POOL_ctx,
+    ctx: &POOL_ctx,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) -> Result<(), ()> {
-    let mut state = (*ctx).state.lock().unwrap();
+    let mut state = ctx.state.lock().unwrap();
     if state.isQueueFull() {
         return Err(());
     }
-    POOL_add_internal(&*ctx, &mut state, function, opaque);
+    POOL_add_internal(ctx, &mut state, function, opaque);
     Ok(())
 }
 
