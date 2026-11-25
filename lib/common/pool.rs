@@ -185,10 +185,10 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
 }
 
 /// Waits for all queued jobs to finish executing.
-pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
-    let mut state = (*ctx).state.lock().unwrap();
+pub fn POOL_joinJobs(ctx: &POOL_ctx) {
+    let mut state = ctx.state.lock().unwrap();
     while !state.isQueueEmpty() || state.numThreadsBusy > 0 {
-        state = (*ctx).queuePushCond.wait(state).unwrap();
+        state = ctx.queuePushCond.wait(state).unwrap();
     }
 }
 
@@ -431,7 +431,7 @@ mod tests {
                 (&raw const jobs).cast_mut().cast(),
             );
         }
-        POOL_joinJobs(pool);
+        POOL_joinJobs(&*pool);
         let counts = jobs.counts.into_inner().unwrap();
         assert_eq!(counts.active, 0);
         assert_eq!(counts.peak, expected);

@@ -532,7 +532,7 @@ unsafe fn AIO_IOPool_releaseIoJob(job: *mut IOJob_t) {
 }
 unsafe fn AIO_IOPool_join(ctx: *mut IOPoolCtx_t) {
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
-        POOL_joinJobs((*ctx).threadPool);
+        POOL_joinJobs(&*(*ctx).threadPool);
     }
 }
 unsafe fn AIO_IOPool_setThreaded(ctx: *mut IOPoolCtx_t, threaded: core::ffi::c_int) {
