@@ -1656,7 +1656,7 @@ unsafe fn ZSTDMT_createCompressionJob(
     }
 
     match POOL_tryAdd(
-        (*mtctx).factory,
+        &*(*mtctx).factory,
         ZSTDMT_compressionJob,
         ((*mtctx).jobs).offset(jobID as isize).cast(),
     ) {
