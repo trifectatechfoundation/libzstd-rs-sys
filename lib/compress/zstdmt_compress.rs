@@ -6,7 +6,7 @@ use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
 use crate::lib::common::pool::{
-    POOL_create_advanced, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd, ZSTD_threadPool,
+    POOL_create_advanced, POOL_free, POOL_resize, POOL_sizeof, ZSTD_threadPool,
 };
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
@@ -1656,11 +1656,8 @@ unsafe fn ZSTDMT_createCompressionJob(
         }
     }
 
-    match POOL_tryAdd(
-        &*(*mtctx).factory,
-        ZSTDMT_compressionJob,
-        ((*mtctx).jobs).offset(jobID as isize).cast(),
-    ) {
+    let job = ((*mtctx).jobs).offset(jobID as isize).cast();
+    match (*(*mtctx).factory).try_add(ZSTDMT_compressionJob, job) {
         Ok(()) => {
             (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
             (*mtctx).jobReady = 0;

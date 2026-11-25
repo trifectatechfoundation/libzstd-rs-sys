@@ -268,60 +268,62 @@ impl PoolState {
     }
 }
 
-/// # Safety
-///
-/// The caller must ensure that `function(opaque)` can run safely on a worker thread
-/// and that any data it accesses stays valid until `function(opaque)` returns.
-unsafe fn POOL_add_internal(
-    ctx: &POOL_ctx,
-    state: &mut PoolState,
-    function: POOL_function,
-    opaque: *mut core::ffi::c_void,
-) {
-    let job = POOL_job { function, opaque };
-    if state.shutdown != 0 {
-        return;
+impl POOL_ctx {
+    /// # Safety
+    ///
+    /// The caller must ensure that `function(opaque)` can run safely on a worker thread
+    /// and that any data it accesses stays valid until `function(opaque)` returns.
+    unsafe fn add_internal(
+        &self,
+        state: &mut PoolState,
+        function: POOL_function,
+        opaque: *mut core::ffi::c_void,
+    ) {
+        let job = POOL_job { function, opaque };
+        if state.shutdown != 0 {
+            return;
+        }
+
+        let queueTail = state.queueTail;
+        state.queue[queueTail] = Some(job);
+        state.queueTail = (queueTail + 1) % state.queue.len();
+        self.queuePopCond.notify_one();
     }
 
-    let queueTail = state.queueTail;
-    state.queue[queueTail] = Some(job);
-    state.queueTail = (queueTail + 1) % state.queue.len();
-    ctx.queuePopCond.notify_one();
-}
-
-/// Adds `function(opaque)` to the thread pool, waiting for room if the queue is full.
-///
-/// # Safety
-///
-/// The caller must ensure that `function(opaque)` can run safely on a worker thread
-/// and that any data it accesses stays valid until `function(opaque)` returns.
-pub unsafe fn POOL_add(ctx: &POOL_ctx, function: POOL_function, opaque: *mut core::ffi::c_void) {
-    let mut state = ctx.state.lock().unwrap();
-    // Wait until there is space in the queue for the new job
-    while state.isQueueFull() && state.shutdown == 0 {
-        state = ctx.queuePushCond.wait(state).unwrap();
+    /// Adds `function(opaque)` to the thread pool, waiting for room if the queue is full.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `function(opaque)` can run safely on a worker thread
+    /// and that any data it accesses stays valid until `function(opaque)` returns.
+    pub unsafe fn add(&self, function: POOL_function, opaque: *mut core::ffi::c_void) {
+        let mut state = self.state.lock().unwrap();
+        // Wait until there is space in the queue for the new job
+        while state.isQueueFull() && state.shutdown == 0 {
+            state = self.queuePushCond.wait(state).unwrap();
+        }
+        self.add_internal(&mut state, function, opaque);
     }
-    POOL_add_internal(ctx, &mut state, function, opaque);
-}
 
-/// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
-/// Returns `Err(())` immediately if not (does not block).
-///
-/// # Safety
-///
-/// If the job is enqueued, the caller must ensure that `function(opaque)` can run
-/// safely on a worker thread and that its data stays valid until `function(opaque)` returns.
-pub(crate) unsafe fn POOL_tryAdd(
-    ctx: &POOL_ctx,
-    function: POOL_function,
-    opaque: *mut core::ffi::c_void,
-) -> Result<(), ()> {
-    let mut state = ctx.state.lock().unwrap();
-    if state.isQueueFull() {
-        return Err(());
+    /// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
+    /// Returns `Err(())` immediately if not (does not block).
+    ///
+    /// # Safety
+    ///
+    /// If the job is enqueued, the caller must ensure that `function(opaque)` can run
+    /// safely on a worker thread and that its data stays valid until `function(opaque)` returns.
+    pub(crate) unsafe fn try_add(
+        &self,
+        function: POOL_function,
+        opaque: *mut core::ffi::c_void,
+    ) -> Result<(), ()> {
+        let mut state = self.state.lock().unwrap();
+        if state.isQueueFull() {
+            return Err(());
+        }
+        self.add_internal(&mut state, function, opaque);
+        Ok(())
     }
-    POOL_add_internal(ctx, &mut state, function, opaque);
-    Ok(())
 }
 
 #[cfg(all(test, not(target_family = "wasm")))]
@@ -357,7 +359,7 @@ mod tests {
                 let pool = POOL_create(workers, queue_size);
                 assert!(!pool.is_null());
                 for count in &counts {
-                    POOL_add(&*pool, job, &raw const *count as *mut c_void);
+                    (*pool).add(job, &raw const *count as *mut c_void);
                 }
                 POOL_free(pool);
                 assert_eq!(
@@ -418,11 +420,7 @@ mod tests {
             started: Condvar::new(),
         };
         for _ in 0..JOBS {
-            POOL_add(
-                &*pool,
-                measure_concurrency,
-                (&raw const jobs).cast_mut().cast(),
-            );
+            (*pool).add(measure_concurrency, (&raw const jobs).cast_mut().cast());
         }
         POOL_joinJobs(&*pool);
         let counts = jobs.counts.into_inner().unwrap();
@@ -455,7 +453,7 @@ mod tests {
             // Hold the jobs until the pool has shrunk with work still queued.
             let guard = completed.lock().unwrap();
             for _ in 0..JOBS {
-                POOL_add(&*pool, count_job, (&raw const completed).cast_mut().cast());
+                (*pool).add(count_job, (&raw const completed).cast_mut().cast());
             }
             let resized = POOL_resize(pool.as_ref(), 1);
             drop(guard);

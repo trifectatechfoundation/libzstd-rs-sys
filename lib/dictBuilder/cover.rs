@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_64bits;
-use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
+use crate::lib::common::pool::{POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCDict, ZSTD_freeCCtxContent,
     ZSTD_freeCDict, ZSTD_initCCtx,
@@ -1309,11 +1309,7 @@ unsafe fn optimize_train_from_buffer_cover(
             } else {
                 COVER_best_start(&best);
                 if !pool.is_null() {
-                    POOL_add(
-                        &*pool,
-                        COVER_tryParameters_wrapper,
-                        Box::into_raw(data).cast(),
-                    );
+                    (*pool).add(COVER_tryParameters_wrapper, Box::into_raw(data).cast());
                 } else {
                     COVER_tryParameters(data);
                 }
