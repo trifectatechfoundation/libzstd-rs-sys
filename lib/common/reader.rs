@@ -73,14 +73,6 @@ impl<'a> Reader<'a> {
         self.as_ptr()..self.as_ptr().wrapping_add(self.len())
     }
 
-    //    #[inline]
-    //    pub fn as_ptr_range(&mut self) -> core::ops::Range<*const u8> {
-    //        match self.ptr {
-    //            None => core::ptr::null_mut()..core::ptr::null(),
-    //            Some(ptr) => ptr.as_ptr().cast_const()..self.end,
-    //        }
-    //    }
-
     #[inline]
     pub fn as_slice(&self) -> &[u8] {
         match self.ptr {
