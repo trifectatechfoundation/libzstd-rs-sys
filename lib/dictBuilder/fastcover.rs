@@ -831,7 +831,7 @@ fn optimize_train_from_buffer_fastcover(
                 if !pool.is_null() {
                     unsafe {
                         POOL_add(
-                            pool,
+                            &*pool,
                             FASTCOVER_tryParameters_wrapper,
                             Box::into_raw(data).cast(),
                         )

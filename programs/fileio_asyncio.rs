@@ -588,7 +588,7 @@ unsafe fn AIO_IOPool_enqueueJob(job: *mut IOJob_t) {
     let ctx = (*job).ctx as *mut IOPoolCtx_t;
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
         POOL_add(
-            (*ctx).threadPool,
+            &*(*ctx).threadPool,
             (*ctx).poolFunction,
             job as *mut core::ffi::c_void,
         );
