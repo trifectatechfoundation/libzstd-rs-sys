@@ -773,9 +773,7 @@ use crate::lib::compress::zstd_opt::{
     ZSTD_compressBlock_btopt_extDict, ZSTD_compressBlock_btultra, ZSTD_compressBlock_btultra2,
     ZSTD_compressBlock_btultra_dictMatchState, ZSTD_compressBlock_btultra_extDict, ZSTD_updateTree,
 };
-use crate::lib::compress::zstd_preSplit::{
-    SplitBlockWorkspace, ZSTD_splitBlock, ZSTD_SLIPBLOCK_WORKSPACESIZE,
-};
+use crate::lib::compress::zstd_preSplit::{SplitBlockWorkspace, ZSTD_splitBlock};
 use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
     ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow,
@@ -1253,7 +1251,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         &mut (*cctx).workspace,
         ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-            .max(ZSTD_SLIPBLOCK_WORKSPACESIZE)
+            .max(size_of::<SplitBlockWorkspace>())
             .wrapping_add(2usize.wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
     ) {
         return core::ptr::null_mut();
@@ -1270,11 +1268,11 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         &mut (*cctx).workspace,
         ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-            .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
+            .max(size_of::<SplitBlockWorkspace>()),
     );
     (*cctx).tmpWkspSize = ((8usize << 10) + 512)
         .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-        .max(ZSTD_SLIPBLOCK_WORKSPACESIZE);
+        .max(size_of::<SplitBlockWorkspace>());
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     cctx
 }
@@ -2682,7 +2680,7 @@ fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
         ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-            .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
+            .max(size_of::<SplitBlockWorkspace>()),
     );
     let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(size_of::<ZSTD_compressedBlockState_t>());
     let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, false, true);
@@ -3203,14 +3201,14 @@ unsafe fn ZSTD_resetCCtx_internal(
             ws,
             ((8usize << 10) + 512)
                 .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-                .max(ZSTD_SLIPBLOCK_WORKSPACESIZE),
+                .max(size_of::<SplitBlockWorkspace>()),
         );
         if ((*zc).tmpWorkspace).is_null() {
             return Err(Error::memory_allocation);
         }
         (*zc).tmpWkspSize = ((8usize << 10) + 512)
             .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
-            .max(ZSTD_SLIPBLOCK_WORKSPACESIZE);
+            .max(size_of::<SplitBlockWorkspace>());
     }
 
     ZSTD_cwksp_clear(ws);
@@ -5790,7 +5788,7 @@ unsafe fn ZSTD_optimalBlockSize(
     }
     debug_assert_eq!(blockSizeMax, 128 << 10);
     let block = src.first_chunk().unwrap();
-    debug_assert!((*cctx).tmpWkspSize >= ZSTD_SLIPBLOCK_WORKSPACESIZE);
+    debug_assert!((*cctx).tmpWkspSize >= size_of::<SplitBlockWorkspace>());
     let workspace = (*cctx)
         .tmpWorkspace
         .cast::<MaybeUninit<SplitBlockWorkspace>>();
