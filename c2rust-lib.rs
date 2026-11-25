@@ -178,7 +178,7 @@ pub mod internal {
 
     // Needed by fileio_asyncio
     pub use crate::lib::common::pool::{
-        POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
+        POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
     };
 }
 

@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_64bits;
-use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
+use crate::lib::common::pool::{POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress_internal::ZSTD_hash64Ptr_array;
 use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
@@ -830,11 +830,7 @@ fn optimize_train_from_buffer_fastcover(
                 COVER_best_start(&best);
                 if !pool.is_null() {
                     unsafe {
-                        POOL_add(
-                            &*pool,
-                            FASTCOVER_tryParameters_wrapper,
-                            Box::into_raw(data).cast(),
-                        )
+                        (*pool).add(FASTCOVER_tryParameters_wrapper, Box::into_raw(data).cast())
                     }
                 } else {
                     FASTCOVER_tryParameters(data);

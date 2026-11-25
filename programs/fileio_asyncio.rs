@@ -6,9 +6,7 @@ use libc::{
     pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
     pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, FILE,
 };
-use libzstd_rs_sys::internal::{
-    POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
-};
+use libzstd_rs_sys::internal::{POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs};
 use libzstd_rs_sys::ParamSwitch;
 
 use crate::fileio::g_display_prefs;
@@ -587,11 +585,7 @@ unsafe fn AIO_IOPool_getFile(ctx: *const IOPoolCtx_t) -> *mut FILE {
 unsafe fn AIO_IOPool_enqueueJob(job: *mut IOJob_t) {
     let ctx = (*job).ctx as *mut IOPoolCtx_t;
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
-        POOL_add(
-            &*(*ctx).threadPool,
-            (*ctx).poolFunction,
-            job as *mut core::ffi::c_void,
-        );
+        (*(*ctx).threadPool).add((*ctx).poolFunction, job as *mut core::ffi::c_void);
     } else {
         ((*ctx).poolFunction)(job as *mut core::ffi::c_void);
     }
