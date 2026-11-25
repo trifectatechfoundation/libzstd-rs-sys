@@ -711,7 +711,7 @@ fn ZDICT_insertSortCount(
 }
 
 /// Rewrite `countLit` to contain a mostly flat but still compressible distribution of literals.
-/// Necessary to avoid generating a non-compressible distribution that [`HUF_writeCTable`] cannot encode.
+/// Necessary to avoid generating a non-compressible distribution that [`HUF_writeCTable_wksp`] cannot encode.
 fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit.fill(2);
 

@@ -63,7 +63,7 @@ impl BIT_CStream_t {
     }
 
     /// Safe version: check for buffer overflow, and prevent it.
-    /// The buffer overflow is not signaled, instead it will be revealed later on using [`BIT_closeCStream`].
+    /// The buffer overflow is not signaled, instead it will be revealed later on using [`Self::close`].
     ///
     /// Assumption: `bitContainer` has not overflowed
     #[inline]
@@ -143,10 +143,10 @@ fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainer
 /// *  The `new` method stores a chunk of the bitStream is into a local register.
 /// *  Local register size is 64-bits on 64-bits systems, 32-bits on 32-bits systems.
 /// *  You can then retrieve bitFields stored into the local register, **in reverse order**.
-/// *  Local register is explicitly reloaded from memory by the [`reload`] method.
+/// *  Local register is explicitly reloaded from memory by the [`Self::reload`] method.
 /// *  A reload guarantee a minimum of ((8*sizeof(bitD->bitContainer))-7) bits when its result is [`StreamStatus::Unfinished`].
 /// *  Otherwise, it can be less than that, so proceed accordingly.
-/// *  Checking if `DStream` has reached its end can be performed with [`BIT_endOfDStream`].
+/// *  Checking if `DStream` has reached its end can be performed with [`Self::is_empty`].
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub(crate) struct BIT_DStream_t<'a> {
@@ -275,7 +275,7 @@ impl<'a> BIT_DStream_t<'a> {
         )
     }
 
-    /// Like [`look_bits`], but only works when `nbBits >= 1`
+    /// Like [`Self::look_bits`], but only works when `nbBits >= 1`
     #[inline]
     pub(crate) const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
         // quickcheck hits this
@@ -301,7 +301,7 @@ impl<'a> BIT_DStream_t<'a> {
         value
     }
 
-    /// Like [`read_bits`], but only works when `nbBits >= 1`
+    /// Like [`Self::read_bits`], but only works when `nbBits >= 1`
     #[inline]
     pub(crate) const fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         // quickcheck hits this
@@ -312,7 +312,7 @@ impl<'a> BIT_DStream_t<'a> {
         value
     }
 
-    ///  Simple variant of [`reload`] with two conditions:
+    ///  Simple variant of [`Self::reload`] with two conditions:
     ///
     ///  1. bitstream is valid : bitsConsumed <= sizeof(bitD->bitContainer)*8
     ///  2. look window is valid after shifted down : bitD->ptr >= bitD->start

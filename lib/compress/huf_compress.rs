@@ -71,7 +71,7 @@ pub struct HUF_CompressWeightsWksp {
     pub norm: [i16; HUF_TABLELOG_MAX + 1],
 }
 
-/// Same as [`FSE_compress`], but dedicated to huff0's weights compression.
+/// Same as FSE_compress, but dedicated to huff0's weights compression.
 /// The use case needs much less stack memory.
 /// Note : all elements within weightTable are supposed to be <= [`HUF_TABLELOG_MAX`].
 unsafe fn HUF_compressWeights(
@@ -392,13 +392,13 @@ pub fn HUF_getNbBitsFromCTable(CTable: &CTable, symbolValue: u32) -> u32 {
 ///
 /// # Preconditions
 ///
-/// The sum of the ranks of each symbol == 2^largestBits,
-/// where largestBits == huffNode[lastNonNull].nbBits.
+/// The sum of the ranks of each `symbol == 2^largestBits`,
+/// where `largestBits == huffNode[lastNonNull].nbBits`.
 ///
 /// # Postconditions
 ///
-/// The sum of the ranks of each symbol == 2^largestBits,
-/// where largestBits is the return value (expected <= targetNbBits).
+/// The sum of the ranks of each `symbol == 2^largestBits`,
+/// where `largestBits` is the return value (`expected <= targetNbBits`).
 ///
 /// # Parameters
 ///
@@ -661,16 +661,16 @@ fn HUF_simpleQuickSort(arr: &mut [nodeElt], mut low: c_int, mut high: c_int) {
     }
 }
 
-/// Sorts the symbols [0, maxSymbolValue] by count[symbol] in decreasing order.
+/// Sorts the symbols `[0, maxSymbolValue]` by `count[symbol]` in decreasing order.
 /// This is a typical bucket sorting strategy that uses either quicksort or insertion sort to sort each bucket.
 ///
 /// # Parameters
 ///
 /// * `huffNode` - Output: Sorted symbols by decreasing count. Only members `.count` and `.byte` are filled.
-///   Must have (maxSymbolValue + 1) entries.
+///   Must have `(maxSymbolValue + 1)` entries.
 /// * `count` - Histogram of the symbols.
 /// * `maxSymbolValue` - Maximum symbol value.
-/// * `rankPosition` - This is a scratch workspace. Must have RANK_POSITION_TABLE_SIZE entries.
+/// * `rankPosition` - This is a scratch workspace. Must have [`RANK_POSITION_TABLE_SIZE`] entries.
 fn HUF_sort(
     huffNode: &mut [nodeElt],
     count: &[c_uint],

@@ -751,7 +751,7 @@ fn COVER_buildDictionary<'a>(
 /// # Returns
 ///
 /// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
-/// - an error code, which can be tested with [`ZDICT_isError`]
+/// - an error code, which can be tested with [`crate::ZDICT_isError`]
 ///
 /// Dictionary training will fail if there are not enough samples to construct a dictionary, or if
 /// most of the samples are too small (< 8 bytes being the lower limit). If dictionary training
@@ -1121,7 +1121,7 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
 /// # Returns
 ///
 /// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
-/// - an error code, which can be tested with [`ZDICT_isError`]
+/// - an error code, which can be tested with [`crate::ZDICT_isError`]
 ///
 /// Dictionary training will fail if there are not enough samples to construct a dictionary, or if
 /// most of the samples are too small (< 8 bytes being the lower limit). If dictionary training

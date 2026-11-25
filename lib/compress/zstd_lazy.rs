@@ -1522,12 +1522,14 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
 /// The searchMethod and dictMode switches are on compile-time constants,
 /// so they are optimized out. Only the mls & rowLog switches are left.
 ///
-/// @param ms The match state.
-/// @param ip The position to search at.
-/// @param iend The end of the input data.
-/// @param[out] offsetPtr Stores the match offset into this pointer.
-/// @param mls The minimum search length, in the range [4, 6].
-/// @param rowLog The row log (if applicable), in the range [4, 6].
+/// # Parameters
+///
+/// - `ms` The match state.
+/// - `ip` The position to search at.
+/// - `iend` The end of the input data.
+/// - (out) `offsetPtr` Stores the match offset into this pointer.
+/// - `mls` The minimum search length, in the range [4, 6].
+/// - `rowLog` The row log (if applicable), in the range [4, 6].
 ///
 /// # Returns
 ///

@@ -1034,13 +1034,14 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: usize)
 
 /// Specialized version of `memcpy` that is allowed to READ up to [`WILDCOPY_OVERLENGTH`] past the input buffer
 /// and write up to 16 bytes past `oend_w` (op >= `oend_w` is allowed).
+///
 /// This function is only called in the uncommon case where the sequence is near the end of the block. It
 /// should be fast for a single long sequence, but can be slow for several short sequences.
 ///
-/// @param ovtype controls the overlap detection
-///     - [`Overlap::NoOverlap`]: The source and destination are guaranteed to be at least [`WILDCOPY_VECLEN`] bytes apart.
-///     - [`Overlap::OverlapSrcBeforeDst`]: The src and dst may overlap and may be any distance apart.
-///     The src buffer must be before the dst buffer.
+/// `ovtype` controls the overlap detection
+///  - [`Overlap::NoOverlap`]: The source and destination are guaranteed to be at least [`WILDCOPY_VECLEN`] bytes apart.
+///  - [`Overlap::OverlapSrcBeforeDst`]: The src and dst may overlap and may be any distance apart.
+///    The src buffer must be before the dst buffer.
 unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
     oend_w: *const u8,

@@ -433,8 +433,10 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
 
 /// Add one or multiple positions to tree.
 ///
-/// @param ip assumed <= iend-8 .
-/// @param target The target of ZSTD_updateTree_internal() - we are filling to this position
+/// # Parameters
+///
+/// - `ip`, assumed <= iend-8
+/// - `target`, the target of [`ZSTD_updateTree_internal`] - we are filling to this position
 ///
 /// # Returns
 ///

@@ -9249,7 +9249,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
 ///   - matchLength -> (U16)(matchLength - MINMATCH)
 ///   - rep is ignored
 ///
-/// Store only 8 bytes per SeqDef (offBase[4], litLength[2], mlBase[2]).
+/// Store only 8 bytes per SeqDef (`offBase[4]`, `litLength[2]`, `mlBase[2]`).
 ///
 /// # Returns
 ///

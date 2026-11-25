@@ -153,7 +153,7 @@ pub(crate) enum Overlap {
     OverlapSrcBeforeDst,
 }
 
-/// Custom version of [`ZSTD_memcpy`], can over read/write up to [`WILDCOPY_OVERLENGTH`] bytes (if length==0)
+/// Custom version of `ZSTD_memcpy`, can over read/write up to [`WILDCOPY_OVERLENGTH`] bytes (if length==0)
 ///
 /// The `ovtype` controls the overlap detection
 /// - [`Overlap::NoOverlap`]: The source and destination are guaranteed to be at least [`WILDCOPY_VECLEN`] bytes apart.
