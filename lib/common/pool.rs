@@ -292,21 +292,19 @@ unsafe fn POOL_add_internal(
     ctx.queuePopCond.notify_one();
 }
 
-/// Add the job `function(opaque)` to the thread pool. `ctx` must be valid.
-/// Possibly blocks until there is room in the queue.
+/// Adds `function(opaque)` to the thread pool, waiting for room if the queue is full.
 ///
-/// Note: the function may be executed asynchronously, therefore, `opaque` must live until function has been completed.
-pub unsafe fn POOL_add(
-    ctx: *mut POOL_ctx,
-    function: POOL_function,
-    opaque: *mut core::ffi::c_void,
-) {
-    let mut state = (*ctx).state.lock().unwrap();
+/// # Safety
+///
+/// The caller must ensure that `function(opaque)` can run safely on a worker thread
+/// and that any data it accesses stays valid until `function(opaque)` returns.
+pub unsafe fn POOL_add(ctx: &POOL_ctx, function: POOL_function, opaque: *mut core::ffi::c_void) {
+    let mut state = ctx.state.lock().unwrap();
     // Wait until there is space in the queue for the new job
     while state.isQueueFull() && state.shutdown == 0 {
-        state = (*ctx).queuePushCond.wait(state).unwrap();
+        state = ctx.queuePushCond.wait(state).unwrap();
     }
-    POOL_add_internal(&*ctx, &mut state, function, opaque);
+    POOL_add_internal(ctx, &mut state, function, opaque);
 }
 
 /// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
@@ -362,7 +360,7 @@ mod tests {
                 let pool = POOL_create(workers, queue_size);
                 assert!(!pool.is_null());
                 for count in &counts {
-                    POOL_add(pool, job, &raw const *count as *mut c_void);
+                    POOL_add(&*pool, job, &raw const *count as *mut c_void);
                 }
                 POOL_free(pool);
                 assert_eq!(
@@ -424,7 +422,7 @@ mod tests {
         };
         for _ in 0..JOBS {
             POOL_add(
-                pool,
+                &*pool,
                 measure_concurrency,
                 (&raw const jobs).cast_mut().cast(),
             );
@@ -460,7 +458,7 @@ mod tests {
             // Hold the jobs until the pool has shrunk with work still queued.
             let guard = completed.lock().unwrap();
             for _ in 0..JOBS {
-                POOL_add(pool, count_job, (&raw const completed).cast_mut().cast());
+                POOL_add(&*pool, count_job, (&raw const completed).cast_mut().cast());
             }
             let resized = POOL_resize(pool, 1);
             drop(guard);

@@ -1310,7 +1310,7 @@ unsafe fn optimize_train_from_buffer_cover(
                 COVER_best_start(&best);
                 if !pool.is_null() {
                     POOL_add(
-                        pool,
+                        &*pool,
                         COVER_tryParameters_wrapper,
                         Box::into_raw(data).cast(),
                     );
