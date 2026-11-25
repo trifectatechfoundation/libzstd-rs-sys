@@ -271,8 +271,12 @@ impl PoolState {
     }
 }
 
+/// # Safety
+///
+/// The caller must ensure that `function(opaque)` can run safely on a worker thread
+/// and that any data it accesses stays valid until `function(opaque)` returns.
 unsafe fn POOL_add_internal(
-    ctx: *mut POOL_ctx,
+    ctx: &POOL_ctx,
     state: &mut PoolState,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
@@ -285,7 +289,7 @@ unsafe fn POOL_add_internal(
     let queueTail = state.queueTail;
     state.queue[queueTail] = Some(job);
     state.queueTail = (queueTail + 1) % state.queue.len();
-    (*ctx).queuePopCond.notify_one();
+    ctx.queuePopCond.notify_one();
 }
 
 /// Add the job `function(opaque)` to the thread pool. `ctx` must be valid.
@@ -302,7 +306,7 @@ pub unsafe fn POOL_add(
     while state.isQueueFull() && state.shutdown == 0 {
         state = (*ctx).queuePushCond.wait(state).unwrap();
     }
-    POOL_add_internal(ctx, &mut state, function, opaque);
+    POOL_add_internal(&*ctx, &mut state, function, opaque);
 }
 
 /// Add the job `function(opaque)` to thread pool _if_ a queue slot is available.
@@ -321,7 +325,7 @@ pub(crate) unsafe fn POOL_tryAdd(
     if state.isQueueFull() {
         return Err(());
     }
-    POOL_add_internal(ctx, &mut state, function, opaque);
+    POOL_add_internal(&*ctx, &mut state, function, opaque);
     Ok(())
 }
 
