@@ -149,10 +149,7 @@ pub(crate) unsafe fn POOL_create_advanced(
     );
     let (ctx, _) = Box::into_raw_with_allocator(ctx);
     // Initialize the threads
-    let mut state = (*ctx).state.lock().unwrap();
-    let result = POOL_resize_internal(ctx, &mut state, numThreads);
-    drop(state);
-    if result.is_err() {
+    if POOL_resize_internal(&*ctx, numThreads).is_err() {
         POOL_free(ctx);
         return core::ptr::null_mut();
     }
@@ -204,11 +201,11 @@ pub(crate) fn POOL_sizeof(ctx: Option<&POOL_ctx>) -> usize {
         + state.threads.capacity() * size_of::<JoinHandle<()>>()
 }
 
-unsafe fn POOL_resize_internal(
-    ctx: *mut POOL_ctx,
-    state: &mut PoolState,
-    numThreads: usize,
-) -> Result<(), ()> {
+/// # Safety
+///
+/// The caller must keep `ctx` valid until all workers spawned here have been joined.
+unsafe fn POOL_resize_internal(ctx: &POOL_ctx, numThreads: usize) -> Result<(), ()> {
+    let mut state = ctx.state.lock().unwrap();
     let existingThreads = state.threads.len();
     if numThreads <= existingThreads {
         if numThreads == 0 {
@@ -246,8 +243,7 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Resul
     if ctx.is_null() {
         return Err(());
     }
-    let mut state = (*ctx).state.lock().unwrap();
-    let result = POOL_resize_internal(ctx, &mut state, numThreads);
+    let result = POOL_resize_internal(&*ctx, numThreads);
     (*ctx).queuePopCond.notify_all();
     result
 }
