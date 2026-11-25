@@ -1238,7 +1238,7 @@ pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> usize {
         return 0;
     }
     size_of::<ZSTDMT_CCtx>()
-        .wrapping_add(POOL_sizeof((*mtctx).factory))
+        .wrapping_add(POOL_sizeof((*mtctx).factory.as_ref()))
         .wrapping_add(ZSTDMT_sizeof_bufferPool((*mtctx).bufPool))
         .wrapping_add(
             (((*mtctx).jobIDMask).wrapping_add(1) as usize)
