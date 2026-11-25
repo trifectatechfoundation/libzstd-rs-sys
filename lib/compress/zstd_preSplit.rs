@@ -4,9 +4,8 @@ use core::ffi::{c_int, c_uint};
 
 use crate::lib::compress::hist::HIST_add;
 
-pub const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = size_of::<SplitBlockWorkspace>();
 #[cfg(target_pointer_width = "64")]
-const _: () = assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE == 8216);
+const _: () = assert!(size_of::<SplitBlockWorkspace>() == 8216);
 
 pub const THRESHOLD_PENALTY_RATE: usize = 16;
 pub const THRESHOLD_BASE: usize = THRESHOLD_PENALTY_RATE - 2;
