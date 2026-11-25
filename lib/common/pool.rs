@@ -239,12 +239,14 @@ unsafe fn POOL_resize_internal(ctx: &POOL_ctx, numThreads: usize) -> Result<(), 
 /// since it tries to preserve and reuse existing threads.
 ///
 /// - `numThreads` must be at least 1.
-pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> Result<(), ()> {
-    if ctx.is_null() {
-        return Err(());
-    }
-    let result = POOL_resize_internal(&*ctx, numThreads);
-    (*ctx).queuePopCond.notify_all();
+///
+/// # Safety
+///
+/// The caller must keep the pool valid until all workers spawned here have been joined.
+pub(crate) unsafe fn POOL_resize(ctx: Option<&POOL_ctx>, numThreads: usize) -> Result<(), ()> {
+    let ctx = ctx.ok_or(())?;
+    let result = POOL_resize_internal(ctx, numThreads);
+    ctx.queuePopCond.notify_all();
     result
 }
 
@@ -434,7 +436,7 @@ mod tests {
             let pool = mem::DropGuard::new(POOL_create(4, 2), |pool| POOL_free(pool));
             assert!(!pool.is_null());
             assert_peak_concurrency(*pool, 4);
-            POOL_resize(*pool, 2).unwrap();
+            POOL_resize(pool.as_ref(), 2).unwrap();
             assert_peak_concurrency(*pool, 2);
         }
     }
@@ -455,7 +457,7 @@ mod tests {
             for _ in 0..JOBS {
                 POOL_add(&*pool, count_job, (&raw const completed).cast_mut().cast());
             }
-            let resized = POOL_resize(pool, 1);
+            let resized = POOL_resize(pool.as_ref(), 1);
             drop(guard);
             POOL_free(pool);
             assert!(resized.is_ok());
