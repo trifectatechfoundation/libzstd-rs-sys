@@ -161,10 +161,15 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
         with:
-            shared-key: "stable-${{matrix.target}}"
+          shared-key: "stable-${{matrix.target}}"
 
       - name: Run clippy
         run: cargo clippy --target ${{matrix.target}} ${{matrix.features}} --workspace --all-targets -- -D warnings
+
+      - name: Check documentation links
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links
+        run: cargo doc --target ${{matrix.target}} ${{matrix.features}} -p libzstd-rs-sys --lib --no-deps --document-private-items
 
   fuzz-compress:
     name: fuzz-compress
