@@ -963,14 +963,14 @@ fn ZSTD_row_prefetch(hashTable: *const u32, tagTable: *const u8, relRow: u32, ro
         prefetch_read_data(tagTable.wrapping_add(relRow as usize + 32), Locality::L1);
     }
 
-    assert!(rowLog == 4 || rowLog == 5 || rowLog == 6);
+    core::debug_assert_matches!(rowLog, 4 | 5 | 6);
     // Prefetched hash row always 64-byte aligned.
-    assert!(hashTable
+    debug_assert!(hashTable
         .wrapping_add(relRow as usize)
         .addr()
         .is_multiple_of(64));
     // Prefetched tagRow sits on correct multiple of bytes (32,64,128).
-    assert!(tagTable
+    debug_assert!(tagTable
         .wrapping_add(relRow as usize)
         .addr()
         .is_multiple_of(1 << rowLog));
