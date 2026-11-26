@@ -1467,7 +1467,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         let dmsIndexDelta = dictLimit.wrapping_sub(dmsSize);
 
         let headGrouped_0 = (*dmsTagRow as u32 & rowMask) * groupWidth;
-        let mut matchBuffer_0: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
+        let mut matchBuffer_0 = [MaybeUninit::<u32>::uninit(); ZSTD_ROW_HASH_MAX_ENTRIES];
         let mut numMatches_0 = 0usize;
         let mut matches_0 =
             ZSTD_row_getMatchMask(dmsTagRow, dmsTag as u8, headGrouped_0, rowEntries);
@@ -1480,7 +1480,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 if matchIndex_1 < dmsLowestIndex {
                     break;
                 }
-                *matchBuffer_0.as_mut_ptr().add(numMatches_0) = matchIndex_1;
+                matchBuffer_0[numMatches_0].write(matchIndex_1);
                 numMatches_0 = numMatches_0.wrapping_add(1);
                 nbAttempts = nbAttempts.wrapping_sub(1);
             }
@@ -1488,8 +1488,8 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
         }
 
         // Return the longest match
-        for currMatch in 0..numMatches_0 {
-            let matchIndex_2 = *matchBuffer_0.as_mut_ptr().add(currMatch);
+        // The first `numMatches_0` entries were written above.
+        for &matchIndex_2 in matchBuffer_0[..numMatches_0].assume_init_ref() {
             let mut currentMl_0 = 0;
 
             let match_2 = dmsBase.offset(matchIndex_2 as isize);
