@@ -1,4 +1,5 @@
 use core::arch::asm;
+use core::mem::MaybeUninit;
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -1379,7 +1380,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     let row = hashTable.offset(relRow as isize);
     let tagRow = tagTable.offset(relRow as isize);
     let headGrouped = (*tagRow as u32 & rowMask) * groupWidth;
-    let mut matchBuffer: [u32; ZSTD_ROW_HASH_MAX_ENTRIES] = [0; ZSTD_ROW_HASH_MAX_ENTRIES];
+    let mut matchBuffer = [MaybeUninit::<u32>::uninit(); ZSTD_ROW_HASH_MAX_ENTRIES];
     let mut numMatches = 0usize;
     let mut matches = ZSTD_row_getMatchMask(tagRow, tag as u8, headGrouped, rowEntries);
 
@@ -1399,7 +1400,7 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
                 prefetch_read_data(dictBase.wrapping_add(matchIndex as usize), Locality::L1);
             }
 
-            matchBuffer[numMatches] = matchIndex;
+            matchBuffer[numMatches].write(matchIndex);
             numMatches += 1;
             nbAttempts -= 1;
         }
@@ -1414,7 +1415,8 @@ unsafe fn ZSTD_RowFindBestMatch<DICT_MODE: DictModeMarker, const MLS: u32, const
     ms.nextToUpdate = ms.nextToUpdate.wrapping_add(1);
 
     // Return the longest match
-    for &matchIndex in &matchBuffer[..numMatches] {
+    // The first `numMatches` entries were written above.
+    for &matchIndex in matchBuffer[..numMatches].assume_init_ref() {
         let mut currentMl = 0;
 
         if dictMode != DictMode::ExtDict || matchIndex >= dictLimit {
