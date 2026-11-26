@@ -284,6 +284,7 @@ unsafe fn ZSTD_rawLiteralCost(literal: u8, opt_state: &OptState, optLevel: u32) 
 }
 
 /// Cost of literalLength symbol
+#[inline]
 unsafe fn ZSTD_litLengthPrice(litLength: u32, opt_state: &OptState, optLevel: u32) -> u32 {
     if opt_state.priceType == OptPrice::Predef {
         return WEIGHT(litLength, optLevel);
