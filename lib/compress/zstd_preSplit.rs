@@ -65,9 +65,8 @@ impl<const N: usize> Fingerprint<N> {
         debug_assert!(src.len() >= HASHLENGTH);
         let limit = src.len() - HASHLENGTH + 1;
 
-        for i in 0..limit.div_ceil(samplingRate) {
-            let n = i * samplingRate;
-            self.events[hash2([src[n], src[n + 1]], hashLog) as usize] += 1;
+        for window in src.array_windows::<2>().step_by(samplingRate) {
+            self.events[hash2(*window, hashLog) as usize] += 1;
         }
 
         self.nbEvents += limit / samplingRate;
