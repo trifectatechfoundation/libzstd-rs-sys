@@ -5555,11 +5555,10 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
+    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
 
     if bss == BuildSeqStore::NoCompress {
         (*(*zc).blockState.prevCBlock)
@@ -5570,11 +5569,19 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         if (*zc).seqCollector.collectSequences != 0 {
             return Err(Error::sequenceProducer_failed);
         }
-        return ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
+        return ZSTD_noCompressBlock(dst, dstCapacity, src.as_ptr().cast(), src.len(), lastBlock);
     }
 
     let nbSeq = ((*zc).seqStore.sequences).offset_from_unsigned((*zc).seqStore.sequencesStart);
-    ZSTD_compressBlock_splitBlock_internal(zc, dst, dstCapacity, src, srcSize, lastBlock, nbSeq)
+    ZSTD_compressBlock_splitBlock_internal(
+        zc,
+        dst,
+        dstCapacity,
+        src.as_ptr().cast(),
+        src.len(),
+        lastBlock,
+        nbSeq,
+    )
 }
 
 unsafe fn ZSTD_compressBlock_internal(
@@ -5860,8 +5867,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op as *mut core::ffi::c_void,
                 dstCapacity,
-                block.as_ptr().cast(),
-                block.len(),
+                block,
                 lastBlock,
             )?;
         } else {
