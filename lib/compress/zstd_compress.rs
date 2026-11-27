@@ -3734,12 +3734,17 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
             longOffsets = true;
         }
     }
-    if seqStorePtr.longLengthType == LongLengthType::Literal {
-        *llCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxLL;
+
+    match seqStorePtr.longLengthType {
+        LongLengthType::Literal => {
+            *llCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxLL;
+        }
+        LongLengthType::Match => {
+            *mlCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxML;
+        }
+        LongLengthType::None => { /* do nothing */ }
     }
-    if seqStorePtr.longLengthType == LongLengthType::Match {
-        *mlCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxML;
-    }
+
     longOffsets
 }
 
