@@ -1151,7 +1151,7 @@ unsafe fn ZSTD_compressBlock_opt_generic<const OPT_LEVEL: u32>(
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
 
     let sufficient_len = cParams.targetLength.min((1 << 12) - 1);
-    let minMatch = (if cParams.minMatch == 3 { 3 } else { 4 }) as u32;
+    let minMatch = if cParams.minMatch == 3 { 3 } else { 4 };
     let mut nextToUpdate3 = ms.nextToUpdate;
 
     let opt = &mut *ms.opt.priceTable;
