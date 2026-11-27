@@ -1471,6 +1471,8 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
 ///
 /// Note 2: when the decompressed size field isn't available, the upper-bound for that frame is
 ///         calculated by: `upper-bound = #blocks * min(128 KB, Window_Size)`
+///
+/// Note 3: `ZSTD_CONTENTSIZE_ERROR` is also returned if the upper-bound does not fit in a `u64`.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBound))]
 pub unsafe extern "C" fn ZSTD_decompressBound(
     src: *const core::ffi::c_void,
@@ -1484,7 +1486,7 @@ pub unsafe extern "C" fn ZSTD_decompressBound(
 }
 
 fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
-    let mut bound = 0;
+    let mut bound = 0u64;
 
     // iterate over each frame
     while !src.is_empty() {
@@ -1492,7 +1494,10 @@ fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
             return ZSTD_CONTENTSIZE_ERROR;
         };
         src = &src[frameSizeInfo.compressedSize..];
-        bound += frameSizeInfo.decompressedBound;
+        let Some(sum) = bound.checked_add(frameSizeInfo.decompressedBound) else {
+            return ZSTD_CONTENTSIZE_ERROR;
+        };
+        bound = sum;
     }
 
     bound
@@ -1747,6 +1752,10 @@ fn ZSTD_decompressFrame(
                 return Err(Error::corruption_detected);
             }
         };
+
+        if decodedSize > dctx.fParams.blockSizeMax as usize {
+            return Err(Error::corruption_detected);
+        }
 
         if dctx.validateChecksum {
             let written = op.subslice(..decodedSize);
@@ -3881,6 +3890,63 @@ mod tests {
     #[test]
     fn decompress_bound_null() {
         assert_eq!(unsafe { ZSTD_decompressBound(core::ptr::null(), 0) }, 0);
+    }
+
+    /// Two frames that each declare 2^63 bytes: the sum must not wrap around.
+    #[test]
+    fn decompress_bound_overflow() {
+        #[rustfmt::skip]
+        let frames: [u8; 32] = [
+            0x28, 0xB5, 0x2F, 0xFD, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0x80, 0x01, 0, 0,
+            0x28, 0xB5, 0x2F, 0xFD, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0x80, 0x01, 0, 0,
+        ];
+
+        unsafe {
+            let ptr = frames.as_ptr().cast();
+            assert_eq!(
+                ZSTD_findDecompressedSize(ptr, frames.len()),
+                ZSTD_CONTENTSIZE_ERROR
+            );
+            assert_eq!(
+                ZSTD_decompressBound(ptr, frames.len()),
+                ZSTD_CONTENTSIZE_ERROR
+            );
+        }
+    }
+
+    /// A block that decodes to more than the block size maximum is rejected, so the bound of one
+    /// block size maximum per block holds. The 6 KB window gives a block size maximum of 6144.
+    #[test]
+    fn decompress_bound_oversized_blocks() {
+        let rle_frame = [0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x14, 0xEB, 0x25, 0x02, b'a'];
+
+        let raw_size = 10_000usize;
+        let mut raw_frame = rle_frame[..6].to_vec();
+        let block_header = 1 /* last */ + ((BlockType::Raw as u32) << 1) + ((raw_size as u32) << 3);
+        raw_frame.extend_from_slice(&block_header.to_le_bytes()[..3]);
+        raw_frame.resize(raw_frame.len() + raw_size, b'a');
+
+        #[rustfmt::skip]
+        let compressed_frame = [
+            0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x14, 0x4D, 0x00, 0x00,
+            0x10, 0x61, 0x61, 0x01, 0x00, 0x15, 0xD8, 0x03, 0x2C,
+        ];
+
+        for frame in [&rle_frame[..], &raw_frame[..], &compressed_frame[..]] {
+            let mut out = vec![0u8; 1 << 20];
+            unsafe {
+                let decompressed = ZSTD_decompress(
+                    out.as_mut_ptr().cast(),
+                    out.len(),
+                    frame.as_ptr().cast(),
+                    frame.len(),
+                );
+                assert_eq!(decompressed, Error::corruption_detected.to_error_code());
+
+                let bound = ZSTD_decompressBound(frame.as_ptr().cast(), frame.len());
+                assert_eq!(bound, 6144);
+            }
+        }
     }
 
     quickcheck! {
