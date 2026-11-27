@@ -3726,10 +3726,10 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
         let def = *sequences.add(u);
         let llv = u32::from(def.litLength);
         let mlv = u32::from(def.mlBase);
-        *llCodeTable.add(u) = ZSTD_LLcode(llv) as u8;
+        *llCodeTable.add(u) = ZSTD_LLcode(llv);
         let ofCode = ZSTD_highbit32(def.offBase);
         *ofCodeTable.add(u) = ofCode as u8;
-        *mlCodeTable.add(u) = ZSTD_MLcode(mlv) as u8;
+        *mlCodeTable.add(u) = ZSTD_MLcode(mlv);
         if MEM_32bits() && ofCode >= STREAM_ACCUMULATOR_MIN {
             longOffsets = true;
         }
