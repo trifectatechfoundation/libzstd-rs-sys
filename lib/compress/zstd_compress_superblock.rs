@@ -828,8 +828,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         let cSize_1 = ZSTD_noCompressBlock(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
-            remaining.as_ptr().cast(),
-            remaining.len(),
+            remaining,
             lastBlock,
         )?;
         op = op.add(cSize_1);

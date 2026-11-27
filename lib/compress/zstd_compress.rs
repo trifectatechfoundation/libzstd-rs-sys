@@ -5342,13 +5342,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 
     let cSize: usize;
     if cSeqsSize == 0 {
-        cSize = ZSTD_noCompressBlock(
-            op as *mut core::ffi::c_void,
-            dstCapacity,
-            src.as_ptr().cast(),
-            src.len(),
-            lastBlock,
-        )?;
+        cSize = ZSTD_noCompressBlock(op as *mut core::ffi::c_void, dstCapacity, src, lastBlock)?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
     } else if cSeqsSize == 1 {
         cSize = ZSTD_rleCompressBlock(
@@ -5560,7 +5554,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         if (*zc).seqCollector.collectSequences != 0 {
             return Err(Error::sequenceProducer_failed);
         }
-        return ZSTD_noCompressBlock(dst, dstCapacity, src.as_ptr().cast(), src.len(), lastBlock);
+        return ZSTD_noCompressBlock(dst, dstCapacity, src, lastBlock);
     }
 
     let nbSeq = ((*zc).seqStore.sequences).offset_from_unsigned((*zc).seqStore.sequencesStart);
@@ -5667,7 +5661,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
 
     // Superblock compression failed, attempt to emit a single no compress block.
     // The decoder will be able to stream this block since it is uncompressed.
-    ZSTD_noCompressBlock(dst, dstCapacity, src.as_ptr().cast(), src.len(), lastBlock)
+    ZSTD_noCompressBlock(dst, dstCapacity, src, lastBlock)
 }
 
 unsafe fn ZSTD_compressBlock_targetCBlockSize(
@@ -5858,8 +5852,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 cSize = ZSTD_noCompressBlock(
                     op as *mut core::ffi::c_void,
                     dstCapacity,
-                    block.as_ptr().cast(),
-                    block.len(),
+                    block,
                     lastBlock,
                 )?;
             } else {
@@ -9038,13 +9031,8 @@ unsafe fn ZSTD_compressSequences_internal(
 
         // If blocks are too small, emit as a nocompress block
         if blockSize < MIN_CBLOCK_SIZE + ZSTD_BLOCKHEADERSIZE + 1 + 1 {
-            let cBlockSize = ZSTD_noCompressBlock(
-                op as *mut core::ffi::c_void,
-                dstCapacity,
-                block.as_ptr().cast(),
-                block.len(),
-                lastBlock,
-            )?;
+            let cBlockSize =
+                ZSTD_noCompressBlock(op as *mut core::ffi::c_void, dstCapacity, block, lastBlock)?;
 
             cSize = cSize.wrapping_add(cBlockSize);
             op = op.add(cBlockSize);
@@ -9076,13 +9064,7 @@ unsafe fn ZSTD_compressSequences_internal(
 
             let cBlockSize = if compressedSeqsSize == 0 {
                 // ZSTD_noCompressBlock writes the block header as well
-                ZSTD_noCompressBlock(
-                    op as *mut core::ffi::c_void,
-                    dstCapacity,
-                    block.as_ptr().cast(),
-                    block.len(),
-                    lastBlock,
-                )?
+                ZSTD_noCompressBlock(op as *mut core::ffi::c_void, dstCapacity, block, lastBlock)?
             } else if compressedSeqsSize == 1 {
                 ZSTD_rleCompressBlock(
                     op as *mut core::ffi::c_void,
