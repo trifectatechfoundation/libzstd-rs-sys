@@ -5581,18 +5581,16 @@ unsafe fn ZSTD_compressBlock_internal(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     frame: bool,
 ) -> Result<usize, Error> {
     // This is an estimated upper bound for the length of an rle block.
     // This isn't the actual upper bound.
     // Finding the real threshold needs further investigation.
     let rleMaxLength = 25;
-    let ip = src as *const u8;
     let op = dst as *mut u8;
 
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
+    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
 
     let mut cSize: usize;
     if bss == BuildSeqStore::NoCompress {
@@ -5619,7 +5617,7 @@ unsafe fn ZSTD_compressBlock_internal(
             &(*zc).appliedParams,
             dst,
             dstCapacity,
-            srcSize,
+            src.len(),
             (*zc).tmpWorkspace,
             (*zc).tmpWkspSize,
             (*zc).bmi2 != 0,
@@ -5628,13 +5626,9 @@ unsafe fn ZSTD_compressBlock_internal(
         // We don't want to emit our first block as a RLE even if it qualifies because
         // doing so will cause the decoder (cli only) to throw a "should consume all input error."
         // This is only an issue for zstd <= v1.4.3
-        if frame
-            && (*zc).isFirstBlock == 0
-            && cSize < rleMaxLength as usize
-            && ZSTD_isRLE(core::slice::from_raw_parts(ip, srcSize))
-        {
+        if frame && (*zc).isFirstBlock == 0 && cSize < rleMaxLength as usize && ZSTD_isRLE(src) {
             cSize = 1;
-            *op = *ip;
+            *op = src[0];
         }
     }
     if cSize > 1 {
@@ -5885,8 +5879,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
                 dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
-                block.as_ptr().cast(),
-                block.len(),
+                block,
                 true,
             )?;
             if cSize == 0 {
@@ -6145,16 +6138,11 @@ pub(crate) unsafe fn ZSTD_compressContinue_internal(
         );
     }
 
+    let src = core::slice::from_raw_parts(src.cast::<u8>(), srcSize);
     let cSize = if frame {
-        ZSTD_compress_frameChunk(
-            cctx,
-            dst,
-            dstCapacity,
-            core::slice::from_raw_parts(src.cast(), srcSize),
-            lastFrameChunk,
-        )?
+        ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, lastFrameChunk)?
     } else {
-        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)?
+        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, false)?
     };
     (*cctx).consumedSrcSize =
         ((*cctx).consumedSrcSize).wrapping_add(srcSize as core::ffi::c_ulonglong);
