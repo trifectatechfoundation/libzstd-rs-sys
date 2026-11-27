@@ -177,7 +177,7 @@ fn write_u16_le(header: &mut [MaybeUninit<u8>], out: usize, value: u16) -> Resul
 }
 
 #[inline(always)]
-fn FSE_writeNCount_generic<const SAFE: bool>(
+fn FSE_writeNCount_generic(
     header: &mut [MaybeUninit<u8>],
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
@@ -288,12 +288,7 @@ pub(crate) unsafe fn FSE_writeNCount(
 
     let header = core::slice::from_raw_parts_mut(buffer.cast::<MaybeUninit<u8>>(), bufferSize);
 
-    if bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog) {
-        // write in buffer is safe
-        FSE_writeNCount_generic::<true>(header, normalizedCounter, maxSymbolValue, tableLog)
-    } else {
-        FSE_writeNCount_generic::<false>(header, normalizedCounter, maxSymbolValue, tableLog)
-    }
+    FSE_writeNCount_generic(header, normalizedCounter, maxSymbolValue, tableLog)
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
