@@ -4308,21 +4308,17 @@ unsafe fn ZSTD_validateSeqStore(seqStore: &SeqStore_t, cParams: &ZSTD_compressio
     }
 }
 
-unsafe fn ZSTD_buildSeqStore(
-    zc: *mut ZSTD_CCtx,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
-) -> Result<BuildSeqStore, Error> {
+unsafe fn ZSTD_buildSeqStore(zc: *mut ZSTD_CCtx, src: &[u8]) -> Result<BuildSeqStore, Error> {
     let ms: &mut ZSTD_MatchState_t = &mut (*zc).blockState.matchState;
     ZSTD_assertEqualCParams((*zc).appliedParams.cParams, ms.cParams);
-    if srcSize < MIN_CBLOCK_SIZE + ZSTD_BLOCKHEADERSIZE + 1 + 1 {
+    if src.len() < MIN_CBLOCK_SIZE + ZSTD_BLOCKHEADERSIZE + 1 + 1 {
         if (*zc).appliedParams.cParams.strategy >= ZSTD_btopt {
-            ZSTD_ldm_skipRawSeqStoreBytes(&mut (*zc).externSeqStore, srcSize);
+            ZSTD_ldm_skipRawSeqStoreBytes(&mut (*zc).externSeqStore, src.len());
         } else {
             RawSeqStoreMut::new(&mut (*zc).externSeqStore)
-                .skip_sequences(srcSize, (*zc).appliedParams.cParams.minMatch);
+                .skip_sequences(src.len(), (*zc).appliedParams.cParams.minMatch);
         }
-        // don't even attempt compression below a certain srcSize
+        // don't even attempt compression below a certain `src` length
         return Ok(BuildSeqStore::NoCompress);
     }
     ZSTD_resetSeqStore(&mut (*zc).seqStore);
@@ -4333,7 +4329,7 @@ unsafe fn ZSTD_buildSeqStore(
 
     // limited update after a very long match
     let base = ms.window.base;
-    let istart = src as *const u8;
+    let istart = src.as_ptr();
     let curr = istart.wrapping_offset_from(base) as u32;
 
     if size_of::<isize>() == 8 {
@@ -4364,8 +4360,8 @@ unsafe fn ZSTD_buildSeqStore(
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             (*zc).appliedParams.useRowMatchFinder,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore::default();
@@ -4375,11 +4371,9 @@ unsafe fn ZSTD_buildSeqStore(
         ldmSeqStore.seq = (*zc).ldmSequences;
         ldmSeqStore.capacity = (*zc).maxNbLdmSequences;
 
-        (*zc).ldmState.generate_sequences(
-            &mut ldmSeqStore,
-            &(*zc).appliedParams.ldmParams,
-            core::slice::from_raw_parts(src.cast(), srcSize),
-        )?;
+        (*zc)
+            .ldmState
+            .generate_sequences(&mut ldmSeqStore, &(*zc).appliedParams.ldmParams, src)?;
 
         ZSTD_ldm_blockCompress(
             &mut ldmSeqStore,
@@ -4387,8 +4381,8 @@ unsafe fn ZSTD_buildSeqStore(
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             (*zc).appliedParams.useRowMatchFinder,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
         )
     } else if (*zc).appliedParams.has_ext_seq_prod() {
         let windowSize = 1 << (*zc).appliedParams.cParams.windowLog;
@@ -4397,8 +4391,8 @@ unsafe fn ZSTD_buildSeqStore(
             (*zc).appliedParams.extSeqProdState,
             (*zc).extSeqBuf,
             (*zc).extSeqBufCapacity,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             core::ptr::null(),
             0,
             (*zc).appliedParams.compressionLevel,
@@ -4408,7 +4402,7 @@ unsafe fn ZSTD_buildSeqStore(
         match ZSTD_postProcessSequenceProducerResult(
             core::slice::from_raw_parts_mut((*zc).extSeqBuf.cast(), (*zc).extSeqBufCapacity),
             nbExternalSeqs,
-            srcSize,
+            src.len(),
         ) {
             // Return early if there is no error, since we don't need to worry about last literals
             Ok(nbPostProcessedSeqs) => {
@@ -4419,14 +4413,14 @@ unsafe fn ZSTD_buildSeqStore(
                 };
                 let extSeqs = core::slice::from_raw_parts((*zc).extSeqBuf, nbPostProcessedSeqs);
                 let seqLenSum = ZSTD_fastSequenceLengthSum(extSeqs);
-                if seqLenSum > srcSize {
+                if seqLenSum > src.len() {
                     return Err(Error::externalSequences_invalid);
                 }
                 ZSTD_transferSequences_wBlockDelim(
                     zc,
                     &mut seqPos,
                     extSeqs,
-                    core::slice::from_raw_parts(src.cast(), srcSize),
+                    src,
                     (*zc).appliedParams.searchForExternalRepcodes,
                 )?;
                 ms.ldmSeqStore = core::ptr::null();
@@ -4449,8 +4443,8 @@ unsafe fn ZSTD_buildSeqStore(
                     ms,
                     &mut (*zc).seqStore,
                     &mut (*(*zc).blockState.nextCBlock).rep,
-                    src,
-                    srcSize,
+                    src.as_ptr().cast(),
+                    src.len(),
                 )
             }
         }
@@ -4467,13 +4461,12 @@ unsafe fn ZSTD_buildSeqStore(
             ms,
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
-            src,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
         )
     };
 
-    let lastLiterals = (src as *const u8).add(srcSize).sub(lastLLSize as usize);
-    let lastLiterals = core::slice::from_raw_parts(lastLiterals, lastLLSize);
+    let lastLiterals = &src[src.len() - lastLLSize..];
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals);
 
     ZSTD_validateSeqStore(&(*zc).seqStore, &(*zc).appliedParams.cParams);
@@ -5556,7 +5549,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
-    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
+    let bss = ZSTD_buildSeqStore(zc, src)?;
 
     if bss == BuildSeqStore::NoCompress {
         (*(*zc).blockState.prevCBlock)
@@ -5587,7 +5580,7 @@ unsafe fn ZSTD_compressBlock_internal(
     let rleMaxLength = 25;
     let op = dst as *mut u8;
 
-    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
+    let bss = ZSTD_buildSeqStore(zc, src)?;
 
     let mut cSize: usize;
     if bss == BuildSeqStore::NoCompress {
@@ -5691,7 +5684,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
-    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
+    let bss = ZSTD_buildSeqStore(zc, src)?;
 
     let cSize =
         ZSTD_compressBlock_targetCBlockSize_body(zc, dst, dstCapacity, src, bss, lastBlock)?;
