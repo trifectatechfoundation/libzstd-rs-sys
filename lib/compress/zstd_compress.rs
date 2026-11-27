@@ -5649,14 +5649,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
         if (*zc).isFirstBlock == 0 && ZSTD_maybeRLE(&(*zc).seqStore) && ZSTD_isRLE(src) {
             return ZSTD_rleCompressBlock(dst, dstCapacity, src[0], src.len(), lastBlock);
         }
-        match ZSTD_compressSuperBlock(
-            zc,
-            dst,
-            dstCapacity,
-            src.as_ptr().cast(),
-            src.len(),
-            lastBlock,
-        ) {
+        match ZSTD_compressSuperBlock(zc, dst, dstCapacity, src, lastBlock) {
             Ok(cSize) => {
                 let maxCSize = src.len().wrapping_sub(ZSTD_minGain(
                     src.len(),

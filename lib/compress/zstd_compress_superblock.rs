@@ -858,8 +858,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
@@ -882,8 +881,8 @@ pub unsafe fn ZSTD_compressSuperBlock(
         &(*zc).appliedParams,
         dst,
         dstCapacity,
-        src,
-        srcSize,
+        src.as_ptr().cast(),
+        src.len(),
         (*zc).bmi2 != 0,
         lastBlock,
         (*zc).tmpWorkspace,
