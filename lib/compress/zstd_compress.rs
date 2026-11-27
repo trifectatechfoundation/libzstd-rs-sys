@@ -5468,13 +5468,12 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     mut dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    blockSize: usize,
+    src: &[u8],
     lastBlock: bool,
     nbSeq: usize,
 ) -> Result<usize, Error> {
     let mut cSize = 0usize;
-    let mut ip = src as *const u8;
+    let mut remaining = src;
     let mut op = dst as *mut u8;
     let mut srcBytesTotal = 0usize;
     let partitions = &mut (*zc).blockSplitCtx.partitions;
@@ -5498,8 +5497,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             &mut cRep,
             op as *mut core::ffi::c_void,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            blockSize,
+            src.as_ptr().cast(),
+            src.len(),
             lastBlock,
             false,
         );
@@ -5514,7 +5513,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         srcBytesTotal = srcBytesTotal.wrapping_add(srcBytes);
         if lastPartition {
             // This is the final partition, need to account for possible last literals
-            srcBytes = srcBytes.wrapping_add(blockSize.wrapping_sub(srcBytesTotal));
+            srcBytes = srcBytes.wrapping_add(src.len().wrapping_sub(srcBytesTotal));
             lastBlockEntireSrc = lastBlock;
         } else {
             ZSTD_deriveSeqStoreChunk(
@@ -5525,6 +5524,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             );
         }
 
+        let (chunk, rest) = remaining.split_at(srcBytes);
         let cSizeChunk = ZSTD_compressSeqStore_singleBlock(
             zc,
             currSeqStore,
@@ -5532,13 +5532,13 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             &mut cRep,
             op as *mut core::ffi::c_void,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            srcBytes,
+            chunk.as_ptr().cast(),
+            chunk.len(),
             lastBlockEntireSrc,
             true,
         )?;
 
-        ip = ip.add(srcBytes);
+        remaining = rest;
         op = op.add(cSizeChunk);
         dstCapacity = dstCapacity.wrapping_sub(cSizeChunk);
         cSize = cSize.wrapping_add(cSizeChunk);
@@ -5573,15 +5573,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     }
 
     let nbSeq = ((*zc).seqStore.sequences).offset_from_unsigned((*zc).seqStore.sequencesStart);
-    ZSTD_compressBlock_splitBlock_internal(
-        zc,
-        dst,
-        dstCapacity,
-        src.as_ptr().cast(),
-        src.len(),
-        lastBlock,
-        nbSeq,
-    )
+    ZSTD_compressBlock_splitBlock_internal(zc, dst, dstCapacity, src, lastBlock, nbSeq)
 }
 
 unsafe fn ZSTD_compressBlock_internal(
