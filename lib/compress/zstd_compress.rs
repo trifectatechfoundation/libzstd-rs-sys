@@ -4360,8 +4360,7 @@ unsafe fn ZSTD_buildSeqStore(zc: *mut ZSTD_CCtx, src: &[u8]) -> Result<BuildSeqS
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             (*zc).appliedParams.useRowMatchFinder,
-            src.as_ptr().cast(),
-            src.len(),
+            src,
         )
     } else if (*zc).appliedParams.ldmParams.enableLdm == ParamSwitch::Enable {
         let mut ldmSeqStore = RawSeqStore::default();
@@ -4381,8 +4380,7 @@ unsafe fn ZSTD_buildSeqStore(zc: *mut ZSTD_CCtx, src: &[u8]) -> Result<BuildSeqS
             &mut (*zc).seqStore,
             &mut (*(*zc).blockState.nextCBlock).rep,
             (*zc).appliedParams.useRowMatchFinder,
-            src.as_ptr().cast(),
-            src.len(),
+            src,
         )
     } else if (*zc).appliedParams.has_ext_seq_prod() {
         let windowSize = 1 << (*zc).appliedParams.cParams.windowLog;

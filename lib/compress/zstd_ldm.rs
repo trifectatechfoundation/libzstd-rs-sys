@@ -916,34 +916,30 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     seqStore: &mut SeqStore_t,
     rep: &mut RepCodes,
     useRowMatchFinder: ParamSwitch,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
 ) -> usize {
     let cParams = &ms.cParams;
     let minMatch = cParams.minMatch;
     let blockCompressor =
         ZSTD_selectBlockCompressor(cParams.strategy, useRowMatchFinder, ms.dict_mode());
 
-    // Input bounds
-    let istart = src as *const u8;
-    let iend = istart.add(srcSize);
-
-    // Input positions
-    let mut ip = istart;
+    let iend = src.as_ptr_range().end;
 
     // If using opt parser, use LDMs only as candidates rather than always accepting them
     if cParams.strategy >= ZSTD_btopt {
         ms.ldmSeqStore = rawSeqStore;
-        let lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
-        ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
+        let lastLLSize =
+            blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src.as_ptr().cast(), src.len());
+        ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, src.len());
         return lastLLSize;
     }
 
     // Loop through each sequence and apply the block compressor to the literals
     let mut sequences = unsafe { RawSeqStoreMut::new(rawSeqStore) };
-    while ip < iend {
-        let remaining = iend.offset_from_unsigned(ip) as u32;
-        let Some(sequence) = sequences.maybe_split_sequence(remaining, minMatch) else {
+    let mut remaining = src;
+    while !remaining.is_empty() {
+        let Some(sequence) = sequences.maybe_split_sequence(remaining.len() as u32, minMatch)
+        else {
             break;
         };
 
@@ -953,18 +949,18 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         }
 
         // Fill tables for block compressor
-        ZSTD_ldm_limitTableUpdate(ms, ip);
-        ZSTD_ldm_fillFastTables(ms, ip as *const core::ffi::c_void);
+        ZSTD_ldm_limitTableUpdate(ms, remaining.as_ptr());
+        ZSTD_ldm_fillFastTables(ms, remaining.as_ptr().cast());
 
         // Run the block compressor
+        let (literals, rest) = remaining.split_at(sequence.litLength as usize);
         let newLitLength = blockCompressor.unwrap_unchecked()(
             ms,
             seqStore,
             rep,
-            ip as *const core::ffi::c_void,
-            sequence.litLength as usize,
+            literals.as_ptr().cast(),
+            literals.len(),
         );
-        ip = ip.offset(sequence.litLength as isize);
         // Update the repcodes
         for i in (1..ZSTD_REP_NUM as usize).rev() {
             rep[i] = rep[i - 1];
@@ -974,24 +970,24 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         ZSTD_storeSeq(
             seqStore,
             newLitLength,
-            ip.sub(newLitLength),
+            literals[literals.len() - newLitLength..].as_ptr(),
             iend,
             sequence.offset.wrapping_add(ZSTD_REP_NUM),
             sequence.matchLength as usize,
         );
-        ip = ip.offset(sequence.matchLength as isize);
+        remaining = &rest[sequence.matchLength as usize..];
     }
 
     // Fill the tables for the block compressor
-    ZSTD_ldm_limitTableUpdate(ms, ip);
-    ZSTD_ldm_fillFastTables(ms, ip as *const core::ffi::c_void);
+    ZSTD_ldm_limitTableUpdate(ms, remaining.as_ptr());
+    ZSTD_ldm_fillFastTables(ms, remaining.as_ptr().cast());
 
     // Compress the last literals
     blockCompressor.unwrap_unchecked()(
         ms,
         seqStore,
         rep,
-        ip as *const core::ffi::c_void,
-        iend.offset_from_unsigned(ip),
+        remaining.as_ptr().cast(),
+        remaining.len(),
     )
 }
