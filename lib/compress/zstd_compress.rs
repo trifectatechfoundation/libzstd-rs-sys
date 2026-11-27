@@ -5297,14 +5297,12 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
     cRep: &mut RepCodes,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastBlock: bool,
     isPartition: bool,
 ) -> Result<usize, Error> {
     let rleMaxLength = 25;
     let op = dst as *mut u8;
-    let ip = src as *const u8;
 
     // In case of an RLE or raw block, the simulated decompression repcode history must be reset
     let dRepOriginal = *dRep;
@@ -5329,16 +5327,13 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         &(*zc).appliedParams,
         op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
-        srcSize,
+        src.len(),
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
         (*zc).bmi2 != 0,
     )?;
 
-    if (*zc).isFirstBlock == 0
-        && cSeqsSize < rleMaxLength as usize
-        && ZSTD_isRLE(core::slice::from_raw_parts(src.cast::<u8>(), srcSize))
-    {
+    if (*zc).isFirstBlock == 0 && cSeqsSize < rleMaxLength as usize && ZSTD_isRLE(src) {
         // We don't want to emit our first block as a RLE even if it qualifies because
         // doing so will cause the decoder (cli only) to throw a "should consume all input error."
         // This is only an issue for zstd <= v1.4.3
@@ -5357,8 +5352,8 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         cSize = ZSTD_noCompressBlock(
             op as *mut core::ffi::c_void,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            srcSize,
+            src.as_ptr().cast(),
+            src.len(),
             lastBlock,
         )?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
@@ -5366,14 +5361,19 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         cSize = ZSTD_rleCompressBlock(
             op as *mut core::ffi::c_void,
             dstCapacity,
-            *ip,
-            srcSize,
+            src[0],
+            src.len(),
             lastBlock,
         )?;
         *dRep = dRepOriginal; // reset simulated decompression repcode history
     } else {
         (*zc).blockState.confirm_repcodes_and_entropy_tables();
-        writeBlockHeader(op as *mut core::ffi::c_void, cSeqsSize, srcSize, lastBlock);
+        writeBlockHeader(
+            op as *mut core::ffi::c_void,
+            cSeqsSize,
+            src.len(),
+            lastBlock,
+        );
         cSize = ZSTD_BLOCKHEADERSIZE.wrapping_add(cSeqsSize);
     }
 
@@ -5497,8 +5497,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             &mut cRep,
             op as *mut core::ffi::c_void,
             dstCapacity,
-            src.as_ptr().cast(),
-            src.len(),
+            src,
             lastBlock,
             false,
         );
@@ -5532,8 +5531,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             &mut cRep,
             op as *mut core::ffi::c_void,
             dstCapacity,
-            chunk.as_ptr().cast(),
-            chunk.len(),
+            chunk,
             lastBlockEntireSrc,
             true,
         )?;
