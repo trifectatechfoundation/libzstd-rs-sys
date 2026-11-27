@@ -1,3 +1,5 @@
+use core::mem::MaybeUninit;
+
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType};
 use crate::lib::common::error_private::Error;
@@ -163,16 +165,25 @@ pub(crate) const fn FSE_NCountWriteBound(maxSymbolValue: u8, tableLog: core::ffi
 }
 
 #[inline(always)]
-unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
-    header: *mut core::ffi::c_void,
-    headerBufferSize: usize,
+fn write_u16_le(header: &mut [MaybeUninit<u8>], out: usize, value: u16) -> Result<(), Error> {
+    let Some([dst0, dst1, ..]) = header.get_mut(out..) else {
+        return Err(Error::dstSize_tooSmall); // Buffer overflow
+    };
+
+    let [src0, src1] = value.to_le_bytes();
+    dst0.write(src0);
+    dst1.write(src1);
+    Ok(())
+}
+
+#[inline(always)]
+fn FSE_writeNCount_generic(
+    header: &mut [MaybeUninit<u8>],
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
 ) -> Result<usize, Error> {
-    let ostart = header as *mut u8;
-    let mut out = ostart;
-    let oend = ostart.add(headerBufferSize);
+    let mut out = 0;
     let tableSize = 1 << tableLog;
     let mut bitStream = 0;
     let mut bitCount: core::ffi::c_uint = 0;
@@ -203,12 +214,8 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
             while symbol >= start.wrapping_add(24) {
                 start = start.wrapping_add(24);
                 bitStream = (bitStream as core::ffi::c_uint).wrapping_add(0xffff << bitCount);
-                if !SAFE && out > oend.sub(2) {
-                    return Err(Error::dstSize_tooSmall); // Buffer overflow
-                }
-                *out = bitStream as u8;
-                *out.add(1) = (bitStream >> 8) as u8;
-                out = out.add(2);
+                write_u16_le(header, out, bitStream as u16)?;
+                out += 2;
                 bitStream >>= 16;
             }
             while symbol >= start.wrapping_add(3) {
@@ -220,12 +227,8 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
                 .wrapping_add(symbol.wrapping_sub(start) << bitCount);
             bitCount += 2;
             if bitCount > 16 {
-                if !SAFE && out > oend.sub(2) {
-                    return Err(Error::dstSize_tooSmall); // Buffer overflow
-                }
-                *out = bitStream as u8;
-                *out.add(1) = (bitStream >> 8) as u8;
-                out = out.add(2);
+                write_u16_le(header, out, bitStream as u16)?;
+                out += 2;
                 bitStream >>= 16;
                 bitCount -= 16;
             }
@@ -251,12 +254,8 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
             threshold >>= 1;
         }
         if bitCount > 16 {
-            if !SAFE && out > oend.sub(2) {
-                return Err(Error::dstSize_tooSmall); // Buffer overflow
-            }
-            *out = bitStream as u8;
-            *out.add(1) = (bitStream >> 8) as u8;
-            out = out.add(2);
+            write_u16_le(header, out, bitStream as u16)?;
+            out += 2;
             bitStream >>= 16;
             bitCount -= 16;
         }
@@ -267,19 +266,14 @@ unsafe fn FSE_writeNCount_generic<const SAFE: bool>(
     }
 
     // flush remaining bitStream
-    if !SAFE && out > oend.sub(2) {
-        return Err(Error::dstSize_tooSmall); // Buffer overflow
-    }
-    *out = bitStream as u8;
-    *out.add(1) = (bitStream >> 8) as u8;
-    out = out.add(bitCount.div_ceil(8) as usize);
+    write_u16_le(header, out, bitStream as u16)?;
+    out += bitCount.div_ceil(8) as usize;
 
-    Ok(out.offset_from_unsigned(ostart))
+    Ok(out)
 }
 
-pub(crate) unsafe fn FSE_writeNCount(
-    buffer: *mut core::ffi::c_void,
-    bufferSize: usize,
+pub(crate) fn FSE_writeNCount(
+    header: &mut [MaybeUninit<u8>],
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
@@ -291,24 +285,7 @@ pub(crate) unsafe fn FSE_writeNCount(
         return Err(Error::GENERIC); // Unsupported
     }
 
-    if bufferSize >= FSE_NCountWriteBound(maxSymbolValue, tableLog) {
-        // write in buffer is safe
-        FSE_writeNCount_generic::<true>(
-            buffer,
-            bufferSize,
-            normalizedCounter,
-            maxSymbolValue,
-            tableLog,
-        )
-    } else {
-        FSE_writeNCount_generic::<false>(
-            buffer,
-            bufferSize,
-            normalizedCounter,
-            maxSymbolValue,
-            tableLog,
-        )
-    }
+    FSE_writeNCount_generic(header, normalizedCounter, maxSymbolValue, tableLog)
 }
 
 /// Provides the minimum logSize to safely represent a distribution.
