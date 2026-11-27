@@ -5806,36 +5806,32 @@ unsafe fn ZSTD_compress_frameChunk(
     cctx: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     mut dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastFrameChunk: bool,
 ) -> Result<usize, Error> {
     let blockSizeMax = (*cctx).blockSizeMax;
-    let mut remaining = srcSize;
-    let mut ip = src as *const u8;
+    let mut remaining = src;
     let ostart = dst as *mut u8;
     let mut op = ostart;
     let maxDist = 1 << (*cctx).appliedParams.cParams.windowLog;
     let mut savings = (*cctx).consumedSrcSize as i64 - (*cctx).producedCSize as i64;
 
-    if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
-        ZSTD_XXH64_update_slice(
-            &mut (*cctx).xxhState,
-            core::slice::from_raw_parts(src as *const u8, srcSize),
-        );
+    if (*cctx).appliedParams.fParams.checksumFlag != 0 && !src.is_empty() {
+        ZSTD_XXH64_update_slice(&mut (*cctx).xxhState, src);
     }
 
-    while remaining != 0 {
+    while !remaining.is_empty() {
         let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
         let blockSize = ZSTD_optimalBlockSize(
             cctx,
-            core::slice::from_raw_parts(ip, remaining),
+            remaining,
             blockSizeMax,
             (*cctx).appliedParams.preBlockSplitter_level,
             (*cctx).appliedParams.cParams.strategy,
             savings,
         );
-        let lastBlock = lastFrameChunk && blockSize == remaining;
+        let lastBlock = lastFrameChunk && blockSize == remaining.len();
+        let block = &remaining[..blockSize];
 
         if dstCapacity < ZSTD_BLOCKHEADERSIZE.wrapping_add(1 + 1).wrapping_add(1) {
             return Err(Error::dstSize_tooSmall);
@@ -5845,18 +5841,18 @@ unsafe fn ZSTD_compress_frameChunk(
             ms,
             &mut (*cctx).workspace,
             &(*cctx).appliedParams,
-            ip as *const core::ffi::c_void,
-            ip.add(blockSize) as *const core::ffi::c_void,
+            block.as_ptr().cast(),
+            block.as_ptr_range().end.cast(),
         );
         ZSTD_checkDictValidity(
             &ms.window,
-            ip.add(blockSize) as *const core::ffi::c_void,
+            block.as_ptr_range().end.cast(),
             maxDist,
             &mut ms.loadedDictEnd,
             &mut ms.dictMatchState,
         );
         ms.window.enforce_max_dist(
-            ip as *const core::ffi::c_void,
+            block.as_ptr().cast(),
             maxDist,
             &mut ms.loadedDictEnd,
             Some(&mut ms.dictMatchState),
@@ -5871,8 +5867,8 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op as *mut core::ffi::c_void,
                 dstCapacity,
-                ip as *const core::ffi::c_void,
-                blockSize,
+                block.as_ptr().cast(),
+                block.len(),
                 lastBlock,
             )?;
         } else if (*cctx).appliedParams.block_splitter_enabled() {
@@ -5880,8 +5876,8 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op as *mut core::ffi::c_void,
                 dstCapacity,
-                ip as *const core::ffi::c_void,
-                blockSize,
+                block.as_ptr().cast(),
+                block.len(),
                 lastBlock,
             )?;
         } else {
@@ -5889,16 +5885,16 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op.add(ZSTD_BLOCKHEADERSIZE) as *mut core::ffi::c_void,
                 dstCapacity.wrapping_sub(ZSTD_BLOCKHEADERSIZE),
-                ip as *const core::ffi::c_void,
-                blockSize,
+                block.as_ptr().cast(),
+                block.len(),
                 true,
             )?;
             if cSize == 0 {
                 cSize = ZSTD_noCompressBlock(
                     op as *mut core::ffi::c_void,
                     dstCapacity,
-                    ip as *const core::ffi::c_void,
-                    blockSize,
+                    block.as_ptr().cast(),
+                    block.len(),
                     lastBlock,
                 )?;
             } else {
@@ -5933,8 +5929,7 @@ unsafe fn ZSTD_compress_frameChunk(
         // But being conservative is fine,
         // since splitting barely compressible blocks is not fruitful anyway.
         savings += blockSize as i64 - cSize as i64;
-        ip = ip.add(blockSize);
-        remaining = remaining.wrapping_sub(blockSize);
+        remaining = &remaining[blockSize..];
         op = op.add(cSize);
         dstCapacity = dstCapacity.wrapping_sub(cSize);
         (*cctx).isFirstBlock = 0;
@@ -6151,7 +6146,13 @@ pub(crate) unsafe fn ZSTD_compressContinue_internal(
     }
 
     let cSize = if frame {
-        ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)?
+        ZSTD_compress_frameChunk(
+            cctx,
+            dst,
+            dstCapacity,
+            core::slice::from_raw_parts(src.cast(), srcSize),
+            lastFrameChunk,
+        )?
     } else {
         ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, false)?
     };
