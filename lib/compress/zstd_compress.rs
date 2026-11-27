@@ -3716,20 +3716,17 @@ unsafe fn ZSTD_reduceIndex(
 /// See doc/zstd_compression_format.md for detailed format description
 #[inline(never)]
 pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
-    let sequences: *const SeqDef = seqStorePtr.sequencesStart;
+    let sequences = seqStorePtr.seqs();
     let llCodeTable = seqStorePtr.llCode;
     let ofCodeTable = seqStorePtr.ofCode;
     let mlCodeTable = seqStorePtr.mlCode;
-    let nbSeq = (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart);
+
     let mut longOffsets = false;
-    for u in 0..nbSeq {
-        let def = *sequences.add(u);
-        let llv = u32::from(def.litLength);
-        let mlv = u32::from(def.mlBase);
-        *llCodeTable.add(u) = ZSTD_LLcode(llv);
+    for (u, def) in sequences.iter().enumerate() {
+        *llCodeTable.add(u) = ZSTD_LLcode(u32::from(def.litLength));
+        *mlCodeTable.add(u) = ZSTD_MLcode(u32::from(def.mlBase));
         let ofCode = ZSTD_highbit32(def.offBase);
         *ofCodeTable.add(u) = ofCode as u8;
-        *mlCodeTable.add(u) = ZSTD_MLcode(mlv);
         if MEM_32bits() && ofCode >= STREAM_ACCUMULATOR_MIN {
             longOffsets = true;
         }
