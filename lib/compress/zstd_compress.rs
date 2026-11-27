@@ -5692,18 +5692,17 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
-    let bss = ZSTD_buildSeqStore(zc, src, srcSize)?;
+    let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
 
     let cSize = ZSTD_compressBlock_targetCBlockSize_body(
         zc,
         dst,
         dstCapacity,
-        src,
-        srcSize,
+        src.as_ptr().cast(),
+        src.len(),
         bss,
         lastBlock,
     )?;
@@ -5861,8 +5860,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 cctx,
                 op as *mut core::ffi::c_void,
                 dstCapacity,
-                block.as_ptr().cast(),
-                block.len(),
+                block,
                 lastBlock,
             )?;
         } else if (*cctx).appliedParams.block_splitter_enabled() {
