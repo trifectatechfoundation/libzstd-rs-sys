@@ -5651,28 +5651,27 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     bss: BuildSeqStore,
     lastBlock: bool,
 ) -> Result<usize, Error> {
     if bss == BuildSeqStore::Compress {
-        if (*zc).isFirstBlock == 0
-            && ZSTD_maybeRLE(&(*zc).seqStore)
-            && ZSTD_isRLE(core::slice::from_raw_parts(src.cast::<u8>(), srcSize))
-        {
-            return ZSTD_rleCompressBlock(
-                dst,
-                dstCapacity,
-                *(src as *const u8),
-                srcSize,
-                lastBlock,
-            );
+        if (*zc).isFirstBlock == 0 && ZSTD_maybeRLE(&(*zc).seqStore) && ZSTD_isRLE(src) {
+            return ZSTD_rleCompressBlock(dst, dstCapacity, src[0], src.len(), lastBlock);
         }
-        match ZSTD_compressSuperBlock(zc, dst, dstCapacity, src, srcSize, lastBlock) {
+        match ZSTD_compressSuperBlock(
+            zc,
+            dst,
+            dstCapacity,
+            src.as_ptr().cast(),
+            src.len(),
+            lastBlock,
+        ) {
             Ok(cSize) => {
-                let maxCSize = srcSize
-                    .wrapping_sub(ZSTD_minGain(srcSize, (*zc).appliedParams.cParams.strategy));
+                let maxCSize = src.len().wrapping_sub(ZSTD_minGain(
+                    src.len(),
+                    (*zc).appliedParams.cParams.strategy,
+                ));
                 if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_BLOCKHEADERSIZE) {
                     (*zc).blockState.confirm_repcodes_and_entropy_tables();
                     return Ok(cSize);
@@ -5685,7 +5684,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
 
     // Superblock compression failed, attempt to emit a single no compress block.
     // The decoder will be able to stream this block since it is uncompressed.
-    ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock)
+    ZSTD_noCompressBlock(dst, dstCapacity, src.as_ptr().cast(), src.len(), lastBlock)
 }
 
 unsafe fn ZSTD_compressBlock_targetCBlockSize(
@@ -5697,15 +5696,8 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
 ) -> Result<usize, Error> {
     let bss = ZSTD_buildSeqStore(zc, src.as_ptr().cast(), src.len())?;
 
-    let cSize = ZSTD_compressBlock_targetCBlockSize_body(
-        zc,
-        dst,
-        dstCapacity,
-        src.as_ptr().cast(),
-        src.len(),
-        bss,
-        lastBlock,
-    )?;
+    let cSize =
+        ZSTD_compressBlock_targetCBlockSize_body(zc, dst, dstCapacity, src, bss, lastBlock)?;
 
     (*(*zc).blockState.prevCBlock)
         .entropy
