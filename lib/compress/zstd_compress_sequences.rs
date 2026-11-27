@@ -1,3 +1,5 @@
+use core::mem::MaybeUninit;
+
 use crate::lib::common::bitstream::{BIT_CStream_t, BitContainerType, STREAM_ACCUMULATOR_MIN};
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -76,7 +78,7 @@ unsafe fn ZSTD_NCountCost(
     nbSeq: usize,
     FSELog: core::ffi::c_uint,
 ) -> Result<usize, Error> {
-    let mut wksp: [u8; 512] = [0; 512];
+    let mut wksp = [MaybeUninit::<u8>::uninit(); 512];
     let mut norm: [i16; 53] = [0; 53];
     let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
     FSE_normalizeCount(
@@ -87,13 +89,7 @@ unsafe fn ZSTD_NCountCost(
         max,
         ZSTD_useLowProbCount(nbSeq),
     )?;
-    FSE_writeNCount(
-        wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        size_of::<[u8; 512]>(),
-        &norm,
-        max,
-        tableLog,
-    )
+    FSE_writeNCount(&mut wksp, &norm, max, tableLog)
 }
 
 /// Returns the cost in bits of encoding the distribution described by count
@@ -261,7 +257,6 @@ pub unsafe fn ZSTD_buildCTable(
 ) -> Result<usize, Error> {
     let nbSeq = codeTable.len();
     let op = dst as *mut u8;
-    let oend: *const u8 = op.add(dstCapacity);
 
     match type_0 {
         SymbolEncodingType::Rle => {
@@ -305,8 +300,7 @@ pub unsafe fn ZSTD_buildCTable(
                 ZSTD_useLowProbCount(nbSeq_1),
             )?;
             let nCountSize = FSE_writeNCount(
-                op as *mut core::ffi::c_void,
-                oend.offset_from_unsigned(op),
+                core::slice::from_raw_parts_mut(op.cast::<MaybeUninit<u8>>(), dstCapacity),
                 &(*wksp).norm,
                 max,
                 tableLog,

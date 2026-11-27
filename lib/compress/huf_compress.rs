@@ -129,8 +129,10 @@ unsafe fn HUF_compressWeights(
     /* Write table description header */
     {
         let hSize = FSE_writeNCount(
-            op as *mut c_void,
-            oend.offset_from_unsigned(op),
+            core::slice::from_raw_parts_mut(
+                op.cast::<MaybeUninit<u8>>(),
+                oend.offset_from_unsigned(op),
+            ),
             &(*wksp).norm,
             maxSymbolValue,
             tableLog,

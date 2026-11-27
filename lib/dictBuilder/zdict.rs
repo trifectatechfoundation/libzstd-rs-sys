@@ -952,8 +952,7 @@ unsafe fn analyze_entropy_internal(
     let mut eSize = hhSize;
 
     let ohSize = FSE_writeNCount(
-        dst[eSize..].as_mut_ptr().cast(),
-        dst.len() - eSize,
+        &mut *(core::ptr::from_mut(&mut dst[eSize..]) as *mut [MaybeUninit<u8>]),
         &offcodeNCount,
         OFFCODE_MAX,
         offLog,
@@ -966,8 +965,7 @@ unsafe fn analyze_entropy_internal(
     eSize = eSize.wrapping_add(ohSize);
 
     let mhSize = FSE_writeNCount(
-        dst[eSize..].as_mut_ptr().cast(),
-        dst.len() - eSize,
+        &mut *(core::ptr::from_mut(&mut dst[eSize..]) as *mut [MaybeUninit<u8>]),
         &matchLengthNCount,
         MaxML,
         mlLog,
@@ -980,8 +978,7 @@ unsafe fn analyze_entropy_internal(
     eSize = eSize.wrapping_add(mhSize);
 
     let lhSize = FSE_writeNCount(
-        dst[eSize..].as_mut_ptr().cast(),
-        dst.len() - eSize,
+        &mut *(core::ptr::from_mut(&mut dst[eSize..]) as *mut [MaybeUninit<u8>]),
         &litLengthNCount,
         MaxLL,
         llLog,

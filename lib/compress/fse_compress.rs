@@ -272,9 +272,8 @@ fn FSE_writeNCount_generic(
     Ok(out)
 }
 
-pub(crate) unsafe fn FSE_writeNCount(
-    buffer: *mut core::ffi::c_void,
-    bufferSize: usize,
+pub(crate) fn FSE_writeNCount(
+    header: &mut [MaybeUninit<u8>],
     normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: u8,
     tableLog: core::ffi::c_uint,
@@ -285,8 +284,6 @@ pub(crate) unsafe fn FSE_writeNCount(
     if tableLog < FSE_MIN_TABLELOG as core::ffi::c_uint {
         return Err(Error::GENERIC); // Unsupported
     }
-
-    let header = core::slice::from_raw_parts_mut(buffer.cast::<MaybeUninit<u8>>(), bufferSize);
 
     FSE_writeNCount_generic(header, normalizedCounter, maxSymbolValue, tableLog)
 }
