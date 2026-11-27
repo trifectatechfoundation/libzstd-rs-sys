@@ -210,10 +210,10 @@ impl<'a> BIT_DStream_t<'a> {
         let limitPtr = start.wrapping_add(USIZE_BYTES);
 
         // None when endMark not present
-        let bitsConsumed = srcBuffer
-            .last()
-            .and_then(|v| v.checked_ilog2())
-            .map(|v| 8 - v);
+        let bitsConsumed = match srcBuffer {
+            [.., v] if *v != 0 => Some(v.leading_zeros() + 1),
+            _ => None,
+        };
 
         if let Some(chunk) = srcBuffer.last_chunk() {
             Ok(Self {

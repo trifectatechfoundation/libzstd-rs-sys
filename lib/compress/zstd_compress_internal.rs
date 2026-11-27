@@ -1,7 +1,6 @@
 use core::mem::MaybeUninit;
 
 use crate::internal::MEM_readLE32;
-use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{CTable, HUF_repeat};
@@ -36,24 +35,24 @@ pub const ZSTD_DUBT_UNSORTED_MARK: u32 = 1;
 /// Number of low bits of a hash table entry reserved for the match tag,
 /// used by the short-cache matchfinders.
 #[inline]
-pub(crate) fn ZSTD_LLcode(litLength: u32) -> u32 {
+pub(crate) fn ZSTD_LLcode(litLength: u32) -> u8 {
     static LL_Code: [u8; 64] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
         20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     ];
-    static LL_deltaCode: u32 = 19;
+    const LL_deltaCode: u8 = 19;
     if litLength > 63 {
-        ZSTD_highbit32(litLength).wrapping_add(LL_deltaCode)
+        litLength.ilog2() as u8 + LL_deltaCode
     } else {
-        LL_Code[litLength as usize] as core::ffi::c_uint
+        LL_Code[litLength as usize]
     }
 }
 
 /// Note: mlBase = matchLength - MINMATCH;
 /// because it's the format it's stored in seqStore->sequences
 #[inline]
-pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
+pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u8 {
     static ML_Code: [u8; 128] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
@@ -62,11 +61,11 @@ pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
         41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
         42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
     ];
-    static ML_deltaCode: u32 = 36;
+    const ML_deltaCode: u8 = 36;
     if mlBase > 127 {
-        ZSTD_highbit32(mlBase).wrapping_add(ML_deltaCode)
+        mlBase.ilog2() as u8 + ML_deltaCode
     } else {
-        ML_Code[mlBase as usize] as core::ffi::c_uint
+        ML_Code[mlBase as usize]
     }
 }
 

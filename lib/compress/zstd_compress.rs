@@ -3716,29 +3716,32 @@ unsafe fn ZSTD_reduceIndex(
 /// See doc/zstd_compression_format.md for detailed format description
 #[inline(never)]
 pub unsafe fn ZSTD_seqToCodes(seqStorePtr: &SeqStore_t) -> bool {
-    let sequences: *const SeqDef = seqStorePtr.sequencesStart;
+    let sequences = seqStorePtr.seqs();
     let llCodeTable = seqStorePtr.llCode;
     let ofCodeTable = seqStorePtr.ofCode;
     let mlCodeTable = seqStorePtr.mlCode;
-    let nbSeq = (seqStorePtr.sequences).offset_from_unsigned(seqStorePtr.sequencesStart);
+
     let mut longOffsets = false;
-    for u in 0..nbSeq {
-        let llv = (*sequences.add(u)).litLength as u32;
-        let ofCode = ZSTD_highbit32((*sequences.add(u)).offBase);
-        let mlv = (*sequences.add(u)).mlBase as u32;
-        *llCodeTable.add(u) = ZSTD_LLcode(llv) as u8;
+    for (u, def) in sequences.iter().enumerate() {
+        *llCodeTable.add(u) = ZSTD_LLcode(u32::from(def.litLength));
+        *mlCodeTable.add(u) = ZSTD_MLcode(u32::from(def.mlBase));
+        let ofCode = ZSTD_highbit32(def.offBase);
         *ofCodeTable.add(u) = ofCode as u8;
-        *mlCodeTable.add(u) = ZSTD_MLcode(mlv) as u8;
         if MEM_32bits() && ofCode >= STREAM_ACCUMULATOR_MIN {
             longOffsets = true;
         }
     }
-    if seqStorePtr.longLengthType == LongLengthType::Literal {
-        *llCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxLL;
+
+    match seqStorePtr.longLengthType {
+        LongLengthType::Literal => {
+            *llCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxLL;
+        }
+        LongLengthType::Match => {
+            *mlCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxML;
+        }
+        LongLengthType::None => { /* do nothing */ }
     }
-    if seqStorePtr.longLengthType == LongLengthType::Match {
-        *mlCodeTable.offset(seqStorePtr.longLengthPos as isize) = MaxML;
-    }
+
     longOffsets
 }
 
