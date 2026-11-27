@@ -1,7 +1,6 @@
 use core::mem::MaybeUninit;
 
 use crate::internal::MEM_readLE32;
-use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{CTable, HUF_repeat};
@@ -44,7 +43,7 @@ pub(crate) fn ZSTD_LLcode(litLength: u32) -> u32 {
     ];
     static LL_deltaCode: u32 = 19;
     if litLength > 63 {
-        ZSTD_highbit32(litLength).wrapping_add(LL_deltaCode)
+        litLength.ilog2().wrapping_add(LL_deltaCode)
     } else {
         LL_Code[litLength as usize] as core::ffi::c_uint
     }
@@ -64,7 +63,7 @@ pub(crate) fn ZSTD_MLcode(mlBase: u32) -> u32 {
     ];
     static ML_deltaCode: u32 = 36;
     if mlBase > 127 {
-        ZSTD_highbit32(mlBase).wrapping_add(ML_deltaCode)
+        mlBase.ilog2().wrapping_add(ML_deltaCode)
     } else {
         ML_Code[mlBase as usize] as core::ffi::c_uint
     }
