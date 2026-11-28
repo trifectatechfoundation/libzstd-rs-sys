@@ -650,8 +650,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     bmi2: bool,
     lastBlock: bool,
     workspace: *mut core::ffi::c_void,
@@ -664,8 +663,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let lend: *const u8 = seqStorePtr.lit;
     let nbLiterals = lend.offset_from_unsigned(lstart);
     let mut literals = core::slice::from_raw_parts(lstart, nbLiterals);
-    let mut ip = src as *const u8;
-    let iend = ip.add(srcSize);
+    let mut remaining = src;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
@@ -705,8 +703,8 @@ unsafe fn ZSTD_compressSubBlock_multi(
         let mut blockBudgetSupp = 0;
         let avgBlockBudget = ebs.estBlockSize * BYTESCALE / nbSubBlocks;
         // simplification: if estimates states that the full superblock doesn't compress, just bail out immediately
-        // this will result in the production of a single uncompressed block covering srcSize.
-        if ebs.estBlockSize > srcSize {
+        // this will result in the production of a single uncompressed block covering `src`.
+        if ebs.estBlockSize > src.len() {
             return Ok(0);
         }
 
@@ -752,7 +750,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
 
             // check compressibility, update state components
             if cSize > 0 && cSize < decompressedSize {
-                ip = ip.add(decompressedSize);
+                remaining = &remaining[decompressedSize..];
                 literals = &literals[litSize..];
                 op = op.add(cSize);
                 llCodes = &llCodes[seqCount..];
@@ -799,7 +797,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
 
     // update pointers, the nb of literals borrowed from next sequence must be preserved
     if cSize_0 > 0 && cSize_0 < decompressedSize_0 {
-        ip = ip.add(decompressedSize_0);
+        remaining = &remaining[decompressedSize_0..];
         op = op.add(cSize_0);
 
         // Entropy only needs to be written once
@@ -825,14 +823,12 @@ unsafe fn ZSTD_compressSubBlock_multi(
         return Ok(0);
     }
 
-    if ip < iend {
+    if !remaining.is_empty() {
         // some data left: last part of the block sent uncompressed
-        let rSize = iend.offset_from_unsigned(ip);
         let cSize_1 = ZSTD_noCompressBlock(
             op as *mut core::ffi::c_void,
             oend.offset_from_unsigned(op),
-            ip as *const core::ffi::c_void,
-            rSize,
+            remaining,
             lastBlock,
         )?;
         op = op.add(cSize_1);
@@ -858,8 +854,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
     zc: *mut ZSTD_CCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
     lastBlock: bool,
 ) -> Result<usize, Error> {
     let mut entropyMetadata = ZSTD_entropyCTablesMetadata_t::default();
@@ -883,7 +878,6 @@ pub unsafe fn ZSTD_compressSuperBlock(
         dst,
         dstCapacity,
         src,
-        srcSize,
         (*zc).bmi2 != 0,
         lastBlock,
         (*zc).tmpWorkspace,
